@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity 0.7.3;
 
 import "../IFundsHandler.sol";
 import "../IFundsDrainable.sol";
 
+/**
+ * Allows funds to be split using a pull pattern, holding a balance until drained
+ */
 contract FundsReceiver is IFundsHandler, IFundsDrainable {
 
     bool private _notEntered = true;
@@ -49,6 +52,9 @@ contract FundsReceiver is IFundsHandler, IFundsDrainable {
 
             // Assumed all recipients are EOA and not contracts atm
             // Fire split to recipient
+
+            // TODO how to handle failures ... call and validate?
+            //      - if fails to accept the money, ideally we remove them from the list ...
             payable(recipients[i]).transfer(share);
         }
     }

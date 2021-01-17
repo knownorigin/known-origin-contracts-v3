@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity 0.7.3;
 
 // FIXME decide on push vs pull
 import "../collaborators/impl/FundsSplitter.sol";
@@ -64,7 +64,7 @@ contract TokenRoyaltiesRegistry is ITokenRoyaltiesRegistry, CloneFactory, Ownabl
         // Define on creation as needs to include this address
         DOMAIN_SEPARATOR = keccak256(abi.encode(
                 EIP712DOMAINTYPE_HASH, // pre-computed hash
-                keccak256("RoyaltyRegistry"), // NAME_HASH
+                keccak256("TokenRoyaltiesRegistry"), // NAME_HASH
                 keccak256("1"), // VERSION_HASH
                 chainId, // chainId
                 address(this), // verifyingContract
@@ -105,7 +105,7 @@ contract TokenRoyaltiesRegistry is ITokenRoyaltiesRegistry, CloneFactory, Ownabl
     //////////////////////
 
     // get total payable royalties recipients
-    function totalRoyalties(uint256 _tokenId) external view override returns (uint256) {
+    function totalPotentialRoyalties(uint256 _tokenId) external view override returns (uint256) {
         // Royalties can be optional
         if (!royaltiesSet[_tokenId]) {
             return 0;
@@ -116,7 +116,7 @@ contract TokenRoyaltiesRegistry is ITokenRoyaltiesRegistry, CloneFactory, Ownabl
     }
 
     // get total payable royalties recipients
-    function royaltiesAtIndex(uint256 _tokenId, uint256 _index) external view override returns (address, uint256) {
+    function royaltyParticipantAtIndex(uint256 _tokenId, uint256 _index) external view override returns (address, uint256) {
         return (multiHolderRoyalties[_tokenId].recipients[_index], multiHolderRoyalties[_tokenId].splits[_index]);
     }
 

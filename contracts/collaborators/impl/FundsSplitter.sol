@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity 0.7.3;
 
 import "../IFundsHandler.sol";
 
+/**
+ * splits all funds as soon as the contract receives it
+ */
 contract FundsSplitter is IFundsHandler {
 
     bool private locked;
@@ -24,7 +27,7 @@ contract FundsSplitter is IFundsHandler {
         splits = _splits;
     }
 
-    // TODO GAS limits problems ... ? call vs transfer 21000 limits?
+    // TODO test GAS limit problems ... ? call vs transfer 21000 limits?
 
     // accept all funds
     receive() external payable {

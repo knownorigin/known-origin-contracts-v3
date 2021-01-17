@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.0;
+pragma solidity 0.7.3;
 
 /**
   @title ERC-2309: ERC-721 Batch Mint Extension

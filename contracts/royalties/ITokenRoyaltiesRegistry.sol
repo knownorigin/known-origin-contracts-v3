@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity 0.7.3;
 
 import "./IERC2981.sol";
 
 interface ITokenRoyaltiesRegistry is IERC2981 {
 
     // get total payable royalties recipients
-    function totalRoyalties(uint256 _tokenId) external view returns (uint256);
+    function totalPotentialRoyalties(uint256 _tokenId) external view returns (uint256);
 
     // get total payable royalties recipients
-    function royaltiesAtIndex(uint256 _tokenId, uint256 _index) external view returns (address, uint256);
+    function royaltyParticipantAtIndex(uint256 _tokenId, uint256 _index) external view returns (address, uint256);
 
     // immutable single time only call - call on token creation by default
     function defineRoyalty(uint256 _tokenId, address _recipient, uint256 _amount) external;

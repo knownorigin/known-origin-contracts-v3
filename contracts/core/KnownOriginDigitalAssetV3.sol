@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.8;
+pragma solidity 0.7.3;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/introspection/ERC165.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/utils/EnumerableMap.sol";
 import "./IKODAV3.sol";
 import "../access/KOAccessControls.sol";
@@ -12,7 +14,7 @@ import "../access/KOAccessControls.sol";
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is IKODAV3 {
+contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3 {
     using SafeMath for uint256;
     using EnumerableMap for EnumerableMap.UintToAddressMap;
 
@@ -22,9 +24,7 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
 
     KOAccessControls public accessControls;
 
-    uint256 public tokenPointer = 0;
-
-    uint256 public constant MAX_EDITION_SIZE = 250;
+    uint256 public constant MAX_EDITION_SIZE = 1000;
 
     // Token name
     string public name;
@@ -32,18 +32,18 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
     // Token symbol
     string public symbol;
 
+    uint256 public tokenPointer = 0;
     uint256 public totalSupply;
 
     struct EditionDetails {
         uint256 editionConfig; // creator and size inside
-        string uri;
+        string uri; // the referenced data
     }
 
     // tokens are minted in batches - the first token ID used is representative of the edition ID (for now)
     mapping(uint256 => EditionDetails) editionInfo;
 
-    // TODO replace with range ownership for initial batch mint
-    // Mapping of tokenId => owner
+    // Mapping of tokenId => owner - only set after initial creation such as a primary sale and or gift
     mapping(uint256 => address) internal owners;
 
     // Mapping of owner => number of tokens owned
@@ -59,7 +59,7 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
     public {
         accessControls = _accessControls;
 
-        // FIXME define on creation
+        // FIXME define on creation from KO V2 max edition ID ...
         tokenPointer = _startTokenPointer;
 
         name = "KnownOriginDigitalAsset";
@@ -72,22 +72,21 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
     function mintToken(address _to, string calldata _uri) external returns (uint256 _tokenId) {
         require(accessControls.hasContractRole(msg.sender), "KODA: Caller must have minter role");
 
+        // bump token pointer
         uint256 tokenId = tokenPointer;
-        tokenPointer++;
 
-        // Mint
-        owners[tokenId] = _to;
+        // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
         balances[_to] = balances[_to].add(1);
 
-        // store address
-        uint256 editionConfig = uint256(_to);
-        // shift and store size
-        editionConfig |= 1 << 160;
+        // edition of 1
+        _defineEditionConfig(1, _to, _uri);
 
-        // is this cheaper?
-        EditionDetails memory editionDetails = EditionDetails(editionConfig, _uri);
-        editionInfo[tokenId] = editionDetails;
+        // FIXME Q: can we remove pointer and or supply?
 
+        // Update token pointer to be move to the next range
+        tokenPointer = tokenPointer.add(MAX_EDITION_SIZE);
+
+        // update contract total supply
         totalSupply = totalSupply.add(1);
 
         // Single Transfer event for a single token
@@ -96,9 +95,8 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
         return tokenId;
     }
 
-    // TODO add method which mints all Transfer events and not the consecutive batch event
-
-    function mintEdition(uint256 _editionSize, address _to, string calldata _uri)
+    // Mints batches of tokens emitting multiple Transfer events
+    function mintTokenEdition(uint256 _editionSize, address _to, string calldata _uri)
     external
     returns (uint256 _firstTokenId, uint256 _lastTokenId) {
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
@@ -107,30 +105,52 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
         uint256 start = tokenPointer;
         uint256 end = start.add(_editionSize);
 
-        // FIXME remove this large map of owners and store/end token ID along with override mapping to check for owners once they have moved
-
-        // Batch mint
-        for (uint i = start; i < end; i++) {
-            owners[i] = _to;
-        }
+        // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
 
         // assign balance
         balances[_to] = balances[_to].add(_editionSize);
 
-        // FIXME - do we need edition size on chain ... ?
+        // edition of x
+        _defineEditionConfig(_editionSize, _to, _uri);
 
-        // store address and size in config
-        uint256 editionConfig = uint256(_to);
-        editionConfig |= _editionSize << 160;
+        // FIXME Q: can we remove pointer and or supply?
 
-        // is this cheaper?
-        EditionDetails memory editionDetails = EditionDetails(editionConfig, _uri);
-        editionInfo[start] = editionDetails;
+        // Update token pointer to be move to the next range
+        tokenPointer = tokenPointer.add(MAX_EDITION_SIZE);
 
-        // Update token pointer
-        tokenPointer = start.add(MAX_EDITION_SIZE);
+        // update contract total supply
+        totalSupply = totalSupply.add(1);
 
-        totalSupply = totalSupply.add(_editionSize);
+        // Batch event emitting
+        for (uint i = start; i < end; i++) {
+            emit Transfer(address(0), _to, i);
+        }
+
+        return (start, end);
+    }
+
+    // Mints batches of tokens but emits a single ConsecutiveTransfer event EIP-2309
+    function mintConsecutiveEdition(uint256 _editionSize, address _to, string calldata _uri)
+    external
+    returns (uint256 _firstTokenId, uint256 _lastTokenId) {
+        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
+        require(accessControls.hasContractRole(msg.sender), "KODA: Caller must have minter role");
+
+        uint256 start = tokenPointer;
+        uint256 end = start.add(_editionSize);
+
+        // assign balance
+        balances[_to] = balances[_to].add(_editionSize);
+
+        _defineEditionConfig(_editionSize, _to, _uri);
+
+        // FIXME Q: can we remove pointer and or supply?
+
+        // Update token pointer to be move to the next range
+        tokenPointer = tokenPointer.add(MAX_EDITION_SIZE);
+
+        // update contract total supply
+        totalSupply = totalSupply.add(1);
 
         // emit EIP-2309 consecutive transfer event
         emit ConsecutiveTransfer(start, end, address(0), _to);
@@ -138,11 +158,22 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
         return (start, end);
     }
 
+    function _defineEditionConfig(uint256 _editionSize, address _to, string calldata _uri) internal {
+
+        // store address and size in config
+        uint256 editionConfig = uint256(_to);
+        // shift and store edition size
+        editionConfig |= _editionSize << 160;
+
+        // Store edition blob to be the next token pointer
+        editionInfo[tokenPointer] = EditionDetails(editionConfig, _uri);
+    }
+
     function tokenURI(uint256 _tokenId) external view returns (string memory) {
         return editionInfo[_editionFromTokenId(_tokenId)].uri;
     }
 
-    function getEditionIdForToken(uint256 _tokenId) external view returns (uint256 _editionId) {
+    function getEditionIdForToken(uint256 _tokenId) public view returns (uint256 _editionId) {
         return _editionFromTokenId(_tokenId);
     }
 
@@ -151,7 +182,7 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
     }
 
     function getEditionDetails(uint256 _tokenId)
-    external
+    public
     view
     returns (address _originalCreator, uint256 _editionId, uint256 _size, string memory _uri) {
         uint256 editionId = _editionFromTokenId(_tokenId);
@@ -171,7 +202,7 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
     }
 
     function getEditionCreator(uint256 _tokenId)
-    external
+    public
     view
     returns (address _originalCreator) {
         uint256 editionId = _editionFromTokenId(_tokenId);
@@ -182,7 +213,7 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
         return originCreator;
     }
 
-    function getEditionSize(uint256 _tokenId) external view returns (uint256 _size) {
+    function getEditionSize(uint256 _tokenId) public view returns (uint256 _size) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails memory edition = editionInfo[editionId];
         uint256 editionConfig = edition.editionConfig;
@@ -190,15 +221,18 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
         return size;
     }
 
-    function editionExists(uint256 _editionId) external view returns (bool) {
+    function editionExists(uint256 _editionId) public view returns (bool) {
         EditionDetails memory edition = editionInfo[_editionId];
         uint256 editionConfig = edition.editionConfig;
         uint256 size = uint256(uint40(editionConfig >> 160));
         return size > 0;
     }
 
+    // magic method that defines the maximum range for an edition
+    // this is fix forever
+    // tokens are minted in range
     function _editionFromTokenId(uint256 _tokenId) internal view returns (uint256) {
-        require(owners[_tokenId] != address(0), "Token does not exist");
+        require(_ownerOf(_tokenId) != address(0), "Token does not exist");
         return (_tokenId / MAX_EDITION_SIZE) * MAX_EDITION_SIZE;
     }
 
@@ -216,23 +250,27 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
     // Defaults //
     //////////////
 
-    function burn(uint256 _tokenId) external {
-        require(accessControls.hasContractRole(msg.sender) || ownerOf(_tokenId) == msg.sender, "KODA: Caller does not have permission");
-        _burn(_tokenId);
-    }
+    // TODO Do we need a burn?
 
-    function _burn(uint256 _tokenId) internal {
-        address owner = owners[_tokenId];
-        require(owner != address(0), "ERC721_ZERO_OWNER_ADDRESS");
+    //    function burn(uint256 _tokenId) external {
+    //        require(accessControls.hasContractRole(msg.sender) || ownerOf(_tokenId) == msg.sender, "KODA: Caller does not have permission");
+    //        _burn(_tokenId);
+    //    }
 
-        owners[_tokenId] = address(0);
-        balances[owner] = balances[owner].sub(1);
-        totalSupply = totalSupply.sub(1);
+    // Replace a burn with a proxies burn address call ... ?
 
-        // TODO - reduce supply within editionConfig
-
-        emit Transfer(owner, address(0), _tokenId);
-    }
+    //    function _burn(uint256 _tokenId) internal {
+    //        address owner = _ownerOf(_tokenId);
+    //        require(owner != address(0), "ERC721_ZERO_OWNER_ADDRESS");
+    //
+    //        owners[_tokenId] = address(0);
+    //        balances[owner] = balances[owner].sub(1);
+    //        totalSupply = totalSupply.sub(1);
+    //
+    //        // TODO - reduce supply within editionConfig
+    //
+    //        emit Transfer(owner, address(0), _tokenId);
+    //    }
 
     /// @notice Transfers the ownership of an NFT from one address to another address
     /// @dev This works identically to the other function with an extra data parameter,
@@ -341,7 +379,9 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
             approvals[_tokenId] = address(0);
         }
 
+        // set new owner - this will now override any specific other mappings for the base edition config
         owners[_tokenId] = _to;
+
         balances[_from] = balances[_from].sub(1);
         balances[_to] = balances[_to].add(1);
 
@@ -358,9 +398,25 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
     public
     view
     returns (address) {
-        address owner = owners[_tokenId];
+        address owner = _ownerOf(_tokenId);
         require(owner != address(0), "ERC721: owner query for nonexistent token");
         return owner;
+    }
+
+    // magic internal method for working out current owner
+    function _ownerOf(uint256 _tokenId) internal view returns (address) {
+        // If an owner assigned
+        address owner = owners[_tokenId];
+        if (owner != address(0)) {
+            return owner;
+        }
+
+        // fall back to edition creator
+        address possibleCreator = getEditionCreator(getEditionIdForToken(_tokenId));
+        if (possibleCreator != address(0)) {
+            return possibleCreator;
+        }
+        return address(0);
     }
 
     /// @notice Get the approved address for a single NFT
@@ -372,7 +428,7 @@ contract KnownOriginDigitalAssetV3 is IKODAV3 {
     public
     view
     returns (address) {
-        require(owners[_tokenId] != address(0), "ERC721: approved query for nonexistent token");
+        require(_ownerOf(_tokenId) != address(0), "ERC721: approved query for nonexistent token");
         return approvals[_tokenId];
     }
 
