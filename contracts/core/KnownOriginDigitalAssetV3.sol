@@ -10,11 +10,12 @@ import "@openzeppelin/contracts/utils/EnumerableMap.sol";
 import "./IKODAV3.sol";
 import "../access/KOAccessControls.sol";
 import "./storage/EditionRegistry.sol";
+import "../utils/Konstants.sol";
 
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context {
+contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     using SafeMath for uint256;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
@@ -23,8 +24,6 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context {
 
     KOAccessControls public accessControls;
     IEditionRegistry public editionRegistry;
-
-    uint256 public constant MAX_EDITION_SIZE = 1000;
 
     // Token name
     string public name;

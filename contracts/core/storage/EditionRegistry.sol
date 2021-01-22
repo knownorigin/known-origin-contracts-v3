@@ -5,17 +5,16 @@ pragma solidity 0.7.3;
 import "@openzeppelin/contracts/GSN/Context.sol";
 import "./IEditionRegistry.sol";
 import "../../access/KOAccessControls.sol";
+import "../../utils/Konstants.sol";
 
-contract EditionRegistry is Context, IEditionRegistry {
+contract EditionRegistry is Context, IEditionRegistry, Konstants {
 
     event ContractEnabled(address indexed mintingContract);
     event ContractDisabled(address indexed mintingContract);
 
     KOAccessControls public accessControls;
 
-    uint256 public constant MAX_EDITION_SIZE = 1000;
-
-    uint256 public editionPointer = 0;
+    uint256 public editionPointer;
 
     // Edition number to address
     mapping(uint256 => address) public editionToNftContract;
