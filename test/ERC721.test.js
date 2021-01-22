@@ -54,11 +54,11 @@ contract('ERC721', function (accounts) {
     await this.editionRegistry.enableNftContract(this.token.address, {from: owner});
   });
 
-  // shouldSupportInterfaces([
-  //   'ERC165',
-  //   'ERC721',
-  //   'ERC721Metadata',
-  // ]);
+  shouldSupportInterfaces([
+    'ERC165',
+    'ERC721',
+    'ERC721Metadata',
+  ]);
 
   describe('metadata', function () {
     it('has a name', async function () {
