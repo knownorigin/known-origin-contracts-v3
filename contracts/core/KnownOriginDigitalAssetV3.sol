@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.3;
+pragma solidity 0.7.3; // FIXME bump to 0.8 and drop safemath?
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
@@ -10,13 +10,13 @@ import "@openzeppelin/contracts/utils/EnumerableMap.sol";
 import "./IKODAV3.sol";
 import "../access/KOAccessControls.sol";
 import "./storage/EditionRegistry.sol";
+import "../utils/Konstants.sol";
 
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context {
+contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     using SafeMath for uint256;
-    using EnumerableMap for EnumerableMap.UintToAddressMap;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
     bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
@@ -25,15 +25,13 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context {
     KOAccessControls public accessControls;
     IEditionRegistry public editionRegistry;
 
-    uint256 public constant MAX_EDITION_SIZE = 1000;
-
     // Token name
     string public name;
 
     // Token symbol
     string public symbol;
 
-    uint256 public totalSupply;
+    uint256 public totalSupply; // FIXME drop this?
 
     struct EditionDetails {
         uint256 editionConfig; // creator and size inside
@@ -107,9 +105,10 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context {
         _defineEditionConfig(start, _editionSize, _to, _uri);
 
         // update contract total supply
-        totalSupply = totalSupply.add(1);
+        totalSupply = totalSupply.add(_editionSize);
 
         // Batch event emitting
+        // FIXME decide whether to start from 0 as first token or #1
         for (uint i = start; i < end; i++) {
             emit Transfer(address(0), _to, i);
         }
@@ -133,7 +132,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context {
         _defineEditionConfig(start, _editionSize, _to, _uri);
 
         // update contract total supply
-        totalSupply = totalSupply.add(1);
+        totalSupply = totalSupply.add(_editionSize);
 
         // emit EIP-2309 consecutive transfer event
         emit ConsecutiveTransfer(start, end, address(0), _to);
@@ -153,6 +152,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context {
     }
 
     function tokenURI(uint256 _tokenId) external view returns (string memory) {
+        // FIXME use resolver
         return editionInfo[_editionFromTokenId(_tokenId)].uri;
     }
 
@@ -172,6 +172,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context {
         address originCreator = address(editionConfig);
         uint256 size = uint256(uint40(editionConfig >> 160));
 
+        // FIXME return struct
         return (
         originCreator,
         editionId,
@@ -185,7 +186,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context {
     view
     returns (address _originalCreator) {
         uint256 editionId = _editionFromTokenId(_tokenId);
-        EditionDetails memory edition = editionInfo[editionId];
+        EditionDetails memory edition = editionInfo[editionId]; // FIXME should be storage
         // Pop off creator
         uint256 editionConfig = edition.editionConfig;
         address originCreator = address(editionConfig);
@@ -194,14 +195,14 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context {
 
     function getEditionSize(uint256 _tokenId) public view returns (uint256 _size) {
         uint256 editionId = _editionFromTokenId(_tokenId);
-        EditionDetails memory edition = editionInfo[editionId];
+        EditionDetails memory edition = editionInfo[editionId]; // FIXME should be storage
         uint256 editionConfig = edition.editionConfig;
         uint256 size = uint256(uint40(editionConfig >> 160));
         return size;
     }
 
     function editionExists(uint256 _editionId) public view returns (bool) {
-        EditionDetails memory edition = editionInfo[_editionId];
+        EditionDetails memory edition = editionInfo[_editionId]; // FIXME should be storage
         uint256 editionConfig = edition.editionConfig;
         uint256 size = uint256(uint40(editionConfig >> 160));
         return size > 0;
@@ -229,7 +230,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context {
     // Defaults //
     //////////////
 
-    // TODO Do we need a burn?
+    // TODO Do we need a burn? AMG - I would say no
 
     //    function burn(uint256 _tokenId) external {
     //        require(accessControls.hasContractRole(_msgSender()) || ownerOf(_tokenId) == _msgSender(), "KODA: Caller does not have permission");
