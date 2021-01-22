@@ -9,7 +9,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -39,14 +39,14 @@
       ]
     },
     "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/node_modules/@openzeppelin/contracts/access/AccessControl.sol": {
-      "lastModificationDate": 1606841029598,
+      "lastModificationDate": 1611326320539,
       "contentHash": "80fba54514bd6969409886d7f3d9ec78",
       "sourceName": "@openzeppelin/contracts/access/AccessControl.sol",
       "solcConfig": {
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -77,14 +77,14 @@
       ]
     },
     "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/node_modules/@openzeppelin/contracts/utils/EnumerableSet.sol": {
-      "lastModificationDate": 1606841029602,
+      "lastModificationDate": 1611326320542,
       "contentHash": "7d5806dec94de00ddcfb1e9fdd6c9545",
       "sourceName": "@openzeppelin/contracts/utils/EnumerableSet.sol",
       "solcConfig": {
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -111,14 +111,14 @@
       ]
     },
     "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/node_modules/@openzeppelin/contracts/utils/Address.sol": {
-      "lastModificationDate": 1606841029601,
+      "lastModificationDate": 1611326320539,
       "contentHash": "72d77402f6854b7ccf9af282e805f292",
       "sourceName": "@openzeppelin/contracts/utils/Address.sol",
       "solcConfig": {
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -145,14 +145,14 @@
       ]
     },
     "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/node_modules/@openzeppelin/contracts/GSN/Context.sol": {
-      "lastModificationDate": 1606841029596,
+      "lastModificationDate": 1611326320541,
       "contentHash": "2adbd82f6d055a4751566d4671512b03",
       "sourceName": "@openzeppelin/contracts/GSN/Context.sol",
       "solcConfig": {
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -186,7 +186,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -222,14 +222,14 @@
       ]
     },
     "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/node_modules/@openzeppelin/contracts/math/SafeMath.sol": {
-      "lastModificationDate": 1606841029600,
+      "lastModificationDate": 1611326320573,
       "contentHash": "4d29a22b28b7ec0e89c3cdf1c5e72b83",
       "sourceName": "@openzeppelin/contracts/math/SafeMath.sol",
       "solcConfig": {
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -256,14 +256,14 @@
       ]
     },
     "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/node_modules/@openzeppelin/contracts/introspection/ERC165.sol": {
-      "lastModificationDate": 1606841029599,
+      "lastModificationDate": 1611326320546,
       "contentHash": "1fdb418b30c8564d01d922c285fa6ee6",
       "sourceName": "@openzeppelin/contracts/introspection/ERC165.sol",
       "solcConfig": {
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -292,14 +292,14 @@
       ]
     },
     "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/node_modules/@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol": {
-      "lastModificationDate": 1606841029622,
+      "lastModificationDate": 1611326320557,
       "contentHash": "fad0b3f4424bdbb4b35467b29ea8d334",
       "sourceName": "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
       "solcConfig": {
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -326,14 +326,14 @@
       ]
     },
     "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/node_modules/@openzeppelin/contracts/utils/EnumerableMap.sol": {
-      "lastModificationDate": 1606841029601,
+      "lastModificationDate": 1611326320542,
       "contentHash": "8f02d41c25552d7894bdd98db412b9b0",
       "sourceName": "@openzeppelin/contracts/utils/EnumerableMap.sol",
       "solcConfig": {
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -367,7 +367,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -399,14 +399,14 @@
       ]
     },
     "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/node_modules/@openzeppelin/contracts/introspection/IERC165.sol": {
-      "lastModificationDate": 1606841029599,
+      "lastModificationDate": 1611326320555,
       "contentHash": "0d62a8380952235f135dae91590f90a3",
       "sourceName": "@openzeppelin/contracts/introspection/IERC165.sol",
       "solcConfig": {
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -440,7 +440,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -474,7 +474,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -501,14 +501,14 @@
       ]
     },
     "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol": {
-      "lastModificationDate": 1606841029622,
+      "lastModificationDate": 1611326320556,
       "contentHash": "b7983b35319221315a13595768746bdf",
       "sourceName": "@openzeppelin/contracts/token/ERC721/IERC721.sol",
       "solcConfig": {
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -544,7 +544,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -580,7 +580,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -621,7 +621,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -657,7 +657,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -694,7 +694,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -728,7 +728,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -755,14 +755,14 @@
       ]
     },
     "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/node_modules/@openzeppelin/contracts/access/Ownable.sol": {
-      "lastModificationDate": 1606841029598,
+      "lastModificationDate": 1611326320570,
       "contentHash": "38c56382c57a9e9dab92cee051155870",
       "sourceName": "@openzeppelin/contracts/access/Ownable.sol",
       "solcConfig": {
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -798,7 +798,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -832,7 +832,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -868,7 +868,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
@@ -906,7 +906,7 @@
         "version": "0.7.3",
         "settings": {
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
           "outputSelection": {
