@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/contracts/access/KOAccessControls.sol": {
-      "lastModificationDate": 1610918341365,
-      "contentHash": "f7f29383efe393f9e2c591ec4952a1dc",
+      "lastModificationDate": 1611315026044,
+      "contentHash": "3e6fa9459b298a4d602b4d9fc32535fd",
       "sourceName": "contracts/access/KOAccessControls.sol",
       "solcConfig": {
         "version": "0.7.3",
@@ -28,7 +28,8 @@
         }
       },
       "imports": [
-        "@openzeppelin/contracts/access/AccessControl.sol"
+        "@openzeppelin/contracts/access/AccessControl.sol",
+        "@openzeppelin/contracts/GSN/Context.sol"
       ],
       "versionPragmas": [
         "0.7.3"
@@ -178,8 +179,8 @@
       ]
     },
     "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/contracts/core/KnownOriginDigitalAssetV3.sol": {
-      "lastModificationDate": 1610918341613,
-      "contentHash": "8485d3451f9df96284c268ccdd77c772",
+      "lastModificationDate": 1611317121240,
+      "contentHash": "45ba49cc0a944522a45223721b088e31",
       "sourceName": "contracts/core/KnownOriginDigitalAssetV3.sol",
       "solcConfig": {
         "version": "0.7.3",
@@ -205,11 +206,13 @@
       },
       "imports": [
         "@openzeppelin/contracts/math/SafeMath.sol",
+        "@openzeppelin/contracts/GSN/Context.sol",
         "@openzeppelin/contracts/introspection/ERC165.sol",
         "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
         "@openzeppelin/contracts/utils/EnumerableMap.sol",
         "./IKODAV3.sol",
-        "../access/KOAccessControls.sol"
+        "../access/KOAccessControls.sol",
+        "./storage/EditionRegistry.sol"
       ],
       "versionPragmas": [
         "0.7.3"
@@ -855,6 +858,78 @@
       ],
       "artifacts": [
         "ERC721ReceiverMock"
+      ]
+    },
+    "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/contracts/core/storage/EditionRegistry.sol": {
+      "lastModificationDate": 1611319355432,
+      "contentHash": "e5f697e4bddb10af0599ee332b2e9876",
+      "sourceName": "contracts/core/storage/EditionRegistry.sol",
+      "solcConfig": {
+        "version": "0.7.3",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/GSN/Context.sol",
+        "./IEditionRegistry.sol",
+        "../../access/KOAccessControls.sol"
+      ],
+      "versionPragmas": [
+        "0.7.3"
+      ],
+      "artifacts": [
+        "EditionRegistry"
+      ]
+    },
+    "/Users/jamesmorgan/Dropbox/workspace-blockrocket/knownorigin/known-origin-contracts-next-gen/contracts/core/storage/IEditionRegistry.sol": {
+      "lastModificationDate": 1611319399808,
+      "contentHash": "9da8de96811c17383291357e6234c21b",
+      "sourceName": "contracts/core/storage/IEditionRegistry.sol",
+      "solcConfig": {
+        "version": "0.7.3",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.7.3"
+      ],
+      "artifacts": [
+        "IEditionRegistry"
       ]
     }
   }

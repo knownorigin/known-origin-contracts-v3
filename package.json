@@ -7,6 +7,10 @@
   "author": "James Morgan",
   "license": "MIT",
   "private": true,
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test"
+  },
   "devDependencies": {
     "hardhat": "^2.0.4"
   },

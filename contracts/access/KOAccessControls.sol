@@ -2,6 +2,7 @@
 pragma solidity 0.7.3;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/GSN/Context.sol";
 
 // TODO how to handle existing KO access controls and self service access control/frequency controls?
 
