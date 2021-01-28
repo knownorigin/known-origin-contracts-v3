@@ -34,8 +34,6 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     // Token symbol
     string public symbol;
 
-    uint256 public totalSupply; // FIXME drop this?
-
     struct EditionDetails {
         uint256 editionConfig; // creator and size inside
         string uri; // the referenced data
@@ -75,13 +73,12 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         uint256 nextEditionNumber = editionRegistry.generateNextEditionNumber();
 
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
+
+        // assign balance
         balances[_to] = balances[_to].add(1);
 
         // edition of 1
         _defineEditionConfig(nextEditionNumber, 1, _to, _uri);
-
-        // update contract total supply
-        totalSupply = totalSupply.add(1);
 
         // Single Transfer event for a single token
         emit Transfer(address(0), _to, nextEditionNumber);
@@ -107,9 +104,6 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         // edition of x
         _defineEditionConfig(start, _editionSize, _to, _uri);
 
-        // update contract total supply
-        totalSupply = totalSupply.add(_editionSize);
-
         // Batch event emitting
         // FIXME decide whether to start from 0 as first token or #1
         for (uint i = start; i < end; i++) {
@@ -129,13 +123,12 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         uint256 start = editionRegistry.generateNextEditionNumber();
         uint256 end = start.add(_editionSize);
 
+        // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
+
         // assign balance
         balances[_to] = balances[_to].add(_editionSize);
 
         _defineEditionConfig(start, _editionSize, _to, _uri);
-
-        // update contract total supply
-        totalSupply = totalSupply.add(_editionSize);
 
         // emit EIP-2309 consecutive transfer event
         emit ConsecutiveTransfer(start, end, address(0), _to);
@@ -144,22 +137,22 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     }
 
     function _defineEditionConfig(uint256 _editionNumber, uint256 _editionSize, address _to, string calldata _uri) internal {
-
         // store address and size in config
         uint256 editionConfig = uint256(_to);
-        // shift and store edition size
+
+        // TODO Work out and document the max edition ID we can fit in these bits
+        // shift and store edition size in defined space
         editionConfig |= _editionSize << 160;
 
         // Store edition blob to be the next token pointer
         editionInfo[_editionNumber] = EditionDetails(editionConfig, _uri);
     }
 
+    // TODO edition Token URI lookup
+
     function tokenURI(uint256 _tokenId) external view returns (string memory) {
         // FIXME use resolver for dynamic token URIs
-
         uint256 editionNumber = _editionFromTokenId(_tokenId);
-        console.log("editionNumber %s", editionNumber);
-
         require(editionInfo[editionNumber].editionConfig != 0, "Token ID not found");
         return editionInfo[editionNumber].uri;
     }
@@ -185,7 +178,18 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         );
     }
 
-    function getEditionCreator(uint256 _tokenId)
+    ///////////////////
+    // Creator query //
+    ///////////////////
+
+    function getEditionCreator(uint256 _editionId)
+    public
+    view
+    returns (address _originalCreator) {
+        return _getEditionCreator(_editionId);
+    }
+
+    function getEditionCreatorOfToken(uint256 _tokenId)
     public
     view
     returns (address _originalCreator) {
@@ -199,9 +203,16 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         return address(editionConfig);
     }
 
-    function getEditionSize(uint256 _tokenId) public view returns (uint256 _size) {
-        uint256 editionId = _editionFromTokenId(_tokenId);
-        return _getEditionSize(editionId);
+    ////////////////
+    // Size query //
+    ////////////////
+
+    function getEditionSize(uint256 _editionId) public view returns (uint256 _size) {
+        return _getEditionSize(_editionId);
+    }
+
+    function getEditionSizeOfToken(uint256 _tokenId) public view returns (uint256 _size) {
+        return _getEditionSize(_editionFromTokenId(_tokenId));
     }
 
     function _getEditionSize(uint256 _editionId) internal view returns (uint256 _size) {
@@ -210,11 +221,21 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         return uint256(uint40(editionConfig >> 160));
     }
 
+    /////////////////////
+    // Existence query //
+    /////////////////////
+
     function editionExists(uint256 _editionId) public view returns (bool) {
         EditionDetails storage edition = editionInfo[_editionId];
         // TODO check this logic assumption ...
         return edition.editionConfig > 0;
     }
+
+    // TODO check token method for exists?
+
+    ////////////////
+    // Edition ID //
+    ////////////////
 
     // magic method that defines the maximum range for an edition - this is fix forever - tokens are minted in range
     function _editionFromTokenId(uint256 _tokenId) internal view returns (uint256) {
@@ -240,28 +261,6 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     //////////////
     // Defaults //
     //////////////
-
-    // TODO Do we need a burn? AMG - I would say no
-
-    //    function burn(uint256 _tokenId) external {
-    //        require(accessControls.hasContractRole(_msgSender()) || ownerOf(_tokenId) == _msgSender(), "KODA: Caller does not have permission");
-    //        _burn(_tokenId);
-    //    }
-
-    // Replace a burn with a proxies burn address call ... ?
-
-    //    function _burn(uint256 _tokenId) internal {
-    //        address owner = _ownerOf(_tokenId);
-    //        require(owner != address(0), "ERC721_ZERO_OWNER_ADDRESS");
-    //
-    //        owners[_tokenId] = address(0);
-    //        balances[owner] = balances[owner].sub(1);
-    //        totalSupply = totalSupply.sub(1);
-    //
-    //        // TODO - reduce supply within editionConfig
-    //
-    //        emit Transfer(owner, address(0), _tokenId);
-    //    }
 
     /// @notice Transfers the ownership of an NFT from one address to another address
     /// @dev This works identically to the other function with an extra data parameter,
