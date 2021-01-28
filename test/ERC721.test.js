@@ -12,10 +12,12 @@ const KOAccessControls = artifacts.require('KOAccessControls');
 const EditionRegistry = artifacts.require('EditionRegistry');
 
 contract('ERC721', function (accounts) {
-  const [owner, minter, approved, anotherApproved, operator, other, publisher, creator] = accounts;
+  const [owner, minter, contract, approved, anotherApproved, operator, other, publisher, creator] = accounts;
 
-  const firstTokenId = new BN('1');
-  const secondTokenId = new BN('2');
+  const STARTING_EDITION = '10000';
+
+  const firstTokenId = new BN('11000');
+  const secondTokenId = new BN('12000');
   const nonExistentTokenId = new BN('99999999999');
 
   const RECEIVER_MAGIC_VALUE = '0x150b7a02';
@@ -33,10 +35,9 @@ contract('ERC721', function (accounts) {
     await this.accessControls.grantRole(this.MINTER_ROLE, minter, {from: owner});
 
     // setup edition registry
-    this.STARTING_EDITION = '10000'
     this.editionRegistry = await EditionRegistry.new(
       this.accessControls.address,
-      this.STARTING_EDITION,
+      STARTING_EDITION,
       {from: owner}
     );
 
@@ -47,8 +48,9 @@ contract('ERC721', function (accounts) {
       {from: owner}
     );
 
-    // Set contract as minter role
+    // Set contract roles
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: owner});
+    await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
 
     // enable NFT in the registry contract
     await this.editionRegistry.enableNftContract(this.token.address, {from: owner});
@@ -60,7 +62,7 @@ contract('ERC721', function (accounts) {
     'ERC721Metadata',
   ]);
 
-  describe('metadata', function () {
+  describe.only('metadata', function () {
     it('has a name', async function () {
       expect(await this.token.name()).to.be.equal("KnownOriginDigitalAsset");
     });
@@ -69,34 +71,53 @@ contract('ERC721', function (accounts) {
       expect(await this.token.symbol()).to.be.equal("KODA");
     });
 
-    // describe('token URI', function () {
-    //   beforeEach(async function () {
-    //     await this.token.mint('#blockrocket', publisher, creator);
-    //   });
-    //
-    //   const baseURI = 'https://api.com/v2/';
-    //
-    //   it('it is not empty by default', async function () {
-    //     expect(await this.token.tokenURI(firstTokenId)).to.be.equal('https://api.com/v1/1');
-    //   });
-    //
-    //   it('reverts when queried for non existent token id', async function () {
-    //     await expectRevert(
-    //       this.token.tokenURI(nonExistentTokenId), 'Token ID must exist',
-    //     );
-    //   });
-    //
-    //   it('base URI can be set', async function () {
-    //     await this.token.setBaseURI(baseURI);
-    //     expect(await this.token.baseURI()).to.equal(baseURI);
-    //   });
-    //
-    //   it('tokenId is appended to base URI', async function () {
-    //     await this.token.setBaseURI(baseURI);
-    //
-    //     expect(await this.token.tokenURI(firstTokenId)).to.be.equal(baseURI + firstTokenId);
-    //   });
-    // });
+    describe('mintToken(to, uri) token URI', function () {
+      beforeEach(async function () {
+        await this.token.mintToken(owner, 'my-token-uri', {from: contract});
+      });
+
+      it('it is not empty by default', async function () {
+        expect(await this.token.tokenURI(firstTokenId)).to.be.equal('my-token-uri');
+      });
+
+      it('reverts when queried for non existent token id', async function () {
+        await expectRevert(
+          this.token.tokenURI(nonExistentTokenId), 'Token does not exist',
+        );
+      });
+    });
+
+    describe('mintBatchEdition(editionSize, to, uri) token URI', function () {
+      beforeEach(async function () {
+        await this.token.mintBatchEdition(10, owner, 'my-token-uri', {from: contract});
+      });
+
+      it('it is not empty by default', async function () {
+        expect(await this.token.tokenURI(firstTokenId)).to.be.equal('my-token-uri');
+      });
+
+      it('reverts when queried for non existent token id', async function () {
+        await expectRevert(
+          this.token.tokenURI(nonExistentTokenId), 'Token does not exist',
+        );
+      });
+    });
+
+    describe('mintConsecutiveBatchEdition(editionSize, to, uri) token URI', function () {
+      beforeEach(async function () {
+        await this.token.mintConsecutiveBatchEdition(10, owner, 'my-token-uri', {from: contract});
+      });
+
+      it('it is not empty by default', async function () {
+        expect(await this.token.tokenURI(firstTokenId)).to.be.equal('my-token-uri');
+      });
+
+      it('reverts when queried for non existent token id', async function () {
+        await expectRevert(
+          this.token.tokenURI(nonExistentTokenId), 'Token does not exist',
+        );
+      });
+    });
   });
 
   // context('with minted tokens', function () {

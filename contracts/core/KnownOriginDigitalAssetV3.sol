@@ -12,6 +12,9 @@ import "../access/KOAccessControls.sol";
 import "./storage/EditionRegistry.sol";
 import "../utils/Konstants.sol";
 
+// TODO remove me
+import "hardhat/console.sol";
+
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
@@ -66,7 +69,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     }
 
     function mintToken(address _to, string calldata _uri) external returns (uint256 _tokenId) {
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
+        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
 
         // Edition number is the first token ID
         uint256 nextEditionNumber = editionRegistry.generateNextEditionNumber();
@@ -90,8 +93,8 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     function mintBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
     external
     returns (uint256 _firstTokenId, uint256 _lastTokenId) {
-        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
+        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
 
         uint256 start = editionRegistry.generateNextEditionNumber();
         uint256 end = start.add(_editionSize);
@@ -152,12 +155,13 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     }
 
     function tokenURI(uint256 _tokenId) external view returns (string memory) {
-        // FIXME use resolver
-        return editionInfo[_editionFromTokenId(_tokenId)].uri;
-    }
+        // FIXME use resolver for dynamic token URIs
 
-    function getEditionIdForToken(uint256 _tokenId) public view returns (uint256 _editionId) {
-        return _editionFromTokenId(_tokenId);
+        uint256 editionNumber = _editionFromTokenId(_tokenId);
+        console.log("editionNumber %s", editionNumber);
+
+        require(editionInfo[editionNumber].editionConfig != 0, "Token ID not found");
+        return editionInfo[editionNumber].uri;
     }
 
     function getEditionDetails(uint256 _tokenId)
@@ -186,34 +190,41 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     view
     returns (address _originalCreator) {
         uint256 editionId = _editionFromTokenId(_tokenId);
-        EditionDetails memory edition = editionInfo[editionId]; // FIXME should be storage
-        // Pop off creator
+        return _getEditionCreator(editionId);
+    }
+
+    function _getEditionCreator(uint256 _editionId) internal view returns (address _originalCreator) {
+        EditionDetails storage edition = editionInfo[_editionId];
         uint256 editionConfig = edition.editionConfig;
-        address originCreator = address(editionConfig);
-        return originCreator;
+        return address(editionConfig);
     }
 
     function getEditionSize(uint256 _tokenId) public view returns (uint256 _size) {
         uint256 editionId = _editionFromTokenId(_tokenId);
-        EditionDetails memory edition = editionInfo[editionId]; // FIXME should be storage
+        return _getEditionSize(editionId);
+    }
+
+    function _getEditionSize(uint256 _editionId) internal view returns (uint256 _size) {
+        EditionDetails storage edition = editionInfo[_editionId];
         uint256 editionConfig = edition.editionConfig;
-        uint256 size = uint256(uint40(editionConfig >> 160));
-        return size;
+        return uint256(uint40(editionConfig >> 160));
     }
 
     function editionExists(uint256 _editionId) public view returns (bool) {
-        EditionDetails memory edition = editionInfo[_editionId]; // FIXME should be storage
-        uint256 editionConfig = edition.editionConfig;
-        uint256 size = uint256(uint40(editionConfig >> 160));
-        return size > 0;
+        EditionDetails storage edition = editionInfo[_editionId];
+        // TODO check this logic assumption ...
+        return edition.editionConfig > 0;
     }
 
-    // magic method that defines the maximum range for an edition
-    // this is fix forever
-    // tokens are minted in range
+    // magic method that defines the maximum range for an edition - this is fix forever - tokens are minted in range
     function _editionFromTokenId(uint256 _tokenId) internal view returns (uint256) {
-        require(_ownerOf(_tokenId) != address(0), "Token does not exist");
-        return (_tokenId / MAX_EDITION_SIZE) * MAX_EDITION_SIZE;
+        uint256 editionId = (_tokenId / MAX_EDITION_SIZE) * MAX_EDITION_SIZE;
+        require(_ownerOf(_tokenId, editionId) != address(0), "Token does not exist");
+        return editionId;
+    }
+
+    function getEditionIdForToken(uint256 _tokenId) public view returns (uint256 _editionId) {
+        return _editionFromTokenId(_tokenId);
     }
 
     //////////////
@@ -378,13 +389,14 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     public
     view
     returns (address) {
-        address owner = _ownerOf(_tokenId);
+        uint256 editionId = _editionFromTokenId(_tokenId);
+        address owner = _ownerOf(_tokenId, editionId);
         require(owner != address(0), "ERC721: owner query for nonexistent token");
         return owner;
     }
 
     // magic internal method for working out current owner
-    function _ownerOf(uint256 _tokenId) internal view returns (address) {
+    function _ownerOf(uint256 _tokenId, uint256 _editionId) internal view returns (address) {
         // If an owner assigned
         address owner = owners[_tokenId];
         if (owner != address(0)) {
@@ -392,7 +404,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         }
 
         // fall back to edition creator
-        address possibleCreator = getEditionCreator(getEditionIdForToken(_tokenId));
+        address possibleCreator = _getEditionCreator(_editionId);
         if (possibleCreator != address(0)) {
             return possibleCreator;
         }
@@ -408,7 +420,8 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     public
     view
     returns (address) {
-        require(_ownerOf(_tokenId) != address(0), "ERC721: approved query for nonexistent token");
+        uint256 editionId = _editionFromTokenId(_tokenId);
+        require(_ownerOf(_tokenId, editionId) != address(0), "ERC721: approved query for nonexistent token");
         return approvals[_tokenId];
     }
 
