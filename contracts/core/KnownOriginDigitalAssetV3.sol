@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.3; // FIXME bump to 0.8 and drop safemath?
+pragma solidity 0.7.4; // FIXME bump to 0.8 and drop safemath?
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";

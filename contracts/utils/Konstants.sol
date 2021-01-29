@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.3;
+pragma solidity 0.7.4;
 
 //solhint-disable max-line-length
 //solhint-disable no-inline-assembly
