@@ -6,3 +6,5 @@ yarn-error.log
 
 cache
 artifacts
+coverage.json
+coverage

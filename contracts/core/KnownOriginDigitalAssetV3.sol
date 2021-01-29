@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/introspection/ERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/utils/EnumerableMap.sol";
+
 import "./IKODAV3.sol";
 import "../access/KOAccessControls.sol";
 import "./storage/EditionRegistry.sol";
@@ -148,19 +149,24 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         editionInfo[_editionNumber] = EditionDetails(editionConfig, _uri);
     }
 
-    // TODO edition Token URI lookup
-
     function tokenURI(uint256 _tokenId) external view returns (string memory) {
         // FIXME use resolver for dynamic token URIs
         uint256 editionNumber = _editionFromTokenId(_tokenId);
-        require(editionInfo[editionNumber].editionConfig != 0, "Token ID not found");
+        require(editionInfo[editionNumber].editionConfig != 0, "Token does not exist");
+        return editionInfo[editionNumber].uri;
+    }
+
+    function editionURI(uint256 _editionId) external view returns (string memory) {
+        // FIXME use resolver for dynamic token URIs
+        EditionDetails storage editionInfo = editionInfo[_editionId];
+        require(editionInfo[editionNumber].editionConfig != 0, "Token does not exist");
         return editionInfo[editionNumber].uri;
     }
 
     function getEditionDetails(uint256 _tokenId)
     public
     view
-    returns (address _originalCreator, uint256 _editionId, uint256 _size, string memory _uri) {
+    returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails memory edition = editionInfo[editionId];
 
@@ -168,10 +174,12 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         uint256 editionConfig = edition.editionConfig;
         address originCreator = address(editionConfig);
         uint256 size = uint256(uint40(editionConfig >> 160));
+        address owner = _ownerOf(_tokenId, editionId);
 
         // FIXME return struct
         return (
         originCreator,
+        owner,
         editionId,
         size,
         edition.uri
@@ -240,7 +248,6 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     // magic method that defines the maximum range for an edition - this is fix forever - tokens are minted in range
     function _editionFromTokenId(uint256 _tokenId) internal view returns (uint256) {
         uint256 editionId = (_tokenId / MAX_EDITION_SIZE) * MAX_EDITION_SIZE;
-        require(_ownerOf(_tokenId, editionId) != address(0), "Token does not exist");
         return editionId;
     }
 
@@ -263,17 +270,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     //////////////
 
     /// @notice Transfers the ownership of an NFT from one address to another address
-    /// @dev This works identically to the other function with an extra data parameter,
-    ///      except this function just sets data to "".
-    /// @param _from The current owner of the NFT
-    /// @param _to The new owner
-    /// @param _tokenId The NFT to transfer
-    function safeTransferFrom(address _from, address _to, uint256 _tokenId) override public {
-        safeTransferFrom(_from, _to, _tokenId, "");
-    }
-
-    /// @notice Transfers the ownership of an NFT from one address to another address
-    /// @dev Throws unless `_msgSender()` is the current owner, an authorized
+    /// @dev Throws unless `msg.sender` is the current owner, an authorized
     ///      operator, or the approved address for this NFT. Throws if `_from` is
     ///      not the current owner. Throws if `_to` is the zero address. Throws if
     ///      `_tokenId` is not a valid NFT. When transfer is complete, this function
@@ -284,45 +281,117 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     /// @param _to The new owner
     /// @param _tokenId The NFT to transfer
     /// @param _data Additional data with no specified format, sent in call to `_to`
-    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data)
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _tokenId,
+        bytes calldata _data
+    )
     override
-    public {
-        transferFrom(_from, _to, _tokenId);
-        require(_checkOnERC721Received(_from, _to, _tokenId, _data), "ERC721: transfer to non ERC721Receiver implementer");
+    external
+    {
+        transferFrom(
+            _from,
+            _to,
+            _tokenId
+        );
+
+        uint256 receiverCodeSize;
+        assembly {
+            receiverCodeSize := extcodesize(_to)
+        }
+        if (receiverCodeSize > 0) {
+            bytes4 selector = IERC721Receiver(_to).onERC721Received(
+                _msgSender(),
+                _from,
+                _tokenId,
+                _data
+            );
+            require(
+                selector == ERC721_RECEIVED,
+                "ERC721_INVALID_SELECTOR"
+            );
+        }
+    }
+
+    /// @notice Transfers the ownership of an NFT from one address to another address
+    /// @dev This works identically to the other function with an extra data parameter,
+    ///      except this function just sets data to "".
+    /// @param _from The current owner of the NFT
+    /// @param _to The new owner
+    /// @param _tokenId The NFT to transfer
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _tokenId
+    )
+    override
+    external
+    {
+        transferFrom(
+            _from,
+            _to,
+            _tokenId
+        );
+
+        uint256 receiverCodeSize;
+        assembly {
+            receiverCodeSize := extcodesize(_to)
+        }
+        if (receiverCodeSize > 0) {
+            bytes4 selector = IERC721Receiver(_to).onERC721Received(
+                _msgSender(),
+                _from,
+                _tokenId,
+                ""
+            );
+            require(
+                selector == ERC721_RECEIVED,
+                "ERC721_INVALID_SELECTOR"
+            );
+        }
     }
 
     /// @notice Change or reaffirm the approved address for an NFT
     /// @dev The zero address indicates there is no approved address.
-    ///      Throws unless `_msgSender()` is the current NFT owner, or an authorized
+    ///      Throws unless `msg.sender` is the current NFT owner, or an authorized
     ///      operator of the current owner.
     /// @param _approved The new approved NFT controller
     /// @param _tokenId The NFT to approve
     function approve(address _approved, uint256 _tokenId)
     override
-    external {
+    external
+    {
         address owner = ownerOf(_tokenId);
-        require(_approved != owner, "ERC721: approval to current owner");
-
-        require(_msgSender() == owner || isApprovedForAll(owner, _msgSender()), "ERC721: approve caller is not owner nor approved for all");
+        require(
+            _msgSender() == owner || isApprovedForAll(owner, _msgSender()),
+            "ERC721_INVALID_SENDER"
+        );
 
         approvals[_tokenId] = _approved;
-
-        emit Approval(owner, _approved, _tokenId);
+        emit Approval(
+            owner,
+            _approved,
+            _tokenId
+        );
     }
 
     /// @notice Enable or disable approval for a third party ("operator") to manage
-    ///         all of `_msgSender()`'s assets
+    ///         all of `msg.sender`'s assets
     /// @dev Emits the ApprovalForAll event. The contract MUST allow
     ///      multiple operators per owner.
     /// @param _operator Address to add to the set of authorized operators
     /// @param _approved True if the operator is approved, false to revoke approval
     function setApprovalForAll(address _operator, bool _approved)
     override
-    external {
-        require(_operator != _msgSender(), "ERC721: approve to caller");
-
+    external
+    {
         operatorApprovals[_msgSender()][_operator] = _approved;
-        emit ApprovalForAll(_msgSender(), _operator, _approved);
+        emit ApprovalForAll(
+            _msgSender(),
+            _operator,
+            _approved
+        );
     }
 
     /// @notice Count all NFTs assigned to an owner
@@ -334,8 +403,12 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     override
     external
     view
-    returns (uint256){
-        require(_owner != address(0), "ERC721: owner query for nonexistent token");
+    returns (uint256)
+    {
+        require(
+            _owner != address(0),
+            "ERC721_ZERO_OWNER"
+        );
         return balances[_owner];
     }
 
@@ -390,7 +463,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     returns (address) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         address owner = _ownerOf(_tokenId, editionId);
-        require(owner != address(0), "ERC721: owner query for nonexistent token");
+        require(owner != address(0), "ERC721_ZERO_OWNER");
         return owner;
     }
 
@@ -418,9 +491,8 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     override
     public
     view
-    returns (address) {
-        uint256 editionId = _editionFromTokenId(_tokenId);
-        require(_ownerOf(_tokenId, editionId) != address(0), "ERC721: approved query for nonexistent token");
+    returns (address)
+    {
         return approvals[_tokenId];
     }
 
@@ -432,7 +504,8 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     override
     public
     view
-    returns (bool) {
+    returns (bool)
+    {
         return operatorApprovals[_owner][_operator];
     }
 
@@ -449,7 +522,8 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     }
 
     function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory _data)
-    private returns (bool) {
+    private returns (bool)
+    {
         if (!isContract(to)) {
             return true;
         }
