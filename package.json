@@ -10,9 +10,11 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "coverage": "npx hardhat coverage",
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "gas": "REPORT_GAS=true npx hardhat test"
   },
   "devDependencies": {
+    "@codechecks/client": "^0.1.10",
     "@nomiclabs/hardhat-ethers": "^2.0.1",
     "@nomiclabs/hardhat-solhint": "^2.0.0",
     "@nomiclabs/hardhat-truffle5": "^2.0.0",

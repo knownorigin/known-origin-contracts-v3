@@ -22,11 +22,10 @@ contract EditionRegistry is Context, IEditionRegistry, Konstants {
     // Contracts which are allowed to generate new tokens for KO
     mapping(address => bool) public koNftRegistry;
 
-    constructor(KOAccessControls _accessControls, uint256 _startingEditionPointer)
-    public {
+    constructor(KOAccessControls _accessControls, uint256 _startingEditionPointer) {
         accessControls = _accessControls;
 
-        // TODO from KO v3 staring point ... ?
+        // TODO kick off from KO v3 staring point ... ?
         editionPointer = _startingEditionPointer;
     }
 

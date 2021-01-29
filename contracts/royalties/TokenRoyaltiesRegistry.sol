@@ -53,7 +53,7 @@ contract TokenRoyaltiesRegistry is ITokenRoyaltiesRegistry, CloneFactory, Ownabl
     // Some random salt (TODO generate new one ... )
     bytes32 constant SALT = 0x251543af6a222378665a76fe38dbceae4871a070b7fdaf5c6c30cf758dc33cc0;
 
-    constructor(address _baseFundsSplitter) public {
+    constructor(address _baseFundsSplitter) {
         // cloneable base contract for multi party fund splitting
         baseFundsSplitter = _baseFundsSplitter;
 
@@ -77,7 +77,7 @@ contract TokenRoyaltiesRegistry is ITokenRoyaltiesRegistry, CloneFactory, Ownabl
     // ERC 2981 PROXY //
     ////////////////////
 
-    function royaltyInfo(uint256 _tokenId) external override returns (address receiver, uint256 amount) {
+    function royaltyInfo(uint256 _tokenId) external view override returns (address receiver, uint256 amount) {
         // Royalties can be optional
         if (!royaltiesSet[_tokenId]) {
             return (address(0), 0);

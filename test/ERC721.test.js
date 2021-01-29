@@ -1795,6 +1795,13 @@ contract('ERC721', function (accounts) {
     });
   });
 
+
+  // FIXME - missing require() tests
+  // FIXME - missing royaltyInfo test
+  // FIXME - isApprovedForAll() test
+  // FIXME - isContract() test
+  // FIXME - _checkOnERC721Received() test
+
   const validateToken = async ({tokenId, editionId, owner, creator, balance, size, uri}) => {
     console.log(`Validate token ID [${tokenId}] - edition ID [${editionId}]`);
     expect(await this.token.ownerOf(tokenId)).to.equal(owner, "Failed owner validation");

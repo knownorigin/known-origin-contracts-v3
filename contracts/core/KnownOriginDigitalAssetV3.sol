@@ -41,7 +41,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     }
 
     // tokens are minted in batches - the first token ID used is representative of the edition ID (for now)
-    mapping(uint256 => EditionDetails) editionInfo;
+    mapping(uint256 => EditionDetails) editionDetails;
 
     // Mapping of tokenId => owner - only set after initial creation such as a primary sale and or gift
     mapping(uint256 => address) internal owners;
@@ -55,8 +55,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     // Mapping of owner => operator => approved
     mapping(address => mapping(address => bool)) internal operatorApprovals;
 
-    constructor(KOAccessControls _accessControls, IEditionRegistry _editionRegistry)
-    public {
+    constructor(KOAccessControls _accessControls, IEditionRegistry _editionRegistry) {
         accessControls = _accessControls;
         editionRegistry = _editionRegistry;
 
@@ -129,6 +128,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         // assign balance
         balances[_to] = balances[_to].add(_editionSize);
 
+        // Start ID always equals edition ID
         _defineEditionConfig(start, _editionSize, _to, _uri);
 
         // emit EIP-2309 consecutive transfer event
@@ -137,7 +137,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         return (start, end);
     }
 
-    function _defineEditionConfig(uint256 _editionNumber, uint256 _editionSize, address _to, string calldata _uri) internal {
+    function _defineEditionConfig(uint256 _editionId, uint256 _editionSize, address _to, string calldata _uri) internal {
         // store address and size in config
         uint256 editionConfig = uint256(_to);
 
@@ -146,21 +146,22 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         editionConfig |= _editionSize << 160;
 
         // Store edition blob to be the next token pointer
-        editionInfo[_editionNumber] = EditionDetails(editionConfig, _uri);
+        editionDetails[_editionId] = EditionDetails(editionConfig, _uri);
     }
 
+    // FIXME use resolver for dynamic token URIs ... ?
     function tokenURI(uint256 _tokenId) external view returns (string memory) {
-        // FIXME use resolver for dynamic token URIs
-        uint256 editionNumber = _editionFromTokenId(_tokenId);
-        require(editionInfo[editionNumber].editionConfig != 0, "Token does not exist");
-        return editionInfo[editionNumber].uri;
+        uint256 _editionId = _editionFromTokenId(_tokenId);
+        EditionDetails storage edition = editionDetails[_editionId];
+        require(edition.editionConfig != 0, "Token does not exist");
+        return edition.uri;
     }
 
+    // FIXME use resolver for dynamic token URIs ... ?
     function editionURI(uint256 _editionId) external view returns (string memory) {
-        // FIXME use resolver for dynamic token URIs
-        EditionDetails storage editionInfo = editionInfo[_editionId];
-        require(editionInfo[editionNumber].editionConfig != 0, "Token does not exist");
-        return editionInfo[editionNumber].uri;
+        EditionDetails storage edition = editionDetails[_editionId];
+        require(edition.editionConfig != 0, "Token does not exist");
+        return edition.uri;
     }
 
     function getEditionDetails(uint256 _tokenId)
@@ -168,7 +169,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     view
     returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri) {
         uint256 editionId = _editionFromTokenId(_tokenId);
-        EditionDetails memory edition = editionInfo[editionId];
+        EditionDetails memory edition = editionDetails[editionId];
 
         // Extract creator and size of edition
         uint256 editionConfig = edition.editionConfig;
@@ -206,7 +207,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     }
 
     function _getEditionCreator(uint256 _editionId) internal view returns (address _originalCreator) {
-        EditionDetails storage edition = editionInfo[_editionId];
+        EditionDetails storage edition = editionDetails[_editionId];
         uint256 editionConfig = edition.editionConfig;
         return address(editionConfig);
     }
@@ -224,7 +225,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     }
 
     function _getEditionSize(uint256 _editionId) internal view returns (uint256 _size) {
-        EditionDetails storage edition = editionInfo[_editionId];
+        EditionDetails storage edition = editionDetails[_editionId];
         uint256 editionConfig = edition.editionConfig;
         return uint256(uint40(editionConfig >> 160));
     }
@@ -234,7 +235,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     /////////////////////
 
     function editionExists(uint256 _editionId) public view returns (bool) {
-        EditionDetails storage edition = editionInfo[_editionId];
+        EditionDetails storage edition = editionDetails[_editionId];
         // TODO check this logic assumption ...
         return edition.editionConfig > 0;
     }
@@ -246,12 +247,12 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     ////////////////
 
     // magic method that defines the maximum range for an edition - this is fix forever - tokens are minted in range
-    function _editionFromTokenId(uint256 _tokenId) internal view returns (uint256) {
+    function _editionFromTokenId(uint256 _tokenId) internal pure returns (uint256) {
         uint256 editionId = (_tokenId / MAX_EDITION_SIZE) * MAX_EDITION_SIZE;
         return editionId;
     }
 
-    function getEditionIdForToken(uint256 _tokenId) public view returns (uint256 _editionId) {
+    function getEditionIdForToken(uint256 _tokenId) public pure returns (uint256 _editionId) {
         return _editionFromTokenId(_tokenId);
     }
 
@@ -260,7 +261,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     //////////////
 
     // Abstract away token royalty registry, proxy through to the implementation
-    function royaltyInfo(uint256 _tokenId) external override returns (address receiver, uint256 amount) {
+    function royaltyInfo(uint256 _tokenId) external pure override returns (address receiver, uint256 amount) {
         // TODO implement this
         return (address(0), 0);
     }

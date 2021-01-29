@@ -44,8 +44,10 @@ module.exports = {
   },
   gasReporter: {
     currency: 'USD',
-    enabled: true,
-    gasPrice: 100
+    enabled: (process.env.REPORT_GAS) ? true : false,
+    gasPrice: 100,
+    coinmarketcap: "208cdaa4-cf6a-434b-801a-35b46f00cec1", // FIXME re-gen and export this to CI
+    outputFile: "./output"
   },
   networks: {
     ...nonDevelopmentNetworks,

@@ -5,21 +5,21 @@ pragma solidity 0.7.3;
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 contract ERC721ReceiverMock is IERC721Receiver {
-  bytes4 private _retval;
-  bool private _reverts;
+    bytes4 private _retval;
+    bool private _reverts;
 
-  event Received(address operator, address from, uint256 tokenId, bytes data, uint256 gas);
+    event Received(address operator, address from, uint256 tokenId, bytes data, uint256 gas);
 
-  constructor (bytes4 retval, bool reverts) public {
-    _retval = retval;
-    _reverts = reverts;
-  }
+    constructor (bytes4 retval, bool reverts) {
+        _retval = retval;
+        _reverts = reverts;
+    }
 
-  function onERC721Received(address operator, address from, uint256 tokenId, bytes memory data)
-  public override returns (bytes4)
-  {
-    require(!_reverts, "ERC721ReceiverMock: reverting");
-    emit Received(operator, from, tokenId, data, gasleft());
-    return _retval;
-  }
+    function onERC721Received(address operator, address from, uint256 tokenId, bytes memory data)
+    public override returns (bytes4)
+    {
+        require(!_reverts, "ERC721ReceiverMock: reverting");
+        emit Received(operator, from, tokenId, data, gasleft());
+        return _retval;
+    }
 }
