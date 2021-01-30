@@ -12,7 +12,7 @@ import "../utils/Konstants.sol";
 // TODO remove me
 import "hardhat/console.sol";
 
-contract SteppedPricePrimarySaleMarketplace is Context {
+contract SteppedPrimarySaleMarketplace is Context {
     using SafeMath for uint256;
 
     struct Price {
@@ -29,7 +29,6 @@ contract SteppedPricePrimarySaleMarketplace is Context {
         koda = _koda;
     }
 
-
     function setupSale(uint256 editionId, uint256 basePrice, uint256 stepPrice) public view {
 
     }
@@ -42,7 +41,7 @@ contract SteppedPricePrimarySaleMarketplace is Context {
 
     }
 
-    function makePurchase(uint256 editionId) public view {
+    function makePurchase(uint256 editionId) public payable {
 
     }
 

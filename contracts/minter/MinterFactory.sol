@@ -4,7 +4,7 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/GSN/Context.sol";
 
-import "../marketplace/SteppedPricePrimarySaleMarketplace.sol";
+import "../marketplace/SteppedPrimarySaleMarketplace.sol";
 import "../core/KnownOriginDigitalAssetV3.sol";
 
 contract MinterFactory is Context {
@@ -12,14 +12,14 @@ contract MinterFactory is Context {
     KOAccessControls public accessControls;
 
     // TODO extract common marketplace methods to interface
-    SteppedPricePrimarySaleMarketplace public marketplace;
+    SteppedPrimarySaleMarketplace public marketplace;
 
     // TODO extract common minting methods to interface
     KnownOriginDigitalAssetV3 public koda;
 
     // TODO make this GSN relay possible
 
-    constructor(KOAccessControls _accessControls, KnownOriginDigitalAssetV3 _koda, SteppedPricePrimarySaleMarketplace _marketplace) {
+    constructor(KOAccessControls _accessControls, KnownOriginDigitalAssetV3 _koda, SteppedPrimarySaleMarketplace _marketplace) {
         accessControls = _accessControls;
         koda = _koda;
         marketplace = _marketplace;
