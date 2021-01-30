@@ -197,38 +197,6 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     // Creator query //
     ///////////////////
 
-    function facilitateNextPrimarySale(uint256 _editionId)
-    public
-    override
-    view
-    returns (address _receiver, address _creator, uint256 _tokenId) {
-        uint256 tokenId = getNextAvailablePrimarySaleToken(_editionId);
-
-        // TODO implement this properly with richer royalties recipients
-        // TODO expand this to allow for a different receiver than creator
-        address originalCreator = _getEditionCreator(_editionId);
-        return (originalCreator, originalCreator, tokenId);
-    }
-
-    function getNextAvailablePrimarySaleToken(uint256 _editionId)
-    public
-    override
-    view
-    returns (uint256 _tokenId) {
-        uint256 editionSize = _getEditionSize(_editionId);
-
-        for (uint256 tokenId = _editionId; tokenId < (_editionId + editionSize); tokenId++) {
-
-            // TODO does this work if you send it to the zero address ... ?
-            // if no owner set - the creator still has access
-            if (owners[_tokenId] == address(0)) {
-                return tokenId;
-            }
-
-        }
-        revert("No tokens left on the primary market");
-    }
-
     function getEditionCreator(uint256 _editionId)
     public
     override
@@ -322,6 +290,44 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         // TODO expand this to allow for a different receiver than creator
         address originalCreator = _getEditionCreator(_editionId);
         return (originalCreator, originalCreator, DEFAULT_ROYALTY);
+    }
+
+    ////////////////////////////////////
+    // Primary Sale Utioities methods //
+    ////////////////////////////////////
+
+    function facilitateNextPrimarySale(uint256 _editionId)
+    public
+    override
+    view
+    returns (address _receiver, address _creator, uint256 _tokenId) {
+        uint256 tokenId = getNextAvailablePrimarySaleToken(_editionId);
+
+        // TODO implement this properly with richer royalties recipients
+        // TODO expand this to allow for a different receiver than creator
+        address originalCreator = _getEditionCreator(_editionId);
+        return (originalCreator, originalCreator, tokenId);
+    }
+
+    function getNextAvailablePrimarySaleToken(uint256 _editionId)
+    public
+    override
+    view
+    returns (uint256 _tokenId) {
+        uint256 editionSize = _getEditionSize(_editionId);
+
+        uint256 maxTokenId = _editionId + editionSize;
+
+        for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
+
+            // TODO does this work if you send it to the zero address ... ?
+            // if no owner set - the creator still has access
+            if (owners[_tokenId] == address(0)) {
+                return tokenId;
+            }
+
+        }
+        revert("No tokens left on the primary market");
     }
 
     //////////////
@@ -488,6 +494,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     )
     override
     public {
+        // TODO Confirm we have a test for this as its assumed and used in the logic
         require(_to != address(0), "ERC721_ZERO_TO_ADDRESS");
 
         address owner = ownerOf(_tokenId);

@@ -14,7 +14,7 @@ import "hardhat/console.sol";
 
 // TODO - maybe this whole primary sale logic should be part of the base NFT to make is cheaper ... ?
 
-// TODO signature based method for relayer/GSN
+// TODO signature based method for relayer/GSN option
 
 contract SteppedPrimarySaleMarketplace is Context {
     using SafeMath for uint256;
@@ -33,7 +33,7 @@ contract SteppedPrimarySaleMarketplace is Context {
     KOAccessControls public accessControls;
     IKODAV3 public koda;
 
-    mapping(uint256 => Price) pricing;
+    mapping(uint256 => Price) public pricing;
 
     constructor(KOAccessControls _accessControls, IKODAV3 _koda) {
         accessControls = _accessControls;
@@ -48,7 +48,11 @@ contract SteppedPrimarySaleMarketplace is Context {
     // TODO handle zero/free price
 
     function setupSale(uint256 _editionId, uint256 _basePrice, uint256 _stepPrice) public {
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have smart contract role");
+        // TODO enforce who can call this - owner of smart contract
+        //        require(
+        //            accessControls.hasContractRole(_msgSender()),
+        //            "KODA: Caller must have smart contract role"
+        //        );
         require(pricing[_editionId].basePrice == 0, "Marketplace: edition already setup");
 
         pricing[_editionId] = Price(_basePrice, _stepPrice, 0);
@@ -61,8 +65,11 @@ contract SteppedPrimarySaleMarketplace is Context {
     function makePurchase(uint256 _editionId) public payable {
         Price storage price = pricing[_editionId];
 
+        console.log("basePrice %s | currentStep %s | stepPrice %s", price.basePrice, price.currentStep, price.stepPrice);
+
+        // TODO handle step logic
         // Ensure passed price step logic test
-        require(price.basePrice.mul(price.currentStep) == msg.value, "Value provided is not enough");
+        require(price.basePrice <= msg.value, "Value provided is not enough");
 
         // mark token as sold
         price.currentStep = price.currentStep + 1;
@@ -83,6 +90,12 @@ contract SteppedPrimarySaleMarketplace is Context {
         koda.safeTransferFrom(creator, _msgSender(), tokenId);
 
         emit Purchase(_editionId, tokenId, _msgSender(), msg.value);
+    }
+
+    function makePurchaseViaSig() public payable {
+        // consume signature of creator + amount they set
+        // unpack amount defined, confirm ownership and make setupSale
+        // primary owner does not need to submit pricing model to chain in this scenario
     }
 
     function updateSale(uint256 _editionId, uint256 _basePrice, uint256 _stepPrice) public {
