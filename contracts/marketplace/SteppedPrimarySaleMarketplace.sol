@@ -33,6 +33,14 @@ contract SteppedPrimarySaleMarketplace is Context {
     KOAccessControls public accessControls;
     IKODAV3 public koda;
 
+    // TODO handle changes / updates
+
+    // Default KO commission
+    uint256 public KO_COMMISSION_FEE = 150000;
+
+    // 0.00000
+    uint256 public modulo = 1000000;
+
     mapping(uint256 => Price) public pricing;
 
     constructor(KOAccessControls _accessControls, IKODAV3 _koda) {
@@ -67,9 +75,13 @@ contract SteppedPrimarySaleMarketplace is Context {
 
         console.log("basePrice %s | currentStep %s | stepPrice %s", price.basePrice, price.currentStep, price.stepPrice);
 
-        // TODO handle step logic
+        // Determine current price based on current step
+        uint256 cost = price.basePrice.add(
+            price.currentStep.mul(price.stepPrice)
+        );
+
         // Ensure passed price step logic test
-        require(price.basePrice <= msg.value, "Value provided is not enough");
+        require(cost <= msg.value, "Value provided is not enough");
 
         // mark token as sold
         price.currentStep = price.currentStep + 1;
@@ -77,14 +89,15 @@ contract SteppedPrimarySaleMarketplace is Context {
         // get next token to sell along with the royalties recipient and the original creator
         (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
 
-        // TODO handle fees splitting to KO
-        //      - one options is to leave the funds in here to save GAS and allow for withdraw from admin
+        // Determine payment amount
+        // Note: Commission fees are collected and drained to save GAS on purchase
+        uint256 payment = msg.value.sub(
+            msg.value.div(modulo).mul(KO_COMMISSION_FEE)
+        );
 
         // send money to creator via royalty hook
-        (bool success,) = receiver.call{value : msg.value}("");
+        (bool success,) = receiver.call{value : payment}("");
         require(success, "Creator payment failed");
-
-        // TODO could we expose a primarySaleTransfer() which is called via only smart contract role and looks up creator to save GAS?
 
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, _msgSender(), tokenId);
@@ -103,5 +116,14 @@ contract SteppedPrimarySaleMarketplace is Context {
     }
 
     function cancelSale(uint256 _editionId) public {
+    }
+
+    // TODO also add drain ERC20 method
+
+    // drain money
+    function drainEth(address recipient) public {
+        require(accessControls.hasAdminRole(_msgSender()), "Only admin can call this");
+        (bool success,) = recipient.call{value : address(this).balance}("");
+        require(success, "Creator payment failed");
     }
 }
