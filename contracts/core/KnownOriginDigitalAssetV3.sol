@@ -191,6 +191,25 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     // Creator query //
     ///////////////////
 
+    function getNextAvailablePrimarySaleToken(uint256 _editionId)
+    public
+    override
+    view
+    returns (uint256 _tokenId) {
+        uint256 editionSize = _getEditionSize(_editionId);
+
+        for (uint256 tokenId = _editionId; tokenId < (_editionId + editionSize); tokenId++) {
+
+            // TODO does this work if you send it to the zero address ... ?
+            // if no owner set - the creator still has access
+            if (owners[_tokenId] == address(0)) {
+                return tokenId;
+            }
+
+        }
+        revert("No tokens left on the primary market");
+    }
+
     function getEditionCreator(uint256 _editionId)
     public
     override

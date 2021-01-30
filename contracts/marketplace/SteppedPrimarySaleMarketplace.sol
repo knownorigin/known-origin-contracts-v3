@@ -45,13 +45,41 @@ contract SteppedPrimarySaleMarketplace is Context {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have smart contract role");
         require(pricing[_editionId].basePrice == 0, "Marketplace: edition already setup");
 
-        pricing[_editionId] = Price(_basePrice, _stepPrice);
+        pricing[_editionId] = Price(_basePrice, _stepPrice, 0);
 
         emit SaleStarted(_editionId, _basePrice, _stepPrice);
     }
 
-    function makePurchase(uint256 _editionId) public payable {
+    // TODO Surge pricing and over payment ... ?
 
+    function makePurchase(uint256 _editionId) public payable {
+        Price storage price = pricing[_editionId];
+
+        // Ensure passed price step logic test
+        require(price.basePrice.mul(price.currentStep) == msg.value, "Value provided is not enough");
+
+        // get next token to sell
+        uint256 tokenId = koda.getNextAvailablePrimarySaleToken(_editionId);
+
+        // mark token as sold
+        price.currentStep = price.currentStep + 1;
+
+        // TODO handle fees splitting to KO
+
+        // send money to creator via royalty hook
+        (address receiver,) = koda.royaltyInfo(tokenId);
+        (bool success,) = receiver.call{value : msg.value}("");
+        require(success, "Creator payment failed");
+
+        // TODO could we expose a primarySaleTransfer() which is called via only smart contract role and looks up creator to save GAS?
+
+        // get creator
+        address creator = koda.getEditionCreator(_editionId);
+
+        // send token to buyer
+        koda.safeTransferFrom(creator, _msgSender(), tokenId);
+
+        // TODO emit event
     }
 
     function updateSale(uint256 _editionId, uint256 _basePrice, uint256 _stepPrice) public {

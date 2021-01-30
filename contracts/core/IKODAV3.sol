@@ -26,4 +26,6 @@ IERC2981  // royalties
     function getEditionIdForToken(uint256 _tokenId) external pure returns (uint256 _editionId);
 
     function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri);
+
+    function getNextAvailablePrimarySaleToken(uint256 _editionId) external view returns (uint256 _tokenId);
 }
