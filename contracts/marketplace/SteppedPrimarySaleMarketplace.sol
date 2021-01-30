@@ -16,7 +16,6 @@ contract SteppedPrimarySaleMarketplace is Context {
     using SafeMath for uint256;
 
     struct Price {
-        uint256 editionId;
         uint256 basePrice;
         uint256 stepPrice;
     }
@@ -24,12 +23,18 @@ contract SteppedPrimarySaleMarketplace is Context {
     KOAccessControls public accessControls;
     IKODAV3 public koda;
 
+    mapping(uint256 => Price) pricing;
+
     constructor(KOAccessControls _accessControls, IKODAV3 _koda) {
         accessControls = _accessControls;
         koda = _koda;
     }
 
+    // TODO handle zero/free price
+
     function setupSale(uint256 editionId, uint256 basePrice, uint256 stepPrice) public view {
+        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have smart contract role");
+        require(pricing[editionId].basePrice == 0, "Marketplace: edition already setup");
 
     }
 
