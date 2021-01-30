@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/introspection/ERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin/contracts/utils/EnumerableMap.sol";
 
 import "./IKODAV3.sol";
 import "../access/KOAccessControls.sol";
@@ -166,6 +165,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
 
     function getEditionDetails(uint256 _tokenId)
     public
+    override
     view
     returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri) {
         uint256 editionId = _editionFromTokenId(_tokenId);
@@ -193,6 +193,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
 
     function getEditionCreator(uint256 _editionId)
     public
+    override
     view
     returns (address _originalCreator) {
         return _getEditionCreator(_editionId);
@@ -200,6 +201,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
 
     function getEditionCreatorOfToken(uint256 _tokenId)
     public
+    override
     view
     returns (address _originalCreator) {
         uint256 editionId = _editionFromTokenId(_tokenId);
@@ -216,11 +218,11 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     // Size query //
     ////////////////
 
-    function getEditionSize(uint256 _editionId) public view returns (uint256 _size) {
+    function getEditionSize(uint256 _editionId) public override view returns (uint256 _size) {
         return _getEditionSize(_editionId);
     }
 
-    function getEditionSizeOfToken(uint256 _tokenId) public view returns (uint256 _size) {
+    function getEditionSizeOfToken(uint256 _tokenId) public override view returns (uint256 _size) {
         return _getEditionSize(_editionFromTokenId(_tokenId));
     }
 
@@ -234,7 +236,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     // Existence query //
     /////////////////////
 
-    function editionExists(uint256 _editionId) public view returns (bool) {
+    function editionExists(uint256 _editionId) public override view returns (bool) {
         EditionDetails storage edition = editionDetails[_editionId];
         // TODO check this logic assumption ...
         return edition.editionConfig > 0;
@@ -252,7 +254,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         return editionId;
     }
 
-    function getEditionIdForToken(uint256 _tokenId) public pure returns (uint256 _editionId) {
+    function getEditionIdForToken(uint256 _tokenId) public override pure returns (uint256 _editionId) {
         return _editionFromTokenId(_tokenId);
     }
 
