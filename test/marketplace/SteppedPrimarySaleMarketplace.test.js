@@ -67,7 +67,6 @@ contract('ERC721', function (accounts) {
     const BASE_PRICE = ether('1');
     const STEP_PRICE = new BN('0');
 
-
     beforeEach(async () => {
       // Ensure owner is approved as this will fail if not
       await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});

@@ -315,15 +315,21 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     view
     returns (uint256 _tokenId) {
         uint256 editionSize = _getEditionSize(_editionId);
+        address creator = _getEditionCreator(_editionId);
 
         uint256 maxTokenId = _editionId + editionSize;
+
+        // TODO test this with edition of 1000
 
         // TODo replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
 
-            // TODO does this work if you send it to the zero address ... ?
+            // TODO add a test to make sure this work after being minted, transferred and then transferred back to the original creator
+
+            // TODO does this work if you send it to the zero address - can you sent to zero?
+
             // if no owner set - the creator still has access
-            if (owners[_tokenId] == address(0)) {
+            if (owners[_tokenId] == address(0) || owners[_tokenId] == creator) {
                 return tokenId;
             }
 
