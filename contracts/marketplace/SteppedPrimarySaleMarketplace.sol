@@ -12,10 +12,16 @@ import "../utils/Konstants.sol";
 // TODO remove me
 import "hardhat/console.sol";
 
+// TODO - maybe this whole primary sale logic should be part of the base NFT to make is cheaper ... ?
+
+// TODO signature based method for relayer/GSN
+
 contract SteppedPrimarySaleMarketplace is Context {
     using SafeMath for uint256;
 
     event SaleStarted(uint256 indexed editionId, uint256 basePrice, uint256 stepPrice);
+
+    event Purchase(uint256 indexed editionId, uint256 indexed tokenId, address indexed buyer, uint256 price);
 
     struct Price {
         // TODO combine price and step into a single slot
@@ -58,28 +64,25 @@ contract SteppedPrimarySaleMarketplace is Context {
         // Ensure passed price step logic test
         require(price.basePrice.mul(price.currentStep) == msg.value, "Value provided is not enough");
 
-        // get next token to sell
-        uint256 tokenId = koda.getNextAvailablePrimarySaleToken(_editionId);
-
         // mark token as sold
         price.currentStep = price.currentStep + 1;
 
+        // get next token to sell along with the royalties recipient and the original creator
+        (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
+
         // TODO handle fees splitting to KO
+        //      - one options is to leave the funds in here to save GAS and allow for withdraw from admin
 
         // send money to creator via royalty hook
-        (address receiver,) = koda.royaltyInfo(tokenId);
         (bool success,) = receiver.call{value : msg.value}("");
         require(success, "Creator payment failed");
 
         // TODO could we expose a primarySaleTransfer() which is called via only smart contract role and looks up creator to save GAS?
 
-        // get creator
-        address creator = koda.getEditionCreator(_editionId);
-
-        // send token to buyer
+        // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, _msgSender(), tokenId);
 
-        // TODO emit event
+        emit Purchase(_editionId, tokenId, _msgSender(), msg.value);
     }
 
     function updateSale(uint256 _editionId, uint256 _basePrice, uint256 _stepPrice) public {

@@ -28,4 +28,10 @@ IERC2981  // royalties
     function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri);
 
     function getNextAvailablePrimarySaleToken(uint256 _editionId) external view returns (uint256 _tokenId);
+
+    // Utility method to get all data needed for the next primary sale
+    function facilitateNextPrimarySale(uint256 _editionId) external view returns (address _receiver, address _creator, uint256 _tokenId);
+
+    // Expanded royalty method for the edition, not token
+    function royaltyAndCreatorInfo(uint256 _editionId) external view returns (address _receiver, address _creator, uint256 _amount);
 }

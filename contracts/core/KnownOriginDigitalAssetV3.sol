@@ -15,6 +15,8 @@ import "../utils/Konstants.sol";
 // TODO remove me
 import "hardhat/console.sol";
 
+// TODO ERC-20 permit style for erc-721 (https://eips.ethereum.org/EIPS/eip-2612)
+
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
@@ -53,6 +55,10 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
 
     // Mapping of owner => operator => approved
     mapping(address => mapping(address => bool)) internal operatorApprovals;
+
+    // TODO allow configurable
+    // TODO confirm default decimal expectations
+    uint256 constant DEFAULT_ROYALTY = 100000;
 
     constructor(KOAccessControls _accessControls, IEditionRegistry _editionRegistry) {
         accessControls = _accessControls;
@@ -191,6 +197,19 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     // Creator query //
     ///////////////////
 
+    function facilitateNextPrimarySale(uint256 _editionId)
+    public
+    override
+    view
+    returns (address _receiver, address _creator, uint256 _tokenId) {
+        uint256 tokenId = getNextAvailablePrimarySaleToken(_editionId);
+
+        // TODO implement this properly with richer royalties recipients
+        // TODO expand this to allow for a different receiver than creator
+        address originalCreator = _getEditionCreator(_editionId);
+        return (originalCreator, originalCreator, tokenId);
+    }
+
     function getNextAvailablePrimarySaleToken(uint256 _editionId)
     public
     override
@@ -261,7 +280,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
         return edition.editionConfig > 0;
     }
 
-    // TODO check token method for exists?
+    // TODO check token method for exists
 
     ////////////////
     // Edition ID //
@@ -282,9 +301,27 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     //////////////
 
     // Abstract away token royalty registry, proxy through to the implementation
-    function royaltyInfo(uint256 _tokenId) external pure override returns (address receiver, uint256 amount) {
-        // TODO implement this
-        return (address(0), 0);
+    function royaltyInfo(uint256 _tokenId)
+    external
+    view
+    override
+    returns (address receiver, uint256 amount) {
+        // TODO implement this properly with richer royalties recipients
+
+        address creator = _getEditionCreator(_editionFromTokenId(_tokenId));
+        return (creator, DEFAULT_ROYALTY);
+    }
+
+    // Expanded method at edition level and expanding on the funds receiver and the creator
+    function royaltyAndCreatorInfo(uint256 _editionId)
+    external
+    view
+    override
+    returns (address receiver, address creator, uint256 amount) {
+        // TODO implement this properly with richer royalties recipients
+        // TODO expand this to allow for a different receiver than creator
+        address originalCreator = _getEditionCreator(_editionId);
+        return (originalCreator, originalCreator, DEFAULT_ROYALTY);
     }
 
     //////////////
