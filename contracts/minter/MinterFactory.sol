@@ -4,7 +4,7 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/GSN/Context.sol";
 
-import "../marketplace/SteppedPrimarySaleMarketplace.sol";
+import "../marketplace/primary/SteppedPrimarySaleMarketplace.sol";
 import "../core/KnownOriginDigitalAssetV3.sol";
 
 contract MinterFactory is Context {

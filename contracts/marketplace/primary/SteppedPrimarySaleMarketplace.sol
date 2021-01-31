@@ -5,9 +5,9 @@ pragma solidity 0.7.4;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
 
-import "../core/IKODAV3.sol";
-import "../access/KOAccessControls.sol";
-import "../utils/Konstants.sol";
+import "../../core/IKODAV3.sol";
+import "../../access/KOAccessControls.sol";
+import "../../utils/Konstants.sol";
 
 // TODO remove me
 import "hardhat/console.sol";
