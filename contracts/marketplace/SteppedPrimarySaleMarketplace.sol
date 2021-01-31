@@ -35,11 +35,9 @@ contract SteppedPrimarySaleMarketplace is Context {
 
     // TODO handle changes / updates
 
-    // Default KO commission
-    uint256 public KO_COMMISSION_FEE = 150000;
-
-    // 0.00000
-    uint256 public modulo = 1000000;
+    // Default KO commission of 15%
+    uint256 public KO_COMMISSION_FEE = 1500;
+    uint256 public modulo = 10000; // TODO increase accuracy
 
     mapping(uint256 => Price) public pricing;
 
@@ -73,7 +71,7 @@ contract SteppedPrimarySaleMarketplace is Context {
     function makePurchase(uint256 _editionId) public payable {
         Price storage price = pricing[_editionId];
 
-        console.log("basePrice %s | currentStep %s | stepPrice %s", price.basePrice, price.currentStep, price.stepPrice);
+//        console.log("basePrice %s | currentStep %s | stepPrice %s", price.basePrice, price.currentStep, price.stepPrice);
 
         // Determine current price based on current step
         uint256 cost = price.basePrice.add(
@@ -95,6 +93,8 @@ contract SteppedPrimarySaleMarketplace is Context {
             msg.value.div(modulo).mul(KO_COMMISSION_FEE)
         );
 
+        console.log("payment %s | msg.value %s", payment, msg.value);
+
         // send money to creator via royalty hook
         (bool success,) = receiver.call{value : payment}("");
         require(success, "Creator payment failed");
@@ -105,6 +105,7 @@ contract SteppedPrimarySaleMarketplace is Context {
         emit Purchase(_editionId, tokenId, _msgSender(), msg.value);
     }
 
+    // TODO
     function makePurchaseViaSig() public payable {
         // consume signature of creator + amount they set
         // unpack amount defined, confirm ownership and make setupSale

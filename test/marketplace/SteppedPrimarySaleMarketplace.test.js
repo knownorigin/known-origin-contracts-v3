@@ -1,4 +1,4 @@
-const {BN, constants, expectEvent, expectRevert} = require('@openzeppelin/test-helpers');
+const {BN, constants, expectEvent, expectRevert, balance} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
 const _ = require('lodash');
@@ -14,7 +14,7 @@ const KOAccessControls = artifacts.require('KOAccessControls');
 const EditionRegistry = artifacts.require('EditionRegistry');
 
 contract('ERC721', function (accounts) {
-  const [owner, minter, contract, collectorA] = accounts;
+  const [owner, minter, contract, collectorA, collectorB] = accounts;
 
   const STARTING_EDITION = '10000';
 
@@ -72,7 +72,7 @@ contract('ERC721', function (accounts) {
       await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
     });
 
-    describe('via mintToken(to, uri)', () => {
+    describe.only('via mintToken(to, uri)', () => {
 
       beforeEach(async () => {
         // create token
@@ -99,27 +99,47 @@ contract('ERC721', function (accounts) {
       describe('when making a primary sale purchase', async () => {
 
         beforeEach(async () => {
-          await this.marketplace.makePurchase(firstEditionTokenId, {from: collectorA, value: BASE_PRICE});
+          this.minterTracker = await balance.tracker(minter)
+          this.marketplaceTracker = await balance.tracker(this.marketplace.address);
+          ({logs: this.logs} = await this.marketplace.makePurchase(firstEditionTokenId, {
+            from: collectorA,
+            value: BASE_PRICE,
+            gasPrice: 0
+          }));
         });
 
         it('token is transferred', async () => {
           expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
         });
 
-        it('royalties paid', async () => {
-          // TODO
+        it('commission paid to minter', async () => {
+          const minterTracker = await this.minterTracker.delta('wei');
+          expect(minterTracker).to.be.bignumber.equal(ether('0.85'));
         });
 
-        it('commission paid', async () => {
-          // TODO
+        it('commission paid to KO', async () => {
+          const marketplaceTracker = await this.marketplaceTracker.delta('wei');
+          expect(marketplaceTracker).to.be.bignumber.equal(ether('0.15'));
+        });
+
+        it('emits event', async () => {
+          expectEvent.inLogs(this.logs, 'Purchase', {
+            editionId: firstEditionTokenId,
+            tokenId: firstEditionTokenId,
+            buyer: collectorA,
+            price: BASE_PRICE
+          });
         });
 
         it('cannot be bought again', async () => {
-          //
+          await expectRevert(
+            this.marketplace.makePurchase(firstEditionTokenId, {from: collectorB, value: '0'}),
+            "Value provided is not enough"
+          );
         });
 
-        it('cannot be re-sold on primary', async () => {
-          //
+        it('cannot be re-sold on primary after creator has transferred asset', async () => {
+          // TODO
         });
 
         it('edition and token data updated accordingly', async () => {
