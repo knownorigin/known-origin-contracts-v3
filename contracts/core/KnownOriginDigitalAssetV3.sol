@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "./IKODAV3.sol";
 import "../access/KOAccessControls.sol";
 import "./storage/EditionRegistry.sol";
-import "../utils/Konstants.sol";
+import "../core/Konstants.sol";
 
 // TODO remove me
 import "hardhat/console.sol";
@@ -20,7 +20,7 @@ import "hardhat/console.sol";
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
+contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Konstants, Context {
     using SafeMath for uint256;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
@@ -254,11 +254,11 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Context, Konstants {
     // Edition ID //
     ////////////////
 
-    // magic method that defines the maximum range for an edition - this is fix forever - tokens are minted in range
-    function _editionFromTokenId(uint256 _tokenId) internal pure returns (uint256) {
-        uint256 editionId = (_tokenId / MAX_EDITION_SIZE) * MAX_EDITION_SIZE;
-        return editionId;
-    }
+//    // magic method that defines the maximum range for an edition - this is fix forever - tokens are minted in range
+//    function _editionFromTokenId(uint256 _tokenId) internal pure returns (uint256) {
+//        uint256 editionId = (_tokenId / MAX_EDITION_SIZE) * MAX_EDITION_SIZE;
+//        return editionId;
+//    }
 
     function getEditionIdForToken(uint256 _tokenId) public override pure returns (uint256 _editionId) {
         return _editionFromTokenId(_tokenId);

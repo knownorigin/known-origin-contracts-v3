@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/GSN/Context.sol";
 
 import "../../core/IKODAV3.sol";
 import "../../access/KOAccessControls.sol";
-import "../../utils/Konstants.sol";
+import "../../core/Konstants.sol";
 
 // TODO remove me
 import "hardhat/console.sol";
@@ -33,9 +33,9 @@ contract OffersPrimarySaleMarketplace is Context {
 
     // TODO
     //  - method for verifying signature
-    //  - placeBid() (on and off chain)
-    //  - rejectBid() (on and off chain)
-    //  - withdrawBid() (on and off chain)
-    //  - acceptBid() (on and off chain)
+    //      - placeBid() (on and off chain)
+    //      - rejectBid() (on and off chain)
+    //      - withdrawBid() (on and off chain)
+    //      - acceptBid() (on and off chain)
 
 }

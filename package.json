@@ -8,7 +8,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "compile": "npx hardhat compile",
+    "compile": "npx hardhat compile --show-stack-traces",
     "coverage": "npx hardhat coverage",
     "test": "npx hardhat test",
     "gas": "REPORT_GAS=true npx hardhat test"

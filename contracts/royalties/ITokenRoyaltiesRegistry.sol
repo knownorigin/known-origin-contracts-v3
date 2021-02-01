@@ -2,7 +2,7 @@
 
 pragma solidity 0.7.4;
 
-import "./IERC2981.sol";
+import "../core/IERC2981.sol";
 
 interface ITokenRoyaltiesRegistry is IERC2981 {
 

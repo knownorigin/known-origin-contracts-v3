@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/GSN/Context.sol";
 
 import "../../core/IKODAV3.sol";
 import "../../access/KOAccessControls.sol";
-import "../../utils/Konstants.sol";
+import "../../core/Konstants.sol";
 
 // TODO remove me
 import "hardhat/console.sol";

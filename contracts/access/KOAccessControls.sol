@@ -20,6 +20,9 @@ contract KOAccessControls is AccessControl {
     // Lookups //
     /////////////
 
+   // TODO make context aware
+   // TODO expose method which uses _msgSender()
+
     function hasAdminRole(address _address) public view returns (bool) {
         return hasRole(DEFAULT_ADMIN_ROLE, _address);
     }

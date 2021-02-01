@@ -3,7 +3,7 @@
 pragma solidity 0.7.4;
 
 import "./IERC2309.sol";
-import "../royalties/IERC2981.sol";
+import "./IERC2981.sol";
 import "@openzeppelin/contracts/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
