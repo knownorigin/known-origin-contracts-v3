@@ -61,7 +61,7 @@ contract('ERC721', function (accounts) {
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.marketplace.address, {from: owner});
   });
 
-  describe.only('can mint token and make initial primary sale', () => {
+  describe('can mint token and make initial primary sale', () => {
 
     // Basically buy now as set price and no step per-sale
     const BASE_PRICE = ether('1');
@@ -72,7 +72,7 @@ contract('ERC721', function (accounts) {
       await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
     });
 
-    describe.only('via mintToken(to, uri)', () => {
+    describe('via mintToken(to, uri)', () => {
 
       beforeEach(async () => {
         // create token

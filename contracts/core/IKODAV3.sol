@@ -8,10 +8,10 @@ import "@openzeppelin/contracts/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 interface IKODAV3 is
-IERC165, // contract introspection
+IERC165, // Contract introspection
 IERC721, // NFTs
-IERC2309, // Consecutive batch mint (optional)
-IERC2981  // royalties
+IERC2309, // Consecutive batch mint
+IERC2981  // Royalties
 {
     function getEditionCreator(uint256 _editionId) external view returns (address _originalCreator);
 

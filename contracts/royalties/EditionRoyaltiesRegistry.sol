@@ -2,7 +2,6 @@
 
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
 
 import "../collaborators/IFundsHandler.sol";
@@ -15,12 +14,11 @@ import "../core/IKODAV3.sol";
 import "../core/Konstants.sol";
 import "../utils/CloneFactory.sol";
 
-contract EditionRoyaltiesRegistry is IERC2981, Konstants, Context {
-    using SafeMath for uint256;
+contract EditionRoyaltiesRegistry is IERC2981, CloneFactory, Konstants, Context {
 
     // EIP712 Precomputed hashes:
     // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)")
-    bytes32 constant EIP712DOMAINTYPE_HASH = 0xd87cd6ef79d4e2b95e15ce8abf732db51ec771f1ca2edccf22a46c729ac56472;
+    bytes32 constant EIP712_DOMAIN_TYPE_HASH = 0xd87cd6ef79d4e2b95e15ce8abf732db51ec771f1ca2edccf22a46c729ac56472;
 
     // hash for EIP712, computed from contract address
     bytes32 public DOMAIN_SEPARATOR;
@@ -73,7 +71,7 @@ contract EditionRoyaltiesRegistry is IERC2981, Konstants, Context {
 
         // Define on creation as needs to include this address
         DOMAIN_SEPARATOR = keccak256(abi.encode(
-                EIP712DOMAINTYPE_HASH, // pre-computed hash
+                EIP712_DOMAIN_TYPE_HASH, // pre-computed hash
                 keccak256("EditionRoyaltiesRegistry"), // NAME_HASH
                 keccak256("1"), // VERSION_HASH
                 chainId, // chainId
@@ -151,9 +149,7 @@ contract EditionRoyaltiesRegistry is IERC2981, Konstants, Context {
         _validateAgreementSigs(_msgSender(), expectedSignedAgreement, participants, sigV, sigR, sigS);
 
         // Create a micro funds recipient - this will be where all money is now directed on every sale
-        //        address splitter = createClone(baseFundsSplitter);
-        address splitter = address(0);
-        // TODO fix compile error
+        address splitter = createClone(baseFundsSplitter);
 
         // IFundsHandler instance for handling all funds - this should not revert on receiving funds
         FundsReceiver(payable(splitter)).init(participants, splits);
@@ -183,7 +179,9 @@ contract EditionRoyaltiesRegistry is IERC2981, Konstants, Context {
             require(recovered == participants[i], "Agreement not reached");
 
             // work out if the caller participant as only a participant can agree on it
-            if (!callerIsParticipant) callerIsParticipant = msgSender == recovered;
+            if (!callerIsParticipant) {
+                callerIsParticipant = msgSender == recovered;
+            }
         }
 
         // TODO is there a better way of doing this, its late - this looks sloppy?
@@ -191,7 +189,7 @@ contract EditionRoyaltiesRegistry is IERC2981, Konstants, Context {
     }
 
     // Note: these arrays are order dependant
-    function _computeHash(uint256 _editionId, address[] calldata _participants, uint256[] calldata _splits) internal returns (bytes32) {
+    function _computeHash(uint256 _editionId, address[] calldata _participants, uint256[] calldata _splits) internal pure returns (bytes32) {
         // EIP712 scheme: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md
         // create hash of expected signature params
         return keccak256(

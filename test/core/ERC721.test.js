@@ -93,7 +93,7 @@ contract('ERC721', function (accounts) {
 
     describe('mintBatchEdition(editionSize, to, uri) token URI', () => {
       beforeEach(async () => {
-        await this.token.mintBatchEdition(10, owner, 'my-token-uri', {from: contract});
+        await this.token.mintBatchEdition(25, owner, 'my-token-uri', {from: contract});
       });
 
       it('it is not empty by default', async () => {
@@ -109,7 +109,7 @@ contract('ERC721', function (accounts) {
 
     describe('mintConsecutiveBatchEdition(editionSize, to, uri) token URI', () => {
       beforeEach(async () => {
-        await this.token.mintConsecutiveBatchEdition(10, owner, 'my-token-uri', {from: contract});
+        await this.token.mintConsecutiveBatchEdition(25, owner, 'my-token-uri', {from: contract});
       });
 
       it('it is not empty by default', async () => {
