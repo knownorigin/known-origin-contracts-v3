@@ -216,7 +216,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
 
         uint256 koCommission = _paymentAmount.div(modulo).mul(platformPrimarySaleCommission);
         (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
-        require(koCommissionSuccess, "Edition payment failed");
+        require(koCommissionSuccess, "Edition commission payment failed");
 
         (bool success,) = _receiver.call{value : _paymentAmount.sub(koCommission)}("");
         require(success, "Edition payment failed");
@@ -372,12 +372,12 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
         // pay royalties
         uint256 creatorRoyalties = _paymentAmount.div(modulo).mul(secondarySaleRoyalty);
         (bool creatorSuccess,) = _originalCreator.call{value : creatorRoyalties}("");
-        require(creatorSuccess, "Edition payment failed");
+        require(creatorSuccess, "Token payment failed");
 
         // pay platform fee
         uint256 koCommission = _paymentAmount.div(modulo).mul(platformSecondarySaleCommission);
         (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
-        require(koCommissionSuccess, "Edition payment failed");
+        require(koCommissionSuccess, "Token commission payment failed");
 
         // pay seller
         (bool success,) = _receiver.call{value : _paymentAmount.sub(creatorRoyalties).sub(koCommission)}("");

@@ -20,7 +20,7 @@ contract KODAV3Core is Konstants, Context {
     uint256 public platformSecondarySaleCommission = 25000;  // 2.5%
 
     // precision
-    uint256 public modulo = 10000;
+    uint256 public modulo = 1000000;
 
     // Minimum bid/list amount
     uint256 public minBidAmount = 0.01 ether;

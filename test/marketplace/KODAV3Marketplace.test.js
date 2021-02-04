@@ -16,7 +16,7 @@ const EditionRegistry = artifacts.require('EditionRegistry');
 const {validateToken} = require('../test-helpers');
 
 contract('ERC721', function (accounts) {
-  const [owner, minter, contract, collectorA, collectorB, collectorC, collectorD] = accounts;
+  const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD] = accounts;
 
   const STARTING_EDITION = '10000';
 
@@ -61,7 +61,7 @@ contract('ERC721', function (accounts) {
     await this.editionRegistry.enableNftContract(this.token.address, {from: owner});
 
     // Create marketplace and enable in whitelist
-    this.marketplace = await KODAV3Marketplace.new(this.accessControls.address, this.token.address, {from: owner})
+    this.marketplace = await KODAV3Marketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner})
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.marketplace.address, {from: owner});
   });
 
