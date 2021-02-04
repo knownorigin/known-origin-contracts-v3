@@ -150,12 +150,15 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     }
 
     // FIXME use resolver for dynamic token URIs ... ?
-    function tokenURI(uint256 _tokenId) external view returns (string memory) {
-        return editionURI(_editionFromTokenId(_tokenId));
+    function editionURI(uint256 _editionId) public view returns (string memory) {
+        EditionDetails storage edition = editionDetails[_editionId];
+        require(edition.editionConfig != 0, "Token does not exist");
+        return edition.uri;
     }
 
     // FIXME use resolver for dynamic token URIs ... ?
-    function editionURI(uint256 _editionId) external view returns (string memory) {
+    function tokenURI(uint256 _tokenId) public view returns (string memory) {
+       uint256 _edition = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[_editionId];
         require(edition.editionConfig != 0, "Token does not exist");
         return edition.uri;
