@@ -8,6 +8,7 @@ const web3 = require('web3');
 const {expect} = require('chai');
 
 const {shouldSupportInterfaces} = require('./SupportsInterface.behavior');
+const {validateToken} = require('../test-helpers');
 
 const ERC721ReceiverMock = artifacts.require('ERC721ReceiverMock');
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
@@ -135,12 +136,13 @@ contract('ERC721', function (accounts) {
       });
 
       it('creates the token', async () => {
-        await validateToken({
+        await validateToken.call(this, {
           tokenId: firstEditionTokenId,
           editionId: '11000',
           owner: owner,
+          ownerBalance: '1',
           creator: owner,
-          balance: '1',
+          creatorBalance: '1',
           size: '1',
           uri: 'my-token-uri'
         })
@@ -168,11 +170,13 @@ contract('ERC721', function (accounts) {
         const start = _.toNumber(firstEditionTokenId);
         const end = start + _.toNumber(editionSize);
         for (const id of _.range(start, end)) {
-          await validateToken({
+          await validateToken.call(this, {
             tokenId: id.toString(),
             editionId: '11000',
             owner: owner,
+            ownerBalance: '1',
             creator: owner,
+            creatorBalance: '1',
             balance: editionSize,
             size: editionSize,
             uri: 'my-token-uri'
@@ -205,11 +209,13 @@ contract('ERC721', function (accounts) {
         const start = _.toNumber(firstEditionTokenId);
         const end = start + _.toNumber(editionSize);
         for (const id of _.range(start, end)) {
-          await validateToken({
+          await validateToken.call(this, {
             tokenId: id.toString(),
             editionId: '11000',
             owner: owner,
+            ownerBalance: '1',
             creator: owner,
+            creatorBalance: '1',
             balance: editionSize,
             size: editionSize,
             uri: 'my-token-uri'
@@ -312,12 +318,11 @@ contract('ERC721', function (accounts) {
         });
 
         it('token validation check', async () => {
-          await validateToken({
+          await validateToken.call(this, {
             tokenId: tokenId,
             editionId: '11000',
             owner: this.toWhom,
             creator: owner,
-            balance: '1',
             size: '1',
             uri: 'my-token-uri'
           })
@@ -838,7 +843,7 @@ contract('ERC721', function (accounts) {
         });
 
         it('token validation check', async () => {
-          await validateToken({
+          await validateToken.call(this, {
             tokenId: tokenId,
             editionId: '11000',
             owner: this.toWhom,
@@ -1364,7 +1369,7 @@ contract('ERC721', function (accounts) {
         });
 
         it('token validation check', async () => {
-          await validateToken({
+          await validateToken.call(this, {
             tokenId: tokenId,
             editionId: '11000',
             owner: this.toWhom,
@@ -1801,47 +1806,5 @@ contract('ERC721', function (accounts) {
   // FIXME - isApprovedForAll() test
   // FIXME - isContract() test
   // FIXME - _checkOnERC721Received() test
-
-  const validateToken = async ({tokenId, editionId, owner, creator, balance, size, uri}) => {
-    console.log(`Validate token ID [${tokenId}] - edition ID [${editionId}]`);
-    expect(await this.token.ownerOf(tokenId)).to.equal(owner, "Failed owner validation");
-    expect(await this.token.balanceOf(owner)).to.be.bignumber.equal(balance, "Failed balance validation");
-
-    ////////////////////
-    // Edition checks //
-    ////////////////////
-
-    const _editionId = await this.token.getEditionIdForToken(tokenId);
-    expect(_editionId).to.bignumber.equal(editionId, "Failed Edition ID validation")
-
-    const _creator = await this.token.getEditionCreator(editionId);
-    expect(_creator).to.equal(creator, "Failed Edition creator validation")
-
-    const _size = await this.token.getEditionSize(editionId);
-    expect(_size).to.bignumber.equal(size, "Failed Edition size validation")
-
-    const exists = await this.token.editionExists(editionId);
-    expect(exists).to.equal(true, "Failed Edition exists validation")
-
-    //////////////////
-    // Token checks //
-    //////////////////
-
-    const _tokenEditionSize = await this.token.getEditionSizeOfToken(tokenId);
-    expect(_tokenEditionSize).to.bignumber.equal(size, "Failed Token edition size validation")
-
-    const _uri = await this.token.tokenURI(tokenId);
-    expect(_uri).to.equal(uri, "Failed token URI validation")
-
-    const _tokenCreator = await this.token.getEditionCreatorOfToken(tokenId);
-    expect(_tokenCreator).to.equal(creator, "Failed token edition creator validation")
-
-    const editionDetails = await this.token.getEditionDetails(tokenId);
-    expect(editionDetails._originalCreator).to.equal(creator, "Failed edition details creator validation")
-    expect(editionDetails._owner).to.equal(owner, "Failed edition details owner validation")
-    expect(editionDetails._editionId).to.bignumber.equal(editionId, "Failed edition details edition validation")
-    expect(editionDetails._size).to.bignumber.equal(size, "Failed edition details size validation")
-    expect(editionDetails._uri).to.equal(uri, "Failed edition details uri validation")
-  }
 
 });

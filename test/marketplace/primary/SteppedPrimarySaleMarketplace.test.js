@@ -6,6 +6,7 @@ const _ = require('lodash');
 const web3 = require('web3');
 const {ether} = require("@openzeppelin/test-helpers");
 
+const {validateToken} = require('../../test-helpers');
 const {expect} = require('chai');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
@@ -143,7 +144,7 @@ contract('ERC721', function (accounts) {
         });
 
         it('edition and token data updated accordingly', async () => {
-          await validateToken({
+          await validateToken.call(this, {
             tokenId: firstEditionTokenId,
             editionId: '11000',
             owner: collectorA,
@@ -159,50 +160,5 @@ contract('ERC721', function (accounts) {
       });
     })
   });
-
-  const validateToken = async ({tokenId, editionId, owner, ownerBalance, creator, creatorBalance, size, uri}) => {
-    console.log(`Validate token ID [${tokenId}] - edition ID [${editionId}]`);
-
-    expect(await this.token.balanceOf(owner)).to.be.bignumber.equal(ownerBalance, "Failed owner balance validation");
-    expect(await this.token.balanceOf(creator)).to.be.bignumber.equal(creatorBalance, "Failed creator balance validation");
-
-    ////////////////////
-    // Edition checks //
-    ////////////////////
-
-    const _editionId = await this.token.getEditionIdForToken(tokenId);
-    expect(_editionId).to.bignumber.equal(editionId, "Failed Edition ID validation")
-
-    const _creator = await this.token.getEditionCreator(editionId);
-    expect(_creator).to.equal(creator, "Failed Edition creator validation")
-
-    const _size = await this.token.getEditionSize(editionId);
-    expect(_size).to.bignumber.equal(size, "Failed Edition size validation")
-
-    const exists = await this.token.editionExists(editionId);
-    expect(exists).to.equal(true, "Failed Edition exists validation")
-
-    //////////////////
-    // Token checks //
-    //////////////////
-
-    expect(await this.token.ownerOf(tokenId)).to.equal(owner, "Failed owner validation");
-
-    const _tokenEditionSize = await this.token.getEditionSizeOfToken(tokenId);
-    expect(_tokenEditionSize).to.bignumber.equal(size, "Failed Token edition size validation")
-
-    const _uri = await this.token.tokenURI(tokenId);
-    expect(_uri).to.equal(uri, "Failed token URI validation")
-
-    const _tokenCreator = await this.token.getEditionCreatorOfToken(tokenId);
-    expect(_tokenCreator).to.equal(creator, "Failed token edition creator validation")
-
-    const editionDetails = await this.token.getEditionDetails(tokenId);
-    expect(editionDetails._originalCreator).to.equal(creator, "Failed edition details creator validation")
-    expect(editionDetails._owner).to.equal(owner, "Failed edition details owner validation")
-    expect(editionDetails._editionId).to.bignumber.equal(editionId, "Failed edition details edition validation")
-    expect(editionDetails._size).to.bignumber.equal(size, "Failed edition details size validation")
-    expect(editionDetails._uri).to.equal(uri, "Failed edition details uri validation")
-  }
 
 });
