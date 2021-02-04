@@ -848,7 +848,6 @@ contract('ERC721', function (accounts) {
             editionId: '11000',
             owner: this.toWhom,
             creator: owner,
-            balance: '1',
             size: '10',
             uri: 'my-token-uri-1'
           })
@@ -1374,7 +1373,6 @@ contract('ERC721', function (accounts) {
             editionId: '11000',
             owner: this.toWhom,
             creator: owner,
-            balance: '1',
             size: '10',
             uri: 'my-token-uri-1'
           })

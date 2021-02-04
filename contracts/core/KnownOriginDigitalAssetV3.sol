@@ -313,20 +313,19 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Konstants, Context {
 
         uint256 maxTokenId = _editionId + editionSize;
 
-        // TODO test this with edition of 1000
+        // TODO test this with edition of 1000 for GAS costings?
+        // TODO GAS costs increase per loop - gifting should reverse this list to make it smaller
 
         // TODo replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
 
             // TODO add a test to make sure this work after being minted, transferred and then transferred back to the original creator
-
             // TODO does this work if you send it to the zero address - can you sent to zero?
 
             // if no owner set - the creator still has access
-            if (owners[_tokenId] == address(0) || owners[_tokenId] == creator) {
+            if (owners[tokenId] == address(0) || owners[tokenId] == creator) {
                 return tokenId;
             }
-
         }
         revert("No tokens left on the primary market");
     }

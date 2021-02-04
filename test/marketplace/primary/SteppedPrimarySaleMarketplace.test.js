@@ -151,10 +151,9 @@ contract('ERC721', function (accounts) {
             ownerBalance: '1',
             creator: minter,
             creatorBalance: '0',
-            balance: '1',
             size: '1',
             uri: 'my-token-uri'
-          })
+          });
         });
 
       });

@@ -17,6 +17,28 @@ import "hardhat/console.sol";
 contract KODAV3Marketplace is ReentrancyGuard, Context {
     using SafeMath for uint256;
 
+    // token buy now
+    event TokenListed(uint256 indexed _tokenId, address indexed _seller, uint256 _price);
+    event TokenDeListed(uint256 indexed _tokenId);
+    event TokenPurchased(uint256 indexed _tokenId, address indexed _buyer, address indexed _seller, uint256 _price);
+
+    // token offers
+    event TokenBidPlaced(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
+    event TokenBidAccepted(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
+    event TokenBidRejected(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
+    event TokenBidWithdrawn(uint256 indexed _tokenId, address indexed _bidder);
+
+    // edition buy now
+    event EditionListed(uint256 indexed _editionId, uint256 _price);
+    event EditionDeListed(uint256 indexed _editionId);
+    event EditionPurchased(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price);
+
+    // edition offers
+    event EditionBidPlaced(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
+    event EditionBidWithdrawn(uint256 indexed _editionId, address indexed _bidder);
+    event EditionBidAccepted(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _amount);
+    event EditionBidRejected(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
+
     // TODO handle changes / updates
     // Default KO commission of 15%
     uint256 public KO_COMMISSION_FEE = 1500;
@@ -78,7 +100,7 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
 
         editionListings[_editionId] = Listing(_listingPrice, creator);
 
-        // TODO event
+        emit EditionListed(_editionId, _listingPrice);
     }
 
     function delistEdition(uint256 _editionId) public {
@@ -88,7 +110,7 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
 
         // TODO - do we send back any open offer?
 
-        // TODO event
+        emit EditionDeListed(_editionId);
     }
 
     function buyEditionToken(uint256 _editionId) public payable nonReentrant {
@@ -98,11 +120,11 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
 
         // TODO refund any offers if this trade sells out primary sale edition?
 
-        facilitateNextPrimarySale(_editionId, msg.value, _msgSender());
+        uint256 tokenId = facilitateNextPrimarySale(_editionId, msg.value, _msgSender());
 
         // TODO record primary sale for token somewhere?
 
-        // TODO event
+        emit EditionPurchased(_editionId, tokenId, _msgSender(), msg.value);
     }
 
     ////////////////////////////////
@@ -124,7 +146,7 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         // setup offer
         editionOffers[_editionId] = Offer(msg.value, _msgSender());
 
-        // TODO event
+        emit EditionBidPlaced(_editionId, _msgSender(), msg.value);
     }
 
     // TODO lock in period for 24hrs?
@@ -138,7 +160,7 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         // delete offer
         delete editionOffers[_editionId];
 
-        // TODO event
+        emit EditionBidWithdrawn(_editionId, _msgSender());
     }
 
     function rejectEditionBid(uint256 _editionId) public nonReentrant {
@@ -152,7 +174,7 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         // delete offer
         delete editionOffers[_editionId];
 
-        // TODO event
+        emit EditionBidRejected(_editionId, _msgSender(), offer.offer);
     }
 
     function acceptEditionBid(uint256 _editionId, uint256 _offerPrice) public nonReentrant {
@@ -162,27 +184,31 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
 
         require(koda.getEditionCreator(_editionId) == _msgSender(), "Not creator");
 
-        facilitateNextPrimarySale(_editionId, offer.offer, offer.bidder);
+        uint256 tokenId = facilitateNextPrimarySale(_editionId, offer.offer, offer.bidder);
 
         // clear open offer
         delete editionOffers[_editionId];
 
-        // TODO event
+        emit EditionBidAccepted(_editionId, tokenId, offer.bidder, offer.offer);
     }
 
     //////////////////////////
     // primary sale helpers //
     //////////////////////////
 
-    function facilitateNextPrimarySale(uint256 _editionId, uint256 _paymentAmount, address _buyer) internal {
+    function facilitateNextPrimarySale(uint256 _editionId, uint256 _paymentAmount, address _buyer) internal returns (uint256) {
         // get next token to sell along with the royalties recipient and the original creator
         (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
+
+        console.log("receiver %s | creator %s | tokenId %s", receiver, creator, tokenId);
 
         // split money
         handleEditionSaleFunds(receiver, _paymentAmount);
 
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, _buyer, tokenId);
+
+        return tokenId;
     }
 
     function handleEditionSaleFunds(address _receiver, uint256 _paymentAmount) internal {
@@ -212,7 +238,7 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         // List the token
         tokenListings[_tokenId] = Listing(_listingPrice, _msgSender());
 
-        // TODO event
+        emit TokenListed(_tokenId, _msgSender(), _listingPrice);
     }
 
     function delistToken(uint256 _tokenId) public {
@@ -225,7 +251,7 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         // remove the listing
         delete tokenListings[_tokenId];
 
-        // TODO event
+        emit TokenDeListed(_tokenId);
     }
 
     function buyToken(uint256 _tokenId) public payable nonReentrant {
@@ -235,7 +261,7 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         require(listing.seller != address(0), "No listing found");
 
         // check payment
-        require(tokenListings[_tokenId].price == msg.value, "Not enough money");
+        require(listing.price == msg.value, "Not enough money");
 
         // check current owner is the lister as it may have changed hands
         address currentOwner = koda.ownerOf(_tokenId);
@@ -249,7 +275,7 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         // remove the listing
         delete tokenListings[_tokenId];
 
-        // TODO event
+        emit TokenPurchased(_tokenId, _msgSender(), currentOwner, msg.value);
     }
 
     /////////////////////////////////
@@ -271,7 +297,7 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         // setup offer
         tokenOffers[_tokenId] = Offer(msg.value, _msgSender());
 
-        // TODO event
+        emit TokenBidPlaced(_tokenId, koda.ownerOf(_tokenId), _msgSender(), msg.value);
     }
 
     function withdrawTokenBid(uint256 _tokenId) public nonReentrant {
@@ -284,13 +310,15 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         // delete offer
         delete tokenOffers[_tokenId];
 
-        // TODO event
+        emit TokenBidWithdrawn(_tokenId, _msgSender());
     }
 
     function rejectTokenBid(uint256 _tokenId) public {
         Offer storage offer = tokenOffers[_tokenId];
         require(offer.bidder != address(0), "No open bid");
-        require(koda.ownerOf(_tokenId) == _msgSender(), "Not current owner");
+
+        address currentOwner = koda.ownerOf(_tokenId);
+        require(currentOwner == _msgSender(), "Not current owner");
 
         // send money back to top bidder
         refundTokenBidder(offer.bidder, offer.offer);
@@ -298,7 +326,7 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         // delete offer
         delete tokenOffers[_tokenId];
 
-        // TODO event
+        emit TokenBidRejected(_tokenId, currentOwner, offer.bidder, offer.offer);
     }
 
     function acceptTokenBid(uint256 _tokenId, uint256 _offerPrice) public nonReentrant {
@@ -314,7 +342,7 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         // clear open offer
         delete tokenOffers[_tokenId];
 
-        // TODO event
+        emit TokenBidAccepted(_tokenId, currentOwner, offer.bidder, offer.offer);
     }
 
     //////////////////////////////
