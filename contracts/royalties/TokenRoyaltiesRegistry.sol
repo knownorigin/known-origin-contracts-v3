@@ -8,11 +8,11 @@ import "../collaborators/impl/FundsReceiver.sol";
 import "../collaborators/IFundsHandler.sol";
 
 import "../royalties/ITokenRoyaltiesRegistry.sol";
-import "../utils/CloneFactory.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract TokenRoyaltiesRegistry is ITokenRoyaltiesRegistry, CloneFactory, Ownable {
+contract TokenRoyaltiesRegistry is ITokenRoyaltiesRegistry, Ownable {
 
     struct MultiHolder {
         address defaultRecipient;
@@ -190,7 +190,7 @@ contract TokenRoyaltiesRegistry is ITokenRoyaltiesRegistry, CloneFactory, Ownabl
         royaltiesSet[_tokenId] = true;
 
         // Setup a new funds splitter and assign a new funds split now all parties have assigned
-        address splitter = createClone(baseFundsSplitter);
+        address splitter = Clones.clone(baseFundsSplitter);
 
         // Use either pull (FundsReceiver) or push (FundsSplitter) pattern
         // IFundsHandler splitterContract = FundSplitter(payable(splitter));

@@ -3,6 +3,7 @@
 pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/GSN/Context.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "../collaborators/IFundsHandler.sol";
 import "../collaborators/impl/FundsReceiver.sol";
@@ -12,9 +13,8 @@ import "../access/KOAccessControls.sol";
 import "../core/IERC2981.sol";
 import "../core/IKODAV3.sol";
 import "../core/Konstants.sol";
-import "../utils/CloneFactory.sol";
 
-contract EditionRoyaltiesRegistry is IERC2981, CloneFactory, Konstants, Context {
+contract EditionRoyaltiesRegistry is IERC2981, Konstants, Context {
 
     // EIP712 Precomputed hashes:
     // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)")
@@ -149,7 +149,7 @@ contract EditionRoyaltiesRegistry is IERC2981, CloneFactory, Konstants, Context 
         _validateAgreementSigs(_msgSender(), expectedSignedAgreement, participants, sigV, sigR, sigS);
 
         // Create a micro funds recipient - this will be where all money is now directed on every sale
-        address splitter = createClone(baseFundsSplitter);
+        address splitter = Clones.clone(baseFundsSplitter);
 
         // IFundsHandler instance for handling all funds - this should not revert on receiving funds
         FundsReceiver(payable(splitter)).init(participants, splits);
