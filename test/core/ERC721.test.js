@@ -174,10 +174,9 @@ contract('ERC721', function (accounts) {
             tokenId: id.toString(),
             editionId: '11000',
             owner: owner,
-            ownerBalance: '1',
+            ownerBalance: editionSize,
             creator: owner,
-            creatorBalance: '1',
-            balance: editionSize,
+            creatorBalance: editionSize,
             size: editionSize,
             uri: 'my-token-uri'
           })
@@ -216,7 +215,6 @@ contract('ERC721', function (accounts) {
             ownerBalance: '10',
             creator: owner,
             creatorBalance: '10',
-            balance: editionSize,
             size: editionSize,
             uri: 'my-token-uri'
           })

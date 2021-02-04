@@ -7,6 +7,7 @@ pragma solidity 0.7.4;
 
 contract Konstants {
 
+    // Every edition always goes up in batches of 1000
     uint256 public constant MAX_EDITION_SIZE = 1000;
 
     // magic method that defines the maximum range for an edition - this is fix forever - tokens are minted in range

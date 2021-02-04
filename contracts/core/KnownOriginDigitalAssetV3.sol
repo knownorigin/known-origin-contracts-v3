@@ -3,14 +3,15 @@
 pragma solidity 0.7.4; // FIXME bump to 0.8 and drop safemath?
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/introspection/ERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
-import "./IKODAV3.sol";
 import "../access/KOAccessControls.sol";
 import "./storage/EditionRegistry.sol";
-import "../core/Konstants.sol";
+
+import "./IKODAV3.sol";
+import "./KODAV3Core.sol";
 
 // TODO remove me
 import "hardhat/console.sol";
@@ -20,14 +21,13 @@ import "hardhat/console.sol";
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Konstants, Context {
+contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     using SafeMath for uint256;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
     bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
     bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
 
-    KOAccessControls public accessControls;
     IEditionRegistry public editionRegistry;
 
     // Token name
@@ -35,11 +35,6 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Konstants, Context {
 
     // Token symbol
     string public symbol;
-
-    struct EditionDetails {
-        uint256 editionConfig; // creator and size inside
-        string uri; // the referenced data
-    }
 
     // tokens are minted in batches - the first token ID used is representative of the edition ID (for now)
     mapping(uint256 => EditionDetails) editionDetails;
@@ -56,12 +51,12 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Konstants, Context {
     // Mapping of owner => operator => approved
     mapping(address => mapping(address => bool)) internal operatorApprovals;
 
-    // TODO allow configurable
-    // TODO confirm default decimal expectations
-    uint256 constant DEFAULT_ROYALTY = 100000;
+    struct EditionDetails {
+        uint256 editionConfig; // combined creator and size
+        string uri; // the referenced metadata
+    }
 
-    constructor(KOAccessControls _accessControls, IEditionRegistry _editionRegistry) {
-        accessControls = _accessControls;
+    constructor(KOAccessControls _accessControls, IEditionRegistry _editionRegistry) KODAV3Core(_accessControls) {
         editionRegistry = _editionRegistry;
 
         name = "KnownOriginDigitalAsset";
@@ -248,7 +243,10 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Konstants, Context {
         return edition.editionConfig > 0;
     }
 
-    // TODO check token method for exists
+    function exists(uint256 _tokenId) public override view returns (bool) {
+        require(_ownerOf(_tokenId, _editionFromTokenId(_tokenId)) != address(0), "ERC721_ZERO_OWNER");
+        return true;
+    }
 
     ////////////////
     // Edition ID //
@@ -271,7 +269,7 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Konstants, Context {
         // TODO implement this properly with richer royalties recipients
 
         address creator = _getEditionCreator(_editionFromTokenId(_tokenId));
-        return (creator, DEFAULT_ROYALTY);
+        return (creator, defaultSecondarySaleRoyalty);
     }
 
     // Expanded method at edition level and expanding on the funds receiver and the creator
@@ -282,12 +280,13 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Konstants, Context {
     returns (address receiver, address creator, uint256 amount) {
         // TODO implement this properly with richer royalties recipients
         // TODO expand this to allow for a different receiver than creator
+
         address originalCreator = _getEditionCreator(_editionId);
-        return (originalCreator, originalCreator, DEFAULT_ROYALTY);
+        return (originalCreator, originalCreator, defaultSecondarySaleRoyalty);
     }
 
     ////////////////////////////////////
-    // Primary Sale Utioities methods //
+    // Primary Sale Utilities methods //
     ////////////////////////////////////
 
     function facilitateNextPrimarySale(uint256 _editionId)
@@ -310,28 +309,27 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Konstants, Context {
     returns (uint256 _tokenId) {
 
         // TODO is there a optimisation where we record the last token sold on primary and then we start from this point ... ?
-        uint256 editionSize = _getEditionSize(_editionId);
+        uint256 maxTokenId = _editionId + _getEditionSize(_editionId);
 
-//        address creator = _getEditionCreator(_editionId);
-
-        uint256 maxTokenId = _editionId + editionSize;
-
-        // TODO test this with edition of 1000 for GAS costings?
-        // TODO GAS costs increase per loop - gifting should reverse this list to make it smaller
-
-        // TODo replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
 
             // TODO add a test to make sure this work after being minted, transferred and then transferred back to the original creator
-
-            // TODO does this work if you send it to the zero address - check we cannot send to zero?
+            // TODO confirm we cannot send to zero address
 
             // if no owner set - assume primary if not moved
-            if (owners[tokenId] == address(0)/* || owners[tokenId] == creator*/) {
+            if (owners[tokenId] == address(0)) {
                 return tokenId;
             }
         }
         revert("No tokens left on the primary market");
+
+        // TODO GAS costs increase per loop - gifting should reverse this list to make it smaller
+        // TODO replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
+    }
+
+    function hasBeenPrimarySale(uint256 _tokenId) public override view returns (bool) {
+        require(exists(_tokenId), "Token does not exist");
+        return owners[_tokenId] == address(0);
     }
 
     //////////////
@@ -545,6 +543,14 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Konstants, Context {
             return owner;
         }
 
+        // TODO validate this logic ... ?
+
+        // Get the edition size and work out the max token ID, if it does not fall within this range then return zero
+        uint256 size = _getEditionSize(_editionId);
+        if (size == 0 || _editionId + size < _tokenId) {
+            return address(0);
+        }
+
         // fall back to edition creator
         address possibleCreator = _getEditionCreator(_editionId);
         if (possibleCreator != address(0)) {
@@ -579,22 +585,10 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Konstants, Context {
         return operatorApprovals[_owner][_operator];
     }
 
-    // FIXME does this support create2 ?
-    function isContract(address account) internal view returns (bool) {
-        // According to EIP-1052, 0x0 is the value returned for not-yet created accounts
-        // and 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470 is returned
-        // for accounts without code, i.e. `keccak256('')`
-        bytes32 codehash;
-        bytes32 accountHash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {codehash := extcodehash(account)}
-        return (codehash != accountHash && codehash != 0x0);
-    }
-
     function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory _data)
     private returns (bool)
     {
-        if (!isContract(to)) {
+        if (!Address.isContract(to)) {
             return true;
         }
         // solhint-disable-next-line avoid-low-level-calls

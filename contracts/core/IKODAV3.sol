@@ -2,10 +2,11 @@
 
 pragma solidity 0.7.4;
 
-import "./IERC2309.sol";
-import "./IERC2981.sol";
 import "@openzeppelin/contracts/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+
+import "./IERC2309.sol";
+import "./IERC2981.sol";
 
 interface IKODAV3 is
 IERC165, // Contract introspection
@@ -23,6 +24,8 @@ IERC2981  // Royalties
 
     function editionExists(uint256 _editionId) external view returns (bool);
 
+    function exists(uint256 _tokenId) external view returns (bool);
+
     function getEditionIdForToken(uint256 _tokenId) external pure returns (uint256 _editionId);
 
     function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri);
@@ -34,4 +37,6 @@ IERC2981  // Royalties
 
     // Expanded royalty method for the edition, not token
     function royaltyAndCreatorInfo(uint256 _editionId) external view returns (address _receiver, address _creator, uint256 _amount);
+
+    function hasBeenPrimarySale(uint256 _tokenId) external view returns (bool);
 }

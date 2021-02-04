@@ -3,18 +3,17 @@
 pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
 import "../core/storage/EditionRegistry.sol";
 import "../access/KOAccessControls.sol";
-import "../core/Konstants.sol";
+import "../core/KODAV3Core.sol";
 import "../core/IKODAV3.sol";
 
 import "hardhat/console.sol";
 
-contract KODAV3Marketplace is ReentrancyGuard, Context {
+contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     using SafeMath for uint256;
 
     // token buy now
@@ -39,14 +38,6 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
     event EditionBidAccepted(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _amount);
     event EditionBidRejected(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
 
-    // TODO handle changes / updates
-    // Default KO commission of 15%
-    uint256 public KO_COMMISSION_FEE = 1500;
-    uint256 public modulo = 10000; // TODO increase accuracy
-
-    // Minimum bid/list amount
-    uint256 public minBidAmount = 0.01 ether;
-
     struct Offer {
         uint256 offer;
         address bidder;
@@ -56,9 +47,6 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         uint256 price;
         address seller;
     }
-
-    KOAccessControls public accessControls;
-    IKODAV3 public koda;
 
     // Token ID to Offer mapping
     mapping(uint256 => Offer) public tokenOffers;
@@ -72,8 +60,10 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
     // Edition ID to Listing
     mapping(uint256 => Listing) public editionListings;
 
-    constructor(KOAccessControls _accessControls, IKODAV3 _koda) {
-        accessControls = _accessControls;
+    // KODA token
+    IKODAV3 public koda;
+
+    constructor(KOAccessControls _accessControls, IKODAV3 _koda) KODAV3Core(_accessControls) {
         koda = _koda;
     }
 
@@ -121,8 +111,6 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         // TODO refund any offers if this trade sells out primary sale edition?
 
         uint256 tokenId = facilitateNextPrimarySale(_editionId, msg.value, _msgSender());
-
-        // TODO record primary sale for token somewhere?
 
         emit EditionPurchased(_editionId, tokenId, _msgSender(), msg.value);
     }
@@ -200,7 +188,7 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         // get next token to sell along with the royalties recipient and the original creator
         (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
 
-        //        console.log("receiver %s | creator %s | tokenId %s", receiver, creator, tokenId);
+        // console.log("receiver %s | creator %s | tokenId %s", receiver, creator, tokenId);
 
         // split money
         handleEditionSaleFunds(receiver, _paymentAmount);
