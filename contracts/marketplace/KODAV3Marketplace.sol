@@ -87,6 +87,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     // assumes frontend protects against from these things from being called when:
     //  - they dont need to be e.g. listing an edition when its sold out
     //  - they cannot be done e.g. accepting an offer when the edition is sold out
+    //  - approvals go astray/removed - approvals may need to be mapped in subgraph
 
     function listEdition(uint256 _editionId, uint256 _listingPrice) public {
         require(_listingPrice >= minBidAmount, "Listing price not enough");
