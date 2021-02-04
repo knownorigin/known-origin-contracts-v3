@@ -200,7 +200,7 @@ contract KODAV3Marketplace is ReentrancyGuard, Context {
         // get next token to sell along with the royalties recipient and the original creator
         (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
 
-        console.log("receiver %s | creator %s | tokenId %s", receiver, creator, tokenId);
+        //        console.log("receiver %s | creator %s | tokenId %s", receiver, creator, tokenId);
 
         // split money
         handleEditionSaleFunds(receiver, _paymentAmount);

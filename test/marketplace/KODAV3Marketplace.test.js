@@ -65,7 +65,7 @@ contract('ERC721', function (accounts) {
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.marketplace.address, {from: owner});
   });
 
-  describe.only('making a buy now purchase on the primary and then secondary', () => {
+  describe('making a buy now purchase on the primary and then secondary', () => {
 
     const _0_1_ETH = ether('0.1');
 
@@ -73,8 +73,8 @@ contract('ERC721', function (accounts) {
       // Ensure owner is approved as this will fail if not
       await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
-      // create 10 tokens to the minter
-      await this.token.mintBatchEdition(10, minter, 'my-token-uri', {from: contract});
+      // create 100 tokens to the minter
+      await this.token.mintBatchEdition(100, minter, 'my-token-uri', {from: contract});
 
       // list edition for sale at 0.1 ETH per token
       await this.marketplace.listEdition(firstEditionTokenId, _0_1_ETH, {from: minter});
@@ -101,8 +101,8 @@ contract('ERC721', function (accounts) {
         owner: collectorA,
         ownerBalance: '1',
         creator: minter,
-        creatorBalance: '9',
-        size: '10',
+        creatorBalance: '99',
+        size: '100',
         uri: 'my-token-uri'
       });
 
@@ -125,8 +125,8 @@ contract('ERC721', function (accounts) {
         owner: collectorB,
         ownerBalance: '1',
         creator: minter,
-        creatorBalance: '8',
-        size: '10',
+        creatorBalance: '98',
+        size: '100',
         uri: 'my-token-uri'
       });
 
@@ -153,11 +153,33 @@ contract('ERC721', function (accounts) {
         owner: collectorB,
         ownerBalance: '2',
         creator: minter,
-        creatorBalance: '8',
-        size: '10',
+        creatorBalance: '98',
+        size: '100',
         uri: 'my-token-uri'
       });
     });
+
+    it('all tokens bought on primary and sold on the secondary', async () => {
+      const start = _.toNumber(firstEditionTokenId);
+      const end = start + 100;
+      const tokenIds = _.range(start, end);
+
+      // collector A buys all
+      for (const id of tokenIds) {
+        await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: _0_1_ETH});
+        expect(await this.token.ownerOf(id)).to.be.equal(collectorA);
+      }
+
+      // Ensure collector a approves marketplace
+      await this.token.setApprovalForAll(this.marketplace.address, true, {from: collectorA});
+
+      // collector A lists all and then collector B buys them all
+      for (const id of tokenIds) {
+        await this.marketplace.listToken(id, _0_1_ETH, {from: collectorA});
+        await this.marketplace.buyToken(id, {from: collectorB, value: _0_1_ETH})
+        expect(await this.token.ownerOf(id)).to.be.equal(collectorB);
+      }
+    }).timeout(300000);
 
   });
 

@@ -308,8 +308,11 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Konstants, Context {
     override
     view
     returns (uint256 _tokenId) {
+
+        // TODO is there a optimisation where we record the last token sold on primary and then we start from this point ... ?
         uint256 editionSize = _getEditionSize(_editionId);
-        address creator = _getEditionCreator(_editionId);
+
+//        address creator = _getEditionCreator(_editionId);
 
         uint256 maxTokenId = _editionId + editionSize;
 
@@ -320,10 +323,11 @@ contract KnownOriginDigitalAssetV3 is ERC165, IKODAV3, Konstants, Context {
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
 
             // TODO add a test to make sure this work after being minted, transferred and then transferred back to the original creator
-            // TODO does this work if you send it to the zero address - can you sent to zero?
 
-            // if no owner set - the creator still has access
-            if (owners[tokenId] == address(0) || owners[tokenId] == creator) {
+            // TODO does this work if you send it to the zero address - check we cannot send to zero?
+
+            // if no owner set - assume primary if not moved
+            if (owners[tokenId] == address(0)/* || owners[tokenId] == creator*/) {
                 return tokenId;
             }
         }
