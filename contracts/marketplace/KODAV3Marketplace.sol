@@ -63,8 +63,12 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     // KODA token
     IKODAV3 public koda;
 
-    constructor(KOAccessControls _accessControls, IKODAV3 _koda) KODAV3Core(_accessControls) {
+    // platform funds collector
+    address public platformAccount;
+
+    constructor(KOAccessControls _accessControls, IKODAV3 _koda, address _platformAccount) KODAV3Core(_accessControls) {
         koda = _koda;
+        platformAccount = _platformAccount;
     }
 
     // should work for primary and secondary
@@ -107,8 +111,6 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
         Listing storage listing = editionListings[_editionId];
         require(listing.seller != address(0), "No listing found");
         require(listing.price == msg.value, "List price not satisfied");
-
-        // TODO refund any offers if this trade sells out primary sale edition?
 
         uint256 tokenId = facilitateNextPrimarySale(_editionId, msg.value, _msgSender());
 
@@ -169,7 +171,6 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
         require(offer.offer == _offerPrice, "Offer price has changed");
-
         require(koda.getEditionCreator(_editionId) == _msgSender(), "Not creator");
 
         uint256 tokenId = facilitateNextPrimarySale(_editionId, offer.offer, offer.bidder);
@@ -196,12 +197,29 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, _buyer, tokenId);
 
+        // if we about to sellout - send any open offers back to the bidder
+        if (tokenId == koda.maxEditionTokenId(_editionId)) {
+
+            // send money back to top bidder if existing offer found
+            Offer storage offer = editionOffers[_editionId];
+            if (offer.offer > 0) {
+                refundBidder(offer.bidder, offer.offer);
+            }
+        }
+
         return tokenId;
     }
 
     function handleEditionSaleFunds(address _receiver, uint256 _paymentAmount) internal {
-        (bool success,) = _receiver.call{value : _paymentAmount}("");
-        require(success, "Edition sale payment failed");
+
+        // TODO could we save gas here by maintaining a counter for KO platform funds and having a drain method?
+
+        uint256 koCommission = _paymentAmount.div(modulo).mul(platformPrimarySaleCommission);
+        (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
+        require(koCommissionSuccess, "Edition payment failed");
+
+        (bool success,) = _receiver.call{value : _paymentAmount.sub(koCommission)}("");
+        require(success, "Edition payment failed");
     }
 
     function refundBidder(address _receiver, uint256 _paymentAmount) internal {
@@ -254,8 +272,6 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
         // check current owner is the lister as it may have changed hands
         address currentOwner = koda.ownerOf(_tokenId);
         require(listing.seller == currentOwner, "Listing not valid, token owner has changed");
-
-        // TODO refund any open offers?
 
         // trade the token
         facilitateTokenSale(_tokenId, msg.value, currentOwner, _msgSender());
@@ -338,16 +354,34 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     //////////////////////////////
 
     function facilitateTokenSale(uint256 _tokenId, uint256 _paymentAmount, address _seller, address _buyer) internal {
+        address originalCreator = koda.getEditionCreatorOfToken(_tokenId);
+
         // split money
-        handleTokenSaleFunds(_seller, _paymentAmount);
+        handleTokenSaleFunds(_seller, originalCreator, _paymentAmount);
+
+        // N:B. open offers are left for the bidder to withdraw or the new token owner to reject
 
         // send token to buyer
         koda.safeTransferFrom(_seller, _buyer, _tokenId);
     }
 
-    function handleTokenSaleFunds(address _receiver, uint256 _paymentAmount) internal {
-        (bool success,) = _receiver.call{value : _paymentAmount}("");
-        require(success, "Token sale payment failed");
+    function handleTokenSaleFunds(address _receiver, address _originalCreator, uint256 _paymentAmount) internal {
+
+        // TODO could we save gas here by maintaining a counter for KO platform funds and having a drain method?
+
+        // pay royalties
+        uint256 creatorRoyalties = _paymentAmount.div(modulo).mul(secondarySaleRoyalty);
+        (bool creatorSuccess,) = _originalCreator.call{value : creatorRoyalties}("");
+        require(creatorSuccess, "Edition payment failed");
+
+        // pay platform fee
+        uint256 koCommission = _paymentAmount.div(modulo).mul(platformSecondarySaleCommission);
+        (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
+        require(koCommissionSuccess, "Edition payment failed");
+
+        // pay seller
+        (bool success,) = _receiver.call{value : _paymentAmount.sub(creatorRoyalties).sub(koCommission)}("");
+        require(success, "Token payment failed");
     }
 
     function refundTokenBidder(address _receiver, uint256 _paymentAmount) internal {

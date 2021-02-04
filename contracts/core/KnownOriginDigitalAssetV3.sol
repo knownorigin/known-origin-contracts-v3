@@ -248,6 +248,11 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         return true;
     }
 
+    function maxEditionTokenId(uint256 _editionId) public override view returns (uint256 _tokenId) {
+        uint256 size = _getEditionSize(_editionId);
+        return size + _editionId;
+    }
+
     ////////////////
     // Edition ID //
     ////////////////
@@ -269,7 +274,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         // TODO implement this properly with richer royalties recipients
 
         address creator = _getEditionCreator(_editionFromTokenId(_tokenId));
-        return (creator, defaultSecondarySaleRoyalty);
+        return (creator, secondarySaleRoyalty);
     }
 
     // Expanded method at edition level and expanding on the funds receiver and the creator
@@ -282,7 +287,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         // TODO expand this to allow for a different receiver than creator
 
         address originalCreator = _getEditionCreator(_editionId);
-        return (originalCreator, originalCreator, defaultSecondarySaleRoyalty);
+        return (originalCreator, originalCreator, secondarySaleRoyalty);
     }
 
     ////////////////////////////////////

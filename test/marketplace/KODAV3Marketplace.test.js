@@ -16,7 +16,7 @@ const EditionRegistry = artifacts.require('EditionRegistry');
 const {validateToken} = require('../test-helpers');
 
 contract('ERC721', function (accounts) {
-  const [owner, minter, contract, collectorA, collectorB] = accounts;
+  const [owner, minter, contract, collectorA, collectorB, collectorC, collectorD] = accounts;
 
   const STARTING_EDITION = '10000';
 
@@ -28,7 +28,7 @@ contract('ERC721', function (accounts) {
   const nonExistentTokenId = new BN('99999999999');
 
   beforeEach(async () => {
-    // setu paccess controls
+    // setup access controls
     this.accessControls = await KOAccessControls.new({from: owner});
 
     // grab the roles
@@ -65,7 +65,7 @@ contract('ERC721', function (accounts) {
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.marketplace.address, {from: owner});
   });
 
-  describe('making a buy now purchase on the primary and then secondary', () => {
+  describe("two primary sales via 'buy now' purchase and re-sold on secondary", () => {
 
     const _0_1_ETH = ether('0.1');
 
@@ -80,7 +80,7 @@ contract('ERC721', function (accounts) {
       await this.marketplace.listEdition(firstEditionTokenId, _0_1_ETH, {from: minter});
     });
 
-    it('making a primary sale from the edition and selling it on the secondary market', async () => {
+    it('initial primary sale, resold on secondary', async () => {
 
       //////////////////////////////
       // collector A buys 1 token //
@@ -182,5 +182,6 @@ contract('ERC721', function (accounts) {
     }).timeout(300000);
 
   });
+
 
 });

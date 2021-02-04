@@ -13,10 +13,11 @@ contract KODAV3Core is Konstants, Context {
     // TODO confirm default decimal precision
 
     // Secondary sale commission
-    uint256 public defaultSecondarySaleRoyalty = 100000; // 10%
+    uint256 public secondarySaleRoyalty = 100000; // 10%
 
     // KO commission
-    uint256 public defaultPrimarySaleCommission = 150000;  // 15%
+    uint256 public platformPrimarySaleCommission = 150000;  // 15%
+    uint256 public platformSecondarySaleCommission = 25000;  // 2.5%
 
     // precision
     uint256 public modulo = 10000;
@@ -30,14 +31,19 @@ contract KODAV3Core is Konstants, Context {
         accessControls = _accessControls;
     }
 
-    function updateDefaultSecondaryRoyalty(uint256 _defaultSecondarySaleRoyalty) public {
+    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
-        defaultSecondarySaleRoyalty = _defaultSecondarySaleRoyalty;
+        secondarySaleRoyalty = _secondarySaleRoyalty;
     }
 
-    function updateDefaultPrimaryCommission(uint256 _defaultPrimarySaleCommission) public {
+    function updatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission) public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
-        defaultPrimarySaleCommission = _defaultPrimarySaleCommission;
+        platformPrimarySaleCommission = _platformPrimarySaleCommission;
+    }
+
+    function updatePlatformSecondarySaleCommission(uint256 _platformSecondarySaleCommission) public {
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
+        platformSecondarySaleCommission = _platformSecondarySaleCommission;
     }
 
     function updateModulo(uint256 _modulo) public {
