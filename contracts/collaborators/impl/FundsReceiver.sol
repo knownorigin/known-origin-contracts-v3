@@ -8,6 +8,8 @@ import "../IFundsDrainable.sol";
 /**
  * Allows funds to be split using a pull pattern, holding a balance until drained
  */
+
+// FIXME use a single contract as a registry for splits rather than one per collab split
 contract FundsReceiver is IFundsHandler, IFundsDrainable {
 
     bool private _notEntered = true;
@@ -42,7 +44,7 @@ contract FundsReceiver is IFundsHandler, IFundsDrainable {
 
         // accept funds
         uint256 balance = address(this).balance;
-        uint256 singleUnitOfValue = balance / 100000;
+        uint256 singleUnitOfValue = balance / 100000; // FIXME use safe-math
 
         // split according to total
         for (uint256 i = 0; i < recipients.length; i++) {

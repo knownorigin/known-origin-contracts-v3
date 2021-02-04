@@ -39,7 +39,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     // tokens are minted in batches - the first token ID used is representative of the edition ID (for now)
     mapping(uint256 => EditionDetails) editionDetails;
 
-    // Mapping of tokenId => owner - only set after initial creation such as a primary sale and or gift
+    // Mapping of tokenId => owner - only set on first transfer (after mint) such as a primary sale and/or gift
     mapping(uint256 => address) internal owners;
 
     // Mapping of owner => number of tokens owned
@@ -161,13 +161,14 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         return edition.uri;
     }
 
+    // FIXME getDetailsOfEdition
     function getEditionDetails(uint256 _tokenId)
     public
     override
     view
     returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri) {
         uint256 editionId = _editionFromTokenId(_tokenId);
-        EditionDetails memory edition = editionDetails[editionId];
+        EditionDetails memory edition = editionDetails[editionId]; // FIXME use storage for gas?
 
         // Extract creator and size of edition
         uint256 editionConfig = edition.editionConfig;
@@ -189,6 +190,8 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     // Creator query //
     ///////////////////
 
+
+    // FIXME getCreatorOfEdition
     function getEditionCreator(uint256 _editionId)
     public
     override
@@ -197,6 +200,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         return _getEditionCreator(_editionId);
     }
 
+    // FIXME getCreatorOfToken
     function getEditionCreatorOfToken(uint256 _tokenId)
     public
     override
@@ -209,13 +213,15 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     function _getEditionCreator(uint256 _editionId) internal view returns (address _originalCreator) {
         EditionDetails storage edition = editionDetails[_editionId];
         uint256 editionConfig = edition.editionConfig;
-        return address(editionConfig);
+        return address(editionConfig); // FIXME does this just work and drop the other bit?
     }
 
     ////////////////
     // Size query //
     ////////////////
 
+
+    // FIXME getSizeOfEdition
     function getEditionSize(uint256 _editionId) public override view returns (uint256 _size) {
         return _getEditionSize(_editionId);
     }
@@ -245,6 +251,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         return true;
     }
 
+    // FIXME what is this used for? Use safemath? maxTokenIdOfEdition
     function maxEditionTokenId(uint256 _editionId) public override view returns (uint256 _tokenId) {
         uint256 size = _getEditionSize(_editionId);
         return size + _editionId;
@@ -254,6 +261,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     // Edition ID //
     ////////////////
 
+    // FIXME getEditionIdOfToken
     function getEditionIdForToken(uint256 _tokenId) public override pure returns (uint256 _editionId) {
         return _editionFromTokenId(_tokenId);
     }
@@ -304,6 +312,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         return (originalCreator, originalCreator, tokenId);
     }
 
+    // FIXME means we need to sell in order?
     function getNextAvailablePrimarySaleToken(uint256 _editionId)
     public
     override
@@ -329,6 +338,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         // TODO replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
     }
 
+    // FIXME hasPrimarySaleOfToken
     function hasBeenPrimarySale(uint256 _tokenId) public override view returns (bool) {
         require(exists(_tokenId), "Token does not exist");
         return owners[_tokenId] != address(0);
@@ -501,6 +511,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     override
     public {
         // TODO Confirm we have a test for this as its assumed and used in the logic
+        // FIXME could drop this? As people like to send to 0x0
         require(_to != address(0), "ERC721_ZERO_TO_ADDRESS");
 
         address owner = ownerOf(_tokenId);
@@ -531,8 +542,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     }
 
     /// @notice Find the owner of an NFT
-    /// @dev NFTs assigned to zero address are considered invalid, and queries
-    ///      about them do throw.
+    /// @dev NFTs assigned to zero address are considered invalid, and queries about them do throw.
     /// @param _tokenId The identifier for an NFT
     /// @return The address of the owner of the NFT
     function ownerOf(uint256 _tokenId)
@@ -567,6 +577,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         if (possibleCreator != address(0)) {
             return possibleCreator;
         }
+
         return address(0);
     }
 
