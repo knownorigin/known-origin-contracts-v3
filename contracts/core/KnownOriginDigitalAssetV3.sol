@@ -571,7 +571,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         if (possibleCreator != address(0)) {
             return possibleCreator;
         }
-        
+
         return address(0);
     }
 

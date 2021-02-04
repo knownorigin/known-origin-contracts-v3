@@ -22,6 +22,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     event TokenPurchased(uint256 indexed _tokenId, address indexed _buyer, address indexed _seller, uint256 _price);
 
     // token offers
+    // FIXME is it a bid or an offer?
     event TokenBidPlaced(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
     event TokenBidAccepted(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
     event TokenBidRejected(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
@@ -110,7 +111,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     function buyEditionToken(uint256 _editionId) public payable nonReentrant {
         Listing storage listing = editionListings[_editionId];
         require(listing.seller != address(0), "No listing found");
-        require(listing.price == msg.value, "List price not satisfied");
+        require(listing.price == msg.value, "List price not satisfied"); // FIXME use >= ?
 
         uint256 tokenId = facilitateNextPrimarySale(_editionId, msg.value, _msgSender());
 
@@ -167,6 +168,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
         emit EditionBidRejected(_editionId, _msgSender(), offer.offer);
     }
 
+    // FIXME nice work - covers the "problem"
     function acceptEditionBid(uint256 _editionId, uint256 _offerPrice) public nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
