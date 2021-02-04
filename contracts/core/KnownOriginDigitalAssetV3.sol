@@ -151,10 +151,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
 
     // FIXME use resolver for dynamic token URIs ... ?
     function tokenURI(uint256 _tokenId) external view returns (string memory) {
-        uint256 _editionId = _editionFromTokenId(_tokenId);
-        EditionDetails storage edition = editionDetails[_editionId];
-        require(edition.editionConfig != 0, "Token does not exist");
-        return edition.uri;
+        return editionURI(_editionFromTokenId(_tokenId));
     }
 
     // FIXME use resolver for dynamic token URIs ... ?
@@ -298,7 +295,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     public
     override
     view
-    returns (address _receiver, address _creator, uint256 _tokenId) {
+    returns (address _royaltyReceiver, address _creator, uint256 _tokenId) {
         uint256 tokenId = getNextAvailablePrimarySaleToken(_editionId);
 
         // TODO implement this properly with richer royalties recipients
@@ -334,7 +331,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
 
     function hasBeenPrimarySale(uint256 _tokenId) public override view returns (bool) {
         require(exists(_tokenId), "Token does not exist");
-        return owners[_tokenId] == address(0);
+        return owners[_tokenId] != address(0);
     }
 
     //////////////
@@ -448,6 +445,8 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         );
     }
 
+    // TODO validate approval flow for both sold out and partially available editions and their tokens
+
     /// @notice Enable or disable approval for a third party ("operator") to manage
     ///         all of `msg.sender`'s assets
     /// @dev Emits the ApprovalForAll event. The contract MUST allow
@@ -509,8 +508,14 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
 
         address spender = _msgSender();
         address approvedAddress = getApproved(_tokenId);
-        require(spender == owner || isApprovedForAll(owner, spender) || approvedAddress == spender, "ERC721_INVALID_SPENDER");
+        require(
+            spender == owner // sending to myself
+            || isApprovedForAll(owner, spender)  // is approved to send any behalf of owner
+            || approvedAddress == spender, // is approved to move this token ID
+            "ERC721_INVALID_SPENDER"
+        );
 
+        // Ensure approval for token ID is cleared
         if (approvedAddress != address(0)) {
             approvals[_tokenId] = address(0);
         }
@@ -518,6 +523,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         // set new owner - this will now override any specific other mappings for the base edition config
         owners[_tokenId] = _to;
 
+        // Modify balances
         balances[_from] = balances[_from].sub(1);
         balances[_to] = balances[_to].add(1);
 
@@ -548,7 +554,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
             return owner;
         }
 
-        // TODO validate this logic ... ?
+        // TODO validate all logic paths and assumptions ... ?
 
         // Get the edition size and work out the max token ID, if it does not fall within this range then return zero
         uint256 size = _getEditionSize(_editionId);
@@ -589,6 +595,8 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     {
         return operatorApprovals[_owner][_operator];
     }
+
+    // TODO confirm coverage for callback and magic receiver
 
     function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory _data)
     private returns (bool)
