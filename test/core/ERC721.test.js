@@ -18,6 +18,24 @@ const EditionRegistry = artifacts.require('EditionRegistry');
 contract('ERC721', function (accounts) {
   const [owner, minter, contract, approved, anotherApproved, operator, other, collectorA] = accounts;
 
+  /*
+    String size storage impacts GAS costings:
+
+    HTTP:
+      - https://ipfs.infura.io/ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv
+
+        mintBatchEdition(uint256,address,string) - Min. 182702 | Max. 182726 | $31 @ 1710 gas / 100 price
+
+    IPFS/Custom (see: https://docs.ipfs.io/how-to/address-ipfs-on-web/)
+      - ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv
+
+      mintBatchEdition(uint256,address,string) - Min. 162306 | Max. 182726 | $31 @ 1718 gas / 100 price
+    ----
+    182702 - 162306 = 20396 savings
+
+   */
+  const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
+
   const STARTING_EDITION = '10000';
 
   const firstEditionTokenId = new BN('11000');
@@ -78,11 +96,11 @@ contract('ERC721', function (accounts) {
 
     describe('mintToken(to, uri) token URI', () => {
       beforeEach(async () => {
-        await this.token.mintToken(owner, 'my-token-uri', {from: contract});
+        await this.token.mintToken(owner, TOKEN_URI, {from: contract});
       });
 
       it('it is not empty by default', async () => {
-        expect(await this.token.tokenURI(firstEditionTokenId)).to.be.equal('my-token-uri');
+        expect(await this.token.tokenURI(firstEditionTokenId)).to.be.equal(TOKEN_URI);
       });
 
       it('reverts when queried for non existent token id', async () => {
@@ -94,11 +112,11 @@ contract('ERC721', function (accounts) {
 
     describe('mintBatchEdition(editionSize, to, uri) token URI', () => {
       beforeEach(async () => {
-        await this.token.mintBatchEdition(25, owner, 'my-token-uri', {from: contract});
+        await this.token.mintBatchEdition(25, owner, TOKEN_URI, {from: contract});
       });
 
       it('it is not empty by default', async () => {
-        expect(await this.token.tokenURI(firstEditionTokenId)).to.be.equal('my-token-uri');
+        expect(await this.token.tokenURI(firstEditionTokenId)).to.be.equal(TOKEN_URI);
       });
 
       it('reverts when queried for non existent token id', async () => {
@@ -110,11 +128,11 @@ contract('ERC721', function (accounts) {
 
     describe('mintConsecutiveBatchEdition(editionSize, to, uri) token URI', () => {
       beforeEach(async () => {
-        await this.token.mintConsecutiveBatchEdition(25, owner, 'my-token-uri', {from: contract});
+        await this.token.mintConsecutiveBatchEdition(25, owner, TOKEN_URI, {from: contract});
       });
 
       it('it is not empty by default', async () => {
-        expect(await this.token.tokenURI(firstEditionTokenId)).to.be.equal('my-token-uri');
+        expect(await this.token.tokenURI(firstEditionTokenId)).to.be.equal(TOKEN_URI);
       });
 
       it('reverts when queried for non existent token id', async () => {
@@ -128,7 +146,7 @@ contract('ERC721', function (accounts) {
   describe('mintToken(to, uri)', () => {
     context('with minted token', async () => {
       beforeEach(async () => {
-        ({logs: this.logs} = await this.token.mintToken(owner, 'my-token-uri', {from: contract}));
+        ({logs: this.logs} = await this.token.mintToken(owner, TOKEN_URI, {from: contract}));
       });
 
       it('emits a Transfer event', () => {
@@ -144,7 +162,7 @@ contract('ERC721', function (accounts) {
           creator: owner,
           creatorBalance: '1',
           size: '1',
-          uri: 'my-token-uri'
+          uri: TOKEN_URI
         })
       });
     });
@@ -155,7 +173,7 @@ contract('ERC721', function (accounts) {
 
     context('with minted token', async () => {
       beforeEach(async () => {
-        ({logs: this.logs} = await this.token.mintBatchEdition(editionSize, owner, 'my-token-uri', {from: contract}));
+        ({logs: this.logs} = await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract}));
       });
 
       it('emits a single Transfer event', () => {
@@ -174,7 +192,7 @@ contract('ERC721', function (accounts) {
             creator: owner,
             creatorBalance: editionSize,
             size: editionSize,
-            uri: 'my-token-uri'
+            uri: TOKEN_URI
           })
         }
       });
@@ -186,7 +204,7 @@ contract('ERC721', function (accounts) {
 
     context('with minted token', async () => {
       beforeEach(async () => {
-        ({logs: this.logs} = await this.token.mintConsecutiveBatchEdition(editionSize, owner, 'my-token-uri', {from: contract}));
+        ({logs: this.logs} = await this.token.mintConsecutiveBatchEdition(editionSize, owner, TOKEN_URI, {from: contract}));
       });
 
       it('emits a ConsecutiveTransfer event', () => {
@@ -212,7 +230,7 @@ contract('ERC721', function (accounts) {
             creator: owner,
             creatorBalance: '10',
             size: editionSize,
-            uri: 'my-token-uri'
+            uri: TOKEN_URI
           })
         }
       });
@@ -222,9 +240,9 @@ contract('ERC721', function (accounts) {
   context('with minted tokens from mintToken(to, uri)', () => {
     beforeEach(async () => {
       // this mints to the protocol where owner is address zero
-      await this.token.mintToken(owner, 'my-token-uri', {from: contract});
-      await this.token.mintToken(owner, 'my-token-uri', {from: contract});
-      await this.token.mintToken(owner, 'my-token-uri', {from: contract});
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
 
       // confirm owner and balance
       expect(await this.token.balanceOf(owner)).to.be.bignumber.equal('3');
@@ -318,7 +336,7 @@ contract('ERC721', function (accounts) {
             owner: this.toWhom,
             creator: owner,
             size: '1',
-            uri: 'my-token-uri'
+            uri: TOKEN_URI
           })
         });
       };
@@ -745,7 +763,7 @@ contract('ERC721', function (accounts) {
   context('with minted tokens from mintBatchEdition(size, to, uri)', () => {
     beforeEach(async () => {
       // this mints to the protocol where owner is address zero
-      await this.token.mintBatchEdition(10, owner, 'my-token-uri-1', {from: contract});
+      await this.token.mintBatchEdition(10, owner, 'https://ipfs.infura.io/ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv-1', {from: contract});
 
       this.token1 = firstEditionTokenId;
       this.token2 = new BN(firstEditionTokenId).add(new BN('1'));
@@ -843,7 +861,7 @@ contract('ERC721', function (accounts) {
             owner: this.toWhom,
             creator: owner,
             size: '10',
-            uri: 'my-token-uri-1'
+            uri: 'https://ipfs.infura.io/ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv-1'
           })
         });
       };
@@ -1270,7 +1288,7 @@ contract('ERC721', function (accounts) {
   context('with minted tokens from mintConsecutiveBatchEdition(size, to, uri)', () => {
     beforeEach(async () => {
       // this mints to the protocol where owner is address zero
-      await this.token.mintConsecutiveBatchEdition(10, owner, 'my-token-uri-1', {from: contract});
+      await this.token.mintConsecutiveBatchEdition(10, owner, 'https://ipfs.infura.io/ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv-1', {from: contract});
 
       this.token1 = firstEditionTokenId;
       this.token2 = new BN(firstEditionTokenId).add(new BN('1'));
@@ -1368,7 +1386,7 @@ contract('ERC721', function (accounts) {
             owner: this.toWhom,
             creator: owner,
             size: '10',
-            uri: 'my-token-uri-1'
+            uri: 'https://ipfs.infura.io/ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv-1'
           })
         });
       };
@@ -1796,7 +1814,7 @@ contract('ERC721', function (accounts) {
 
     beforeEach(async () => {
       // this mints to the protocol where owner is address zero
-      await this.token.mintBatchEdition(5, owner, 'my-token-uri-1', {from: contract});
+      await this.token.mintBatchEdition(5, owner, 'https://ipfs.infura.io/ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv-1', {from: contract});
 
       this.token1 = firstEditionTokenId;
       this.token2 = new BN(firstEditionTokenId).add(new BN('1'));
@@ -1817,7 +1835,7 @@ contract('ERC721', function (accounts) {
       this.toWhom = other; // default to other for toWhom in context-dependent tests
     });
 
-    it.only('after the first transfers', async () => {
+    it('after the first transfers', async () => {
       // token 1 moved and token 2 assigned to original owner
       ({logs: this.logs} = await this.token.safeTransferFrom(owner, collectorA, this.token1));
       expectEvent.inLogs(this.logs, 'Transfer', {from: owner, to: collectorA, tokenId: this.token1});

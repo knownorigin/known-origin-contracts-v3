@@ -18,6 +18,8 @@ const {validateToken} = require('../test-helpers');
 contract('ERC721', function (accounts) {
   const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD] = accounts;
 
+  const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
+
   const STARTING_EDITION = '10000';
 
   const ETH_ONE = ether('1');
@@ -74,7 +76,7 @@ contract('ERC721', function (accounts) {
       await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
       // create 100 tokens to the minter
-      await this.token.mintBatchEdition(100, minter, 'my-token-uri', {from: contract});
+      await this.token.mintBatchEdition(100, minter, TOKEN_URI, {from: contract});
 
       // list edition for sale at 0.1 ETH per token
       await this.marketplace.listEdition(firstEditionTokenId, _0_1_ETH, {from: minter});
@@ -103,7 +105,7 @@ contract('ERC721', function (accounts) {
         creator: minter,
         creatorBalance: '99',
         size: '100',
-        uri: 'my-token-uri'
+        uri: TOKEN_URI
       });
 
       //////////////////////////////
@@ -127,7 +129,7 @@ contract('ERC721', function (accounts) {
         creator: minter,
         creatorBalance: '98',
         size: '100',
-        uri: 'my-token-uri'
+        uri: TOKEN_URI
       });
 
       ///////////////////////////////////////////////////////////////
@@ -155,7 +157,7 @@ contract('ERC721', function (accounts) {
         creator: minter,
         creatorBalance: '98',
         size: '100',
-        uri: 'my-token-uri'
+        uri: TOKEN_URI
       });
     });
 

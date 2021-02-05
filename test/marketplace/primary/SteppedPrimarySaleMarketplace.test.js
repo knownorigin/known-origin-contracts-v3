@@ -17,6 +17,8 @@ const EditionRegistry = artifacts.require('EditionRegistry');
 contract('ERC721', function (accounts) {
   const [owner, minter, contract, collectorA, collectorB] = accounts;
 
+  const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
+
   const STARTING_EDITION = '10000';
 
   const firstEditionTokenId = new BN('11000');
@@ -77,7 +79,7 @@ contract('ERC721', function (accounts) {
 
       beforeEach(async () => {
         // create token
-        await this.token.mintToken(minter, 'my-token-uri', {from: contract});
+        await this.token.mintToken(minter, TOKEN_URI, {from: contract});
 
         // setup sale params
         await this.marketplace.setupSale(firstEditionTokenId, BASE_PRICE, STEP_PRICE);
@@ -152,7 +154,7 @@ contract('ERC721', function (accounts) {
             creator: minter,
             creatorBalance: '0',
             size: '1',
-            uri: 'my-token-uri'
+            uri: TOKEN_URI
           });
         });
 

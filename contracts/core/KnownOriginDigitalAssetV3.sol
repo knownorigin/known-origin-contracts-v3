@@ -144,14 +144,6 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         return start;
     }
 
-
-    // TODO work out why this isnt working
-    function generateNextEditionNumber() internal returns (uint256)  {
-        //0x108b7810 = selector for generateNextEditionNumber()
-        (,bytes memory result) = address(editionRegistry).delegatecall(abi.encodeWithSelector(0x108b7810));
-        return abi.decode(result, (uint256));
-    }
-
     function _defineEditionConfig(uint256 _editionId, uint256 _editionSize, address _to, string calldata _uri) internal {
         // store address and size in config
         uint256 editionConfig = uint256(_to);
