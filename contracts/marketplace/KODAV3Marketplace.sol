@@ -118,8 +118,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     function buyEditionToken(uint256 _editionId) public payable nonReentrant {
         Listing storage listing = editionListings[_editionId];
         require(listing.seller != address(0), "No listing found");
-        require(listing.price == msg.value, "List price not satisfied");
-        // FIXME use >= ?
+        require(msg.value >= listing.price, "List price not satisfied");
 
         uint256 tokenId = facilitateNextPrimarySale(_editionId, msg.value, _msgSender());
 

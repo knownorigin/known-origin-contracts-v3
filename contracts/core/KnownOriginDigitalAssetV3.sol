@@ -28,6 +28,8 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
     bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
 
+    event AdminEditionReported(uint256 _editionId, bool _reported);
+
     IEditionRegistry public editionRegistry;
 
     // Token name
@@ -50,6 +52,9 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
 
     // Mapping of owner => operator => approved
     mapping(address => mapping(address => bool)) internal operatorApprovals;
+
+    // A onchain reference to editions which have been reported for some infringement purposes to KO
+    mapping(uint256 => bool) public reportedEditionIds;
 
     struct EditionDetails {
         uint256 editionConfig; // combined creator and size
@@ -158,7 +163,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
 
     // FIXME use resolver for dynamic token URIs ... ?
     function tokenURI(uint256 _tokenId) public view returns (string memory) {
-       uint256 editionId = _editionFromTokenId(_tokenId);
+        uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
         require(edition.editionConfig != 0, "Token does not exist");
         return edition.uri;
@@ -171,7 +176,8 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     view
     returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri) {
         uint256 editionId = _editionFromTokenId(_tokenId);
-        EditionDetails memory edition = editionDetails[editionId]; // FIXME use storage for gas?
+        EditionDetails memory edition = editionDetails[editionId];
+        // FIXME use storage for gas?
 
         // Extract creator and size of edition
         uint256 editionConfig = edition.editionConfig;
@@ -216,7 +222,8 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     function _getEditionCreator(uint256 _editionId) internal view returns (address _originalCreator) {
         EditionDetails storage edition = editionDetails[_editionId];
         uint256 editionConfig = edition.editionConfig;
-        return address(editionConfig); // FIXME does this just work and drop the other bit?
+        return address(editionConfig);
+        // FIXME does this just work and drop the other bit?
     }
 
     ////////////////
@@ -642,6 +649,16 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
             bytes4 retval = abi.decode(returndata, (bytes4));
             return (retval == ERC721_RECEIVED);
         }
+    }
+
+    ///////////////////
+    // Admin setters //
+    ///////////////////
+
+    function reportEditionId(uint256 _editionId, bool _reported) public {
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        reportedEditionIds[_editionId] = report;
+        emit AdminEditionReported(_editionId, _reported);
     }
 
 }

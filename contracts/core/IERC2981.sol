@@ -8,4 +8,5 @@ pragma solidity 0.7.4;
 interface IERC2981 {
 
     function royaltyInfo(uint256 _tokenId) external returns (address receiver, uint256 amount);
+
 }
