@@ -39,9 +39,6 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     event EditionBidAccepted(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _amount);
     event EditionBidRejected(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
 
-    // TODO start date
-    // TODO dutch auction
-    // TODO reserve price
     // TODO 24hr countdown timer
     // TODO admin functions for fixing issues/draining tokens & ETH
 
@@ -78,13 +75,30 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
         platformAccount = _platformAccount;
     }
 
-    // should work for primary and secondary
-    // should handle payment splits differently for primary and secondary
-    // should support
-    //      - buy now price for edition (primary)
-    //      - buy now price for token (secondary)
-    //      - offers for editions (primary)
-    //      - offers for token (secondary)
+    // Buy now
+    //  - set price and optional start date
+    //  - cannot be in order sales modes ?
+    //  - edition (primary)
+    //  - token (secondary)
+
+    // Offers
+    // - optional start date
+    // - off-chain reserve price for signalling only
+    // - editions (primary)
+    // - token (secondary)
+
+    // Stepped auctions
+    //  - optional start date
+    //  - base price and step
+    //  - cannot be changed once triggered
+    //  - edition (primary)
+    //  - token (secondary)
+
+    // Dutch auction
+    //  - start date + price | end date + price
+    //  - once closed it becomes a buy now
+    //  - edition (primary)
+    //  - token (secondary)
 
     /////////////////////////////////
     // Primary 'buy now' sale flow //
