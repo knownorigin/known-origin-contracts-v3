@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
 
 // TODO how to handle existing KO access controls and self service access control/frequency controls?
+// TODO make context aware
+// TODO expose method which uses _msgSender()
 
 contract KOAccessControls is AccessControl {
 
@@ -19,9 +21,6 @@ contract KOAccessControls is AccessControl {
     /////////////
     // Lookups //
     /////////////
-
-   // TODO make context aware
-   // TODO expose method which uses _msgSender()
 
     function hasAdminRole(address _address) public view returns (bool) {
         return hasRole(DEFAULT_ADMIN_ROLE, _address);

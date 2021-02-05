@@ -12,7 +12,6 @@ contract Konstants {
 
     // magic method that defines the maximum range for an edition - this is fix forever - tokens are minted in range
     function _editionFromTokenId(uint256 _tokenId) internal pure returns (uint256) {
-        uint256 editionId = (_tokenId / MAX_EDITION_SIZE) * MAX_EDITION_SIZE;
-        return editionId;
+        return (_tokenId / MAX_EDITION_SIZE) * MAX_EDITION_SIZE;
     }
 }

@@ -94,12 +94,12 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     // Mints batches of tokens emitting multiple Transfer events
     function mintBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
     external
-    returns (uint256 _firstTokenId, uint256 _lastTokenId) {
+    returns (uint256 _editionId) {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
 
         uint256 start = editionRegistry.generateNextEditionNumber();
-        uint256 end = start.add(_editionSize);
+        //        uint256 end = start.add(_editionSize);
 
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
 
@@ -109,24 +109,26 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         // edition of x
         _defineEditionConfig(start, _editionSize, _to, _uri);
 
-        // Batch event emitting
-        // FIXME decide whether to start from 0 as first token or #1
-        for (uint i = start; i < end; i++) {
-            emit Transfer(address(0), _to, i);
-        }
+        //        // Batch event emitting
+        //        // FIXME decide whether to start from 0 as first token or #1
+        //        for (uint i = start; i < end; i++) {
+        //            emit Transfer(address(0), _to, i);
+        //        }
 
-        return (start, end);
+        // Emit a single event for the first token only
+        emit Transfer(address(0), _to, start);
+
+        return start;
     }
 
     // Mints batches of tokens but emits a single ConsecutiveTransfer event EIP-2309
     function mintConsecutiveBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
     external
-    returns (uint256 _firstTokenId, uint256 _lastTokenId) {
+    returns (uint256 _editionId) {
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
 
         uint256 start = editionRegistry.generateNextEditionNumber();
-        uint256 end = start.add(_editionSize);
 
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
 
@@ -137,9 +139,9 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         _defineEditionConfig(start, _editionSize, _to, _uri);
 
         // emit EIP-2309 consecutive transfer event
-        emit ConsecutiveTransfer(start, end, address(0), _to);
+        emit ConsecutiveTransfer(start, start.add(_editionSize), address(0), _to);
 
-        return (start, end);
+        return start;
     }
 
     function _defineEditionConfig(uint256 _editionId, uint256 _editionSize, address _to, string calldata _uri) internal {
@@ -176,7 +178,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     view
     returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri) {
         uint256 editionId = _editionFromTokenId(_tokenId);
-        EditionDetails memory edition = editionDetails[editionId];
+        EditionDetails storage edition = editionDetails[editionId];
         // FIXME use storage for gas?
 
         // Extract creator and size of edition
@@ -230,7 +232,6 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     // Size query //
     ////////////////
 
-
     // FIXME getSizeOfEdition
     function getEditionSize(uint256 _editionId) public override view returns (uint256 _size) {
         return _getEditionSize(_editionId);
@@ -250,9 +251,9 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     // Existence query //
     /////////////////////
 
+    // TODO test to check this logic assumption ...
     function editionExists(uint256 _editionId) public override view returns (bool) {
         EditionDetails storage edition = editionDetails[_editionId];
-        // TODO check this logic assumption ...
         return edition.editionConfig > 0;
     }
 
@@ -261,10 +262,9 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         return true;
     }
 
-    // FIXME what is this used for? Use safemath? maxTokenIdOfEdition
+    // FIXME what is this used for? Use safe-math? maxTokenIdOfEdition
     function maxEditionTokenId(uint256 _editionId) public override view returns (uint256 _tokenId) {
-        uint256 size = _getEditionSize(_editionId);
-        return size + _editionId;
+        return _getEditionSize(_editionId) + _editionId;
     }
 
     ////////////////
@@ -467,6 +467,10 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         );
     }
 
+    // TODO add method e.g. creatorTransfer() - this can be lighter weight then transfer as we can confirm the creator and pre-state of the edition
+    //      - can be used byt other contracts
+    //      - approval flow?
+
     // TODO validate approval flow for both sold out and partially available editions and their tokens
 
     /// @notice Enable or disable approval for a third party ("operator") to manage
@@ -523,7 +527,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     override
     public {
         // TODO Confirm we have a test for this as its assumed and used in the logic
-        // FIXME could drop this? As people like to send to 0x0
+        // enforce not being able to send to zero as we have explicit rules what a minted but unbound owner is
         require(_to != address(0), "ERC721_ZERO_TO_ADDRESS");
 
         address owner = ownerOf(_tokenId);
@@ -550,7 +554,19 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         balances[_from] = balances[_from].sub(1);
         balances[_to] = balances[_to].add(1);
 
+        // move the token
         emit Transfer(_from, _to, _tokenId);
+
+        // after transfer - check to see if any more tokens are assigning to the creator and trigger transfer event
+        uint256 nextTokenId = _tokenId + 1;
+        if (
+            (nextTokenId < maxEditionTokenId(_editionFromTokenId(_tokenId))) // does not exceed max token ID for edition
+            && (owners[nextTokenId] == address(0)) // not already assigned an new owner
+        ) {
+            // TODO _from in this scenario should always be the creator ... test this assumption ... ?
+            // issue the transfer event for the next token
+            emit Transfer(address(0), _from, nextTokenId);
+        }
     }
 
     /// @notice Find the owner of an NFT
@@ -568,8 +584,9 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         return owner;
     }
 
-    // magic internal method for working out current owner
+    // magic internal method for working out current owner - this returns
     function _ownerOf(uint256 _tokenId, uint256 _editionId) internal view returns (address) {
+
         // If an owner assigned
         address owner = owners[_tokenId];
         if (owner != address(0)) {
@@ -581,7 +598,8 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         // Get the edition size and work out the max token ID, if it does not fall within this range then return zero
         uint256 size = _getEditionSize(_editionId);
         if (size == 0 || _editionId + size < _tokenId) {
-            return address(0);
+            // TODO confirm this logic ...
+            require(owner != address(0), "ERC721_ZERO_OWNER");
         }
 
         // fall back to edition creator
@@ -657,7 +675,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
 
     function reportEditionId(uint256 _editionId, bool _reported) public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
-        reportedEditionIds[_editionId] = report;
+        reportedEditionIds[_editionId] = _reported;
         emit AdminEditionReported(_editionId, _reported);
     }
 

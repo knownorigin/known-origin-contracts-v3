@@ -41,7 +41,7 @@ contract MinterFactory is Context {
         require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
 
         // Make token & edition
-        (uint256 editionId,) = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
+        uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
 
         // setup price
         marketplace.setupSale(editionId, basePrice, stepPrice);
@@ -52,7 +52,7 @@ contract MinterFactory is Context {
         require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
 
         // Make token & edition
-        (uint256 editionId,) = koda.mintConsecutiveBatchEdition(_editionSize, _msgSender(), _uri);
+        uint256 editionId = koda.mintConsecutiveBatchEdition(_editionSize, _msgSender(), _uri);
 
         // setup price
         marketplace.setupSale(editionId, basePrice, stepPrice);

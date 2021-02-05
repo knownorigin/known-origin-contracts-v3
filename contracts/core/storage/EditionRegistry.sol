@@ -7,7 +7,7 @@ import "./IEditionRegistry.sol";
 import "../../access/KOAccessControls.sol";
 import "../Konstants.sol";
 
-contract EditionRegistry is Context, IEditionRegistry, Konstants {
+contract EditionRegistry is IEditionRegistry, Konstants, Context {
 
     event ContractEnabled(address indexed mintingContract);
     event ContractDisabled(address indexed mintingContract);
@@ -31,7 +31,7 @@ contract EditionRegistry is Context, IEditionRegistry, Konstants {
 
     // FIXME is there a more GAS efficient way of having a shared state?
 
-    function generateNextEditionNumber() external override returns (uint256) {
+    function generateNextEditionNumber() public override returns (uint256) {
         require(koNftRegistry[_msgSender()], "EditionRegistry: Caller not registered");
 
         uint256 nextNumber = editionPointer += MAX_EDITION_SIZE;
