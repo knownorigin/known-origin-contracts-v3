@@ -281,6 +281,8 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     returns (address receiver, uint256 amount) {
         // TODO implement this properly with richer royalties recipients
 
+        // TODO multi-collaborators future support
+
         address creator = _getEditionCreator(_editionFromTokenId(_tokenId));
         return (creator, secondarySaleRoyalty);
     }

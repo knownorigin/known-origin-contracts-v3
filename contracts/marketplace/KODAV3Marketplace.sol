@@ -39,6 +39,12 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     event EditionBidAccepted(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _amount);
     event EditionBidRejected(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
 
+    // TODO start date
+    // TODO dutch auction
+    // TODO reserve price
+    // TODO 24hr countdown timer
+    // TODO admin functions for fixing issues/draining tokens & ETH
+
     struct Offer {
         uint256 offer;
         address bidder;
@@ -112,7 +118,8 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     function buyEditionToken(uint256 _editionId) public payable nonReentrant {
         Listing storage listing = editionListings[_editionId];
         require(listing.seller != address(0), "No listing found");
-        require(listing.price == msg.value, "List price not satisfied"); // FIXME use >= ?
+        require(listing.price == msg.value, "List price not satisfied");
+        // FIXME use >= ?
 
         uint256 tokenId = facilitateNextPrimarySale(_editionId, msg.value, _msgSender());
 
