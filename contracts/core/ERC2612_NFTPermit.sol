@@ -10,11 +10,13 @@ import "hardhat/console.sol";
 // Based on - https://github.com/ethereum/EIPs/issues/2613
 // Variant assume value if token Id and not ERC20 value
 
+// TODO ERC-20 permit style for erc-721 (https://eips.ethereum.org/EIPS/eip-2612)
 interface ERC2612_NFTPermit is IERC721 {
     function permit(address owner, address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
 }
 
 abstract contract NFTPermit is ERC2612_NFTPermit {
+
 
     function permit(address owner, address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
     override
