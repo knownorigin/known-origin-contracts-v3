@@ -23,13 +23,11 @@ contract('ERC721', function (accounts) {
 
     HTTP:
       - https://ipfs.infura.io/ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv
-
         mintBatchEdition(uint256,address,string) - Min. 182702 | Max. 182726 | $31 @ 1710 gas / 100 price
 
     IPFS/Custom (see: https://docs.ipfs.io/how-to/address-ipfs-on-web/)
       - ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv
-
-      mintBatchEdition(uint256,address,string) - Min. 162306 | Max. 182726 | $31 @ 1718 gas / 100 price
+        mintBatchEdition(uint256,address,string) - Min. 162306 | Max. 182726 | $31 @ 1718 gas / 100 price
     ----
     182702 - 162306 = 20396 savings
 

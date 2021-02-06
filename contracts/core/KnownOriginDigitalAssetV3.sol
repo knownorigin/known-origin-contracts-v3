@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/introspection/ERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
+import "./chi/ChiGasSaver.sol";
+
 import "../access/KOAccessControls.sol";
 import "./storage/EditionRegistry.sol";
 
@@ -21,7 +23,7 @@ import "hardhat/console.sol";
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
+contract KnownOriginDigitalAssetV3 is KODAV3Core, ChiGasSaver, IKODAV3, ERC165 {
     using SafeMath for uint256;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
@@ -71,7 +73,10 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
         _registerInterface(_INTERFACE_ID_ERC721_METADATA);
     }
 
-    function mintToken(address _to, string calldata _uri) external returns (uint256 _tokenId) {
+    function mintToken(address _to, string calldata _uri)
+    external
+    saveGas(_to)
+    returns (uint256 _tokenId) {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
 
         // Edition number is the first token ID
@@ -94,6 +99,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     // Mints batches of tokens emitting multiple Transfer events
     function mintBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
     external
+    saveGas(_to)
     returns (uint256 _editionId) {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
@@ -124,6 +130,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, IKODAV3, ERC165 {
     // Mints batches of tokens but emits a single ConsecutiveTransfer event EIP-2309
     function mintConsecutiveBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
     external
+    saveGas(_to)
     returns (uint256 _editionId) {
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
