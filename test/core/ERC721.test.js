@@ -66,6 +66,7 @@ contract('ERC721', function (accounts) {
     this.token = await KnownOriginDigitalAssetV3.new(
       this.accessControls.address,
       this.editionRegistry.address,
+      ZERO_ADDRESS, // no GAS token for these tests
       {from: owner}
     );
 

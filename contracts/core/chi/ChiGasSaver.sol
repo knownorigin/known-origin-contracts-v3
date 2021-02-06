@@ -2,6 +2,9 @@
 
 pragma solidity ^0.7.4;
 
+// TODO remove me
+import "hardhat/console.sol";
+
 // TODO whats the best way to test this?
 abstract contract IFreeFromUpTo {
     function freeFromUpTo(address from, uint256 value) external virtual returns (uint256 freed);
@@ -9,9 +12,10 @@ abstract contract IFreeFromUpTo {
 
 contract ChiGasSaver {
 
-    constructor() {
-        // FIXME parameterise chi token address via constructor and re-enable
-        // FIXME expose methodNameGasSaver() vs methodName() for redundancy is something goes wrong
+    address chiToken;
+
+    constructor(address _chiToken) {
+        chiToken = _chiToken;
     }
 
     modifier saveGas(address sponsor) {
@@ -19,7 +23,8 @@ contract ChiGasSaver {
         _;
         uint256 gasSpent = 21000 + gasStart - gasleft() + 16 * msg.data.length;
 
-        IFreeFromUpTo chi = IFreeFromUpTo(0x0000000000004946c0e9F43F4Dee607b0eF1fA1c);
-        chi.freeFromUpTo(sponsor, (gasSpent + 14154) / 41947);
+//        console.log("gasStart %s | gasSpent %s", gasStart, gasSpent);
+
+        IFreeFromUpTo(chiToken).freeFromUpTo(sponsor, (gasSpent + 14154) / 41947);
     }
 }

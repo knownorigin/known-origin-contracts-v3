@@ -63,7 +63,9 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, ChiGasSaver, IKODAV3, ERC165 {
         string uri; // the referenced metadata
     }
 
-    constructor(KOAccessControls _accessControls, IEditionRegistry _editionRegistry) KODAV3Core(_accessControls) {
+    constructor(KOAccessControls _accessControls, IEditionRegistry _editionRegistry, address _chiToken)
+    KODAV3Core(_accessControls)
+    ChiGasSaver(_chiToken) {
         editionRegistry = _editionRegistry;
 
         name = "KnownOriginDigitalAsset";
@@ -94,7 +96,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, ChiGasSaver, IKODAV3, ERC165 {
         return nextEditionNumber;
     }
 
-    // GAS Saver version - TODO needs testing
+    // GAS Saver version - TODO needs more testing and general understanding
     function mintTokenWithGasSaver(address _to, string calldata _uri)
     public
     saveGas(_to)
@@ -132,7 +134,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, ChiGasSaver, IKODAV3, ERC165 {
         return start;
     }
 
-    // GAS Saver version - TODO needs testing
+    // GAS Saver version - TODO needs more testing and general understanding
     function mintBatchEditionWithGasSaver(uint256 _editionSize, address _to, string calldata _uri)
     public
     saveGas(_to)
@@ -163,7 +165,7 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, ChiGasSaver, IKODAV3, ERC165 {
         return start;
     }
 
-    // GAS Saver version - TODO needs testing
+    // GAS Saver version - TODO needs more testing and general understanding
     function mintConsecutiveBatchEditionWithGasSaver(uint256 _editionSize, address _to, string calldata _uri)
     public
     saveGas(_to)
