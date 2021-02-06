@@ -14,16 +14,15 @@ import "./storage/EditionRegistry.sol";
 
 import "./IKODAV3.sol";
 import "./KODAV3Core.sol";
+import "./ERC2612_NFTPermit.sol";
 
 // TODO remove me
 import "hardhat/console.sol";
 
-// TODO ERC-20 permit style for erc-721 (https://eips.ethereum.org/EIPS/eip-2612)
-
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is KODAV3Core, ChiGasSaver, IKODAV3, ERC165 {
+contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV3, ERC165 {
     using SafeMath for uint256;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
