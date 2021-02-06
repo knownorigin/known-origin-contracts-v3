@@ -9,6 +9,11 @@ abstract contract IFreeFromUpTo {
 
 contract ChiGasSaver {
 
+    constructor() {
+        // FIXME parameterise chi token address via constructor and re-enable
+        // FIXME expose methodNameGasSaver() vs methodName() for redundancy is something goes wrong
+    }
+
     modifier saveGas(address sponsor) {
         uint256 gasStart = gasleft();
         _;

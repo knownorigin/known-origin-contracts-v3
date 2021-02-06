@@ -74,11 +74,9 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, ChiGasSaver, IKODAV3, ERC165 {
     }
 
     function mintToken(address _to, string calldata _uri)
-    external
-    saveGas(_to)
+    public
     returns (uint256 _tokenId) {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
-
         // Edition number is the first token ID
         uint256 nextEditionNumber = editionRegistry.generateNextEditionNumber();
 
@@ -96,10 +94,17 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, ChiGasSaver, IKODAV3, ERC165 {
         return nextEditionNumber;
     }
 
+    // GAS Saver version - TODO needs testing
+    function mintTokenWithGasSaver(address _to, string calldata _uri)
+    public
+    saveGas(_to)
+    returns (uint256 _tokenId) {
+        return mintToken(_to, _uri);
+    }
+
     // Mints batches of tokens emitting multiple Transfer events
     function mintBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
-    external
-    saveGas(_to)
+    public
     returns (uint256 _editionId) {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
@@ -127,10 +132,17 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, ChiGasSaver, IKODAV3, ERC165 {
         return start;
     }
 
+    // GAS Saver version - TODO needs testing
+    function mintBatchEditionWithGasSaver(uint256 _editionSize, address _to, string calldata _uri)
+    public
+    saveGas(_to)
+    returns (uint256 _editionId) {
+        return mintBatchEdition(_editionSize, _to, _uri);
+    }
+
     // Mints batches of tokens but emits a single ConsecutiveTransfer event EIP-2309
     function mintConsecutiveBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
-    external
-    saveGas(_to)
+    public
     returns (uint256 _editionId) {
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
@@ -149,6 +161,14 @@ contract KnownOriginDigitalAssetV3 is KODAV3Core, ChiGasSaver, IKODAV3, ERC165 {
         emit ConsecutiveTransfer(start, start.add(_editionSize), address(0), _to);
 
         return start;
+    }
+
+    // GAS Saver version - TODO needs testing
+    function mintConsecutiveBatchEditionWithGasSaver(uint256 _editionSize, address _to, string calldata _uri)
+    public
+    saveGas(_to)
+    returns (uint256 _editionId) {
+        return mintConsecutiveBatchEdition(_editionSize, _to, _uri);
     }
 
     function _defineEditionConfig(uint256 _editionId, uint256 _editionSize, address _to, string calldata _uri) internal {
