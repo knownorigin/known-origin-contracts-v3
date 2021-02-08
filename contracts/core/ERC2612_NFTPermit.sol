@@ -17,6 +17,7 @@ interface ERC2612_NFTPermit is IERC721 {
 
 abstract contract NFTPermit is ERC2612_NFTPermit {
 
+    //DAI version https://github.com/makerdao/dss/blob/44330065999621834b08de1edf3b962f6bbd74c6/src/dai.sol#L118-L140
 
     function permit(address owner, address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
     override

@@ -89,7 +89,7 @@ contract('ERC721', function (accounts) {
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.marketplace.address, {from: owner});
   });
 
-  describe('mintTokenWithGasSaver(to, uri) vs mintToken(to, uri)', () => {
+  describe.only('mintTokenWithGasSaver(to, uri) vs mintToken(to, uri)', () => {
 
     context('mintTokenWithGasSaver()', async () => {
       beforeEach(async () => {
