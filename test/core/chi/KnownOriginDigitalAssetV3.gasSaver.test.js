@@ -14,7 +14,7 @@ const KOAccessControls = artifacts.require('KOAccessControls');
 const EditionRegistry = artifacts.require('EditionRegistry');
 const ChiToken = artifacts.require('ChiToken');
 
-const {validateToken} = require('../test-helpers');
+const {validateToken} = require('../../test-helpers');
 
 contract('ERC721', function (accounts) {
   const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD] = accounts;
