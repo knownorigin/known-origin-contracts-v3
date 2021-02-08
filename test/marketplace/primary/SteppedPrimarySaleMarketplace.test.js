@@ -50,6 +50,7 @@ contract('ERC721', function (accounts) {
       this.accessControls.address,
       this.editionRegistry.address,
       ZERO_ADDRESS, // no GAS token for these tests
+      ZERO_ADDRESS, // no royalties address
       {from: owner}
     );
 

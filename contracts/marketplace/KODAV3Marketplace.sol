@@ -109,7 +109,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     //  - they cannot be done e.g. accepting an offer when the edition is sold out
     //  - approvals go astray/removed - approvals may need to be mapped in subgraph
 
-    function listEdition(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) public {
+    function listEdition(uint256 _editionId, uint128 _listingPrice) public {
         require(_listingPrice >= minBidAmount, "Listing price not enough");
         address creator = koda.getCreatorOfEdition(_editionId);
         require(creator == _msgSender(), "Not creator");
@@ -123,7 +123,6 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
 
         emit EditionListed(_editionId, _listingPrice);
     }
-
 
     function delistEdition(uint256 _editionId) public {
         require(editionListings[_editionId].seller == _msgSender(), "Caller not the lister");
@@ -195,7 +194,6 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
         emit EditionBidRejected(_editionId, _msgSender(), offer.offer);
     }
 
-    // FIXME nice work - covers the "problem"
     function acceptEditionBid(uint256 _editionId, uint256 _offerPrice) public nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
@@ -346,7 +344,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
         emit TokenBidWithdrawn(_tokenId, _msgSender());
     }
 
-    function rejectTokenBid(uint256 _tokenId) public {
+    function rejectTokenBid(uint256 _tokenId) public nonReentrant {
         Offer storage offer = tokenOffers[_tokenId];
         require(offer.bidder != address(0), "No open bid");
 
