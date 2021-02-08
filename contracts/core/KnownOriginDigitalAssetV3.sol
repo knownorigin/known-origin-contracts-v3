@@ -31,7 +31,14 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
     event AdminEditionReported(uint256 _editionId, bool _reported);
 
+    // TODO is this really needed? moving it internally would save about 1-2k GAS as a guess?
     IEditionRegistry public editionRegistry;
+
+    // Royalties registry
+    IERC2981 public royaltiesRegistryProxy;
+
+    // bool flag to setting proxy or not
+    bool public royaltyRegistryActive;
 
     // Token name
     string public name;
@@ -62,10 +69,22 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         string uri; // the referenced metadata
     }
 
-    constructor(KOAccessControls _accessControls, IEditionRegistry _editionRegistry, address _chiToken)
+    constructor(
+        KOAccessControls _accessControls,
+        IEditionRegistry _editionRegistry,
+        IERC2981 _royaltiesRegistryProxy,
+        address _chiToken
+    )
     KODAV3Core(_accessControls)
     ChiGasSaver(_chiToken) {
         editionRegistry = _editionRegistry;
+
+        // TODO setter
+        // optional
+        if (address(royaltiesRegistryProxy) != address(0)) {
+            royaltiesRegistryProxy = _royaltiesRegistryProxy;
+            royaltyRegistryActive = true;
+        }
 
         name = "KnownOriginDigitalAsset";
         symbol = "KODA";
@@ -150,11 +169,14 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     }
 
     function _defineEditionConfig(uint256 _editionId, uint256 _editionSize, address _to, string calldata _uri) internal {
-        // store address and size in config
+        // store address and size in config | address = holds a 20 byte value
         uint256 editionConfig = uint256(_to);
 
-        // TODO Work out and document the max edition ID we can fit in these bits
-        // shift and store edition size in defined space
+        // TODO calculate and document the max edition ID we can fit in these bits
+        // 256 bits can be stored in a uint256
+        // 20 byte address takes up 160 bytes
+        // shift and store edition size in the unused bytes
+        // edition size can occupy a max of 12 bytes, or 96 bits (I think)
         editionConfig |= _editionSize << 160;
 
         // Store edition blob to be the next token pointer
@@ -186,16 +208,12 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
         // Extract creator and size of edition
         uint256 editionConfig = edition.editionConfig;
-        address originCreator = address(editionConfig);
-        uint256 size = uint256(uint40(editionConfig >> 160));
-        address owner = _ownerOf(_tokenId, editionId);
 
-        // FIXME return struct
         return (
-        originCreator,
-        owner,
+        address(editionConfig), // originCreator
+        _ownerOf(_tokenId, editionId), // owner
         editionId,
-        size,
+        uint256(uint40(editionConfig >> 160)), // size
         edition.uri
         );
     }
@@ -276,27 +294,29 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     // Abstract away token royalty registry, proxy through to the implementation
     function royaltyInfo(uint256 _tokenId)
     external
-    view
     override
     returns (address receiver, uint256 amount) {
-        // TODO implement this properly with richer royalties recipients
-
-        // TODO multi-collaborators future support
-
         address creator = _getCreatorOfEdition(_editionFromTokenId(_tokenId));
+
+        // If we have a registry - use it
+        if (royaltyRegistryActive) {
+            // any registry must be edition aware so to only store one entry for all within the edition
+            return royaltiesRegistryProxy.royaltyInfo(_editionFromTokenId(_tokenId));
+        }
         return (creator, secondarySaleRoyalty);
     }
 
     // Expanded method at edition level and expanding on the funds receiver and the creator
     function royaltyAndCreatorInfo(uint256 _editionId)
     external
-    view
     override
     returns (address receiver, address creator, uint256 amount) {
-        // TODO implement this properly with richer royalties recipients
-        // TODO expand this to allow for a different receiver than creator
-
         address originalCreator = _getCreatorOfEdition(_editionId);
+
+        if (royaltyRegistryActive) {
+            (address _receiver, uint256 _amount) = royaltiesRegistryProxy.royaltyInfo(_editionId);
+            return (_receiver, originalCreator, _amount);
+        }
         return (originalCreator, originalCreator, secondarySaleRoyalty);
     }
 
@@ -307,13 +327,15 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     function facilitateNextPrimarySale(uint256 _editionId)
     public
     override
-    view
     returns (address _royaltyReceiver, address _creator, uint256 _tokenId) {
         uint256 tokenId = getNextAvailablePrimarySaleToken(_editionId);
-
-        // TODO implement this properly with richer royalties recipients
-        // TODO expand this to allow for a different receiver than creator
         address originalCreator = _getCreatorOfEdition(_editionId);
+
+        if (royaltyRegistryActive) {
+            (address _receiver,) = royaltiesRegistryProxy.royaltyInfo(_editionId);
+            return (_receiver, originalCreator, tokenId);
+        }
+
         return (originalCreator, originalCreator, tokenId);
     }
 

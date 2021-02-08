@@ -109,15 +109,21 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     //  - they cannot be done e.g. accepting an offer when the edition is sold out
     //  - approvals go astray/removed - approvals may need to be mapped in subgraph
 
-    function listEdition(uint256 _editionId, uint256 _listingPrice) public {
+    function listEdition(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) public {
         require(_listingPrice >= minBidAmount, "Listing price not enough");
         address creator = koda.getCreatorOfEdition(_editionId);
         require(creator == _msgSender(), "Not creator");
+
+        //        // TODO - gauge opinion on this
+        //        uint256 listingPrice = uint256(_listingPrice);
+        //        // 32 bytes / 2 = 16 bytes = 16 * 8 = 128 | uint256(uint128(price),uint128(date))
+        //        listingPrice |= _startDate << 128;
 
         editionListings[_editionId] = Listing(_listingPrice, creator);
 
         emit EditionListed(_editionId, _listingPrice);
     }
+
 
     function delistEdition(uint256 _editionId) public {
         require(editionListings[_editionId].seller == _msgSender(), "Caller not the lister");
