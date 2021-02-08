@@ -100,23 +100,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     public
     saveGas(_to)
     returns (uint256 _tokenId) {
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
-
-        // Edition number is the first token ID
-        uint256 nextEditionNumber = editionRegistry.generateNextEditionNumber();
-
-        // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
-
-        // assign balance
-        balances[_to] = balances[_to].add(1);
-
-        // edition of 1
-        _defineEditionConfig(nextEditionNumber, 1, _to, _uri);
-
-        // Single Transfer event for a single token
-        emit Transfer(address(0), _to, nextEditionNumber);
-
-        return nextEditionNumber;
+        return mintToken(_to, _uri);
     }
 
     // Mints batches of tokens emitting multiple Transfer events
@@ -262,18 +246,17 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     // Existence query //
     /////////////////////
 
-    // TODO test to check this logic assumption ...
     function editionExists(uint256 _editionId) public override view returns (bool) {
         return editionDetails[_editionId].editionConfig > 0;
     }
 
+    // TODO there must be a better way of doing this?
     function exists(uint256 _tokenId) public override view returns (bool) {
-        // TODO there must be a better way of doing this?
-        require(_ownerOf(_tokenId, _editionFromTokenId(_tokenId)) != address(0), "ERC721_ZERO_OWNER");
+        ownerOf(_tokenId);
         return true;
     }
 
-    // FIXME what is this used for? Use safe-math?
+    // FIXME Use safe-math?
     function maxTokenIdOfEdition(uint256 _editionId) public override view returns (uint256 _tokenId) {
         return _getSizeOfEdition(_editionId) + _editionId;
     }
@@ -347,7 +330,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
 
             // TODO add a test to make sure this work after being minted, transferred and then transferred back to the original creator
-            // TODO confirm we cannot send to zero address
 
             // if no owner set - assume primary if not moved
             if (owners[tokenId] == address(0)) {

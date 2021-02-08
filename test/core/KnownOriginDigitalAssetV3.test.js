@@ -204,4 +204,44 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
   });
 
+  describe('mintToken()', async () => {
+    it('editionExists()', async () => {
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      expect(await this.token.editionExists(firstEditionTokenId)).to.be.equal(true);
+      expect(await this.token.exists(firstEditionTokenId)).to.be.equal(true);
+    });
+  });
+
+  describe('mintConsecutiveBatchEdition()', async () => {
+    it('editionExists()', async () => {
+      expect(await this.token.editionExists(firstEditionTokenId)).to.be.equal(false);
+
+      await this.token.mintConsecutiveBatchEdition(10, owner, TOKEN_URI, {from: contract});
+
+      const start = _.toNumber(firstEditionTokenId);
+      const end = start + _.toNumber(10);
+      for (const id of _.range(start, end)) {
+        expect(await this.token.exists(id)).to.be.equal(true);
+      }
+
+      expect(await this.token.editionExists(firstEditionTokenId)).to.be.equal(true);
+    });
+  });
+
+  describe('mintBatchEdition()', async () => {
+    it('editionExists()', async () => {
+      expect(await this.token.editionExists(firstEditionTokenId)).to.be.equal(false);
+
+      await this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: contract});
+
+      const start = _.toNumber(firstEditionTokenId);
+      const end = start + _.toNumber(10);
+      for (const id of _.range(start, end)) {
+        expect(await this.token.exists(id)).to.be.equal(true);
+      }
+
+      expect(await this.token.editionExists(firstEditionTokenId)).to.be.equal(true);
+    });
+  });
+
 });
