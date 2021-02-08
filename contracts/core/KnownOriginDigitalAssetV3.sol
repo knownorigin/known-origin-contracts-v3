@@ -100,7 +100,23 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     public
     saveGas(_to)
     returns (uint256 _tokenId) {
-        return mintToken(_to, _uri);
+        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
+
+        // Edition number is the first token ID
+        uint256 nextEditionNumber = editionRegistry.generateNextEditionNumber();
+
+        // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
+
+        // assign balance
+        balances[_to] = balances[_to].add(1);
+
+        // edition of 1
+        _defineEditionConfig(nextEditionNumber, 1, _to, _uri);
+
+        // Single Transfer event for a single token
+        emit Transfer(address(0), _to, nextEditionNumber);
+
+        return nextEditionNumber;
     }
 
     // Mints batches of tokens emitting multiple Transfer events
@@ -126,14 +142,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         return start;
     }
 
-    // GAS Saver version - TODO needs more testing and general understanding
-    function mintBatchEditionWithGasSaver(uint256 _editionSize, address _to, string calldata _uri)
-    public
-    saveGas(_to)
-    returns (uint256 _editionId) {
-        return mintBatchEdition(_editionSize, _to, _uri);
-    }
-
     // Mints batches of tokens but emits a single ConsecutiveTransfer event EIP-2309
     function mintConsecutiveBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
     public
@@ -155,14 +163,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         emit ConsecutiveTransfer(start, start.add(_editionSize), address(0), _to);
 
         return start;
-    }
-
-    // GAS Saver version - TODO needs more testing and general understanding
-    function mintConsecutiveBatchEditionWithGasSaver(uint256 _editionSize, address _to, string calldata _uri)
-    public
-    saveGas(_to)
-    returns (uint256 _editionId) {
-        return mintConsecutiveBatchEdition(_editionSize, _to, _uri);
     }
 
     function _defineEditionConfig(uint256 _editionId, uint256 _editionSize, address _to, string calldata _uri) internal {
