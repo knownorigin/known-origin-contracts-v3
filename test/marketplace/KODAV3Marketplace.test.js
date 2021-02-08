@@ -186,5 +186,4 @@ contract('ERC721', function (accounts) {
 
   });
 
-
 });

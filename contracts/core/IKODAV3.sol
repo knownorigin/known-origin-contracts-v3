@@ -22,13 +22,13 @@ IERC2981  // Royalties
 
     function getCreatorOfToken(uint256 _tokenId) external view returns (address _originalCreator);
 
-    function gteSizeOfEdition(uint256 _editionId) external view returns (uint256 _size);
+    function getSizeOfEdition(uint256 _editionId) external view returns (uint256 _size);
 
-    function gteEditionSizeOfToken(uint256 _tokenId) external view returns (uint256 _size);
+    function getEditionSizeOfToken(uint256 _tokenId) external view returns (uint256 _size);
 
     function editionExists(uint256 _editionId) external view returns (bool);
 
-    function maxEditionTokenId(uint256 _editionId) external view returns (uint256 _tokenId);
+    function maxTokenIdOfEdition(uint256 _editionId) external view returns (uint256 _tokenId);
 
     function getNextAvailablePrimarySaleToken(uint256 _editionId) external view returns (uint256 _tokenId);
 

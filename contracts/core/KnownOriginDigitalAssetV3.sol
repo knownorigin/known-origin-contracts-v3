@@ -192,7 +192,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         return edition.uri;
     }
 
-    // FIXME getDetailsOfEdition
     function getEditionDetails(uint256 _tokenId)
     public
     override
@@ -200,7 +199,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
-        // FIXME use storage for gas?
 
         // Extract creator and size of edition
         uint256 editionConfig = edition.editionConfig;
@@ -235,33 +233,29 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     override
     view
     returns (address _originalCreator) {
-        uint256 editionId = _editionFromTokenId(_tokenId);
-        return _getCreatorOfEdition(editionId);
+        return _getCreatorOfEdition(_editionFromTokenId(_tokenId));
     }
 
     function _getCreatorOfEdition(uint256 _editionId) internal view returns (address _originalCreator) {
-        EditionDetails storage edition = editionDetails[_editionId];
-        uint256 editionConfig = edition.editionConfig;
-        return address(editionConfig);
-        // FIXME does this just work and drop the other bit?
+        // drop the other size bits
+        return address(editionDetails[_editionId].editionConfig);
     }
 
     ////////////////
     // Size query //
     ////////////////
 
-    function gteSizeOfEdition(uint256 _editionId) public override view returns (uint256 _size) {
-        return _gteSizeOfEdition(_editionId);
+    function getSizeOfEdition(uint256 _editionId) public override view returns (uint256 _size) {
+        return _getSizeOfEdition(_editionId);
     }
 
-    function gteEditionSizeOfToken(uint256 _tokenId) public override view returns (uint256 _size) {
-        return _gteSizeOfEdition(_editionFromTokenId(_tokenId));
+    function getEditionSizeOfToken(uint256 _tokenId) public override view returns (uint256 _size) {
+        return _getSizeOfEdition(_editionFromTokenId(_tokenId));
     }
 
-    function _gteSizeOfEdition(uint256 _editionId) internal view returns (uint256 _size) {
-        EditionDetails storage edition = editionDetails[_editionId];
-        uint256 editionConfig = edition.editionConfig;
-        return uint256(uint40(editionConfig >> 160));
+    function _getSizeOfEdition(uint256 _editionId) internal view returns (uint256 _size) {
+        // gab the size from the end of the slot
+        return uint256(uint40(editionDetails[_editionId].editionConfig >> 160));
     }
 
     /////////////////////
@@ -270,18 +264,18 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
     // TODO test to check this logic assumption ...
     function editionExists(uint256 _editionId) public override view returns (bool) {
-        EditionDetails storage edition = editionDetails[_editionId];
-        return edition.editionConfig > 0;
+        return editionDetails[_editionId].editionConfig > 0;
     }
 
     function exists(uint256 _tokenId) public override view returns (bool) {
+        // TODO there must be a better way of doing this?
         require(_ownerOf(_tokenId, _editionFromTokenId(_tokenId)) != address(0), "ERC721_ZERO_OWNER");
         return true;
     }
 
-    // FIXME what is this used for? Use safe-math? maxTokenIdOfEdition
-    function maxEditionTokenId(uint256 _editionId) public override view returns (uint256 _tokenId) {
-        return _gteSizeOfEdition(_editionId) + _editionId;
+    // FIXME what is this used for? Use safe-math?
+    function maxTokenIdOfEdition(uint256 _editionId) public override view returns (uint256 _tokenId) {
+        return _getSizeOfEdition(_editionId) + _editionId;
     }
 
     ////////////////
@@ -348,7 +342,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     returns (uint256 _tokenId) {
 
         // TODO is there a optimisation where we record the last token sold on primary and then we start from this point ... ?
-        uint256 maxTokenId = _editionId + _gteSizeOfEdition(_editionId);
+        uint256 maxTokenId = _editionId + _getSizeOfEdition(_editionId);
 
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
 
@@ -370,6 +364,10 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         require(exists(_tokenId), "Token does not exist");
         return owners[_tokenId] != address(0);
     }
+
+    // TODO add method stuck ETH retrieval
+    // TODO add method stuck ERC20 retrieval
+    // TODO add method stuck ERC721 retrieval
 
     //////////////
     // Defaults //
@@ -482,9 +480,10 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         );
     }
 
-    // TODO add method e.g. creatorTransfer() - this can be lighter weight then transfer as we can confirm the creator and pre-state of the edition
-    //      - can be used byt other contracts
-    //      - approval flow?
+    // TODO add method e.g. creatorTransfer()
+    //      - this can be lighter weight then transfer as we can confirm the creator and pre-state of the edition
+    //      - can be used by other contracts only
+    //      - approval flow needs thought?
 
     // TODO validate approval flow for both sold out and partially available editions and their tokens
 
@@ -541,7 +540,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     )
     override
     public {
-        // TODO Confirm we have a test for this as its assumed and used in the logic
         // enforce not being able to send to zero as we have explicit rules what a minted but unbound owner is
         require(_to != address(0), "ERC721_ZERO_TO_ADDRESS");
 
@@ -575,7 +573,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         // after transfer - check to see if any more tokens are assigning to the creator and trigger transfer event
         uint256 nextTokenId = _tokenId + 1;
         if (
-            (nextTokenId < maxEditionTokenId(_editionFromTokenId(_tokenId))) // does not exceed max token ID for edition
+            (nextTokenId < maxTokenIdOfEdition(_editionFromTokenId(_tokenId))) // does not exceed max token ID for edition
             && (owners[nextTokenId] == address(0)) // not already assigned an new owner
         ) {
             // TODO _from in this scenario should always be the creator ... test this assumption ... ?
@@ -608,13 +606,11 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
             return owner;
         }
 
-        // TODO validate all logic paths and assumptions ... ?
-
-        // Get the edition size and work out the max token ID, if it does not fall within this range then return zero
-        uint256 size = _gteSizeOfEdition(_editionId);
-        if (size == 0 || _editionId + size < _tokenId) {
-            // TODO confirm this logic ...
-            require(owner != address(0), "ERC721_ZERO_OWNER");
+        // Get the edition size and work out the max token ID, if it does not fall within this range then fail
+        if ((_getSizeOfEdition(_editionId) + _editionId) <= _tokenId) {
+            revert("ERC721_ZERO_OWNER");
+            // TODO validate this is needed
+            //      - I am pretty sure it is, when requesting a token from outside of the edition size but within the edition range
         }
 
         // fall back to edition creator

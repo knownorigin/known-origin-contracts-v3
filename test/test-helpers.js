@@ -21,7 +21,7 @@ const validateToken = async function ({tokenId, editionId, owner, ownerBalance, 
   const _creator = await this.token.getCreatorOfEdition(editionId);
   expect(_creator).to.equal(creator, "Failed Edition creator validation")
 
-  const _size = await this.token.gteSizeOfEdition(editionId);
+  const _size = await this.token.getSizeOfEdition(editionId);
   expect(_size).to.bignumber.equal(size, "Failed Edition size validation")
 
   const exists = await this.token.editionExists(editionId);
@@ -33,7 +33,7 @@ const validateToken = async function ({tokenId, editionId, owner, ownerBalance, 
 
   expect(await this.token.ownerOf(tokenId)).to.equal(owner, "Failed owner validation");
 
-  const _tokenEditionSize = await this.token.gteEditionSizeOfToken(tokenId);
+  const _tokenEditionSize = await this.token.getEditionSizeOfToken(tokenId);
   expect(_tokenEditionSize).to.bignumber.equal(size, "Failed Token edition size validation")
 
   const _uri = await this.token.tokenURI(tokenId);

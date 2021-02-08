@@ -1821,7 +1821,7 @@ contract('ERC721', function (accounts) {
       this.token4 = new BN(firstEditionTokenId).add(new BN('3'));
       this.token5 = new BN(firstEditionTokenId).add(new BN('4'));
 
-      expect(await this.token.gteSizeOfEdition(firstEditionTokenId)).to.be.bignumber.equal('5');
+      expect(await this.token.getSizeOfEdition(firstEditionTokenId)).to.be.bignumber.equal('5');
 
       // confirm owner and balance
       expect(await this.token.balanceOf(owner)).to.be.bignumber.equal('5');

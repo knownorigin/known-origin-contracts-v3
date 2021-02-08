@@ -221,7 +221,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
         koda.safeTransferFrom(creator, _buyer, tokenId);
 
         // if we about to sellout - send any open offers back to the bidder
-        if (tokenId == koda.maxEditionTokenId(_editionId)) {
+        if (tokenId == koda.maxTokenIdOfEdition(_editionId)) {
 
             // send money back to top bidder if existing offer found
             Offer storage offer = editionOffers[_editionId];
