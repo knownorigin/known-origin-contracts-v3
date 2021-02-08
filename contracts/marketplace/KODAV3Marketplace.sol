@@ -111,7 +111,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
 
     function listEdition(uint256 _editionId, uint256 _listingPrice) public {
         require(_listingPrice >= minBidAmount, "Listing price not enough");
-        address creator = koda.getEditionCreator(_editionId);
+        address creator = koda.getCreatorOfEdition(_editionId);
         require(creator == _msgSender(), "Not creator");
 
         editionListings[_editionId] = Listing(_listingPrice, creator);
@@ -178,7 +178,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     function rejectEditionBid(uint256 _editionId) public nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
-        require(koda.getEditionCreator(_editionId) == _msgSender(), "Not creator");
+        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
 
         // send money back to top bidder
         refundBidder(offer.bidder, offer.offer);
@@ -194,7 +194,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
         require(offer.offer == _offerPrice, "Offer price has changed");
-        require(koda.getEditionCreator(_editionId) == _msgSender(), "Not creator");
+        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
 
         uint256 tokenId = facilitateNextPrimarySale(_editionId, offer.offer, offer.bidder);
 
@@ -377,7 +377,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     //////////////////////////////
 
     function facilitateTokenSale(uint256 _tokenId, uint256 _paymentAmount, address _seller, address _buyer) internal {
-        address originalCreator = koda.getEditionCreatorOfToken(_tokenId);
+        address originalCreator = koda.getCreatorOfToken(_tokenId);
 
         // split money
         handleTokenSaleFunds(_seller, originalCreator, _paymentAmount);

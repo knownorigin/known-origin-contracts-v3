@@ -15,13 +15,13 @@ const validateToken = async function ({tokenId, editionId, owner, ownerBalance, 
   // Edition checks //
   ////////////////////
 
-  const _editionId = await this.token.getEditionIdForToken(tokenId);
+  const _editionId = await this.token.getEditionIdOfToken(tokenId);
   expect(_editionId).to.bignumber.equal(editionId, "Failed Edition ID validation")
 
-  const _creator = await this.token.getEditionCreator(editionId);
+  const _creator = await this.token.getCreatorOfEdition(editionId);
   expect(_creator).to.equal(creator, "Failed Edition creator validation")
 
-  const _size = await this.token.getEditionSize(editionId);
+  const _size = await this.token.gteSizeOfEdition(editionId);
   expect(_size).to.bignumber.equal(size, "Failed Edition size validation")
 
   const exists = await this.token.editionExists(editionId);
@@ -33,13 +33,13 @@ const validateToken = async function ({tokenId, editionId, owner, ownerBalance, 
 
   expect(await this.token.ownerOf(tokenId)).to.equal(owner, "Failed owner validation");
 
-  const _tokenEditionSize = await this.token.getEditionSizeOfToken(tokenId);
+  const _tokenEditionSize = await this.token.gteEditionSizeOfToken(tokenId);
   expect(_tokenEditionSize).to.bignumber.equal(size, "Failed Token edition size validation")
 
   const _uri = await this.token.tokenURI(tokenId);
   expect(_uri).to.equal(uri, "Failed token URI validation")
 
-  const _tokenCreator = await this.token.getEditionCreatorOfToken(tokenId);
+  const _tokenCreator = await this.token.getCreatorOfToken(tokenId);
   expect(_tokenCreator).to.equal(creator, "Failed token edition creator validation")
 
   const editionDetails = await this.token.getEditionDetails(tokenId);

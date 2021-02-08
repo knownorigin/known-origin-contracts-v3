@@ -96,7 +96,7 @@ contract EditionRoyaltiesRegistry is IERC2981, Konstants, Context {
         }
 
         // default return creator and royalty
-        return (koda.getEditionCreator(_editionId), agreement.expectedRoyalty);
+        return (koda.getCreatorOfEdition(_editionId), agreement.expectedRoyalty);
     }
 
     ////////////
@@ -114,7 +114,7 @@ contract EditionRoyaltiesRegistry is IERC2981, Konstants, Context {
 
     // called when the edition is created
     function setupAgreementAsCreator(uint256 _editionId, uint256 _expectedRoyalty, bytes32 _agreementHash) public {
-        require(_msgSender() == koda.getEditionCreator(_editionId), "Caller must be creator");
+        require(_msgSender() == koda.getCreatorOfEdition(_editionId), "Caller must be creator");
         require(editionAgreements[_editionId].agreementHash.length == 0, "Agreement already defined");
 
         // setup the schedule (N.B: can be called post minting by creator)

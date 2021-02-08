@@ -111,7 +111,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
 
         uint256 start = editionRegistry.generateNextEditionNumber();
-        //        uint256 end = start.add(_editionSize);
 
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
 
@@ -120,12 +119,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
         // edition of x
         _defineEditionConfig(start, _editionSize, _to, _uri);
-
-        //        // Batch event emitting
-        //        // FIXME decide whether to start from 0 as first token or #1
-        //        for (uint i = start; i < end; i++) {
-        //            emit Transfer(address(0), _to, i);
-        //        }
 
         // Emit a single event for the first token only
         emit Transfer(address(0), _to, start);
@@ -229,27 +222,24 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     // Creator query //
     ///////////////////
 
-
-    // FIXME getCreatorOfEdition
-    function getEditionCreator(uint256 _editionId)
+    function getCreatorOfEdition(uint256 _editionId)
     public
     override
     view
     returns (address _originalCreator) {
-        return _getEditionCreator(_editionId);
+        return _getCreatorOfEdition(_editionId);
     }
 
-    // FIXME getCreatorOfToken
-    function getEditionCreatorOfToken(uint256 _tokenId)
+    function getCreatorOfToken(uint256 _tokenId)
     public
     override
     view
     returns (address _originalCreator) {
         uint256 editionId = _editionFromTokenId(_tokenId);
-        return _getEditionCreator(editionId);
+        return _getCreatorOfEdition(editionId);
     }
 
-    function _getEditionCreator(uint256 _editionId) internal view returns (address _originalCreator) {
+    function _getCreatorOfEdition(uint256 _editionId) internal view returns (address _originalCreator) {
         EditionDetails storage edition = editionDetails[_editionId];
         uint256 editionConfig = edition.editionConfig;
         return address(editionConfig);
@@ -260,16 +250,15 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     // Size query //
     ////////////////
 
-    // FIXME getSizeOfEdition
-    function getEditionSize(uint256 _editionId) public override view returns (uint256 _size) {
-        return _getEditionSize(_editionId);
+    function gteSizeOfEdition(uint256 _editionId) public override view returns (uint256 _size) {
+        return _gteSizeOfEdition(_editionId);
     }
 
-    function getEditionSizeOfToken(uint256 _tokenId) public override view returns (uint256 _size) {
-        return _getEditionSize(_editionFromTokenId(_tokenId));
+    function gteEditionSizeOfToken(uint256 _tokenId) public override view returns (uint256 _size) {
+        return _gteSizeOfEdition(_editionFromTokenId(_tokenId));
     }
 
-    function _getEditionSize(uint256 _editionId) internal view returns (uint256 _size) {
+    function _gteSizeOfEdition(uint256 _editionId) internal view returns (uint256 _size) {
         EditionDetails storage edition = editionDetails[_editionId];
         uint256 editionConfig = edition.editionConfig;
         return uint256(uint40(editionConfig >> 160));
@@ -292,15 +281,14 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
     // FIXME what is this used for? Use safe-math? maxTokenIdOfEdition
     function maxEditionTokenId(uint256 _editionId) public override view returns (uint256 _tokenId) {
-        return _getEditionSize(_editionId) + _editionId;
+        return _gteSizeOfEdition(_editionId) + _editionId;
     }
 
     ////////////////
     // Edition ID //
     ////////////////
 
-    // FIXME getEditionIdOfToken
-    function getEditionIdForToken(uint256 _tokenId) public override pure returns (uint256 _editionId) {
+    function getEditionIdOfToken(uint256 _tokenId) public override pure returns (uint256 _editionId) {
         return _editionFromTokenId(_tokenId);
     }
 
@@ -318,7 +306,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
         // TODO multi-collaborators future support
 
-        address creator = _getEditionCreator(_editionFromTokenId(_tokenId));
+        address creator = _getCreatorOfEdition(_editionFromTokenId(_tokenId));
         return (creator, secondarySaleRoyalty);
     }
 
@@ -331,7 +319,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         // TODO implement this properly with richer royalties recipients
         // TODO expand this to allow for a different receiver than creator
 
-        address originalCreator = _getEditionCreator(_editionId);
+        address originalCreator = _getCreatorOfEdition(_editionId);
         return (originalCreator, originalCreator, secondarySaleRoyalty);
     }
 
@@ -348,7 +336,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
         // TODO implement this properly with richer royalties recipients
         // TODO expand this to allow for a different receiver than creator
-        address originalCreator = _getEditionCreator(_editionId);
+        address originalCreator = _getCreatorOfEdition(_editionId);
         return (originalCreator, originalCreator, tokenId);
     }
 
@@ -360,7 +348,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     returns (uint256 _tokenId) {
 
         // TODO is there a optimisation where we record the last token sold on primary and then we start from this point ... ?
-        uint256 maxTokenId = _editionId + _getEditionSize(_editionId);
+        uint256 maxTokenId = _editionId + _gteSizeOfEdition(_editionId);
 
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
 
@@ -378,8 +366,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         // TODO replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
     }
 
-    // FIXME hasPrimarySaleOfToken
-    function hasBeenPrimarySale(uint256 _tokenId) public override view returns (bool) {
+    function hasPrimarySaleOfToken(uint256 _tokenId) public override view returns (bool) {
         require(exists(_tokenId), "Token does not exist");
         return owners[_tokenId] != address(0);
     }
@@ -624,14 +611,14 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         // TODO validate all logic paths and assumptions ... ?
 
         // Get the edition size and work out the max token ID, if it does not fall within this range then return zero
-        uint256 size = _getEditionSize(_editionId);
+        uint256 size = _gteSizeOfEdition(_editionId);
         if (size == 0 || _editionId + size < _tokenId) {
             // TODO confirm this logic ...
             require(owner != address(0), "ERC721_ZERO_OWNER");
         }
 
         // fall back to edition creator
-        address possibleCreator = _getEditionCreator(_editionId);
+        address possibleCreator = _getCreatorOfEdition(_editionId);
         if (possibleCreator != address(0)) {
             return possibleCreator;
         }
