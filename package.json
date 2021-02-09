@@ -24,6 +24,7 @@
     "chai": "^4.2.0",
     "dotenv": "^8.2.0",
     "ethereum-waffle": "^3.2.1",
+    "ethereumjs-util": "^7.0.8",
     "hardhat": "^2.0.8",
     "hardhat-gas-reporter": "^1.0.4",
     "solidity-coverage": "^0.7.14"

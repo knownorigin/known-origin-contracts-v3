@@ -661,6 +661,10 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     override
     external {
         require(deadline >= block.timestamp, 'KODA: EXPIRED');
+        require(exists(tokenId), "KODA: Invalid token");
+
+        // TODO check this logic
+        require(ownerOf(tokenId) == owner, "KODA: Invalid owner");
 
         // Create digest to check signatures
         bytes32 digest = keccak256(
@@ -671,8 +675,16 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
             )
         );
 
+        //        console.log("digest");
+        //        console.logBytes32(digest);
+
         // Has the original signer signed it
         address recoveredAddress = ecrecover(digest, v, r, s);
+        //        console.log("recoveredAddress %s | owner %s", recoveredAddress, owner);
+
+        //        console.log("DOMAIN_SEPARATOR");
+        //        console.logBytes32(DOMAIN_SEPARATOR);
+
         require(recoveredAddress != address(0) && recoveredAddress == owner, 'KODA: INVALID_SIGNATURE');
 
         // set approval for signature if passed

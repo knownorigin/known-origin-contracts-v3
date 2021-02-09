@@ -9,9 +9,9 @@ interface ERC2612_NFTPermit {
     function permit(address owner, address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
 }
 
+// FIXME - can we use this for cheapness? - https://github.com/0xProject/0x-monorepo/blob/development/contracts/utils/contracts/src/LibEIP712.sol
+// TODO move this back to the core contract
 abstract contract NFTPermit is ERC2612_NFTPermit {
-
-    // FIXME - can we use this for cheapness? - https://github.com/0xProject/0x-monorepo/blob/development/contracts/utils/contracts/src/LibEIP712.sol
 
     // Token name
     string public name = "KnownOriginDigitalAsset";
@@ -20,7 +20,7 @@ abstract contract NFTPermit is ERC2612_NFTPermit {
     string public symbol = "KODA";
 
     // KODA version
-    string public version = "V3";
+    string public version = "3";
 
     // Permit domain
     bytes32 public DOMAIN_SEPARATOR;
@@ -41,5 +41,11 @@ abstract contract NFTPermit is ERC2612_NFTPermit {
                 chainId,
                 address(this)
             ));
+    }
+
+    function getChainId() public view returns (uint256) {
+        uint256 chainId;
+        assembly {chainId := chainid()}
+        return chainId;
     }
 }
