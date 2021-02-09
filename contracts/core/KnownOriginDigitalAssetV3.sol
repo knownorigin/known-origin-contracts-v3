@@ -42,12 +42,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     // bool flag to setting proxy or not
     bool public royaltyRegistryActive;
 
-    // Token name
-    string public name;
-
-    // Token symbol
-    string public symbol;
-
     // tokens are minted in batches - the first token ID used is representative of the edition ID (for now)
     mapping(uint256 => EditionDetails) editionDetails;
 
@@ -65,6 +59,9 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
     // A onchain reference to editions which have been reported for some infringement purposes to KO
     mapping(uint256 => bool) public reportedEditionIds;
+
+    // ERC-2615 permit nonces
+    mapping(address => uint) public nonces;
 
     struct EditionDetails {
         uint256 editionConfig; // combined creator and size
@@ -87,9 +84,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
             royaltiesRegistryProxy = _royaltiesRegistryProxy;
             royaltyRegistryActive = true;
         }
-
-        name = "KnownOriginDigitalAsset";
-        symbol = "KODA";
 
         _registerInterface(_INTERFACE_ID_ERC721);
         _registerInterface(_INTERFACE_ID_ERC721_METADATA);
@@ -483,12 +477,12 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
             "ERC721_INVALID_SENDER"
         );
 
+        _approval(owner, _approved, _tokenId);
+    }
+
+    function _approval(address _owner, address _approved, uint256 _tokenId) internal {
         approvals[_tokenId] = _approved;
-        emit Approval(
-            owner,
-            _approved,
-            _tokenId
-        );
+        emit Approval(_owner, _approved, _tokenId);
     }
 
     // TODO add method e.g. creatorTransfer()
@@ -659,6 +653,42 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         return operatorApprovals[_owner][_operator];
     }
 
+    /////////////////////////////
+    // ERC-2612 Permit Variant //
+    /////////////////////////////
+
+    function permit(address owner, address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+    override
+    external {
+        require(deadline >= block.timestamp, 'KODA: EXPIRED');
+
+        // Create digest to check signatures
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                '\x19\x01',
+                DOMAIN_SEPARATOR,
+                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, tokenId, nonces[owner]++, deadline))
+            )
+        );
+
+        // Has the original signer signed it
+        address recoveredAddress = ecrecover(digest, v, r, s);
+        require(recoveredAddress != address(0) && recoveredAddress == owner, 'KODA: INVALID_SIGNATURE');
+
+        // set approval for signature if passed
+        _approval(owner, spender, tokenId);
+    }
+
+    ///////////////////
+    // Admin setters //
+    ///////////////////
+
+    function reportEditionId(uint256 _editionId, bool _reported) public {
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        reportedEditionIds[_editionId] = _reported;
+        emit AdminEditionReported(_editionId, _reported);
+    }
+
     // TODO confirm coverage for callback and magic receiver
 
     function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory _data)
@@ -690,15 +720,4 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
             return (retval == ERC721_RECEIVED);
         }
     }
-
-    ///////////////////
-    // Admin setters //
-    ///////////////////
-
-    function reportEditionId(uint256 _editionId, bool _reported) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
-        reportedEditionIds[_editionId] = _reported;
-        emit AdminEditionReported(_editionId, _reported);
-    }
-
 }
