@@ -93,6 +93,8 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     console.log("internal DOMAIN_SEPARATOR", getDomainSeparator(await this.token.name()));
     console.log("internal PERMIT_TYPEHASH", PERMIT_TYPEHASH);
 
+    // TODO see - https://github.com/Uniswap/uniswap-v2-core/blob/master/test/UniswapV2ERC20.spec.ts
+
     // Sign it ...
     // const signature = await signers[0].signMessage(Buffer.from(digest.slice(2), 'hex'));
     const signature = await signers[0].signMessage(arrayify(digest));

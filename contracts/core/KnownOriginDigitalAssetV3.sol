@@ -188,7 +188,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     // FIXME use resolver for dynamic token URIs ... ?
     function editionURI(uint256 _editionId) public view returns (string memory) {
         EditionDetails storage edition = editionDetails[_editionId];
-        require(edition.editionConfig != 0, "Token does not exist");
+        require(edition.editionConfig != 0, "Edition does not exist");
         return edition.uri;
     }
 

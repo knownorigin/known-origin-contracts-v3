@@ -194,6 +194,28 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
   });
 
+  describe('editionURI() validation', async () => {
+    const editionSize = 10;
+
+    // creator sends random token from within edition - out of sequence
+    beforeEach(async () => {
+      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract});
+    });
+
+    it('returns URI for edition', async () => {
+      const uri = await this.token.editionURI(firstEditionTokenId);
+      expect(uri).to.be.equal(TOKEN_URI);
+    });
+
+    it('reverts when edition is not valid', async () => {
+      await expectRevert(
+        this.token.editionURI("9999999"),
+        "Edition does not exist"
+      );
+    });
+
+  });
+
   describe('mintToken()', async () => {
     it('editionExists()', async () => {
       await this.token.mintToken(owner, TOKEN_URI, {from: contract});
