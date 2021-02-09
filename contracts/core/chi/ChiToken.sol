@@ -36,8 +36,6 @@ library Math {
 
 // File: @openzeppelin/contracts/math/SafeMath.sol
 
-pragma solidity 0.7.4;
-
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
  * checks.
@@ -189,8 +187,6 @@ library SafeMath {
 
 // File: @openzeppelin/contracts/token/ERC20/IERC20.sol
 
-pragma solidity 0.7.4;
-
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
@@ -266,12 +262,6 @@ interface IERC20 {
 }
 
 // File: contracts/ChiToken.sol
-
-pragma solidity 0.7.4;
-
-
-
-
 
 abstract contract ERC20WithoutTotalSupply is IERC20 {
     using SafeMath for uint256;

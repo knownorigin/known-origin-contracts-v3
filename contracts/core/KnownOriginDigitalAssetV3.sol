@@ -303,6 +303,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
             // any registry must be edition aware so to only store one entry for all within the edition
             return royaltiesRegistryProxy.royaltyInfo(_editionFromTokenId(_tokenId));
         }
+
         return (creator, secondarySaleRoyalty);
     }
 
@@ -317,6 +318,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
             (address _receiver, uint256 _amount) = royaltiesRegistryProxy.royaltyInfo(_editionId);
             return (_receiver, originalCreator, _amount);
         }
+
         return (originalCreator, originalCreator, secondarySaleRoyalty);
     }
 

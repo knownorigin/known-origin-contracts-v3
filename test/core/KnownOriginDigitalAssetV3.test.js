@@ -53,8 +53,8 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     this.token = await KnownOriginDigitalAssetV3.new(
       this.accessControls.address,
       this.editionRegistry.address,
-      ZERO_ADDRESS, // no GAS token for these tests
       ZERO_ADDRESS, // no royalties address
+      ZERO_ADDRESS, // no GAS token for these tests
       {from: owner}
     );
 
