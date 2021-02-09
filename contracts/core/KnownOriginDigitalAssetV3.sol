@@ -28,6 +28,9 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
     bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
 
+    // TODO use existing whitelist
+    // TODO use 24hr timing limit
+
     event AdminEditionReported(uint256 _editionId, bool _reported);
 
     // Edition number pointer
@@ -301,14 +304,13 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     external
     override
     returns (address receiver, uint256 amount) {
-        address creator = _getCreatorOfEdition(_editionFromTokenId(_tokenId));
-
         // If we have a registry - use it
         if (royaltyRegistryActive) {
             // any registry must be edition aware so to only store one entry for all within the edition
             return royaltiesRegistryProxy.royaltyInfo(_editionFromTokenId(_tokenId));
         }
-        return (creator, secondarySaleRoyalty);
+
+        return (_getCreatorOfEdition(_editionFromTokenId(_tokenId)), secondarySaleRoyalty);
     }
 
     // Expanded method at edition level and expanding on the funds receiver and the creator

@@ -93,12 +93,6 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     //  - edition (primary)
     //  - token (secondary)
 
-    // Dutch auction
-    //  - start date + price | end date + price
-    //  - once closed it becomes a buy now
-    //  - edition (primary)
-    //  - token (secondary)
-
     /////////////////////////////////
     // Primary 'buy now' sale flow //
     /////////////////////////////////
