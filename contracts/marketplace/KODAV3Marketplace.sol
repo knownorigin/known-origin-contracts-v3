@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-import "../core/storage/EditionRegistry.sol";
 import "../access/KOAccessControls.sol";
 import "../core/KODAV3Core.sol";
 import "../core/IKODAV3.sol";
@@ -114,10 +113,10 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
         address creator = koda.getCreatorOfEdition(_editionId);
         require(creator == _msgSender(), "Not creator");
 
-        //        // TODO - gauge opinion on this
-        //        uint256 listingPrice = uint256(_listingPrice);
-        //        // 32 bytes / 2 = 16 bytes = 16 * 8 = 128 | uint256(uint128(price),uint128(date))
-        //        listingPrice |= _startDate << 128;
+        // TODO - gauge opinion on this
+        // uint256 listingPrice = uint256(_listingPrice);
+        // 32 bytes / 2 = 16 bytes = 16 * 8 = 128 | uint256(uint128(price),uint128(date))
+        // listingPrice |= _startDate << 128;
 
         editionListings[_editionId] = Listing(_listingPrice, creator);
 

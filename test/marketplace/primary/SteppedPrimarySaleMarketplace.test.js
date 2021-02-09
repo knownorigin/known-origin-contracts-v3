@@ -12,7 +12,6 @@ const {expect} = require('chai');
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const SteppedPrimarySaleMarketplace = artifacts.require('SteppedPrimarySaleMarketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
-const EditionRegistry = artifacts.require('EditionRegistry');
 
 contract('ERC721', function (accounts) {
   const [owner, minter, contract, collectorA, collectorB] = accounts;
@@ -38,28 +37,18 @@ contract('ERC721', function (accounts) {
     await this.accessControls.grantRole(this.MINTER_ROLE, owner, {from: owner});
     await this.accessControls.grantRole(this.MINTER_ROLE, minter, {from: owner});
 
-    // setup edition registry
-    this.editionRegistry = await EditionRegistry.new(
-      this.accessControls.address,
-      STARTING_EDITION,
-      {from: owner}
-    );
-
     // Create token V3
     this.token = await KnownOriginDigitalAssetV3.new(
       this.accessControls.address,
-      this.editionRegistry.address,
       ZERO_ADDRESS, // no GAS token for these tests
       ZERO_ADDRESS, // no royalties address
+      STARTING_EDITION,
       {from: owner}
     );
 
     // Set contract roles
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: owner});
     await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
-
-    // enable NFT in the registry contract
-    await this.editionRegistry.enableNftContract(this.token.address, {from: owner});
 
     // Create marketplace and enable in whitelist
     this.marketplace = await SteppedPrimarySaleMarketplace.new(this.accessControls.address, this.token.address, {from: owner})

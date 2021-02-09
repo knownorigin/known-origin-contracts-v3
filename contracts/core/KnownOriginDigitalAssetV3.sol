@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "./chi/ChiGasSaver.sol";
 
 import "../access/KOAccessControls.sol";
-import "./storage/EditionRegistry.sol";
 
 import "./IKODAV3.sol";
 import "./KODAV3Core.sol";
@@ -31,8 +30,8 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
     event AdminEditionReported(uint256 _editionId, bool _reported);
 
-    // TODO is this really needed? moving it internally would save about 1-2k GAS as a guess?
-    IEditionRegistry public editionRegistry;
+    // Edition number pointer
+    uint256 public editionPointer;
 
     // Royalties registry
     IERC2981 public royaltiesRegistryProxy;
@@ -71,13 +70,13 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
     constructor(
         KOAccessControls _accessControls,
-        IEditionRegistry _editionRegistry,
         IERC2981 _royaltiesRegistryProxy,
-        address _chiToken
+        address _chiToken,
+        uint256 _editionPointer
     )
     KODAV3Core(_accessControls)
     ChiGasSaver(_chiToken) {
-        editionRegistry = _editionRegistry;
+        editionPointer = _editionPointer;
 
         // TODO setter
         // optional
@@ -97,8 +96,9 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     public
     returns (uint256 _tokenId) {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
+
         // Edition number is the first token ID
-        uint256 nextEditionNumber = editionRegistry.generateNextEditionNumber();
+        uint256 nextEditionNumber = generateNextEditionNumber();
 
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
 
@@ -129,7 +129,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
 
-        uint256 start = editionRegistry.generateNextEditionNumber();
+        uint256 start = generateNextEditionNumber();
 
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
 
@@ -152,7 +152,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
 
-        uint256 start = editionRegistry.generateNextEditionNumber();
+        uint256 start = generateNextEditionNumber();
 
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
 
@@ -181,6 +181,11 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
         // Store edition blob to be the next token pointer
         editionDetails[_editionId] = EditionDetails(editionConfig, _uri);
+    }
+
+    function generateNextEditionNumber() internal returns (uint256) {
+        editionPointer = editionPointer += MAX_EDITION_SIZE;
+        return editionPointer;
     }
 
     // FIXME use resolver for dynamic token URIs ... ?
