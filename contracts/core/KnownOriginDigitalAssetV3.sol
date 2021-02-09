@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "./chi/ChiGasSaver.sol";
 
 import "../access/KOAccessControls.sol";
-import "./storage/EditionRegistry.sol";
 
 import "./IKODAV3.sol";
 import "./KODAV3Core.sol";
@@ -29,22 +28,19 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
     bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
 
+    // TODO use existing whitelist
+    // TODO use 24hr timing limit
+
     event AdminEditionReported(uint256 _editionId, bool _reported);
 
-    // TODO is this really needed? moving it internally would save about 1-2k GAS as a guess?
-    IEditionRegistry public editionRegistry;
+    // Edition number pointer
+    uint256 public editionPointer;
 
     // Royalties registry
     IERC2981 public royaltiesRegistryProxy;
 
     // bool flag to setting proxy or not
     bool public royaltyRegistryActive;
-
-    // Token name
-    string public name;
-
-    // Token symbol
-    string public symbol;
 
     // tokens are minted in batches - the first token ID used is representative of the edition ID (for now)
     mapping(uint256 => EditionDetails) editionDetails;
@@ -64,6 +60,9 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     // A onchain reference to editions which have been reported for some infringement purposes to KO
     mapping(uint256 => bool) public reportedEditionIds;
 
+    // ERC-2615 permit nonces
+    mapping(address => uint) public nonces;
+
     struct EditionDetails {
         uint256 editionConfig; // combined creator and size
         string uri; // the referenced metadata
@@ -71,13 +70,13 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
     constructor(
         KOAccessControls _accessControls,
-        IEditionRegistry _editionRegistry,
         IERC2981 _royaltiesRegistryProxy,
-        address _chiToken
+        address _chiToken,
+        uint256 _editionPointer
     )
     KODAV3Core(_accessControls)
     ChiGasSaver(_chiToken) {
-        editionRegistry = _editionRegistry;
+        editionPointer = _editionPointer;
 
         // TODO setter
         // optional
@@ -85,9 +84,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
             royaltiesRegistryProxy = _royaltiesRegistryProxy;
             royaltyRegistryActive = true;
         }
-
-        name = "KnownOriginDigitalAsset";
-        symbol = "KODA";
 
         _registerInterface(_INTERFACE_ID_ERC721);
         _registerInterface(_INTERFACE_ID_ERC721_METADATA);
@@ -97,8 +93,9 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     public
     returns (uint256 _tokenId) {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
+
         // Edition number is the first token ID
-        uint256 nextEditionNumber = editionRegistry.generateNextEditionNumber();
+        uint256 nextEditionNumber = generateNextEditionNumber();
 
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
 
@@ -129,7 +126,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
 
-        uint256 start = editionRegistry.generateNextEditionNumber();
+        uint256 start = generateNextEditionNumber();
 
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
 
@@ -152,7 +149,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
 
-        uint256 start = editionRegistry.generateNextEditionNumber();
+        uint256 start = generateNextEditionNumber();
 
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
 
@@ -181,6 +178,11 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
         // Store edition blob to be the next token pointer
         editionDetails[_editionId] = EditionDetails(editionConfig, _uri);
+    }
+
+    function generateNextEditionNumber() internal returns (uint256) {
+        editionPointer = editionPointer += MAX_EDITION_SIZE;
+        return editionPointer;
     }
 
     // FIXME use resolver for dynamic token URIs ... ?
@@ -296,15 +298,13 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     external
     override
     returns (address receiver, uint256 amount) {
-        address creator = _getCreatorOfEdition(_editionFromTokenId(_tokenId));
-
         // If we have a registry - use it
         if (royaltyRegistryActive) {
             // any registry must be edition aware so to only store one entry for all within the edition
             return royaltiesRegistryProxy.royaltyInfo(_editionFromTokenId(_tokenId));
         }
 
-        return (creator, secondarySaleRoyalty);
+        return (_getCreatorOfEdition(_editionFromTokenId(_tokenId)), secondarySaleRoyalty);
     }
 
     // Expanded method at edition level and expanding on the funds receiver and the creator
@@ -478,12 +478,12 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
             "ERC721_INVALID_SENDER"
         );
 
+        _approval(owner, _approved, _tokenId);
+    }
+
+    function _approval(address _owner, address _approved, uint256 _tokenId) internal {
         approvals[_tokenId] = _approved;
-        emit Approval(
-            owner,
-            _approved,
-            _tokenId
-        );
+        emit Approval(_owner, _approved, _tokenId);
     }
 
     // TODO add method e.g. creatorTransfer()
@@ -654,6 +654,42 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         return operatorApprovals[_owner][_operator];
     }
 
+    /////////////////////////////
+    // ERC-2612 Permit Variant //
+    /////////////////////////////
+
+    function permit(address owner, address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+    override
+    external {
+        require(deadline >= block.timestamp, 'KODA: EXPIRED');
+
+        // Create digest to check signatures
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                '\x19\x01',
+                DOMAIN_SEPARATOR,
+                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, tokenId, nonces[owner]++, deadline))
+            )
+        );
+
+        // Has the original signer signed it
+        address recoveredAddress = ecrecover(digest, v, r, s);
+        require(recoveredAddress != address(0) && recoveredAddress == owner, 'KODA: INVALID_SIGNATURE');
+
+        // set approval for signature if passed
+        _approval(owner, spender, tokenId);
+    }
+
+    ///////////////////
+    // Admin setters //
+    ///////////////////
+
+    function reportEditionId(uint256 _editionId, bool _reported) public {
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        reportedEditionIds[_editionId] = _reported;
+        emit AdminEditionReported(_editionId, _reported);
+    }
+
     // TODO confirm coverage for callback and magic receiver
 
     function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory _data)
@@ -685,15 +721,4 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
             return (retval == ERC721_RECEIVED);
         }
     }
-
-    ///////////////////
-    // Admin setters //
-    ///////////////////
-
-    function reportEditionId(uint256 _editionId, bool _reported) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
-        reportedEditionIds[_editionId] = _reported;
-        emit AdminEditionReported(_editionId, _reported);
-    }
-
 }

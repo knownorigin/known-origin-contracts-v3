@@ -13,7 +13,6 @@ const {validateToken} = require('../test-helpers');
 const ERC721ReceiverMock = artifacts.require('ERC721ReceiverMock');
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
-const EditionRegistry = artifacts.require('EditionRegistry');
 const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
 
 contract('KnownOriginDigitalAssetV3 test', function (accounts) {
@@ -42,28 +41,18 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     await this.accessControls.grantRole(this.MINTER_ROLE, owner, {from: owner});
     await this.accessControls.grantRole(this.MINTER_ROLE, minter, {from: owner});
 
-    // setup edition registry
-    this.editionRegistry = await EditionRegistry.new(
-      this.accessControls.address,
-      STARTING_EDITION,
-      {from: owner}
-    );
-
     // Create token V3
     this.token = await KnownOriginDigitalAssetV3.new(
       this.accessControls.address,
-      this.editionRegistry.address,
-      ZERO_ADDRESS, // no royalties address
       ZERO_ADDRESS, // no GAS token for these tests
+      ZERO_ADDRESS, // no royalties address
+      STARTING_EDITION,
       {from: owner}
     );
 
     // Set contract roles
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: owner});
     await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
-
-    // enable NFT in the registry contract
-    await this.editionRegistry.enableNftContract(this.token.address, {from: owner});
 
     // Create marketplace and enable in whitelist
     this.marketplace = await KODAV3Marketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner})

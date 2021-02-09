@@ -11,7 +11,6 @@ const {expect} = require('chai');
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
-const EditionRegistry = artifacts.require('EditionRegistry');
 const ChiToken = artifacts.require('ChiToken');
 
 const {validateToken} = require('../../test-helpers');
@@ -54,19 +53,12 @@ contract('ERC721', function (accounts) {
     expect(await this.chiToken.balanceOf(owner)).to.be.bignumber.equal('200');
     expect(await this.chiToken.balanceOf(contract)).to.be.bignumber.equal('200');
 
-    // setup edition registry
-    this.editionRegistry = await EditionRegistry.new(
-      this.accessControls.address,
-      STARTING_EDITION,
-      {from: owner}
-    );
-
     // Create token V3
     this.token = await KnownOriginDigitalAssetV3.new(
       this.accessControls.address,
-      this.editionRegistry.address,
       ZERO_ADDRESS, // no royalties address
       this.chiToken.address,
+      STARTING_EDITION,
       {from: owner}
     );
 
@@ -82,9 +74,6 @@ contract('ERC721', function (accounts) {
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: owner});
     await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
 
-    // enable NFT in the registry contract
-    await this.editionRegistry.enableNftContract(this.token.address, {from: owner});
-
     // Create marketplace and enable in whitelist
     this.marketplace = await KODAV3Marketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner})
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.marketplace.address, {from: owner});
@@ -98,7 +87,7 @@ contract('ERC721', function (accounts) {
       });
 
       it('GAS tokens have been burnt', async () => {
-        expect(await this.chiToken.balanceOf(owner)).to.be.bignumber.equal('196');
+        expect(await this.chiToken.balanceOf(owner)).to.be.bignumber.equal('197');
       })
 
       it('emits a Transfer event', async () => {

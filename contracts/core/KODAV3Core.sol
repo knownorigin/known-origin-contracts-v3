@@ -9,7 +9,12 @@ import "../access/KOAccessControls.sol";
 
 contract KODAV3Core is Konstants, Context {
 
-    // TODO emit events
+    event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
+    event AdminUpdatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission);
+    event AdminUpdateSecondarySaleCommission(uint256 _platformSecondarySaleCommission);
+    event AdminUpdateModulo(uint256 _modulo);
+    event AdminUpdateMinBidAmount(uint256 _minBidAmount);
+
     // TODO confirm default decimal precision
 
     // Secondary sale commission
@@ -34,25 +39,30 @@ contract KODAV3Core is Konstants, Context {
     function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
         secondarySaleRoyalty = _secondarySaleRoyalty;
+        emit AdminUpdateSecondaryRoyalty(_secondarySaleRoyalty);
     }
 
     function updatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission) public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
         platformPrimarySaleCommission = _platformPrimarySaleCommission;
+        emit AdminUpdatePlatformPrimarySaleCommission(_platformPrimarySaleCommission);
     }
 
     function updatePlatformSecondarySaleCommission(uint256 _platformSecondarySaleCommission) public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
         platformSecondarySaleCommission = _platformSecondarySaleCommission;
+        emit AdminUpdateSecondarySaleCommission(_platformSecondarySaleCommission);
     }
 
     function updateModulo(uint256 _modulo) public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
         modulo = _modulo;
+        emit AdminUpdateModulo(_modulo);
     }
 
     function updateMinBidAmount(uint256 _minBidAmount) public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
         minBidAmount = _minBidAmount;
+        emit AdminUpdateMinBidAmount(_minBidAmount);
     }
 }

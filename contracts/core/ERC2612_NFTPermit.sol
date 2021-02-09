@@ -1,29 +1,45 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.4; // FIXME bump to 0.8 and drop safemath?
+pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+// Based on https://eips.ethereum.org/EIPS/eip-2612 ERC-20 permit style but for erc-721 tokens
+// Variant assumes "value" param replaced with "tokenId" due to non-fungible nature
 
-// TODO remove me
-import "hardhat/console.sol";
-
-// Based on - https://github.com/ethereum/EIPs/issues/2613
-// Variant assume value if token Id and not ERC20 value
-
-//https://soliditydeveloper.com/erc20-permit
-
-// TODO ERC-20 permit style for erc-721 (https://eips.ethereum.org/EIPS/eip-2612)
-interface ERC2612_NFTPermit is IERC721 {
+interface ERC2612_NFTPermit {
     function permit(address owner, address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
 }
 
 abstract contract NFTPermit is ERC2612_NFTPermit {
 
-    //DAI version https://github.com/makerdao/dss/blob/44330065999621834b08de1edf3b962f6bbd74c6/src/dai.sol#L118-L140
+    // FIXME - can we use this for cheapness? - https://github.com/0xProject/0x-monorepo/blob/development/contracts/utils/contracts/src/LibEIP712.sol
 
-    function permit(address owner, address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-    override
-    external {
-        // TODO uniswap/makerdao style signed approve and transfer
+    // Token name
+    string public name = "KnownOriginDigitalAsset";
+
+    // Token symbol
+    string public symbol = "KODA";
+
+    // KODA version
+    string public version = "V3";
+
+    // Permit domain
+    bytes32 public DOMAIN_SEPARATOR;
+
+    // keccak256("Permit(address owner,address spender,uint256 tokenId,uint256 nonce,uint256 deadline)");
+    bytes32 public constant PERMIT_TYPEHASH = 0x48d39b37a35214940203bbbd4f383519797769b13d936f387d89430afef27688;
+
+    constructor() {
+        // Grab chain ID
+        uint256 chainId;
+        assembly {chainId := chainid()}
+
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
+                keccak256(bytes(name)),
+                keccak256(bytes(version)),
+                chainId,
+                address(this)
+            ));
     }
 }
