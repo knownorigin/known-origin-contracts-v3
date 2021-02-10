@@ -84,7 +84,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
         // TODO setter
         // optional
-        if (address(royaltiesRegistryProxy) != address(0)) {
+        if (address(_royaltiesRegistryProxy) != address(0)) {
             royaltiesRegistryProxy = _royaltiesRegistryProxy;
             royaltyRegistryActive = true;
         }
@@ -297,6 +297,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     // ERC-2981 //
     //////////////
 
+    // FIXME Function declared as view, but this expression (potentially) modifies the state and thus requires non-payable (the default) or payable.
     // Abstract away token royalty registry, proxy through to the implementation
     function royaltyInfo(uint256 _tokenId)
     external

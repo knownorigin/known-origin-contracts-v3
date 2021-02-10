@@ -4,8 +4,7 @@ pragma solidity 0.7.4;
 
 import "../core/IERC2981.sol";
 
-
-contract EditionRoyaltiesRegistry is IERC2981 {
+contract SimpleIERC2981 is IERC2981 {
 
     mapping(uint256 => uint256) internal tokenIdToAmount;
     mapping(uint256 => address) internal tokenIdToReceiver;
