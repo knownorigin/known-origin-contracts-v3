@@ -69,7 +69,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     // platform funds collector
     address public platformAccount;
 
-    constructor(KOAccessControls _accessControls, IKODAV3 _koda, address _platformAccount) KODAV3Core(_accessControls) {
+    constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount) KODAV3Core(_accessControls) {
         koda = _koda;
         platformAccount = _platformAccount;
     }

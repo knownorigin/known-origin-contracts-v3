@@ -2,7 +2,7 @@
 pragma solidity 0.7.4;
 
 // N:B - this has been copied into the project for legacy reasons only
-import "./libs/Roles.sol";
+import "./Roles.sol";
 
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -4,36 +4,42 @@ pragma solidity 0.7.4;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
 
-// TODO how to handle existing KO access controls and self service access control/frequency controls?
-// TODO expose method which uses _msgSender()
+import "./IKOAccessControlsLookup.sol";
+import "./legacy/ISelfServiceAccessControls.sol";
 
-contract KOAccessControls is AccessControl {
+// TODO how to handle existing KO access controls and self service access control/frequency controls?
+
+contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
 
     bytes32 public constant CONTRACT_ROLE = keccak256("CONTRACT_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-    constructor() {
+    // TODO replace this with a merkle tree ... to save GAS and lives!
+    ISelfServiceAccessControls public legacyMintingAccess;
+
+    constructor(ISelfServiceAccessControls _legacyMintingAccess) {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(MINTER_ROLE, _msgSender());
+        legacyMintingAccess = _legacyMintingAccess;
     }
 
     /////////////
     // Lookups //
     /////////////
 
-    function hasAdminRole(address _address) public view returns (bool) {
+    function hasAdminRole(address _address) external override view returns (bool) {
         return hasRole(DEFAULT_ADMIN_ROLE, _address);
     }
 
-    function hasMinterRole(address _address) public view returns (bool) {
-        return hasRole(MINTER_ROLE, _address);
+    function hasMinterRole(address _address) external override view returns (bool) {
+        return hasRole(MINTER_ROLE, _address) || legacyMintingAccess.isEnabledForAccount(_address);
     }
 
-    function hasContractRole(address _address) public view returns (bool) {
+    function hasContractRole(address _address) external override view returns (bool) {
         return hasRole(CONTRACT_ROLE, _address);
     }
 
-    function hasContractOrMinterRole(address _address) public view returns (bool) {
+    function hasContractOrMinterRole(address _address) external override view returns (bool) {
         return hasRole(CONTRACT_ROLE, _address) || hasRole(MINTER_ROLE, _address);
     }
 

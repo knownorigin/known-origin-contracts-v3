@@ -15,6 +15,7 @@ const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3')
 const KOAccessControls = artifacts.require('KOAccessControls');
 const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
 const SimpleIERC2981 = artifacts.require('SimpleIERC2981');
+const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
 contract('KnownOriginDigitalAssetV3 test', function (accounts) {
   const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD, collabDao] = accounts;
@@ -31,8 +32,9 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
   const nonExistentTokenId = new BN('99999999999');
 
   beforeEach(async () => {
+    const legacyAccessControls = await SelfServiceAccessControls.new();
     // setup access controls
-    this.accessControls = await KOAccessControls.new({from: owner});
+    this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
 
     // grab the roles
     this.MINTER_ROLE = await this.accessControls.MINTER_ROLE();

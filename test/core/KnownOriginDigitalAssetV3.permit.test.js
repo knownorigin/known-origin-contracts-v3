@@ -19,6 +19,7 @@ const {expect} = require('chai');
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
+const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
 contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts) {
   const [owner, minter, koCommission, contract, random] = accounts;
@@ -32,8 +33,9 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
   const firstEditionTokenId = new BN('11000');
 
   beforeEach(async () => {
+    const legacyAccessControls = await SelfServiceAccessControls.new();
     // setup access controls
-    this.accessControls = await KOAccessControls.new({from: owner});
+    this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
 
     // grab the roles
     this.MINTER_ROLE = await this.accessControls.MINTER_ROLE();

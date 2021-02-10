@@ -5,7 +5,7 @@ pragma solidity 0.7.4;
 import "@openzeppelin/contracts/GSN/Context.sol";
 
 import "./Konstants.sol";
-import "../access/KOAccessControls.sol";
+import "../access/IKOAccessControlsLookup.sol";
 
 contract KODAV3Core is Konstants, Context {
 
@@ -30,9 +30,9 @@ contract KODAV3Core is Konstants, Context {
     // Minimum bid/list amount
     uint256 public minBidAmount = 0.01 ether;
 
-    KOAccessControls public accessControls;
+    IKOAccessControlsLookup public accessControls;
 
-    constructor(KOAccessControls _accessControls){
+    constructor(IKOAccessControlsLookup _accessControls){
         accessControls = _accessControls;
     }
 

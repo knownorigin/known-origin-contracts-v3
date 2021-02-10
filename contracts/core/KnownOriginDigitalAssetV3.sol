@@ -7,9 +7,7 @@ import "@openzeppelin/contracts/introspection/ERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-import "./chi/ChiGasSaver.sol";
-
-import "../access/KOAccessControls.sol";
+import "../access/IKOAccessControlsLookup.sol";
 
 import "./IKODAV3.sol";
 import "./KODAV3Core.sol";
@@ -23,7 +21,7 @@ import "hardhat/console.sol";
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV3, ERC165 {
+contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
     using SafeMath for uint256;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
@@ -75,13 +73,12 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     }
 
     constructor(
-        KOAccessControls _accessControls,
+        IKOAccessControlsLookup _accessControls,
         IERC2981 _royaltiesRegistryProxy,
         address _chiToken,
         uint256 _editionPointer
     )
-    KODAV3Core(_accessControls)
-    ChiGasSaver(_chiToken) {
+    KODAV3Core(_accessControls) {
         editionPointer = _editionPointer;
 
         // TODO setter
@@ -115,14 +112,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         emit Transfer(address(0), _to, nextEditionNumber);
 
         return nextEditionNumber;
-    }
-
-    // GAS Saver version - TODO needs more testing and general understanding
-    function mintTokenWithGasSaver(address _to, string calldata _uri)
-    public
-    saveGas(_to)
-    returns (uint256 _tokenId) {
-        return mintToken(_to, _uri);
     }
 
     // Mints batches of tokens emitting multiple Transfer events

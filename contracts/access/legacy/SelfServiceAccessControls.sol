@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.7.4;
 
-import "./libs/Ownable.sol";
 import "./ISelfServiceAccessControls.sol";
 
-contract SelfServiceAccessControls is Ownable, ISelfServiceAccessControls {
+contract SelfServiceAccessControls is ISelfServiceAccessControls {
 
     // Simple map to only allow certain artist create editions at first
     mapping(address => bool) public allowedArtists;
@@ -16,7 +15,7 @@ contract SelfServiceAccessControls is Ownable, ISelfServiceAccessControls {
      * @dev Controls is the contract is open to all
      * @dev Only callable from owner
      */
-    function setOpenToAllArtist(bool _openToAllArtist) onlyOwner public {
+    function setOpenToAllArtist(bool _openToAllArtist) public {
         openToAllArtist = _openToAllArtist;
     }
 
@@ -24,7 +23,7 @@ contract SelfServiceAccessControls is Ownable, ISelfServiceAccessControls {
      * @dev Controls who can call this contract
      * @dev Only callable from owner
      */
-    function setAllowedArtist(address _artist, bool _allowed) onlyOwner public {
+    function setAllowedArtist(address _artist, bool _allowed) public {
         allowedArtists[_artist] = _allowed;
     }
 

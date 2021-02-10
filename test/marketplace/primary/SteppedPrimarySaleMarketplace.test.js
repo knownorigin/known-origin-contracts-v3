@@ -12,6 +12,7 @@ const {expect} = require('chai');
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const SteppedPrimarySaleMarketplace = artifacts.require('SteppedPrimarySaleMarketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
+const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
 contract('ERC721', function (accounts) {
   const [owner, minter, contract, collectorA, collectorB] = accounts;
@@ -26,8 +27,9 @@ contract('ERC721', function (accounts) {
   const nonExistentTokenId = new BN('99999999999');
 
   beforeEach(async () => {
-    // setu paccess controls
-    this.accessControls = await KOAccessControls.new({from: owner});
+    const legacyAccessControls = await SelfServiceAccessControls.new();
+    // setup access controls
+    this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
 
     // grab the roles
     this.MINTER_ROLE = await this.accessControls.MINTER_ROLE();

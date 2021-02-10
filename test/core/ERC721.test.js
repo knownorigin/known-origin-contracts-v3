@@ -13,24 +13,11 @@ const {validateToken} = require('../test-helpers');
 const ERC721ReceiverMock = artifacts.require('ERC721ReceiverMock');
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
+const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
 contract('ERC721', function (accounts) {
   const [owner, minter, contract, approved, anotherApproved, operator, other, collectorA] = accounts;
 
-  /*
-    String size storage impacts GAS costings:
-
-    HTTP:
-      - https://ipfs.infura.io/ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv
-        mintBatchEdition(uint256,address,string) - Min. 182702 | Max. 182726 | $31 @ 1710 gas / 100 price
-
-    IPFS/Custom (see: https://docs.ipfs.io/how-to/address-ipfs-on-web/)
-      - ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv
-        mintBatchEdition(uint256,address,string) - Min. 162306 | Max. 182726 | $31 @ 1718 gas / 100 price
-    ----
-    182702 - 162306 = 20396 savings
-
-   */
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
   const STARTING_EDITION = '10000';
@@ -43,8 +30,9 @@ contract('ERC721', function (accounts) {
   const RECEIVER_MAGIC_VALUE = '0x150b7a02';
 
   beforeEach(async () => {
-    // setu paccess controls
-    this.accessControls = await KOAccessControls.new({from: owner});
+    const legacyAccessControls = await SelfServiceAccessControls.new();
+    // setup access controls
+    this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
 
     // grab the roles
     this.MINTER_ROLE = await this.accessControls.MINTER_ROLE();
