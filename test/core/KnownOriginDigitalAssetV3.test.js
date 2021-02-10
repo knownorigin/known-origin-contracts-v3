@@ -14,9 +14,10 @@ const ERC721ReceiverMock = artifacts.require('ERC721ReceiverMock');
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
+const SimpleIERC2981 = artifacts.require('SimpleIERC2981');
 
 contract('KnownOriginDigitalAssetV3 test', function (accounts) {
-  const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD] = accounts;
+  const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD, collabDao] = accounts;
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
@@ -256,4 +257,57 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
   });
 
+  describe('royaltyInfo() and royaltyAndCreatorInfo()', async () => {
+
+    beforeEach(async () => {
+
+      this.royaltiesRegistryProxy = await SimpleIERC2981.new(
+        [firstEditionTokenId, secondEditionTokenId],
+        [collabDao, collectorB],
+        [1000, 800],
+        {from: owner}
+      );
+
+      // Create token V3
+      this.tokenWithRoyaltyProxy = await KnownOriginDigitalAssetV3.new(
+        this.accessControls.address,
+        this.royaltiesRegistryProxy.address,
+        ZERO_ADDRESS, // no GAS token for these tests
+        STARTING_EDITION,
+        {from: owner}
+      );
+
+      // Set contract roles
+      await this.accessControls.grantRole(this.CONTRACT_ROLE, this.tokenWithRoyaltyProxy.address, {from: owner});
+
+      expect(await this.tokenWithRoyaltyProxy.royaltyRegistryActive()).to.be.equal(true);
+      expect(await this.tokenWithRoyaltyProxy.royaltiesRegistryProxy()).to.be.equal(this.royaltiesRegistryProxy.address);
+    });
+
+    it('royaltyInfo()', async () => {
+      this.receipt = await this.tokenWithRoyaltyProxy.mintToken(collectorA, TOKEN_URI, {from: contract});
+      expectEvent.inLogs(this.receipt.logs, 'Transfer', {from: ZERO_ADDRESS, to: collectorA, tokenId: firstEditionTokenId});
+
+      let res = await this.tokenWithRoyaltyProxy.royaltyInfo.call(firstEditionTokenId);
+      expect(res.receiver).to.be.equal(collabDao); // from royaltiesRegistryProxy
+      expect(res.amount).to.be.bignumber.equal('1000');
+
+      await this.tokenWithRoyaltyProxy.mintToken(collectorA, TOKEN_URI, {from: contract});
+
+      res = await this.tokenWithRoyaltyProxy.royaltyInfo.call(secondEditionTokenId);
+      expect(res.receiver).to.be.equal(collectorB);
+      expect(res.amount).to.be.bignumber.equal('800');
+    });
+
+    it('royaltyAndCreatorInfo()', async () => {
+      this.receipt = await this.tokenWithRoyaltyProxy.mintToken(collectorA, TOKEN_URI, {from: contract});
+      expectEvent.inLogs(this.receipt.logs, 'Transfer', {from: ZERO_ADDRESS, to: collectorA, tokenId: firstEditionTokenId});
+
+      let res = await this.tokenWithRoyaltyProxy.royaltyAndCreatorInfo.call(firstEditionTokenId);
+      expect(res.receiver).to.be.equal(collabDao); // from royaltiesRegistryProxy
+      expect(res.creator).to.be.equal(collectorA);
+      expect(res.amount).to.be.bignumber.equal('1000');
+
+    });
+  });
 });
