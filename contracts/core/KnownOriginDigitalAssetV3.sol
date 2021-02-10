@@ -127,7 +127,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     function mintBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
     public
     returns (uint256 _editionId) {
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
+        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
 
         uint256 start = generateNextEditionNumber();
@@ -150,8 +150,8 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     function mintConsecutiveBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
     public
     returns (uint256 _editionId) {
+        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
 
         uint256 start = generateNextEditionNumber();
 
