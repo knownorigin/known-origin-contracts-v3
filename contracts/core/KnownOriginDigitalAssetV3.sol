@@ -18,6 +18,8 @@ import "./ERC2612_NFTPermit.sol";
 // TODO remove me
 import "hardhat/console.sol";
 
+// TODO expose batch transfer method
+
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
@@ -142,6 +144,8 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
         // Emit a single event for the first token only
         emit Transfer(address(0), _to, start);
+
+        // TODO re-introduce looping events here
 
         return start;
     }

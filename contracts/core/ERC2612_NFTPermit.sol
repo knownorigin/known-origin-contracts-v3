@@ -43,7 +43,7 @@ abstract contract NFTPermit is ERC2612_NFTPermit {
             ));
     }
 
-    function getChainId() public view returns (uint256) {
+    function getChainId() public pure returns (uint256) {
         uint256 chainId;
         assembly {chainId := chainid()}
         return chainId;
