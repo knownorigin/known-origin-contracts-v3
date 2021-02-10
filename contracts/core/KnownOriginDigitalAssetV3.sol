@@ -30,6 +30,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
     // TODO use existing whitelist
     // TODO use 24hr timing limit
+    // TODO Add backup ipfs storage link to contract - only set once - can be set by the creator only
 
     event AdminEditionReported(uint256 _editionId, bool _reported);
 
