@@ -28,7 +28,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     event TokenBidWithdrawn(uint256 indexed _tokenId, address indexed _bidder);
 
     // edition buy now
-    event EditionListed(uint256 indexed _editionId, uint256 _price);
+    event EditionListed(uint256 indexed _editionId, uint128 _price, uint128 _startDate);
     event EditionDeListed(uint256 indexed _editionId);
     event EditionPurchased(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price);
 
@@ -47,7 +47,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     }
 
     struct Listing {
-        uint256 price;
+        uint256 listingConfig; // uint128(price)|uint128(startDate)
         address seller;
     }
 
@@ -102,19 +102,19 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     //  - they cannot be done e.g. accepting an offer when the edition is sold out
     //  - approvals go astray/removed - approvals may need to be mapped in subgraph
 
-    function listEdition(uint256 _editionId, uint128 _listingPrice) public {
+    function listEdition(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) public {
         require(_listingPrice >= minBidAmount, "Listing price not enough");
         address creator = koda.getCreatorOfEdition(_editionId);
         require(creator == _msgSender(), "Not creator");
 
-        // TODO - gauge opinion on this
-        // uint256 listingPrice = uint256(_listingPrice);
         // 32 bytes / 2 = 16 bytes = 16 * 8 = 128 | uint256(uint128(price),uint128(date))
-        // listingPrice |= _startDate << 128;
+        uint256 listingConfig = uint256(_listingPrice);
+        listingConfig |= _startDate << 128;
 
-        editionListings[_editionId] = Listing(_listingPrice, creator);
+        // Store listing data
+        editionListings[_editionId] = Listing(listingConfig, creator);
 
-        emit EditionListed(_editionId, _listingPrice);
+        emit EditionListed(_editionId, _listingPrice, _startDate);
     }
 
     function delistEdition(uint256 _editionId) public {
@@ -128,9 +128,10 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     }
 
     function buyEditionToken(uint256 _editionId) public payable nonReentrant {
-        Listing storage listing = editionListings[_editionId];
-        require(listing.seller != address(0), "No listing found");
-        require(msg.value >= listing.price, "List price not satisfied");
+        (address _seller, uint128 _listingPrice, uint128 _startDate) = _getEditionListing(_editionId);
+        require(address(0) != _seller, "No listing found");
+        require(msg.value >= _listingPrice, "List price not satisfied");
+        require(block.timestamp >= _startDate, "List not available yet");
 
         uint256 tokenId = facilitateNextPrimarySale(_editionId, msg.value, _msgSender());
 
@@ -217,7 +218,12 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, _buyer, tokenId);
 
-        // if we about to sellout - send any open offers back to the bidder
+        // FIXME we could in theory remove this
+        //      - and use the current approach of KO where a bidder must pull back any funds once its sold out on primary
+        //      - would probs shave a good bit of GAS (profile the options)
+        //      - could be replaced with a open method when in that state, monies are returned to bidder (future proof building tools to cover this)
+
+        // if we are about to sellout - send any open offers back to the bidder
         if (tokenId == koda.maxTokenIdOfEdition(_editionId)) {
 
             // send money back to top bidder if existing offer found
@@ -245,6 +251,31 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     function refundBidder(address _receiver, uint256 _paymentAmount) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
         require(success, "Edition offer refund failed");
+    }
+
+    function getEditionListing(uint256 _editionId) public view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
+        return _getEditionListing(_editionId);
+    }
+
+    function _getEditionListing(uint256 _editionId) internal view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
+        Listing storage listing = editionListings[_editionId];
+        return (
+        listing.seller, // original seller
+        uint128(listing.listingConfig), // price
+        uint128(listing.listingConfig >> 128) // date
+        );
+    }
+
+    function getEditionListingSeller(uint256 _editionId) public view returns (address _seller) {
+        return editionListings[_editionId].seller;
+    }
+
+    function getEditionListingPrice(uint256 _editionId) public view returns (uint128 _listingPrice) {
+        return uint128(editionListings[_editionId].listingConfig);
+    }
+
+    function getEditionListingDate(uint256 _editionId) public view returns (uint128 _startDate) {
+        return uint128(editionListings[_editionId].listingConfig >> 128);
     }
 
     ///////////////////////////////////
@@ -287,7 +318,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
         require(listing.seller != address(0), "No listing found");
 
         // check payment
-        require(listing.price == msg.value, "Not enough money");
+        require(listing.listingConfig == msg.value, "Not enough money");
 
         // check current owner is the lister as it may have changed hands
         address currentOwner = koda.ownerOf(_tokenId);
@@ -412,8 +443,6 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     ///////////////////
     // Query Methods //
     ///////////////////
-
-    // TODO
 
     /////////////////////
     // Setters Methods //
