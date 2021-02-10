@@ -30,9 +30,9 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
     // TODO use existing whitelist
     // TODO use 24hr timing limit
-    // TODO Add backup ipfs storage link to contract - only set once - can be set by the creator only
 
     event AdminEditionReported(uint256 _editionId, bool _reported);
+    event AdditionalMetaDataSet(uint256 _editionId);
 
     // Edition number pointer
     uint256 public editionPointer;
@@ -60,6 +60,9 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
 
     // A onchain reference to editions which have been reported for some infringement purposes to KO
     mapping(uint256 => bool) public reportedEditionIds;
+
+    // Optional one time use storage slot for additional edition metadata
+    mapping(uint256 => string) public additionalEditionMetaData;
 
     // ERC-2615 permit nonces
     mapping(address => uint) public nonces;
@@ -701,6 +704,18 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
         reportedEditionIds[_editionId] = _reported;
         emit AdminEditionReported(_editionId, _reported);
+    }
+
+    /////////////////////
+    // Creator setters //
+    /////////////////////
+
+    // Optional metadata storage slot which allows the creator to set an additional metadata blob on the token
+    function lockInAdditionalMetaData(uint256 _editionId, string memory metadata) external {
+        require(_msgSender() == getCreatorOfEdition(_editionId), "KODA: unable to set when not creator");
+        require(bytes(additionalEditionMetaData[_editionId]).length == 0, "KODA: can only be set once");
+        additionalEditionMetaData[_editionId] = metadata;
+        emit AdditionalMetaDataSet(_editionId);
     }
 
     // TODO confirm coverage for callback and magic receiver
