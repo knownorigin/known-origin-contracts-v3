@@ -25,6 +25,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
   const STARTING_EDITION = '10000';
 
   const ETH_ONE = ether('1');
+  const ONE = new BN('1');
 
   const firstEditionTokenId = new BN('11000');
   const secondEditionTokenId = new BN('12000');
@@ -58,8 +59,10 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
 
     // Create marketplace and enable in whitelist
-    this.marketplace = await KODAV3Marketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner})
+    this.marketplace = await KODAV3Marketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner});
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.marketplace.address, {from: owner});
+
+    this.MAX_EDITION_SIZE = await this.token.MAX_EDITION_SIZE();
   });
 
   describe('ownerOf() validation', async () => {
@@ -225,6 +228,13 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       expect(await this.token.editionExists(firstEditionTokenId)).to.be.equal(true);
       expect(await this.token.exists(firstEditionTokenId)).to.be.equal(true);
     });
+
+    it('revert if no contract role', async () => {
+      await expectRevert(
+        this.token.mintToken(owner, TOKEN_URI, {from: collabDao}),
+        "KODA: Caller must have contract role"
+      );
+    });
   });
 
   describe('mintConsecutiveBatchEdition()', async () => {
@@ -241,6 +251,20 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       expect(await this.token.editionExists(firstEditionTokenId)).to.be.equal(true);
     });
+
+    it('revert if no contract role', async () => {
+      await expectRevert(
+        this.token.mintConsecutiveBatchEdition(10, owner, TOKEN_URI, {from: collabDao}),
+        "KODA: Caller must have contract role"
+      );
+    });
+
+    it('revert if edtion size to big', async () => {
+      await expectRevert(
+        this.token.mintConsecutiveBatchEdition(this.MAX_EDITION_SIZE.add(ONE), owner, TOKEN_URI, {from: contract}),
+        "KODA: Invalid edition size"
+      );
+    });
   });
 
   describe('mintBatchEdition()', async () => {
@@ -256,6 +280,20 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       }
 
       expect(await this.token.editionExists(firstEditionTokenId)).to.be.equal(true);
+    });
+
+    it('revert if no contract role', async () => {
+      await expectRevert(
+        this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: collabDao}),
+        "KODA: Caller must have contract role"
+      );
+    });
+
+    it('revert if edtion size to big', async () => {
+      await expectRevert(
+        this.token.mintBatchEdition(this.MAX_EDITION_SIZE.add(ONE), owner, TOKEN_URI, {from: contract}),
+        "KODA: Invalid edition size"
+      );
     });
   });
 
@@ -288,7 +326,11 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
     it('royaltyInfo()', async () => {
       this.receipt = await this.tokenWithRoyaltyProxy.mintToken(collectorA, TOKEN_URI, {from: contract});
-      expectEvent.inLogs(this.receipt.logs, 'Transfer', {from: ZERO_ADDRESS, to: collectorA, tokenId: firstEditionTokenId});
+      expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: collectorA,
+        tokenId: firstEditionTokenId
+      });
 
       let res = await this.tokenWithRoyaltyProxy.royaltyInfo.call(firstEditionTokenId);
       expect(res.receiver).to.be.equal(collabDao); // from royaltiesRegistryProxy
@@ -303,13 +345,69 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
     it('royaltyAndCreatorInfo()', async () => {
       this.receipt = await this.tokenWithRoyaltyProxy.mintToken(collectorA, TOKEN_URI, {from: contract});
-      expectEvent.inLogs(this.receipt.logs, 'Transfer', {from: ZERO_ADDRESS, to: collectorA, tokenId: firstEditionTokenId});
+      expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: collectorA,
+        tokenId: firstEditionTokenId
+      });
 
       let res = await this.tokenWithRoyaltyProxy.royaltyAndCreatorInfo.call(firstEditionTokenId);
       expect(res.receiver).to.be.equal(collabDao); // from royaltiesRegistryProxy
       expect(res.creator).to.be.equal(collectorA);
       expect(res.amount).to.be.bignumber.equal('1000');
 
+    });
+  });
+
+  describe('hadPrimarySaleOfToken()', async () => {
+    it('should assert hadPrimarySaleOfToken()', async () => {
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      expect(await this.token.hadPrimarySaleOfToken(firstEditionTokenId)).to.be.equal(false);
+
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
+      expect(await this.token.hadPrimarySaleOfToken(firstEditionTokenId)).to.be.equal(true);
+    });
+  });
+
+  describe('reportEditionId()', async () => {
+    it('should report edition', async () => {
+      await this.token.reportEditionId(STARTING_EDITION, true, {from: owner});
+      expect(await this.token.reportedEditionIds(STARTING_EDITION)).to.be.equal(true);
+
+      await this.token.reportEditionId(STARTING_EDITION, false, {from: owner});
+      expect(await this.token.reportedEditionIds(STARTING_EDITION)).to.be.equal(false);
+    });
+
+    it('revert if not admin', async () => {
+      await expectRevert(
+        this.token.reportEditionId(STARTING_EDITION, true, {from: collabDao}),
+        "KODA: Caller must have admin role"
+      );
+    });
+  });
+
+  describe('lockInAdditionalMetaData()', async () => {
+    it('should lockInAdditionalMetaData()', async () => {
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello", {from: owner});
+      expect(await this.token.additionalEditionMetaData(firstEditionTokenId)).to.be.equal("hello");
+    });
+
+    it('revert if not creator', async () => {
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await expectRevert(
+        this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello", {from: collabDao}),
+        "KODA: unable to set when not creator"
+      );
+    });
+
+    it('revert if set twice', async () => {
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello", {from: owner});
+      await expectRevert(
+        this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello again", {from: owner}),
+        "KODA: can only be set once"
+      );
     });
   });
 });

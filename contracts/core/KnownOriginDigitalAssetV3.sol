@@ -118,7 +118,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
     function mintBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
     public
     returns (uint256 _editionId) {
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
+        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
 
         uint256 start = generateNextEditionNumber();
@@ -143,8 +143,8 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
     function mintConsecutiveBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
     public
     returns (uint256 _editionId) {
+        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have minter role");
 
         uint256 start = generateNextEditionNumber();
 
@@ -178,7 +178,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
     }
 
     function generateNextEditionNumber() internal returns (uint256) {
-        editionPointer = editionPointer += MAX_EDITION_SIZE;
+        editionPointer = editionPointer + MAX_EDITION_SIZE;
         return editionPointer;
     }
 
@@ -364,8 +364,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
         // TODO replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
     }
 
-    function hasPrimarySaleOfToken(uint256 _tokenId) public override view returns (bool) {
-        require(exists(_tokenId), "Token does not exist");
+    function hadPrimarySaleOfToken(uint256 _tokenId) public override view returns (bool) {
         return owners[_tokenId] != address(0);
     }
 
