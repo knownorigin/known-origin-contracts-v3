@@ -189,7 +189,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
     }
 
     function generateNextEditionNumber() internal returns (uint256) {
-        editionPointer = editionPointer += MAX_EDITION_SIZE;
+        editionPointer = editionPointer + MAX_EDITION_SIZE;
         return editionPointer;
     }
 
@@ -375,8 +375,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, ChiGasSaver, IKODAV
         // TODO replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
     }
 
-    function hasPrimarySaleOfToken(uint256 _tokenId) public override view returns (bool) {
-        require(exists(_tokenId), "Token does not exist");
+    function hadPrimarySaleOfToken(uint256 _tokenId) public override view returns (bool) {
         return owners[_tokenId] != address(0);
     }
 

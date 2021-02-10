@@ -356,4 +356,56 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
     });
   });
+
+  describe('hadPrimarySaleOfToken()', async () => {
+    it('should assert hadPrimarySaleOfToken()', async () => {
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      expect(await this.token.hadPrimarySaleOfToken(firstEditionTokenId)).to.be.equal(false);
+
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
+      expect(await this.token.hadPrimarySaleOfToken(firstEditionTokenId)).to.be.equal(true);
+    });
+  });
+
+  describe('reportEditionId()', async () => {
+    it('should report edition', async () => {
+      await this.token.reportEditionId(STARTING_EDITION, true, {from: owner});
+      expect(await this.token.reportedEditionIds(STARTING_EDITION)).to.be.equal(true);
+
+      await this.token.reportEditionId(STARTING_EDITION, false, {from: owner});
+      expect(await this.token.reportedEditionIds(STARTING_EDITION)).to.be.equal(false);
+    });
+
+    it('revert if not admin', async () => {
+      await expectRevert(
+        this.token.reportEditionId(STARTING_EDITION, true, {from: collabDao}),
+        "KODA: Caller must have admin role"
+      );
+    });
+  });
+
+  describe('lockInAdditionalMetaData()', async () => {
+    it('should lockInAdditionalMetaData()', async () => {
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello", {from: owner});
+      expect(await this.token.additionalEditionMetaData(firstEditionTokenId)).to.be.equal("hello");
+    });
+
+    it('revert if not creator', async () => {
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await expectRevert(
+        this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello", {from: collabDao}),
+        "KODA: unable to set when not creator"
+      );
+    });
+
+    it('revert if set twice', async () => {
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello", {from: owner});
+      await expectRevert(
+        this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello again", {from: owner}),
+        "KODA: can only be set once"
+      );
+    });
+  });
 });
