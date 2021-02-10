@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
 
 // TODO how to handle existing KO access controls and self service access control/frequency controls?
-// TODO make context aware
 // TODO expose method which uses _msgSender()
 
 contract KOAccessControls is AccessControl {
