@@ -7,7 +7,7 @@ import "../access/IKOAccessControlsLookup.sol";
 // see: https://solidity-by-example.org/app/create2/
 contract ContractDeployer {
 
-    event Deployed(address addr, uint256 salt);
+    event Deployed(address addr, bytes32 salt);
 
     // 1. Get bytecode of contract to be deployed
     // NOTE: args are passed to the constructor
@@ -25,7 +25,7 @@ contract ContractDeployer {
 
     // 2. Compute the address of the contract to be deployed
     // NOTE: _salt is a random number used to create an address
-    function getAddress(bytes memory bytecode, uint _salt) public view returns (address) {
+    function getAddress(bytes memory bytecode, bytes32 _salt) public view returns (address) {
         bytes32 hash = keccak256(
             abi.encodePacked(
                 bytes1(0xff),
@@ -41,7 +41,7 @@ contract ContractDeployer {
     // 3. Deploy the contract
     // NOTE:
     // The address in the log should equal the address computed from above.
-    function deploy(bytes memory bytecode, uint _salt) public payable returns (address) {
+    function deploy(bytes memory bytecode, bytes32 _salt) public payable returns (address) {
         address addr;
 
         /*
