@@ -38,7 +38,7 @@ contract('MinterFactory', function (accounts) {
   it.skip('generates a nice address', async () => {
     const deployerFactory = await ContractDeployer.new();
 
-    const bytes = await deployerFactory.getKODACreationBytecode(this.accessControls.address, ZERO_ADDRESS, STARTING_EDITION, {from: deployer});
+    const bytes = await deployerFactory.getKodaV3Bytecode(this.accessControls.address, ZERO_ADDRESS, STARTING_EDITION, {from: deployer});
 
     // Match create 2 factory address [0x0000bC97ec4D7eb8495aE27bac580DF314C99a8c] | salt [137921] | length [18]
 
@@ -46,9 +46,9 @@ contract('MinterFactory', function (accounts) {
     let winningSalt = 0;
     let winningAddress = 0;
 
-    for (let i = 100000; i <= 500000; i++) {
-      const address = await deployerFactory.deploy.call(bytes, ethers.utils.formatBytes32String(i.toString()));
-
+    let i = 130000;
+    while (i < 500000) {
+      const address = await deployerFactory.getAddress(bytes, ethers.utils.formatBytes32String(i.toString()));
       const length = ethers.utils.stripZeros(address).length;
       if (length <= foundLength) {
         foundLength = length;
@@ -56,6 +56,7 @@ contract('MinterFactory', function (accounts) {
         winningAddress = address;
         console.log(`Match create 2 factory address [${address}] | salt [${i}] | length [${length}]`);
       }
+      i++;
     }
 
     console.log(`
