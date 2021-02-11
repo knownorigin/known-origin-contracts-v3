@@ -130,10 +130,11 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
         // edition of x
         _defineEditionConfig(start, _editionSize, _to, _uri);
 
-        // Emit a single event for the first token only
-        emit Transfer(address(0), _to, start);
-
-        // TODO re-introduce looping events here
+        // Loop emit all transfer events
+        uint256 end = start.add(_editionSize);
+        for (uint i = start; i < end; i++) {
+            emit Transfer(address(0), _to, i);
+        }
 
         return start;
     }
@@ -160,6 +161,8 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
 
         return start;
     }
+
+    // TODO add consecutive batch transfer method
 
     function _defineEditionConfig(uint256 _editionId, uint256 _editionSize, address _to, string calldata _uri) internal {
         // store address and size in config | address = holds a 20 byte value
@@ -194,6 +197,15 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
         EditionDetails storage edition = editionDetails[editionId];
         require(edition.editionConfig != 0, "Token does not exist");
         return edition.uri;
+    }
+
+    function editionAdditionalMetaData(uint256 _editionId) public view returns (string memory) {
+        return additionalEditionMetaData[_editionId];
+    }
+
+    function tokenAdditionalMetaData(uint256 _tokenId) public view returns (string memory) {
+        uint256 editionId = _editionFromTokenId(_tokenId);
+        return additionalEditionMetaData[editionId];
     }
 
     function getEditionDetails(uint256 _tokenId)
@@ -482,9 +494,9 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
         emit Approval(_owner, _approved, _tokenId);
     }
 
-    // TODO add method e.g. creatorTransfer()
+    // TODO add method e.g. primarySaleTransfer() ... ?
     //      - this can be lighter weight then transfer as we can confirm the creator and pre-state of the edition
-    //      - can be used by other contracts only
+    //      - can be used by internal contracts only
     //      - approval flow needs thought?
 
     // TODO validate approval flow for both sold out and partially available editions and their tokens
@@ -571,17 +583,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
 
         // move the token
         emit Transfer(_from, _to, _tokenId);
-
-        // after transfer - check to see if any more tokens are assigning to the creator and trigger transfer event
-        uint256 nextTokenId = _tokenId + 1;
-        if (
-            (nextTokenId < maxTokenIdOfEdition(_editionFromTokenId(_tokenId))) // does not exceed max token ID for edition
-            && (owners[nextTokenId] == address(0)) // not already assigned an new owner
-        ) {
-            // TODO _from in this scenario should always be the creator ... test this assumption ... ?
-            // issue the transfer event for the next token
-            emit Transfer(address(0), _from, nextTokenId);
-        }
     }
 
     /// @notice Find the owner of an NFT

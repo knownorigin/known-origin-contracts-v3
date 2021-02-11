@@ -1787,11 +1787,11 @@ contract('ERC721', function (accounts) {
     });
   });
 
-  context('mints token one at a time after each transfer', () => {
+  context('mintBatchEdition() - mints all tokens at the same time', () => {
 
     beforeEach(async () => {
       // this mints to the protocol where owner is address zero
-      await this.token.mintBatchEdition(5, owner, 'https://ipfs.infura.io/ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv-1', {from: contract});
+      ({logs: this.logs} = await this.token.mintBatchEdition(5, owner, 'https://ipfs.infura.io/ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv-1', {from: contract}));
 
       this.token1 = firstEditionTokenId;
       this.token2 = new BN(firstEditionTokenId).add(new BN('1'));
@@ -1812,31 +1812,16 @@ contract('ERC721', function (accounts) {
       this.toWhom = other; // default to other for toWhom in context-dependent tests
     });
 
-    it('after the first transfers', async () => {
-      // token 1 moved and token 2 assigned to original owner
-      ({logs: this.logs} = await this.token.safeTransferFrom(owner, collectorA, this.token1));
-      expectEvent.inLogs(this.logs, 'Transfer', {from: owner, to: collectorA, tokenId: this.token1});
+    it('All transfers emitted', async () => {
+      expectEvent.inLogs(this.logs, 'Transfer', {from: ZERO_ADDRESS, to: owner, tokenId: this.token1});
       expectEvent.inLogs(this.logs, 'Transfer', {from: ZERO_ADDRESS, to: owner, tokenId: this.token2});
-
-      // token 2 moved and token 3 assigned to original owner
-      ({logs: this.logs} = await this.token.safeTransferFrom(owner, collectorA, this.token2));
-      expectEvent.inLogs(this.logs, 'Transfer', {from: owner, to: collectorA, tokenId: this.token2});
       expectEvent.inLogs(this.logs, 'Transfer', {from: ZERO_ADDRESS, to: owner, tokenId: this.token3});
-
-      // token 3 moved and token 4 assigned to original owner
-      ({logs: this.logs} = await this.token.safeTransferFrom(owner, collectorA, this.token3));
-      expectEvent.inLogs(this.logs, 'Transfer', {from: owner, to: collectorA, tokenId: this.token3});
       expectEvent.inLogs(this.logs, 'Transfer', {from: ZERO_ADDRESS, to: owner, tokenId: this.token4});
-
-      // token 4 moved and token 5 assigned to original owner
-      ({logs: this.logs} = await this.token.safeTransferFrom(owner, collectorA, this.token4));
-      expectEvent.inLogs(this.logs, 'Transfer', {from: owner, to: collectorA, tokenId: this.token4});
       expectEvent.inLogs(this.logs, 'Transfer', {from: ZERO_ADDRESS, to: owner, tokenId: this.token5});
 
       // token 5 moved
       ({logs: this.logs} = await this.token.safeTransferFrom(owner, collectorA, this.token5));
       expectEvent.inLogs(this.logs, 'Transfer', {from: owner, to: collectorA, tokenId: this.token5});
-      // console.log(this.logs);
     });
   });
 
