@@ -1,10 +1,5 @@
-const {BN, constants, expectEvent, expectRevert, balance} = require('@openzeppelin/test-helpers');
+const {constants} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
-
-const _ = require('lodash');
-
-const web3 = require('web3');
-const {ether} = require("@openzeppelin/test-helpers");
 
 const {expect} = require('chai');
 
@@ -12,13 +7,7 @@ const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
 contract('KOAccessControls merkle proof tests', function (accounts) {
-  const [_, deployer, koCommission, artist, collectorA, collectorB, collectorC, collectorD] = accounts;
-
-  const merkleInput = {
-    "0xF3c6F5F265F503f53EAD8aae90FC257A5aa49AC1": 1,
-    "0xB9CcDD7Bedb7157798e10Ff06C7F10e0F37C6BdD": 1,
-    "0xf94DbB18cc2a7852C9CEd052393d517408E8C20C": 1
-  };
+  const [deployer] = accounts;
 
   const merkleProof = {
     "merkleRoot": "0x0f0a8bfd5e14529c08426d9f0eea8fd737a1e35cee054ce67107b11724c26e25",
@@ -52,8 +41,8 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
 
   beforeEach(async () => {
     // setup access controls
-    const legacyAccessControls = await SelfServiceAccessControls.new();
-    this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: deployer});
+    this.legacyAccessControls = await SelfServiceAccessControls.new();
+    this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: deployer});
 
     // grab the roles
     this.MINTER_ROLE = await this.accessControls.MINTER_ROLE();
@@ -63,7 +52,7 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
     await this.accessControls.updateArtistMerkleRoot(merkleProof.merkleRoot, {from: deployer});
   });
 
-  describe('success', async () => {
+  describe('isVerifiedArtist() - success', async () => {
     it('should assert address whitelisted', async () => {
       expect(await this.accessControls.isVerifiedArtist(
         0,
@@ -85,7 +74,7 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
     });
   });
 
-  describe('fails', async () => {
+  describe('isVerifiedArtist() - failures', async () => {
     it('should fail artist verification', async () => {
       expect(await this.accessControls.isVerifiedArtist(
         0,
@@ -114,6 +103,14 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
       expect(await this.accessControls.isVerifiedArtist(
         0,
         "0xf94DbB18cc2a7852C9CEd052393d517408E8C20C",
+        merkleProof.claims['0xB9CcDD7Bedb7157798e10Ff06C7F10e0F37C6BdD'].proof)
+      ).to.be.equal(false);
+    });
+
+    it('should fail artist verification when zero address account supplied', async () => {
+      expect(await this.accessControls.isVerifiedArtist(
+        0,
+        ZERO_ADDRESS,
         merkleProof.claims['0xB9CcDD7Bedb7157798e10Ff06C7F10e0F37C6BdD'].proof)
       ).to.be.equal(false);
     });
