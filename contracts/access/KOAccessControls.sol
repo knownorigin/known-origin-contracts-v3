@@ -13,7 +13,6 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
     bytes32 public constant CONTRACT_ROLE = keccak256("CONTRACT_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-    // TODO replace this with a merkle tree ... to save GAS and lives!
     ISelfServiceAccessControls public legacyMintingAccess;
 
     bytes32 public artistAccessMerkleRoot;
