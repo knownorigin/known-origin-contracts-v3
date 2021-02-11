@@ -3,6 +3,7 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
+import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 
 import "./IKOAccessControlsLookup.sol";
 import "./legacy/ISelfServiceAccessControls.sol";
@@ -12,13 +13,24 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
     bytes32 public constant CONTRACT_ROLE = keccak256("CONTRACT_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-    // TODO replace this with a merkle tree ... to save GAS and lives!
     ISelfServiceAccessControls public legacyMintingAccess;
+
+    bytes32 public artistAccessMerkleRoot;
 
     constructor(ISelfServiceAccessControls _legacyMintingAccess) {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(MINTER_ROLE, _msgSender());
         legacyMintingAccess = _legacyMintingAccess;
+    }
+
+    //////////////////
+    // Merkle Magic //
+    //////////////////
+
+    function isVerifiedArtist(uint256 index, address account, bytes32[] calldata merkleProof) public returns (bool) {
+        // assume balance of 1 for enabled artists
+        bytes32 node = keccak256(abi.encodePacked(index, account, uint256(1)));
+        return MerkleProof.verify(merkleProof, artistAccessMerkleRoot, node);
     }
 
     /////////////
@@ -73,6 +85,11 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
     function removeContractRole(address _address) public {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "KOAccessControls: sender must be an admin to revoke role");
         revokeRole(CONTRACT_ROLE, _address);
+    }
+
+    function updateArtistMerkleRoot(bytes32 _artistAccessMerkleRoot) public {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "KOAccessControls: sender must be an admin");
+        artistAccessMerkleRoot = _artistAccessMerkleRoot;
     }
 
 }

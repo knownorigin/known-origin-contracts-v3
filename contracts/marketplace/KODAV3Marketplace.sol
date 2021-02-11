@@ -15,6 +15,7 @@ import "hardhat/console.sol";
 // TODO CREATE2 to generate vanity deployment address
 //  - https://blog.cotten.io/ethereums-eip-1014-create-2-d17b1a184498
 //  - https://ethgasstation.info/blog/what-is-create2/
+//  - https://medium.com/coinmonks/on-efficient-ethereum-addresses-3fef0596e263
 
 contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     using SafeMath for uint256;
@@ -107,6 +108,8 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     //  - approvals go astray/removed - approvals may need to be mapped in subgraph
 
     // TODO expose both contract & minter listing access protected methods - contract takes in creator, minter assumes creator and needs to check KODA for edition creator
+
+    // TODO startDate - uint32 = (2^32 - 1) equals to 4294967295, i.e. Sun Feb 07 2106
 
     function listEdition(address _creator, uint256 _editionId, uint256 _listingPrice, uint256 _startDate) public {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");

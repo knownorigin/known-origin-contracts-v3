@@ -16,7 +16,7 @@ const MinterFactory = artifacts.require('MinterFactory');
 
 const {validateEditionAndToken} = require('../test-helpers');
 
-contract('ERC721', function (accounts) {
+contract('MinterFactory', function (accounts) {
   const [_, deployer, koCommission, artist, collectorA, collectorB, collectorC, collectorD] = accounts;
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
