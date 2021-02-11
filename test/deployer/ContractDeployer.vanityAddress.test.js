@@ -40,8 +40,7 @@ contract('MinterFactory', function (accounts) {
 
     const bytes = await deployerFactory.getKODACreationBytecode(this.accessControls.address, ZERO_ADDRESS, STARTING_EDITION, {from: deployer});
 
-    // Create 2 factory address [0x000223E151A44FAabDa3f9AAf400a6EC9f7fBb50] | salt [7546] | length [19]
-    // Create 2 factory address [0x0000d64Bf16bD4f9058AeBBb4c3bd2Cd291fCA4E] | salt [32653] | length [18]
+    // Match create 2 factory address [0x0000bC97ec4D7eb8495aE27bac580DF314C99a8c] | salt [137921] | length [18]
 
     let foundLength = 20; // default starting size of 20
     let winningSalt = 0;
