@@ -11,7 +11,7 @@ import "../access/IKOAccessControlsLookup.sol";
 
 import "./IKODAV3.sol";
 import "./KODAV3Core.sol";
-import "./ERC2612_NFTPermit.sol";
+import "./permit/ERC2612_NFTPermit.sol";
 
 // TODO remove me
 import "hardhat/console.sol";
@@ -27,9 +27,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
     bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
     bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
-
-    // TODO use existing whitelist
-    // TODO use 24hr timing limit
 
     event AdminEditionReported(uint256 _editionId, bool _reported);
     event AdditionalMetaDataSet(uint256 _editionId);
