@@ -187,7 +187,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
     // FIXME use resolver for dynamic token URIs ... ?
     function editionURI(uint256 _editionId) public view returns (string memory) {
         EditionDetails storage edition = editionDetails[_editionId];
-        require(edition.editionConfig != 0, "Edition does not exist");
+        require(edition.editionConfig != 0, "KODA: Edition does not exist");
         return edition.uri;
     }
 
@@ -195,7 +195,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
     function tokenURI(uint256 _tokenId) public view returns (string memory) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
-        require(edition.editionConfig != 0, "Token does not exist");
+        require(edition.editionConfig != 0, "KODA: Token does not exist");
         return edition.uri;
     }
 
@@ -338,16 +338,16 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
     function facilitateNextPrimarySale(uint256 _editionId)
     public
     override
-    returns (address _royaltyReceiver, address _creator, uint256 _tokenId) {
-        uint256 tokenId = getNextAvailablePrimarySaleToken(_editionId);
-        address originalCreator = _getCreatorOfEdition(_editionId);
+    returns (address receiver, address creator, uint256 tokenId) {
+        uint256 _tokenId = getNextAvailablePrimarySaleToken(_editionId);
+        address _creator = _getCreatorOfEdition(_editionId);
 
         if (royaltyRegistryActive) {
             (address _receiver,) = royaltiesRegistryProxy.royaltyInfo(_editionId);
-            return (_receiver, originalCreator, tokenId);
+            return (_receiver, _creator, _tokenId);
         }
 
-        return (originalCreator, originalCreator, tokenId);
+        return (_creator, _creator, _tokenId);
     }
 
     // FIXME means we need to sell in order?
@@ -369,7 +369,8 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
                 return tokenId;
             }
         }
-        revert("No tokens left on the primary market");
+
+        revert("KODA: No tokens left on the primary market");
 
         // TODO GAS costs increase per loop - gifting should reverse this list to make it smaller
         // TODO replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
@@ -609,6 +610,9 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
             return owner;
         }
 
+
+        // FIXME AMG - combine the range check with the possible creator and just return address(0) otherwise
+
         // Get the edition size and work out the max token ID, if it does not fall within this range then fail
         if (((_getSizeOfEdition(_editionId) + _editionId) - 1) < _tokenId) {
             revert("ERC721_ZERO_OWNER");
@@ -622,7 +626,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
             return possibleCreator;
         }
 
-        return address(0);
+        return address(0); // FIXME is it even possible to get here?
     }
 
     /// @notice Get the approved address for a single NFT
