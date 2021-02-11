@@ -1,8 +1,10 @@
 const _ = require('lodash');
 const {expect} = require('chai');
 
-const validateToken = async function ({tokenId, editionId, owner, ownerBalance, creator, creatorBalance, size, uri}) {
-  console.log(`Validate token ID [${tokenId}] - edition ID [${editionId}]`);
+const validateEditionAndToken = async function (
+  {tokenId, editionId, owner, ownerBalance, creator, creatorBalance, size, uri}
+) {
+  console.log(`Validate token [${tokenId}] and edition [${editionId}]`);
 
   if (ownerBalance) {
     expect(await this.token.balanceOf(owner)).to.be.bignumber.equal(ownerBalance, "Failed owner balance validation");
@@ -14,9 +16,6 @@ const validateToken = async function ({tokenId, editionId, owner, ownerBalance, 
   ////////////////////
   // Edition checks //
   ////////////////////
-
-  const _editionId = await this.token.getEditionIdOfToken(tokenId);
-  expect(_editionId).to.bignumber.equal(editionId, "Failed Edition ID validation")
 
   const _creator = await this.token.getCreatorOfEdition(editionId);
   expect(_creator).to.equal(creator, "Failed Edition creator validation")
@@ -30,6 +29,15 @@ const validateToken = async function ({tokenId, editionId, owner, ownerBalance, 
   //////////////////
   // Token checks //
   //////////////////
+
+  await validateToken({tokenId, editionId, owner, creator, size, uri});
+}
+
+const validateToken = async function ({tokenId, editionId, owner, creator, size, uri}) {
+  console.log(`Validate token [${tokenId}]`);
+
+  const _editionId = await this.token.getEditionIdOfToken(tokenId);
+  expect(_editionId).to.bignumber.equal(editionId, "Failed Edition ID validation")
 
   expect(await this.token.ownerOf(tokenId)).to.equal(owner, "Failed owner validation");
 
@@ -51,5 +59,6 @@ const validateToken = async function ({tokenId, editionId, owner, ownerBalance, 
 }
 
 module.exports = {
+  validateEditionAndToken,
   validateToken
 };

@@ -7,8 +7,6 @@ import "@openzeppelin/contracts/GSN/Context.sol";
 import "./IKOAccessControlsLookup.sol";
 import "./legacy/ISelfServiceAccessControls.sol";
 
-// TODO how to handle existing KO access controls and self service access control/frequency controls?
-
 contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
 
     bytes32 public constant CONTRACT_ROLE = keccak256("CONTRACT_ROLE");

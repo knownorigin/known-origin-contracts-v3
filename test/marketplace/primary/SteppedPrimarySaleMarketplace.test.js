@@ -6,7 +6,7 @@ const _ = require('lodash');
 const web3 = require('web3');
 const {ether} = require("@openzeppelin/test-helpers");
 
-const {validateToken} = require('../../test-helpers');
+const {validateEditionAndToken} = require('../../test-helpers');
 const {expect} = require('chai');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
@@ -42,7 +42,6 @@ contract('ERC721', function (accounts) {
     // Create token V3
     this.token = await KnownOriginDigitalAssetV3.new(
       this.accessControls.address,
-      ZERO_ADDRESS, // no GAS token for these tests
       ZERO_ADDRESS, // no royalties address
       STARTING_EDITION,
       {from: owner}
@@ -139,7 +138,7 @@ contract('ERC721', function (accounts) {
         });
 
         it('edition and token data updated accordingly', async () => {
-          await validateToken.call(this, {
+          await validateEditionAndToken.call(this, {
             tokenId: firstEditionTokenId,
             editionId: '11000',
             owner: collectorA,

@@ -27,6 +27,7 @@
     "ethereumjs-util": "^7.0.8",
     "hardhat": "^2.0.8",
     "hardhat-gas-reporter": "^1.0.4",
+    "lodash": "^4.17.20",
     "solidity-coverage": "^0.7.14"
   },
   "dependencies": {

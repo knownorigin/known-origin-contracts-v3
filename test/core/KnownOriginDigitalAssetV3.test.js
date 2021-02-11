@@ -8,7 +8,7 @@ const web3 = require('web3');
 const {expect} = require('chai');
 
 const {shouldSupportInterfaces} = require('./SupportsInterface.behavior');
-const {validateToken} = require('../test-helpers');
+const {validateEditionAndToken} = require('../test-helpers');
 
 const ERC721ReceiverMock = artifacts.require('ERC721ReceiverMock');
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
@@ -48,7 +48,6 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     // Create token V3
     this.token = await KnownOriginDigitalAssetV3.new(
       this.accessControls.address,
-      ZERO_ADDRESS, // no GAS token for these tests
       ZERO_ADDRESS, // no royalties address
       STARTING_EDITION,
       {from: owner}
@@ -65,7 +64,103 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     this.MAX_EDITION_SIZE = await this.token.MAX_EDITION_SIZE();
   });
 
-  describe('ownerOf() validation', async () => {
+  describe('mintToken() - ownerOf() validation', async () => {
+
+    // creator sends random token from within edition - out of sequence
+    beforeEach(async () => {
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+    });
+
+    it('owner is correctly assigned to all tokens when minted from a batch', async () => {
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+    });
+
+    it('token minted - first token transfer, ownership updated accordingly', async () => {
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+    });
+
+    it('token minted - first token transferred multiple times, ownership updated accordingly', async () => {
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+
+      await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorB);
+
+      await this.token.transferFrom(collectorB, collectorC, firstEditionTokenId, {from: collectorB});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorC);
+    });
+
+    it('token minted - traded and sent back to the creator', async () => {
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+
+      await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorB);
+
+      // back to owner
+      await this.token.transferFrom(collectorB, owner, firstEditionTokenId, {from: collectorB});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+    });
+
+    it('token minted - creator sends to themself the first token', async () => {
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+
+      await this.token.transferFrom(owner, owner, firstEditionTokenId, {from: owner});
+
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+    });
+
+    it('token minted - creator cannot send themself a random token from the edition sequence', async () => {
+      const tokenId = firstEditionTokenId.add(new BN('4'));
+      await expectRevert(
+        this.token.transferFrom(owner, owner, tokenId, {from: owner}),
+        "ERC721_ZERO_OWNER"
+      );
+    });
+
+    it('token minted - cannot send to zero address', async () => {
+      await expectRevert(
+        this.token.transferFrom(owner, ZERO_ADDRESS, firstEditionTokenId, {from: owner}),
+        "ERC721_ZERO_TO_ADDRESS"
+      );
+    });
+
+    it('token minted - cannot send a token which does not exist', async () => {
+      await expectRevert(
+        this.token.transferFrom(owner, collectorA, thirdEditionTokenId, {from: owner}),
+        "ERC721_ZERO_OWNER"
+      );
+    });
+
+    it('token minted - creator cannot send a token once its change owner', async () => {
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+
+      await expectRevert(
+        this.token.transferFrom(owner, collectorB, firstEditionTokenId, {from: owner}),
+        "ERC721_OWNER_MISMATCH"
+      );
+    });
+
+    it('token minted - transfer token within edition step range but is not a valid token', async () => {
+      const tokenId = firstEditionTokenId.add(new BN('10')); // only 10 tokens in this edition
+
+      await expectRevert(
+        this.token.transferFrom(owner, collectorA, tokenId, {from: owner}),
+        "ERC721_ZERO_OWNER"
+      );
+    });
+  });
+
+  describe('mintBatchEdition() - ownerOf() validation', async () => {
 
     const editionSize = 10;
 
@@ -80,6 +175,153 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       for (const id of _.range(start, end)) {
         expect(await this.token.ownerOf(id)).to.be.equal(owner);
       }
+
+      // fails at sending one more than batch
+      await expectRevert(
+        this.token.transferFrom(owner, collectorA, end + 1, {from: owner}),
+        "ERC721_ZERO_OWNER"
+      );
+    });
+
+    it('batch minted - first token transfer, ownership updated accordingly', async () => {
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+    });
+
+    it('batch minted - first token transferred multiple times, ownership updated accordingly', async () => {
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+
+      await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorB);
+
+      await this.token.transferFrom(collectorB, collectorC, firstEditionTokenId, {from: collectorB});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorC);
+    });
+
+    it('batch minted - traded and sent back to the creator', async () => {
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+
+      await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorB);
+
+      // back to owner
+      await this.token.transferFrom(collectorB, owner, firstEditionTokenId, {from: collectorB});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+    });
+
+    it('batch minted - creator sends to themself the first token', async () => {
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+
+      await this.token.transferFrom(owner, owner, firstEditionTokenId, {from: owner});
+
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+    });
+
+    it('batch minted - creator sends to themself a random token from the edition sequence', async () => {
+      const tokenId = firstEditionTokenId.add(new BN('4'));
+
+      await this.token.transferFrom(owner, owner, tokenId, {from: owner});
+
+      const start = _.toNumber(firstEditionTokenId);
+      const end = start + _.toNumber(editionSize);
+      for (const id of _.range(start, end)) {
+        expect(await this.token.ownerOf(id)).to.be.equal(owner);
+      }
+    });
+
+    it('batch minted - creator sends a random token to someone from the edition sequence', async () => {
+      const tokenId = firstEditionTokenId.add(new BN('4'));
+
+      await this.token.transferFrom(owner, collectorA, tokenId, {from: owner});
+
+      const start = _.toNumber(firstEditionTokenId);
+      const end = start + _.toNumber(editionSize);
+      for (const id of _.range(start, end)) {
+        if (new BN(id).eq(tokenId)) {
+          expect(await this.token.ownerOf(id)).to.be.equal(collectorA);
+        } else {
+          expect(await this.token.ownerOf(id)).to.be.equal(owner);
+        }
+      }
+    });
+
+    it('batch minted - cannot send to zero address', async () => {
+      await expectRevert(
+        this.token.transferFrom(owner, ZERO_ADDRESS, firstEditionTokenId, {from: owner}),
+        "ERC721_ZERO_TO_ADDRESS"
+      );
+    });
+
+    it('batch minted - cannot send a token which does not exist', async () => {
+      await expectRevert(
+        this.token.transferFrom(owner, collectorA, thirdEditionTokenId, {from: owner}),
+        "ERC721_ZERO_OWNER"
+      );
+    });
+
+    it('batch minted - creator cannot send a token once its change owner', async () => {
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
+
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+
+      await expectRevert(
+        this.token.transferFrom(owner, collectorB, firstEditionTokenId, {from: owner}),
+        "ERC721_OWNER_MISMATCH"
+      );
+    });
+
+    it('batch minted - transfer token within edition step range but is not a valid token', async () => {
+      const tokenId = firstEditionTokenId.add(new BN('10')); // only 10 tokens in this edition
+
+      await expectRevert(
+        this.token.transferFrom(owner, collectorA, tokenId, {from: owner}),
+        "ERC721_ZERO_OWNER"
+      );
+    });
+
+    it('batch minted - creators sends token out of sequence and receives it back - ownership updated', async () => {
+      const tokenId = firstEditionTokenId.add(new BN('4'));
+
+      await this.token.transferFrom(owner, collectorA, tokenId, {from: owner});
+      await this.token.transferFrom(collectorA, owner, tokenId, {from: collectorA});
+
+      const start = _.toNumber(firstEditionTokenId);
+      const end = start + _.toNumber(editionSize);
+      for (const id of _.range(start, end)) {
+        expect(await this.token.ownerOf(id)).to.be.equal(owner);
+      }
+    });
+  });
+
+  describe('mintConsecutiveBatchEdition() - ownerOf() validation', async () => {
+
+    const editionSize = 10;
+
+    // creator sends random token from within edition - out of sequence
+    beforeEach(async () => {
+      await this.token.mintConsecutiveBatchEdition(editionSize, owner, TOKEN_URI, {from: contract});
+    });
+
+    it('owner is correctly assigned to all tokens when minted from a batch', async () => {
+      const start = _.toNumber(firstEditionTokenId);
+      const end = start + _.toNumber(editionSize);
+      for (const id of _.range(start, end)) {
+        expect(await this.token.ownerOf(id)).to.be.equal(owner);
+      }
+
+      // fails at sending one more than batch
+      await expectRevert(
+        this.token.transferFrom(owner, collectorA, end + 1, {from: owner}),
+        "ERC721_ZERO_OWNER"
+      );
     });
 
     it('batch minted - first token transfer, ownership updated accordingly', async () => {
@@ -312,7 +554,6 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       this.tokenWithRoyaltyProxy = await KnownOriginDigitalAssetV3.new(
         this.accessControls.address,
         this.royaltiesRegistryProxy.address,
-        ZERO_ADDRESS, // no GAS token for these tests
         STARTING_EDITION,
         {from: owner}
       );

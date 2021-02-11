@@ -12,6 +12,10 @@ import "../core/IKODAV3.sol";
 
 import "hardhat/console.sol";
 
+// TODO CREATE2 to generate vanity deployment address
+//  - https://blog.cotten.io/ethereums-eip-1014-create-2-d17b1a184498
+//  - https://ethgasstation.info/blog/what-is-create2/
+
 contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     using SafeMath for uint256;
 
@@ -28,7 +32,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     event TokenBidWithdrawn(uint256 indexed _tokenId, address indexed _bidder);
 
     // edition buy now
-    event EditionListed(uint256 indexed _editionId, uint128 _price, uint128 _startDate);
+    event EditionListed(uint256 indexed _editionId, uint256 _price, uint256 _startDate);
     event EditionDeListed(uint256 indexed _editionId);
     event EditionPurchased(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price);
 
@@ -102,17 +106,20 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
     //  - they cannot be done e.g. accepting an offer when the edition is sold out
     //  - approvals go astray/removed - approvals may need to be mapped in subgraph
 
-    function listEdition(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) public {
+    // TODO expose both contract & minter listing access protected methods - contract takes in creator, minter assumes creator and needs to check KODA for edition creator
+
+    function listEdition(address _creator, uint256 _editionId, uint256 _listingPrice, uint256 _startDate) public {
+        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         require(_listingPrice >= minBidAmount, "Listing price not enough");
-        address creator = koda.getCreatorOfEdition(_editionId);
-        require(creator == _msgSender(), "Not creator");
+
+        // TODO add lots of tests about scaling up and down to store these things
 
         // 32 bytes / 2 = 16 bytes = 16 * 8 = 128 | uint256(uint128(price),uint128(date))
         uint256 listingConfig = uint256(_listingPrice);
         listingConfig |= _startDate << 128;
 
         // Store listing data
-        editionListings[_editionId] = Listing(listingConfig, creator);
+        editionListings[_editionId] = Listing(listingConfig, _creator);
 
         emit EditionListed(_editionId, _listingPrice, _startDate);
     }

@@ -8,7 +8,7 @@ const web3 = require('web3');
 const {expect} = require('chai');
 
 const {shouldSupportInterfaces} = require('./SupportsInterface.behavior');
-const {validateToken} = require('../test-helpers');
+const {validateEditionAndToken} = require('../test-helpers');
 
 const ERC721ReceiverMock = artifacts.require('ERC721ReceiverMock');
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
@@ -45,7 +45,6 @@ contract('ERC721', function (accounts) {
     // Create token V3
     this.token = await KnownOriginDigitalAssetV3.new(
       this.accessControls.address,
-      ZERO_ADDRESS, // no GAS token for these tests
       ZERO_ADDRESS, // no royalties address
       STARTING_EDITION, // starting edition
       {from: owner}
@@ -132,7 +131,7 @@ contract('ERC721', function (accounts) {
       });
 
       it('creates the token', async () => {
-        await validateToken.call(this, {
+        await validateEditionAndToken.call(this, {
           tokenId: firstEditionTokenId,
           editionId: '11000',
           owner: owner,
@@ -162,7 +161,7 @@ contract('ERC721', function (accounts) {
         const start = _.toNumber(firstEditionTokenId);
         const end = start + _.toNumber(editionSize);
         for (const id of _.range(start, end)) {
-          await validateToken.call(this, {
+          await validateEditionAndToken.call(this, {
             tokenId: id.toString(),
             editionId: '11000',
             owner: owner,
@@ -200,7 +199,7 @@ contract('ERC721', function (accounts) {
         const start = _.toNumber(firstEditionTokenId);
         const end = start + _.toNumber(editionSize);
         for (const id of _.range(start, end)) {
-          await validateToken.call(this, {
+          await validateEditionAndToken.call(this, {
             tokenId: id.toString(),
             editionId: '11000',
             owner: owner,
@@ -308,7 +307,7 @@ contract('ERC721', function (accounts) {
         });
 
         it('token validation check', async () => {
-          await validateToken.call(this, {
+          await validateEditionAndToken.call(this, {
             tokenId: tokenId,
             editionId: '11000',
             owner: this.toWhom,
@@ -833,7 +832,7 @@ contract('ERC721', function (accounts) {
         });
 
         it('token validation check', async () => {
-          await validateToken.call(this, {
+          await validateEditionAndToken.call(this, {
             tokenId: tokenId,
             editionId: '11000',
             owner: this.toWhom,
@@ -1358,7 +1357,7 @@ contract('ERC721', function (accounts) {
         });
 
         it('token validation check', async () => {
-          await validateToken.call(this, {
+          await validateEditionAndToken.call(this, {
             tokenId: tokenId,
             editionId: '11000',
             owner: this.toWhom,

@@ -75,7 +75,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
     constructor(
         IKOAccessControlsLookup _accessControls,
         IERC2981 _royaltiesRegistryProxy,
-        address _chiToken,
         uint256 _editionPointer
     )
     KODAV3Core(_accessControls) {
@@ -610,7 +609,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
         }
 
         // Get the edition size and work out the max token ID, if it does not fall within this range then fail
-        if ((_getSizeOfEdition(_editionId) + _editionId) <= _tokenId) {
+        if (((_getSizeOfEdition(_editionId) + _editionId) - 1) < _tokenId) {
             revert("ERC721_ZERO_OWNER");
             // TODO validate this is needed
             //      - I am pretty sure it is, when requesting a token from outside of the edition size but within the edition range

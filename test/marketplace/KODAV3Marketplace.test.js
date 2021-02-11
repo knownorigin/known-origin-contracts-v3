@@ -1,4 +1,4 @@
-const {BN, constants, expectEvent, expectRevert, balance} = require('@openzeppelin/test-helpers');
+const {BN, constants, time, expectEvent, expectRevert, balance} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
 const _ = require('lodash');
@@ -13,7 +13,7 @@ const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
-const {validateToken} = require('../test-helpers');
+const {validateEditionAndToken} = require('../test-helpers');
 
 contract('ERC721', function (accounts) {
   const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD] = accounts;
@@ -45,7 +45,6 @@ contract('ERC721', function (accounts) {
     // Create token V3
     this.token = await KnownOriginDigitalAssetV3.new(
       this.accessControls.address,
-      ZERO_ADDRESS, // no GAS token for these tests
       ZERO_ADDRESS, // no royalties address
       STARTING_EDITION,
       {from: owner}
@@ -72,7 +71,7 @@ contract('ERC721', function (accounts) {
       await this.token.mintBatchEdition(100, minter, TOKEN_URI, {from: contract});
 
       // list edition for sale at 0.1 ETH per token
-      await this.marketplace.listEdition(firstEditionTokenId, _0_1_ETH, {from: minter});
+      await this.marketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, await time.latest(), {from: contract});
     });
 
     it('initial primary sale, resold on secondary', async () => {
@@ -90,7 +89,7 @@ contract('ERC721', function (accounts) {
       expect(await this.token.ownerOf(token1)).to.be.equal(collectorA);
 
       // Minter now owns 9 and collector owns 1
-      await validateToken.call(this, {
+      await validateEditionAndToken.call(this, {
         tokenId: token1,
         editionId: firstEditionTokenId,
         owner: collectorA,
@@ -114,7 +113,7 @@ contract('ERC721', function (accounts) {
       expect(await this.token.ownerOf(token2)).to.be.equal(collectorB);
 
       // Minter now owns 8, collectorA owns 1, collector B owns 1
-      await validateToken.call(this, {
+      await validateEditionAndToken.call(this, {
         tokenId: token2,
         editionId: firstEditionTokenId,
         owner: collectorB,
@@ -142,7 +141,7 @@ contract('ERC721', function (accounts) {
       expect(await this.token.ownerOf(token1)).to.be.equal(collectorB);
       expect(await this.token.ownerOf(token2)).to.be.equal(collectorB);
 
-      await validateToken.call(this, {
+      await validateEditionAndToken.call(this, {
         tokenId: token1,
         editionId: firstEditionTokenId,
         owner: collectorB,

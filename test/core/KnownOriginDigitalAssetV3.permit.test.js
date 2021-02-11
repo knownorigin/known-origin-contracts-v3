@@ -48,7 +48,6 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     // Create token V3
     this.token = await KnownOriginDigitalAssetV3.new(
       this.accessControls.address,
-      ZERO_ADDRESS, // no GAS token for these tests
       ZERO_ADDRESS, // no royalties address
       STARTING_EDITION,
       {from: owner}
