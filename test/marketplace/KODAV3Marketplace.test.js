@@ -473,6 +473,23 @@ contract('ERC721', function (accounts) {
       expect(await this.token.ownerOf(token3)).to.be.equal(collectorD);
     });
 
+    it('reverts if owner has changed', async () => {
+
+      const token1 = firstEditionTokenId;
+
+      const start = await time.latest();
+      await this.marketplace.listToken(token1, _0_1_ETH, start, {from: collectorA});
+      expect(await this.token.ownerOf(token1)).to.be.equal(collectorA);
+
+      this.token.transferFrom(collectorA, collectorB, token1, {from: collectorA});
+
+      await expectRevert(
+        this.marketplace.buyToken(token1, {from: collectorD, value: _0_1_ETH}),
+      "Listing not valid, token owner has changed"
+      );
+
+    });
+
     it('reverts if no listing', async () => {
       const token1 = firstEditionTokenId;
       await expectRevert(

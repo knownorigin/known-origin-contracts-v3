@@ -163,7 +163,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
 
         // send money back to top bidder if existing offer found
         if (offer.offer > 0) {
-            refundBidder(offer.bidder, offer.offer);
+            _refundBidder(offer.bidder, offer.offer);
         }
 
         // setup offer
@@ -178,7 +178,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
         require(offer.bidder == _msgSender(), "Not bidder");
 
         // send money back to top bidder
-        refundBidder(offer.bidder, offer.offer);
+        _refundBidder(offer.bidder, offer.offer);
 
         // delete offer
         delete editionOffers[_editionId];
@@ -192,7 +192,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
         require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
 
         // send money back to top bidder
-        refundBidder(offer.bidder, offer.offer);
+        _refundBidder(offer.bidder, offer.offer);
 
         // delete offer
         delete editionOffers[_editionId];
@@ -241,7 +241,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
             // send money back to top bidder if existing offer found
             Offer storage offer = editionOffers[_editionId];
             if (offer.offer > 0) {
-                refundBidder(offer.bidder, offer.offer);
+                _refundBidder(offer.bidder, offer.offer);
             }
         }
 
@@ -260,7 +260,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
         require(success, "Edition payment failed");
     }
 
-    function refundBidder(address _receiver, uint256 _paymentAmount) internal {
+    function _refundBidder(address _receiver, uint256 _paymentAmount) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
         require(success, "Edition offer refund failed");
     }
@@ -387,7 +387,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
 
         // send money back to top bidder if existing offer found
         if (offer.offer > 0) {
-            refundTokenBidder(offer.bidder, offer.offer);
+            _refundTokenBidder(offer.bidder, offer.offer);
         }
 
         // setup offer
@@ -401,7 +401,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
         require(offer.bidder == _msgSender(), "Not bidder");
 
         // send money back to top bidder
-        refundTokenBidder(offer.bidder, offer.offer);
+        _refundTokenBidder(offer.bidder, offer.offer);
 
         // delete offer
         delete tokenOffers[_tokenId];
@@ -417,7 +417,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
         require(currentOwner == _msgSender(), "Not current owner");
 
         // send money back to top bidder
-        refundTokenBidder(offer.bidder, offer.offer);
+        _refundTokenBidder(offer.bidder, offer.offer);
 
         // delete offer
         delete tokenOffers[_tokenId];
@@ -476,7 +476,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
         require(success, "Token payment failed");
     }
 
-    function refundTokenBidder(address _receiver, uint256 _paymentAmount) internal {
+    function _refundTokenBidder(address _receiver, uint256 _paymentAmount) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
         require(success, "Token offer refund failed");
     }
