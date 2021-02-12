@@ -27,7 +27,7 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
     // Merkle Magic //
     //////////////////
 
-    function isVerifiedArtist(uint256 index, address account, bytes32[] calldata merkleProof) public returns (bool) {
+    function isVerifiedArtist(uint256 index, address account, bytes32[] calldata merkleProof) public view returns (bool) {
         // assume balance of 1 for enabled artists
         bytes32 node = keccak256(abi.encodePacked(index, account, uint256(1)));
         return MerkleProof.verify(merkleProof, artistAccessMerkleRoot, node);

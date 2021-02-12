@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "../access/IKOAccessControlsLookup.sol";
 
 import "./IKODAV3.sol";
+import "./IKODAV3Minter.sol";
 import "./KODAV3Core.sol";
 import "./permit/ERC2612_NFTPermit.sol";
 
@@ -21,7 +22,7 @@ import "hardhat/console.sol";
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
+contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKODAV3, ERC165 {
     using SafeMath for uint256;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
@@ -90,6 +91,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
 
     function mintToken(address _to, string calldata _uri)
     public
+    override
     returns (uint256 _tokenId) {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
 
@@ -113,6 +115,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
     // Mints batches of tokens emitting multiple Transfer events
     function mintBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
     public
+    override
     returns (uint256 _editionId) {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
@@ -139,6 +142,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, KODAV3Core, IKODAV3, ERC165 {
     // Mints batches of tokens but emits a single ConsecutiveTransfer event EIP-2309
     function mintConsecutiveBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
     public
+    override
     returns (uint256 _editionId) {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");

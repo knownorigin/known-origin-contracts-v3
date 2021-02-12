@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
+import "./IKODAV3Marketplace.sol";
 import "../access/KOAccessControls.sol";
 import "../core/KODAV3Core.sol";
 import "../core/IKODAV3.sol";
@@ -17,7 +18,7 @@ import "hardhat/console.sol";
 //  - https://ethgasstation.info/blog/what-is-create2/
 //  - https://medium.com/coinmonks/on-efficient-ethereum-addresses-3fef0596e263
 
-contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
+contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     using SafeMath for uint256;
 
     // token buy now
@@ -111,7 +112,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard {
 
     // TODO startDate - uint32 = (2^32 - 1) equals to 4294967295, i.e. Sun Feb 07 2106
 
-    function listEdition(address _creator, uint256 _editionId, uint256 _listingPrice, uint256 _startDate) public {
+    function listEdition(address _creator, uint256 _editionId, uint256 _listingPrice, uint256 _startDate) public override {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 

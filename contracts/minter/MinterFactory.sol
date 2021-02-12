@@ -4,8 +4,8 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/GSN/Context.sol";
 
-import "../core/KnownOriginDigitalAssetV3.sol";
-import "../marketplace/KODAV3Marketplace.sol";
+import "../core/IKODAV3Minter.sol";
+import "../marketplace/IKODAV3Marketplace.sol";
 import "../access/IKOAccessControlsLookup.sol";
 
 contract MinterFactory is Context {
@@ -15,11 +15,9 @@ contract MinterFactory is Context {
 
     IKOAccessControlsLookup public accessControls;
 
-    // TODO extract common minting methods to interface to save deployment costs
-    KnownOriginDigitalAssetV3 public koda;
+    IKODAV3Minter public koda;
 
-    // TODO extract common methods to interface to save deployment costs
-    KODAV3Marketplace public marketplace;
+    IKODAV3Marketplace public marketplace;
 
     // frozen out for..
     uint256 public freezeWindow = 1 days;
@@ -32,8 +30,8 @@ contract MinterFactory is Context {
 
     constructor(
         IKOAccessControlsLookup _accessControls,
-        KnownOriginDigitalAssetV3 _koda,
-        KODAV3Marketplace _marketplace
+        IKODAV3Minter _koda,
+        IKODAV3Marketplace _marketplace
     ) {
         accessControls = _accessControls;
         koda = _koda;

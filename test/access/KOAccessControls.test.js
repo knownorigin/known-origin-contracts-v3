@@ -54,19 +54,19 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
 
   describe('isVerifiedArtist() - success', async () => {
     it('should assert address whitelisted', async () => {
-      expect(await this.accessControls.isVerifiedArtist(
+      expect(await this.accessControls.isVerifiedArtist.call(
         0,
         "0xB9CcDD7Bedb7157798e10Ff06C7F10e0F37C6BdD",
         merkleProof.claims['0xB9CcDD7Bedb7157798e10Ff06C7F10e0F37C6BdD'].proof)
       ).to.be.equal(true);
 
-      expect(await this.accessControls.isVerifiedArtist(
+      expect(await this.accessControls.isVerifiedArtist.call(
         1,
         "0xF3c6F5F265F503f53EAD8aae90FC257A5aa49AC1",
         merkleProof.claims['0xF3c6F5F265F503f53EAD8aae90FC257A5aa49AC1'].proof)
       ).to.be.equal(true);
 
-      expect(await this.accessControls.isVerifiedArtist(
+      expect(await this.accessControls.isVerifiedArtist.call(
         2,
         "0xf94DbB18cc2a7852C9CEd052393d517408E8C20C",
         merkleProof.claims['0xf94DbB18cc2a7852C9CEd052393d517408E8C20C'].proof)
@@ -76,7 +76,7 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
 
   describe('isVerifiedArtist() - failures', async () => {
     it('should fail artist verification', async () => {
-      expect(await this.accessControls.isVerifiedArtist(
+      expect(await this.accessControls.isVerifiedArtist.call(
         0,
         deployer,
         merkleProof.claims['0xf94DbB18cc2a7852C9CEd052393d517408E8C20C'].proof)
@@ -84,7 +84,7 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
     });
 
     it('should fail artist verification when wrong index supplied', async () => {
-      expect(await this.accessControls.isVerifiedArtist(
+      expect(await this.accessControls.isVerifiedArtist.call(
         1, // wrong index
         "0xf94DbB18cc2a7852C9CEd052393d517408E8C20C",
         merkleProof.claims['0xf94DbB18cc2a7852C9CEd052393d517408E8C20C'].proof)
@@ -92,7 +92,7 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
     });
 
     it('should fail artist verification when wrong proof supplied', async () => {
-      expect(await this.accessControls.isVerifiedArtist(
+      expect(await this.accessControls.isVerifiedArtist.call(
         1,
         "0xF3c6F5F265F503f53EAD8aae90FC257A5aa49AC1",
         merkleProof.claims['0xf94DbB18cc2a7852C9CEd052393d517408E8C20C'].proof)
@@ -100,7 +100,7 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
     });
 
     it('should fail artist verification when wrong account supplied', async () => {
-      expect(await this.accessControls.isVerifiedArtist(
+      expect(await this.accessControls.isVerifiedArtist.call(
         0,
         "0xf94DbB18cc2a7852C9CEd052393d517408E8C20C",
         merkleProof.claims['0xB9CcDD7Bedb7157798e10Ff06C7F10e0F37C6BdD'].proof)
@@ -108,7 +108,7 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
     });
 
     it('should fail artist verification when zero address account supplied', async () => {
-      expect(await this.accessControls.isVerifiedArtist(
+      expect(await this.accessControls.isVerifiedArtist.call(
         0,
         ZERO_ADDRESS,
         merkleProof.claims['0xB9CcDD7Bedb7157798e10Ff06C7F10e0F37C6BdD'].proof)
