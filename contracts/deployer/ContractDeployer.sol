@@ -23,6 +23,8 @@ contract ContractDeployer {
         return abi.encodePacked(bytecode, abi.encode(_accessControls, _royaltiesRegistryProxy, _editionPointer));
     }
 
+    // TODO CREATE2 for KOAccessControls
+
     // 2. Compute the address of the contract to be deployed
     // NOTE: _salt is a random number used to create an address
     function getAddress(bytes memory bytecode, bytes32 _salt) public view returns (address) {
