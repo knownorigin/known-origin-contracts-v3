@@ -128,6 +128,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
         emit EditionListed(_editionId, _listingPrice, _startDate);
     }
 
+    // FIXME drop?
     function delistEdition(uint256 _editionId) public {
         require(editionListings[_editionId].seller == _msgSender(), "Caller not the lister");
 
@@ -289,11 +290,36 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
         return uint128(editionListings[_editionId].listingConfig >> 128);
     }
 
+    function getTokenListing(uint256 _tokenId) public view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
+        return _getTokenListing(_tokenId);
+    }
+
+    function _getTokenListing(uint256 _tokenId) internal view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
+        Listing storage listing = tokenListings[_tokenId];
+        return (
+        listing.seller, // original seller
+        uint128(listing.listingConfig), // price
+        uint128(listing.listingConfig >> 128) // date
+        );
+    }
+
+    function getTokenListingSeller(uint256 _tokenId) public view returns (address _seller) {
+        return tokenListings[_tokenId].seller;
+    }
+
+    function getTokenListingPrice(uint256 _tokenId) public view returns (uint128 _listingPrice) {
+        return uint128(tokenListings[_tokenId].listingConfig);
+    }
+
+    function getTokenListingDate(uint256 _tokenId) public view returns (uint128 _startDate) {
+        return uint128(tokenListings[_tokenId].listingConfig >> 128);
+    }
+
     ///////////////////////////////////
     // Secondary sale 'buy now' flow //
     ///////////////////////////////////
 
-    function listToken(uint256 _tokenId, uint256 _listingPrice) public {
+    function listToken(uint256 _tokenId, uint256 _listingPrice, uint256 _startDate) public {
         // Check ownership before listing
         require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
 
@@ -303,8 +329,12 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
         // Check price over min bid
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
+        // 32 bytes / 2 = 16 bytes = 16 * 8 = 128 | uint256(uint128(price),uint128(date))
+        uint256 listingConfig = uint256(_listingPrice);
+        listingConfig |= _startDate << 128;
+
         // List the token
-        tokenListings[_tokenId] = Listing(_listingPrice, _msgSender());
+        tokenListings[_tokenId] = Listing(listingConfig, _msgSender());
 
         emit TokenListed(_tokenId, _msgSender(), _listingPrice);
     }
@@ -323,17 +353,17 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     }
 
     function buyToken(uint256 _tokenId) public payable nonReentrant {
-        Listing storage listing = tokenListings[_tokenId];
 
-        // check listing found
-        require(listing.seller != address(0), "No listing found");
+        (address _seller, uint128 _listingPrice, uint128 _startDate) = _getTokenListing(_tokenId);
 
-        // check payment
-        require(listing.listingConfig == msg.value, "Not enough money");
+        require(address(0) != _seller, "No listing found");
+        require(msg.value >= _listingPrice, "List price not satisfied");
+        require(block.timestamp >= _startDate, "List not available yet");
+
 
         // check current owner is the lister as it may have changed hands
         address currentOwner = koda.ownerOf(_tokenId);
-        require(listing.seller == currentOwner, "Listing not valid, token owner has changed");
+        require(_seller == currentOwner, "Listing not valid, token owner has changed");
 
         // trade the token
         facilitateTokenSale(_tokenId, msg.value, currentOwner, _msgSender());
