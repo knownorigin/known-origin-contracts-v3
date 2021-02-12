@@ -161,7 +161,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
   });
 
-  describe('mintBatchEdition() - ownerOf() validation', async () => {
+  describe.only('mintBatchEdition() - ownerOf() validation', async () => {
 
     const editionSize = 10;
 
@@ -302,7 +302,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
   });
 
-  describe('mintConsecutiveBatchEdition() - ownerOf() validation', async () => {
+  describe.only('mintConsecutiveBatchEdition() - ownerOf() validation', async () => {
 
     const editionSize = 10;
 
