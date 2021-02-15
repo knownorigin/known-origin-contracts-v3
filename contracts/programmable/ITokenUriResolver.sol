@@ -3,5 +3,6 @@
 pragma solidity 0.7.4;
 
 interface ITokenUriResolver {
-    function tokenURI(uint256 _tokenId) external view returns (string memory);
+    function editionURI(uint256 _editionId) external view returns (string memory);
+    function isDefined(uint256  _editionId) external view returns (bool);
 }

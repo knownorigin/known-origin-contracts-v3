@@ -13,10 +13,13 @@ import "../access/IKOAccessControlsLookup.sol";
 import "./IKODAV3.sol";
 import "./IKODAV3Minter.sol";
 import "./KODAV3Core.sol";
+import "../programmable/ITokenUriResolver.sol";
 import "./permit/ERC2612_NFTPermit.sol";
 
 // TODO remove me
 import "hardhat/console.sol";
+
+// FIXME Use safe-math for all calcs?
 
 /*
  * A base 721 compliant contract which has a focus on being light weight
@@ -28,8 +31,10 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
     bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
 
-    event AdminEditionReported(uint256 _editionId, bool _reported);
-    event AdditionalMetaDataSet(uint256 _editionId);
+    event AdminEditionReported(uint256 indexed _editionId, bool indexed _reported);
+    event AdditionalMetaDataSet(uint256 indexed _editionId);
+    event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
+    event AdminTokenUriResolverSet(address indexed _tokenUriResolver);
 
     // Edition number pointer
     uint256 public editionPointer;
@@ -39,6 +44,12 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
 
     // bool flag to setting proxy or not
     bool public royaltyRegistryActive;
+
+    // Token URI resolver
+    ITokenUriResolver public tokenUriResolver;
+
+    // bool flag to setting tokenUri resolver
+    bool public tokenUriResolverActive;
 
     // tokens are minted in batches - the first token ID used is representative of the edition ID (for now)
     mapping(uint256 => EditionDetails) editionDetails;
@@ -77,8 +88,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     KODAV3Core(_accessControls) {
         editionPointer = _editionPointer;
 
-        // TODO setter
-        // optional
+        // optional registry address
         if (address(_royaltiesRegistryProxy) != address(0)) {
             royaltiesRegistryProxy = _royaltiesRegistryProxy;
             royaltyRegistryActive = true;
@@ -162,17 +172,17 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         return start;
     }
 
-    // TODO add consecutive batch transfer method
-
     function _defineEditionConfig(uint256 _editionId, uint256 _editionSize, address _to, string calldata _uri) internal {
+        // TODO do we need a require for MAX_EDITION_ID ... ? max edition size
+        require(_editionSize <= MAX_EDITION_ID, "Unable to make any more editions");
+
         // store address and size in config | address = holds a 20 byte value
         uint256 editionConfig = uint256(_to);
 
-        // TODO calculate and document the max edition ID we can fit in these bits
-        // 256 bits can be stored in a uint256
-        // 20 byte address takes up 160 bytes
-        // shift and store edition size in the unused bytes
-        // edition size can occupy a max of 12 bytes, or 96 bits (I think)
+        // 256 bits can be stored in a single uint256 32 byte slot
+        // 20 byte address takes up 160 bits leaving 96 bits left over
+        // shift and store edition size in this section
+        // edition size can now occupy a max of 12 bytes, or 96 bits
         editionConfig |= _editionSize << 160;
 
         // Store edition blob to be the next token pointer
@@ -184,18 +194,28 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         return editionPointer;
     }
 
-    // FIXME use resolver for dynamic token URIs ... ?
+    // FIXME test
     function editionURI(uint256 _editionId) public view returns (string memory) {
         EditionDetails storage edition = editionDetails[_editionId];
         require(edition.editionConfig != 0, "KODA: Edition does not exist");
+        if (tokenUriResolverActive) {
+            if (tokenUriResolver.isDefined(_editionId)) {
+                return tokenUriResolver.editionURI(_editionId);
+            }
+        }
         return edition.uri;
     }
 
-    // FIXME use resolver for dynamic token URIs ... ?
+    // FIXME test
     function tokenURI(uint256 _tokenId) public view returns (string memory) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
         require(edition.editionConfig != 0, "KODA: Token does not exist");
+        if (tokenUriResolverActive) {
+            if (tokenUriResolver.isDefined(editionId)) {
+                return tokenUriResolver.editionURI(editionId);
+            }
+        }
         return edition.uri;
     }
 
@@ -283,7 +303,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         return owner != address(0);
     }
 
-    // FIXME Use safe-math?
     function maxTokenIdOfEdition(uint256 _editionId) public override view returns (uint256 _tokenId) {
         return _getSizeOfEdition(_editionId) + _editionId;
     }
@@ -687,29 +706,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         }
     }
 
-    ///////////////////
-    // Admin setters //
-    ///////////////////
-
-    function reportEditionId(uint256 _editionId, bool _reported) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
-        reportedEditionIds[_editionId] = _reported;
-        emit AdminEditionReported(_editionId, _reported);
-    }
-
-    /////////////////////
-    // Creator setters //
-    /////////////////////
-
-    // Optional metadata storage slot which allows the creator to set an additional metadata blob on the token
-    function lockInAdditionalMetaData(uint256 _editionId, string memory metadata) external {
-        require(_msgSender() == getCreatorOfEdition(_editionId), "KODA: unable to set when not creator");
-        require(bytes(additionalEditionMetaData[_editionId]).length == 0, "KODA: can only be set once");
-        additionalEditionMetaData[_editionId] = metadata;
-        emit AdditionalMetaDataSet(_editionId);
-    }
-
-
     /// @notice An extension to the default ERC721 behaviour, derived from ERC-875.
     /// @dev Allowing for batch transfers from the provided address, will fail if from does not own all the tokens
     function batchTransferFrom(address _from, address _to, uint256[] calldata _tokenIds) public {
@@ -728,6 +724,33 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         emit ConsecutiveTransfer(_fromTokenId, _toTokenId, _from, _to);
     }
 
+    /////////////////////
+    // Admin functions //
+    /////////////////////
+
+    function reportEditionId(uint256 _editionId, bool _reported) public {
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        reportedEditionIds[_editionId] = _reported;
+        emit AdminEditionReported(_editionId, _reported);
+    }
+
+    // TODO test
+    function setRoyaltiesRegistryProxy(IERC2981 _royaltiesRegistryProxy) public {
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        royaltiesRegistryProxy = _royaltiesRegistryProxy;
+        royaltyRegistryActive = address(_royaltiesRegistryProxy) != address(0);
+        emit AdminRoyaltiesRegistryProxySet(address(_royaltiesRegistryProxy));
+    }
+
+
+    // TODO test
+    function setTokenUriResolver(ITokenUriResolver _tokenUriResolver) public {
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        tokenUriResolver = _tokenUriResolver;
+        tokenUriResolverActive = address(_tokenUriResolver) != address(0);
+        emit AdminTokenUriResolverSet(address(_tokenUriResolver));
+    }
+
     // TODO add method stuck ERC721 retrieval ... ? I vote no as we can then use this address as the burn address?
 
     // TODO test
@@ -744,6 +767,18 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     function withdrawStuckEther(address _tokenAddress, uint256 _amount, address _withdrawalAccount) public {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have admin role");
         IERC20(_tokenAddress).transferFrom(address(this), _withdrawalAccount, _amount);
+    }
+
+    ///////////////////////
+    // Creator functions //
+    ///////////////////////
+
+    // Optional metadata storage slot which allows the creator to set an additional metadata blob on the token
+    function lockInAdditionalMetaData(uint256 _editionId, string memory metadata) external {
+        require(_msgSender() == getCreatorOfEdition(_editionId), "KODA: unable to set when not creator");
+        require(bytes(additionalEditionMetaData[_editionId]).length == 0, "KODA: can only be set once");
+        additionalEditionMetaData[_editionId] = metadata;
+        emit AdditionalMetaDataSet(_editionId);
     }
 
 }

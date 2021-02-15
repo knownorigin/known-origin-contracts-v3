@@ -1129,4 +1129,10 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
   });
 
+  describe('max edition number validation', async () => {
+    it('knows the max edition ID', async () => {
+      expect(await this.token.MAX_EDITION_ID()).to.be.bignumber.equal("79228162514264337593543950335");
+    });
+  });
+
 });
