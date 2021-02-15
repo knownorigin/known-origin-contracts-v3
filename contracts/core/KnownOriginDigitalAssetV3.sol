@@ -583,18 +583,9 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
             return owner;
         }
 
-        //        // FIXME AMG - combine the range check with the possible creator and just return address(0) otherwise
-        //          // FIXME JM - remind me again why this is needed Andy?
-        //        // Get the edition size and work out the max token ID, if it does not fall within this range then fail
-        //        if (((_getSizeOfEdition(_editionId) + _editionId) - 1) < _tokenId) {
-        //            revert("ERC721_ZERO_OWNER");
-        //            // TODO validate this is needed
-        //            //      - I am pretty sure it is, when requesting a token from outside of the edition size but within the edition range
-        //        }
-
         // fall back to edition creator
         address possibleCreator = _getCreatorOfEdition(_editionId);
-        if (((_getSizeOfEdition(_editionId) + _editionId) - 1) >= _tokenId && possibleCreator != address(0)) {
+        if (possibleCreator != address(0) && (_getSizeOfEdition(_editionId) + _editionId - 1) >= _tokenId) {
             return possibleCreator;
         }
 
