@@ -15,7 +15,7 @@ const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls')
 
 const {validateEditionAndToken} = require('../test-helpers');
 
-contract('ERC721', function (accounts) {
+contract('KODAV3Marketplace', function (accounts) {
   const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD] = accounts;
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
@@ -136,7 +136,7 @@ contract('ERC721', function (accounts) {
       await this.token.setApprovalForAll(this.marketplace.address, true, {from: collectorA});
 
       // listed
-      await this.marketplace.listToken(token1, _0_1_ETH, {from: collectorA});
+      await this.marketplace.listToken(token1, _0_1_ETH, await time.latest(), {from: collectorA});
 
       // bought buy collector 1
       await this.marketplace.buyToken(token1, {from: collectorB, value: _0_1_ETH});
@@ -173,7 +173,7 @@ contract('ERC721', function (accounts) {
 
       // collector A lists all and then collector B buys them all
       for (const id of tokenIds) {
-        await this.marketplace.listToken(id, _0_1_ETH, {from: collectorA});
+        await this.marketplace.listToken(id, _0_1_ETH, await time.latest(), {from: collectorA});
         await this.marketplace.buyToken(id, {from: collectorB, value: _0_1_ETH});
         expect(await this.token.ownerOf(id)).to.be.equal(collectorB);
       }
@@ -342,7 +342,7 @@ contract('ERC721', function (accounts) {
 
       listing = await this.marketplace.getTokenListing(token3);
       expect(listing._seller).to.be.equal(collectorC);
-      expect(listing._listingPrice).to.be.bignumber.equal(new BN);
+      expect(listing._listingPrice).to.be.bignumber.equal(_0_1_ETH);
       expect(listing._startDate).to.be.bignumber.equal(start);
     });
 

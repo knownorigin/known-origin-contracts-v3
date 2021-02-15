@@ -788,7 +788,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
     it('reverts when exhausted', async () => {
       this.receipt = await this.token.mintBatchEdition(2, collectorA, TOKEN_URI, {from: contract});
-      expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+      await expectEvent.inLogs(this.receipt.logs, 'Transfer', {
         from: ZERO_ADDRESS,
         to: collectorA,
         tokenId: firstEditionTokenId
@@ -812,7 +812,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
     it('get from middle (if gifting from end)', async () => {
       this.receipt = await this.token.mintBatchEdition(3, collectorA, TOKEN_URI, {from: contract});
-      expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+      await expectEvent.inLogs(this.receipt.logs, 'Transfer', {
         from: ZERO_ADDRESS,
         to: collectorA,
         tokenId: firstEditionTokenId
@@ -828,7 +828,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
     it('sell via primary then get sent the token back', async () => {
       this.receipt = await this.token.mintBatchEdition(3, collectorA, TOKEN_URI, {from: contract});
-      expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+      await expectEvent.inLogs(this.receipt.logs, 'Transfer', {
         from: ZERO_ADDRESS,
         to: collectorA,
         tokenId: firstEditionTokenId
@@ -843,7 +843,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
     it('reverts when selling via primary then burning to zero address', async () => {
       this.receipt = await this.token.mintBatchEdition(3, collectorA, TOKEN_URI, {from: contract});
-      expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+      await expectEvent.inLogs(this.receipt.logs, 'Transfer', {
         from: ZERO_ADDRESS,
         to: collectorA,
         tokenId: firstEditionTokenId
