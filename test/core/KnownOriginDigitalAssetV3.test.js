@@ -851,7 +851,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       // covering this here to prove you can not reset the zero address and go back to a token already with a primary sale
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA}); // sell one
-      await expectRevert( this.token.transferFrom(collectorB, ZERO_ADDRESS, firstEditionTokenId, {from: collectorB}),
+      await expectRevert(this.token.transferFrom(collectorB, ZERO_ADDRESS, firstEditionTokenId, {from: collectorB}),
         "ERC721_ZERO_TO_ADDRESS"
       ); // send back
     });
@@ -920,4 +920,186 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       );
     });
   });
+
+  describe('ability to gift a token from an edition', async () => {
+
+    const editionSize = 10;
+
+    beforeEach(async () => {
+      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract});
+
+      const start = _.toNumber(firstEditionTokenId);
+      const end = start + _.toNumber(editionSize);
+      for (const id of _.range(start, end)) {
+        expect(await this.token.ownerOf(id)).to.be.equal(owner);
+      }
+    });
+
+    it('can transfer/gift from the end of an edition on primary', async () => {
+      const tokenId = _.toNumber(firstEditionTokenId) + _.toNumber(editionSize) - 1;
+      await this.token.transferFrom(owner, collectorA, tokenId, {from: owner});
+      expect(await this.token.ownerOf(tokenId)).to.be.equal(collectorA);
+    });
+
+    it('can transfer/gift from the middle of an edition on primary', async () => {
+      const tokenId = _.toNumber(firstEditionTokenId) + 5;
+      await this.token.transferFrom(owner, collectorA, tokenId, {from: owner});
+      expect(await this.token.ownerOf(tokenId)).to.be.equal(collectorA);
+    });
+
+    it('can transfer/gift from the start an edition on primary', async () => {
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+    });
+
+    it('can transfer/gift on secondary market from new owner', async () => {
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+
+      await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA});
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorB);
+    });
+  });
+
+  describe('batchTransferFrom()', async () => {
+
+    const editionSize = 10;
+
+    beforeEach(async () => {
+      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract});
+
+      const start = _.toNumber(firstEditionTokenId);
+      const end = start + _.toNumber(editionSize);
+      for (const id of _.range(start, end)) {
+        expect(await this.token.ownerOf(id)).to.be.equal(owner);
+      }
+    });
+
+    it('can transfer a selection of primary tokens', async () => {
+      const tokensToMove = [firstEditionTokenId, firstEditionTokenId.add(new BN('1')), firstEditionTokenId.add(new BN('2'))];
+      await this.token.batchTransferFrom(owner, collectorA, tokensToMove)
+      for (const id of tokensToMove) {
+        expect(await this.token.ownerOf(id)).to.be.equal(collectorA);
+      }
+    });
+
+    it('can transfer a selection of secondary tokens', async () => {
+      const tokensToMove = [firstEditionTokenId, firstEditionTokenId.add(new BN('1')), firstEditionTokenId.add(new BN('2'))];
+      await this.token.batchTransferFrom(owner, collectorA, tokensToMove, {from: owner})
+      for (const id of tokensToMove) {
+        expect(await this.token.ownerOf(id)).to.be.equal(collectorA);
+      }
+
+      await this.token.batchTransferFrom(collectorA, collectorB, tokensToMove, {from: collectorA})
+      for (const id of tokensToMove) {
+        expect(await this.token.ownerOf(id)).to.be.equal(collectorB);
+      }
+    });
+
+    it('can transfer a selection of primary & secondary tokens', async () => {
+      // collector A mints a batch - sends a few to the owner account
+      await this.token.mintBatchEdition(editionSize, collectorA, TOKEN_URI, {from: contract});
+      const collectorATokensToMove = [
+        secondEditionTokenId,
+        secondEditionTokenId.add(new BN('1')),
+        secondEditionTokenId.add(new BN('2'))
+      ];
+
+      // send 3 to "owner"
+      await this.token.batchTransferFrom(collectorA, owner, collectorATokensToMove, {from: collectorA})
+      for (const id of collectorATokensToMove) {
+        expect(await this.token.ownerOf(id)).to.be.equal(owner);
+      }
+
+      // Owner mints some more
+      const ownerTokens = [firstEditionTokenId, firstEditionTokenId.add(new BN('1')), firstEditionTokenId.add(new BN('2'))]
+      const tokensToMove = [
+        ...ownerTokens,
+        ...collectorATokensToMove
+      ];
+      await this.token.batchTransferFrom(owner, collectorB, tokensToMove, {from: owner})
+
+      // Check B owners all 6 tokens
+      for (const id of tokensToMove) {
+        expect(await this.token.ownerOf(id)).to.be.equal(collectorB);
+      }
+    });
+
+    it('reverts if one token in the batch is not owned byt the caller', async () => {
+      const collectorATokensToMove = [
+        firstEditionTokenId,
+        secondEditionTokenId.add(new BN('1')),
+        secondEditionTokenId.add(new BN('2'))
+      ];
+
+      await expectRevert(
+        this.token.batchTransferFrom(collectorA, owner, collectorATokensToMove, {from: collectorA}),
+        "ERC721_OWNER_MISMATCH"
+      );
+    });
+  });
+
+  describe('consecutiveBatchTransferFrom()', async () => {
+    const editionSize = 10;
+
+    beforeEach(async () => {
+      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract});
+
+      const start = _.toNumber(firstEditionTokenId);
+      const end = start + _.toNumber(editionSize);
+      for (const id of _.range(start, end)) {
+        expect(await this.token.ownerOf(id)).to.be.equal(owner);
+      }
+    });
+
+    it('can transfer a selection of primary tokens', async () => {
+      const firstToken = firstEditionTokenId;
+      const lastToken = firstEditionTokenId.add(new BN('2'));
+
+      const receipt = await this.token.consecutiveBatchTransferFrom(owner, collectorA, firstToken, lastToken, {from: owner});
+      expectEvent.inLogs(receipt.logs, 'ConsecutiveTransfer', {
+        fromTokenId: firstToken,
+        toTokenId: lastToken,
+        fromAddress: owner,
+        toAddress: collectorA
+      });
+
+      const tokensToMove = [firstEditionTokenId, firstEditionTokenId.add(new BN('1')), lastToken];
+      for (const id of tokensToMove) {
+        expect(await this.token.ownerOf(id)).to.be.equal(collectorA);
+      }
+    });
+
+    it('can transfer a selection of secondary tokens', async () => {
+      const firstToken = firstEditionTokenId;
+      const lastToken = firstEditionTokenId.add(new BN('2'));
+
+      const tokensToMove = [firstEditionTokenId, firstEditionTokenId.add(new BN('1')), lastToken];
+
+      await this.token.consecutiveBatchTransferFrom(owner, collectorA, firstToken, lastToken, {from: owner});
+      for (const id of tokensToMove) {
+        expect(await this.token.ownerOf(id)).to.be.equal(collectorA);
+      }
+
+      const receipt = await this.token.consecutiveBatchTransferFrom(collectorA, collectorB, firstToken, lastToken, {from: collectorA});
+      for (const id of tokensToMove) {
+        expect(await this.token.ownerOf(id)).to.be.equal(collectorB);
+      }
+
+      expectEvent.inLogs(receipt.logs, 'ConsecutiveTransfer', {
+        fromTokenId: firstToken,
+        toTokenId: lastToken,
+        fromAddress: collectorA,
+        toAddress: collectorB
+      });
+    });
+
+    it('reverts if a token does not exist', async () => {
+      await expectRevert(
+        this.token.consecutiveBatchTransferFrom(owner, collectorA, firstEditionTokenId, secondEditionTokenId, {from: owner}),
+        "ERC721_ZERO_OWNER"
+      );
+    });
+  });
+
 });

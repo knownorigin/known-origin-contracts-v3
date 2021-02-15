@@ -112,6 +112,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
 
     // TODO startDate - uint32 = (2^32 - 1) equals to 4294967295, i.e. Sun Feb 07 2106
 
+    // TODO fixme we pass in uint256 but then map to unit128 - fix and add tests
     function listEdition(address _creator, uint256 _editionId, uint256 _listingPrice, uint256 _startDate) public override {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         require(_listingPrice >= minBidAmount, "Listing price not enough");

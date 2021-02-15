@@ -4,6 +4,7 @@ pragma solidity 0.7.4; // FIXME bump to 0.8 and drop safemath?
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/introspection/ERC165.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
@@ -16,8 +17,6 @@ import "./permit/ERC2612_NFTPermit.sol";
 
 // TODO remove me
 import "hardhat/console.sol";
-
-// TODO expose batch transfer method
 
 /*
  * A base 721 compliant contract which has a focus on being light weight
@@ -351,39 +350,28 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         return (_creator, _creator, _tokenId);
     }
 
-    // FIXME means we need to sell in order?
     function getNextAvailablePrimarySaleToken(uint256 _editionId)
     public
     override
     view
     returns (uint256 _tokenId) {
-
-        // TODO is there a optimisation where we record the last token sold on primary and then we start from this point ... ?
         uint256 maxTokenId = _editionId + _getSizeOfEdition(_editionId);
 
+        // TODO replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
+
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
-
-            // TODO add a test to make sure this work after being minted, transferred and then transferred back to the original creator
-
             // if no owner set - assume primary if not moved
             if (owners[tokenId] == address(0)) {
                 return tokenId;
             }
         }
-
         revert("KODA: No tokens left on the primary market");
-
-        // TODO GAS costs increase per loop - gifting should reverse this list to make it smaller
-        // TODO replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
     }
 
     function hadPrimarySaleOfToken(uint256 _tokenId) public override view returns (bool) {
         return owners[_tokenId] != address(0);
     }
 
-    // TODO add method stuck ETH retrieval
-    // TODO add method stuck ERC20 retrieval
-    // TODO add method stuck ERC721 retrieval
 
     //////////////
     // Defaults //
@@ -410,28 +398,10 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     override
     external
     {
-        transferFrom(
-            _from,
-            _to,
-            _tokenId
-        );
+        _safeTransferFrom(_from, _to, _tokenId, _data);
 
-        uint256 receiverCodeSize;
-        assembly {
-            receiverCodeSize := extcodesize(_to)
-        }
-        if (receiverCodeSize > 0) {
-            bytes4 selector = IERC721Receiver(_to).onERC721Received(
-                _msgSender(),
-                _from,
-                _tokenId,
-                _data
-            );
-            require(
-                selector == ERC721_RECEIVED,
-                "ERC721_INVALID_SELECTOR"
-            );
-        }
+        // move the token
+        emit Transfer(_from, _to, _tokenId);
     }
 
     /// @notice Transfers the ownership of an NFT from one address to another address
@@ -448,11 +418,14 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     override
     external
     {
-        transferFrom(
-            _from,
-            _to,
-            _tokenId
-        );
+        _safeTransferFrom(_from, _to, _tokenId, bytes(""));
+
+        // move the token
+        emit Transfer(_from, _to, _tokenId);
+    }
+
+    function _safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) internal {
+        _transferFrom(_from, _to, _tokenId);
 
         uint256 receiverCodeSize;
         assembly {
@@ -463,7 +436,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
                 _msgSender(),
                 _from,
                 _tokenId,
-                ""
+                _data
             );
             require(
                 selector == ERC721_RECEIVED,
@@ -495,11 +468,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         approvals[_tokenId] = _approved;
         emit Approval(_owner, _approved, _tokenId);
     }
-
-    // TODO add method e.g. primarySaleTransfer() ... ?
-    //      - this can be lighter weight then transfer as we can confirm the creator and pre-state of the edition
-    //      - can be used by internal contracts only
-    //      - approval flow needs thought?
 
     // TODO validate approval flow for both sold out and partially available editions and their tokens
 
@@ -556,6 +524,13 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     )
     override
     public {
+        _transferFrom(_from, _to, _tokenId);
+
+        // move the token
+        emit Transfer(_from, _to, _tokenId);
+    }
+
+    function _transferFrom(address _from, address _to, uint256 _tokenId) internal {
         // enforce not being able to send to zero as we have explicit rules what a minted but unbound owner is
         require(_to != address(0), "ERC721_ZERO_TO_ADDRESS");
 
@@ -582,9 +557,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         // Modify balances
         balances[_from] = balances[_from].sub(1);
         balances[_to] = balances[_to].add(1);
-
-        // move the token
-        emit Transfer(_from, _to, _tokenId);
     }
 
     /// @notice Find the owner of an NFT
@@ -610,6 +582,15 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         if (owner != address(0)) {
             return owner;
         }
+
+        //        // FIXME AMG - combine the range check with the possible creator and just return address(0) otherwise
+        //          // FIXME JM - remind me again why this is needed Andy?
+        //        // Get the edition size and work out the max token ID, if it does not fall within this range then fail
+        //        if (((_getSizeOfEdition(_editionId) + _editionId) - 1) < _tokenId) {
+        //            revert("ERC721_ZERO_OWNER");
+        //            // TODO validate this is needed
+        //            //      - I am pretty sure it is, when requesting a token from outside of the edition size but within the edition range
+        //        }
 
         // fall back to edition creator
         address possibleCreator = _getCreatorOfEdition(_editionId);
@@ -684,28 +665,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         _approval(owner, spender, tokenId);
     }
 
-    ///////////////////
-    // Admin setters //
-    ///////////////////
-
-    function reportEditionId(uint256 _editionId, bool _reported) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
-        reportedEditionIds[_editionId] = _reported;
-        emit AdminEditionReported(_editionId, _reported);
-    }
-
-    /////////////////////
-    // Creator setters //
-    /////////////////////
-
-    // Optional metadata storage slot which allows the creator to set an additional metadata blob on the token
-    function lockInAdditionalMetaData(uint256 _editionId, string memory metadata) external {
-        require(_msgSender() == getCreatorOfEdition(_editionId), "KODA: unable to set when not creator");
-        require(bytes(additionalEditionMetaData[_editionId]).length == 0, "KODA: can only be set once");
-        additionalEditionMetaData[_editionId] = metadata;
-        emit AdditionalMetaDataSet(_editionId);
-    }
-
     // TODO confirm coverage for callback and magic receiver
 
     function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory _data)
@@ -737,4 +696,64 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
             return (retval == ERC721_RECEIVED);
         }
     }
+
+    ///////////////////
+    // Admin setters //
+    ///////////////////
+
+    function reportEditionId(uint256 _editionId, bool _reported) public {
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        reportedEditionIds[_editionId] = _reported;
+        emit AdminEditionReported(_editionId, _reported);
+    }
+
+    /////////////////////
+    // Creator setters //
+    /////////////////////
+
+    // Optional metadata storage slot which allows the creator to set an additional metadata blob on the token
+    function lockInAdditionalMetaData(uint256 _editionId, string memory metadata) external {
+        require(_msgSender() == getCreatorOfEdition(_editionId), "KODA: unable to set when not creator");
+        require(bytes(additionalEditionMetaData[_editionId]).length == 0, "KODA: can only be set once");
+        additionalEditionMetaData[_editionId] = metadata;
+        emit AdditionalMetaDataSet(_editionId);
+    }
+
+
+    /// @notice An extension to the default ERC721 behaviour, derived from ERC-875.
+    /// @dev Allowing for batch transfers from the provided address, will fail if from does not own all the tokens
+    function batchTransferFrom(address _from, address _to, uint256[] calldata _tokenIds) public {
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            _safeTransferFrom(_from, _to, _tokenIds[i], bytes(""));
+            emit Transfer(_from, _to, _tokenIds[i]);
+        }
+    }
+
+    /// @notice An extension to the default ERC721 behaviour, derived from ERC-875 but using the ConsecutiveTransfer event
+    /// @dev Allowing for batch transfers from the provided address, will fail if from does not own all the tokens
+    function consecutiveBatchTransferFrom(address _from, address _to, uint256 _fromTokenId, uint256 _toTokenId) public {
+        for (uint256 i = _fromTokenId; i <= _toTokenId; i++) {
+            _safeTransferFrom(_from, _to, i, bytes(""));
+        }
+        emit ConsecutiveTransfer(_fromTokenId, _toTokenId, _from, _to);
+    }
+
+    // TODO add method stuck ERC721 retrieval ... ? I vote no as we can then use this address as the burn address?
+
+    // TODO test
+    /// @dev Allows for the ability to extract stuck Ether
+    /// @dev Only callable from admin
+    function withdrawStuckEther(address payable _withdrawalAccount) public {
+        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have admin role");
+        _withdrawalAccount.transfer(address(this).balance);
+    }
+
+    // TODO test
+    /// @dev Allows for the ability to extract stuck ERC20 tokens
+    /// @dev Only callable from admin
+    function withdrawStuckEther(address _tokenAddress, uint256 _amount, address _withdrawalAccount) public {
+        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have admin role");
+        IERC20(_tokenAddress).transferFrom(address(this), _withdrawalAccount, _amount);
+    }
+
 }
