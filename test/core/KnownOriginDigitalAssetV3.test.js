@@ -472,6 +472,15 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       expect(await this.token.exists(firstEditionTokenId)).to.be.equal(true);
     });
 
+    it('token does exists()', async () => {
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      expect(await this.token.exists(firstEditionTokenId)).to.be.equal(true);
+    });
+
+    it('token does not exists()', async () => {
+      expect(await this.token.exists(secondEditionTokenId)).to.be.equal(false);
+    });
+
     it('revert if no contract role', async () => {
       await expectRevert(
         this.token.mintToken(owner, TOKEN_URI, {from: collabDao}),
@@ -493,6 +502,15 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       }
 
       expect(await this.token.editionExists(firstEditionTokenId)).to.be.equal(true);
+    });
+
+    it('token does exists()', async () => {
+      await this.token.mintConsecutiveBatchEdition(10, owner, TOKEN_URI, {from: contract});
+      expect(await this.token.exists(firstEditionTokenId)).to.be.equal(true);
+    });
+
+    it('token does not exists()', async () => {
+      expect(await this.token.exists(secondEditionTokenId)).to.be.equal(false);
     });
 
     it('revert if no contract role', async () => {
@@ -523,6 +541,15 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       }
 
       expect(await this.token.editionExists(firstEditionTokenId)).to.be.equal(true);
+    });
+
+    it('token does exists()', async () => {
+      await this.token.mintConsecutiveBatchEdition(10, owner, TOKEN_URI, {from: contract});
+      expect(await this.token.exists(firstEditionTokenId)).to.be.equal(true);
+    });
+
+    it('token does not exists()', async () => {
+      expect(await this.token.exists(secondEditionTokenId)).to.be.equal(false);
     });
 
     it('revert if no contract role', async () => {

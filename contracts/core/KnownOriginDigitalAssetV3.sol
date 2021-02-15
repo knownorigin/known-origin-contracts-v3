@@ -278,10 +278,9 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         return editionDetails[_editionId].editionConfig > 0;
     }
 
-    // TODO there must be a better way of doing this?
     function exists(uint256 _tokenId) public override view returns (bool) {
-        ownerOf(_tokenId);
-        return true;
+        address owner = _ownerOf(_tokenId, _editionFromTokenId(_tokenId));
+        return owner != address(0);
     }
 
     // FIXME Use safe-math?
