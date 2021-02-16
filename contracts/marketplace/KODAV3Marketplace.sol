@@ -22,6 +22,29 @@ interface IPriceCalculator {
     function nextPrice(uint256 _editionId) external returns (uint256);
 }
 
+abstract contract BuyNowPriceCalculator is IPriceCalculator {
+    using SafeMath for uint256;
+
+    struct Listing {
+        uint256 listingConfig; // uint128(price)|uint128(startDate)
+        address seller;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner);
+        _;
+    }
+
+    // Edition ID to Listing
+    mapping(uint256 => Listing) public editionListings;
+
+    address public owner;
+
+    constructor(address _owner) {
+        owner = _owner;
+    }
+}
+
 contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     using SafeMath for uint256;
 
