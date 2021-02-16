@@ -18,6 +18,10 @@ import "hardhat/console.sol";
 //  - https://ethgasstation.info/blog/what-is-create2/
 //  - https://medium.com/coinmonks/on-efficient-ethereum-addresses-3fef0596e263
 
+interface IPriceCalculator {
+    function nextPrice(uint256 _editionId) external returns (uint256);
+}
+
 contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     using SafeMath for uint256;
 
@@ -72,6 +76,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     // KODA token
     IKODAV3 public koda;
 
+    // FIXME get GAS costings for using a counter and draw down method for KO funds?
     // platform funds collector
     address public platformAccount;
 
@@ -81,16 +86,12 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     }
 
     // Buy now
-    //  - set price and optional start date
-    //  - cannot be in order sales modes ?
-    //  - edition (primary)
-    //  - token (secondary)
+    //  - edition (primary) - DONE
+    //  - token (secondary) - DONE
 
     // Offers
-    // - optional start date
-    // - off-chain reserve price for signalling only
-    // - editions (primary)
-    // - token (secondary)
+    // - editions (primary) - DONE
+    // - token (secondary) - DONE
 
     // Stepped auctions
     //  - optional start date
@@ -99,19 +100,24 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     //  - edition (primary)
     //  - token (secondary)
 
-    /////////////////////////////////
-    // Primary 'buy now' sale flow //
-    /////////////////////////////////
-
     // assumes frontend protects against from these things from being called when:
     //  - they dont need to be e.g. listing an edition when its sold out
     //  - they cannot be done e.g. accepting an offer when the edition is sold out
     //  - approvals go astray/removed - approvals may need to be mapped in subgraph
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // TODO enforce rules on sale mechanics i.e. can you have offers and buy now price?
+
     // TODO expose both contract & minter listing access protected methods - contract takes in creator, minter assumes creator and needs to check KODA for edition creator
 
-    // TODO startDate - uint32 = (2^32 - 1) equals to 4294967295, i.e. Sun Feb 07 2106
+    /////////////////////////////////
+    // Primary 'buy now' sale flow //
+    /////////////////////////////////
 
+    // TODO startDate - uint32 = (2^32 - 1) equals to 4294967295, i.e. Sun Feb 07 2106
     // TODO fixme we pass in uint256 but then map to unit128 - fix and add tests
     function listEdition(address _creator, uint256 _editionId, uint256 _listingPrice, uint256 _startDate) public override {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
@@ -219,6 +225,8 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     // primary sale helpers //
     //////////////////////////
 
+    /// sales and funds
+
     function facilitateNextPrimarySale(uint256 _editionId, uint256 _paymentAmount, address _buyer) internal returns (uint256) {
         // get next token to sell along with the royalties recipient and the original creator
         (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
@@ -266,6 +274,8 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
         require(success, "Edition offer refund failed");
     }
 
+    /// Edition accessors
+
     function getEditionListing(uint256 _editionId) public view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
         return _getEditionListing(_editionId);
     }
@@ -291,30 +301,9 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
         return uint128(editionListings[_editionId].listingConfig >> 128);
     }
 
-    function getTokenListing(uint256 _tokenId) public view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
-        return _getTokenListing(_tokenId);
-    }
-
-    function _getTokenListing(uint256 _tokenId) internal view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
-        Listing storage listing = tokenListings[_tokenId];
-        return (
-        listing.seller, // original seller
-        uint128(listing.listingConfig), // price
-        uint128(listing.listingConfig >> 128) // date
-        );
-    }
-
-    function getTokenListingSeller(uint256 _tokenId) public view returns (address _seller) {
-        return tokenListings[_tokenId].seller;
-    }
-
-    function getTokenListingPrice(uint256 _tokenId) public view returns (uint128 _listingPrice) {
-        return uint128(tokenListings[_tokenId].listingConfig);
-    }
-
-    function getTokenListingDate(uint256 _tokenId) public view returns (uint128 _startDate) {
-        return uint128(tokenListings[_tokenId].listingConfig >> 128);
-    }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ///////////////////////////////////
     // Secondary sale 'buy now' flow //
@@ -446,6 +435,8 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     // Secondary sale 'helpers' //
     //////////////////////////////
 
+    /// sales and funds
+
     function facilitateTokenSale(uint256 _tokenId, uint256 _paymentAmount, address _seller, address _buyer) internal {
         address originalCreator = koda.getCreatorOfToken(_tokenId);
 
@@ -482,9 +473,96 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
         require(success, "Token offer refund failed");
     }
 
-    ///////////////////
-    // Query Methods //
-    ///////////////////
+    /// Token accessors
+
+    function getTokenListing(uint256 _tokenId) public view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
+        return _getTokenListing(_tokenId);
+    }
+
+    function _getTokenListing(uint256 _tokenId) internal view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
+        Listing storage listing = tokenListings[_tokenId];
+        return (
+        listing.seller, // original seller
+        uint128(listing.listingConfig), // price
+        uint128(listing.listingConfig >> 128) // date
+        );
+    }
+
+    function getTokenListingSeller(uint256 _tokenId) public view returns (address _seller) {
+        return tokenListings[_tokenId].seller;
+    }
+
+    function getTokenListingPrice(uint256 _tokenId) public view returns (uint128 _listingPrice) {
+        return uint128(tokenListings[_tokenId].listingConfig);
+    }
+
+    function getTokenListingDate(uint256 _tokenId) public view returns (uint128 _startDate) {
+        return uint128(tokenListings[_tokenId].listingConfig >> 128);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /////////////////////////////////////////
+    // Primary sale 'dynamic pricing' flow //
+    /////////////////////////////////////////
+
+    // FIXME thoughts on this pattern? gives some complexity with limits, but is more GAS heavy
+
+    mapping(address => bool) public enabledCalculators;
+
+    mapping(uint256 => IPriceCalculator) public modelMapping;
+
+    // admin whitelist/enable pre-deployed pricing handlers
+    function adminEnabledCalculator(address priceCalculator, bool enabled) public {
+        require(accessControls.hasAdminRole(_msgSender()), "admin on");
+        enabledCalculators[priceCalculator] = enabled;
+        // TODO emit event
+    }
+
+    // artist/owner set them up - frontend provides a list of options - has to be enabled to be set
+    function listEditionDynamic(uint256 _editionId, IPriceCalculator priceCalculator) public {
+        require(enabledCalculators[address(priceCalculator)], "not enabled");
+
+        modelMapping[_editionId] = priceCalculator;
+        // TODO emit event
+    }
+
+    // collector can buy the next item, code doesnt directly know what the pricing mechanic is, only the price it needs to be
+    // handle over spend and return path to allow for surge/fomo pricing options
+    function buyNextEditionDynamic(uint256 _editionId) public payable {
+        // TODO confirm exception when mapping does not exist
+        uint256 nextPrice = modelMapping[_editionId].nextPrice(_editionId);
+        require(msg.value >= nextPrice, "Next price not satisfied");
+
+        // money and ownership exchange are triggered
+        uint256 tokenId = facilitateNextPrimarySale(_editionId, nextPrice, _msgSender());
+
+        // TODO emit event
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /////////////////////////////////////////
+    // Primary sale 'stepped pricing' flow //
+    /////////////////////////////////////////
+
+    // Stepped auctions
+    //  - optional start date
+    //  - base price and step
+    //  - cannot be changed once triggered
+    //  - edition (primary)
+    //  - token (secondary)
+
+    ///////////////////////////
+    // General Query Methods //
+    ///////////////////////////
+
+    // TODO
 
     /////////////////////
     // Setters Methods //
