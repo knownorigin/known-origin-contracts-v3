@@ -66,11 +66,15 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     // Mapping of owner => operator => approved
     mapping(address => mapping(address => bool)) internal operatorApprovals;
 
+    // Optional one time use storage slot for additional edition metadata
+    mapping(uint256 => string) public additionalEditionMetaData;
+
     // A onchain reference to editions which have been reported for some infringement purposes to KO
     mapping(uint256 => bool) public reportedEditionIds;
 
-    // Optional one time use storage slot for additional edition metadata
-    mapping(uint256 => string) public additionalEditionMetaData;
+    // TODO getters/setters
+    // A onchain reference to accounts which have been lost/hacked etc
+    mapping(uint256 => bool) public reportedArtistAccounts;
 
     // ERC-2615 permit nonces
     mapping(address => uint) public nonces;
