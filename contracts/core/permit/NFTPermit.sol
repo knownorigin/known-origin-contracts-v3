@@ -5,13 +5,13 @@ pragma solidity 0.7.4;
 // Based on https://eips.ethereum.org/EIPS/eip-2612 ERC-20 permit style but for erc-721 tokens
 // Variant assumes "value" param replaced with "tokenId" due to non-fungible nature
 
-interface ERC2612_NFTPermit {
+interface INFTPermit {
     function permit(address owner, address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
 }
 
 // FIXME - can we use this for cheapness? - https://github.com/0xProject/0x-monorepo/blob/development/contracts/utils/contracts/src/LibEIP712.sol
 // TODO move this back to the core contract
-abstract contract NFTPermit is ERC2612_NFTPermit {
+abstract contract NFTPermit is INFTPermit {
 
     // Token name
     string public name = "KnownOriginDigitalAsset";

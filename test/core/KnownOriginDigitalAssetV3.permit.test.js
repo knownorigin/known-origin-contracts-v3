@@ -159,7 +159,7 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     // Failing to provider the right owner of the token
     await expectRevert(
       this.token.permit(minter, spender, tokenId, deadline, v, r, s, {from: random}),
-      "KODA: Invalid token"
+      "ERC721_ZERO_OWNER"
     );
 
     // check spender is now approved

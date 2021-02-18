@@ -14,12 +14,14 @@ import "./IKODAV3.sol";
 import "./IKODAV3Minter.sol";
 import "./KODAV3Core.sol";
 import "../programmable/ITokenUriResolver.sol";
-import "./permit/ERC2612_NFTPermit.sol";
+import "./permit/NFTPermit.sol";
 
 // TODO remove me
 import "hardhat/console.sol";
 
 // FIXME Use safe-math for all calcs?
+
+// FIXME bring over OZ 721 test suite for comparison and so I can sleep at night
 
 // FIXME Add composable support - https://github.com/mattlockyer/composables-998/blob/master/contracts/ComposableTopDown.sol
 
@@ -36,6 +38,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
 
     event AdminEditionReported(uint256 indexed _editionId, bool indexed _reported);
+    event AdminArtistAccountReported(address indexed _account, bool indexed _reported);
     event AdditionalMetaDataSet(uint256 indexed _editionId);
     event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
     event AdminTokenUriResolverSet(address indexed _tokenUriResolver);
@@ -76,12 +79,18 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     // A onchain reference to editions which have been reported for some infringement purposes to KO
     mapping(uint256 => bool) public reportedEditionIds;
 
-    // TODO getters/setters
     // A onchain reference to accounts which have been lost/hacked etc
-    mapping(uint256 => bool) public reportedArtistAccounts;
+    mapping(address => bool) public reportedArtistAccounts;
 
     // ERC-2615 permit nonces
-    mapping(address => uint) public nonces;
+    mapping(address => uint256) public nonces;
+
+    // Signature based minting nonces
+    mapping(address => uint256) public mintingNonces;
+
+    // TODO generate properly
+    // keccak256("MintBatchViaSig(uint256 editionSize, address to, string uri,uint256 nonce,uint256 deadline)");
+    bytes32 public constant MINT_BATCH_TYPEHASH = 0x48d39b37a35214940203bbbd4f383519797769b13d936f387d89430afef27688;
 
     struct EditionDetails {
         uint256 editionConfig; // combined creator and size
@@ -136,11 +145,37 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     returns (uint256 _editionId) {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
+        return _mintBatchEdition(_editionSize, _to, _uri);
+    }
 
+//    // Mints batches of tokens emitting multiple Transfer events - via signed payloads
+//    function mintBatchEditionViaSig(uint256 _editionSize, address _to, string calldata _uri, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+//    public returns
+//    (uint256 _editionId) {
+//        require(deadline >= block.timestamp, 'KODA: Deadline expired');
+//        require(accessControls.hasMinterRole(_to), 'KODA: Minter not approved');
+//        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
+//
+//        {
+//            // Has the original signer signed it
+//            address recoveredAddress = ecrecover(
+//                keccak256(
+//                    abi.encodePacked(
+//                        '\x19\x01',
+//                        DOMAIN_SEPARATOR,
+//                        keccak256(abi.encode(MINT_BATCH_TYPEHASH, _editionSize, _to, _uri, mintingNonces[_to]++, deadline))
+//                    )
+//                ),
+//                v, r, s);
+//            require(recoveredAddress != address(0) && recoveredAddress == _to, 'KODA: INVALID_SIGNATURE');
+//        }
+//
+//        return _mintBatchEdition(_editionSize, _to, _uri);
+//    }
+
+    function _mintBatchEdition(uint256 _editionSize, address _to, string calldata _uri) internal returns (uint256) {
         uint256 start = generateNextEditionNumber();
-
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
-
         // assign balance
         balances[_to] = balances[_to].add(_editionSize);
 
@@ -152,7 +187,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         for (uint i = start; i < end; i++) {
             emit Transfer(address(0), _to, i);
         }
-
         return start;
     }
 
@@ -399,7 +433,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         return owners[_tokenId] != address(0);
     }
 
-
     //////////////
     // Defaults //
     //////////////
@@ -416,12 +449,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     /// @param _to The new owner
     /// @param _tokenId The NFT to transfer
     /// @param _data Additional data with no specified format, sent in call to `_to`
-    function safeTransferFrom(
-        address _from,
-        address _to,
-        uint256 _tokenId,
-        bytes calldata _data
-    )
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data)
     override
     external
     {
@@ -437,11 +465,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     /// @param _from The current owner of the NFT
     /// @param _to The new owner
     /// @param _tokenId The NFT to transfer
-    function safeTransferFrom(
-        address _from,
-        address _to,
-        uint256 _tokenId
-    )
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId)
     override
     external
     {
@@ -544,11 +568,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     /// @param _from The current owner of the NFT
     /// @param _to The new owner
     /// @param _tokenId The NFT to transfer
-    function transferFrom(
-        address _from,
-        address _to,
-        uint256 _tokenId
-    )
+    function transferFrom(address _from, address _to, uint256 _tokenId)
     override
     public {
         _transferFrom(_from, _to, _tokenId);
@@ -733,6 +753,12 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
         reportedEditionIds[_editionId] = _reported;
         emit AdminEditionReported(_editionId, _reported);
+    }
+
+    function reportEditionId(address _account, bool _reported) public {
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        reportedArtistAccounts[_account] = _reported;
+        emit AdminArtistAccountReported(_account, _reported);
     }
 
     // TODO test
