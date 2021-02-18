@@ -931,7 +931,12 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
 
     it('revert if not creator', async () => {
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      const {logs} = await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      expectEvent.inLogs(logs, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: owner,
+        tokenId: firstEditionTokenId
+      });
       await expectRevert(
         this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello", {from: collabDao}),
         "KODA: unable to set when not creator"
@@ -939,7 +944,12 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
 
     it('revert if set twice', async () => {
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      const {logs} = await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      expectEvent.inLogs(logs, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: owner,
+        tokenId: firstEditionTokenId
+      });
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello", {from: owner});
       await expectRevert(
         this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello again", {from: owner}),

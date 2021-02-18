@@ -21,6 +21,10 @@ import "hardhat/console.sol";
 
 // FIXME Use safe-math for all calcs?
 
+// FIXME Add composable support - https://github.com/mattlockyer/composables-998/blob/master/contracts/ComposableTopDown.sol
+
+// FIXME add 712 Mint signature variant methods - checks signer has minter role - allows for caller from another contract/service
+
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
@@ -746,7 +750,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         emit AdminRoyaltiesRegistryProxySet(address(_royaltiesRegistryProxy));
     }
 
-
     // TODO test
     function setTokenUriResolver(ITokenUriResolver _tokenUriResolver) public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
@@ -778,8 +781,11 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     ///////////////////////
 
     // Optional metadata storage slot which allows the creator to set an additional metadata blob on the token
-    function lockInAdditionalMetaData(uint256 _editionId, string memory metadata) external {
+    function lockInAdditionalMetaData(uint256 _editionId, string calldata metadata) external {
         require(_msgSender() == getCreatorOfEdition(_editionId), "KODA: unable to set when not creator");
+
+        // TODO enforce only once? ... check/confirm thoughts on this
+
         require(bytes(additionalEditionMetaData[_editionId]).length == 0, "KODA: can only be set once");
         additionalEditionMetaData[_editionId] = metadata;
         emit AdditionalMetaDataSet(_editionId);

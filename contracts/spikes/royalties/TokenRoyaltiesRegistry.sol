@@ -3,11 +3,11 @@
 pragma solidity 0.7.4;
 
 // FIXME decide on push vs pull
-import "../collaborators/impl/FundsSplitter.sol";
-import "../collaborators/impl/FundsReceiver.sol";
-import "../collaborators/IFundsHandler.sol";
+import "../../collaborators/impl/FundsSplitter.sol";
+import "../../collaborators/impl/FundsReceiver.sol";
+import "../../collaborators/IFundsHandler.sol";
 
-import "../royalties/ITokenRoyaltiesRegistry.sol";
+import "./ITokenRoyaltiesRegistry.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";

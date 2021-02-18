@@ -18,6 +18,12 @@ import "hardhat/console.sol";
 //  - https://ethgasstation.info/blog/what-is-create2/
 //  - https://medium.com/coinmonks/on-efficient-ethereum-addresses-3fef0596e263
 
+// FIXME Multi coin payment support
+//      - approved list of tokens?
+//      - reentrancy safe
+//      - requires user approval to buy
+//      - can only be listed in ETH or ERC20/223 ?
+
 interface IPriceCalculator {
     function nextPrice(uint256 _editionId) external returns (uint256);
 }
