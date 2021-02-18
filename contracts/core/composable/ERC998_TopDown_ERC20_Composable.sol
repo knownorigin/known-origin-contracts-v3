@@ -2,10 +2,13 @@
 
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+
+interface IERC721 {
+    function ownerOf(uint256 tokenId) external view returns (address owner);
+}
 
 interface ERC998ERC20TopDown {
     event ReceivedERC20(address indexed _from, uint256 indexed _tokenId, address indexed _erc20Contract, uint256 _value);
@@ -40,7 +43,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     mapping(address => bool) public whitelistedContracts;
 
     function tokenFallback(address _from, uint256 _value, bytes calldata _data) external override {
-
+        // todo: erc223
     }
 
     function balanceOfERC20(uint256 _tokenId, address _erc20Contract) external override view returns (uint256) {
@@ -48,11 +51,21 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function transferERC20(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) external override {
+        require(_value > 0, "");
 
+        // todo should support approve or approved for all as those people could transfer the token and do this operation
+        require(IERC721(address(this)).ownerOf(_tokenId) == msg.sender, "");
+        require(_to != address(0), "");
+        require(ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract), "");
+        require(ERC20Balances[_tokenId][_erc20Contract] >= _value, "");
+
+        IERC20(_erc20Contract).transfer(_to, _value);
+
+        emit TransferERC20(_tokenId, _to, _erc20Contract, _value);
     }
 
     function transferERC223(uint256 _tokenId, address _to, address _erc223Contract, uint256 _value, bytes calldata _data) external override {
-
+        // todo: erc223
     }
 
     function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) external override {
