@@ -651,10 +651,8 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     function permit(address owner, address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
     override
     external {
-        require(deadline >= block.timestamp, 'KODA: EXPIRED');
+        require(deadline >= block.timestamp, 'KODA: Deadline expired');
         require(exists(tokenId), "KODA: Invalid token");
-
-        // TODO check this logic
         require(ownerOf(tokenId) == owner, "KODA: Invalid owner");
 
         // Create digest to check signatures
@@ -662,20 +660,12 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
             abi.encodePacked(
                 '\x19\x01',
                 DOMAIN_SEPARATOR,
-                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, tokenId, nonces[owner]++, deadline))
+                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, tokenId, nonces[owner]++, deadline))
             )
         );
 
-        //        console.log("digest");
-        //        console.logBytes32(digest);
-
         // Has the original signer signed it
         address recoveredAddress = ecrecover(digest, v, r, s);
-        //        console.log("recoveredAddress %s | owner %s", recoveredAddress, owner);
-
-        //        console.log("DOMAIN_SEPARATOR");
-        //        console.logBytes32(DOMAIN_SEPARATOR);
-
         require(recoveredAddress != address(0) && recoveredAddress == owner, 'KODA: INVALID_SIGNATURE');
 
         // set approval for signature if passed
