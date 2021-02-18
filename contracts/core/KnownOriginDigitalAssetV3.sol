@@ -385,6 +385,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
 
         // TODO replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
 
+        // TODO is a while more efficient ??
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
             // if no owner set - assume primary if not moved
             if (owners[tokenId] == address(0)) {
@@ -647,6 +648,8 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     /////////////////////////////
     // ERC-2612 Permit Variant //
     /////////////////////////////
+
+    // FIXME can we move this higher up to the NFTPermit contract with a virtual _approval() method on
 
     function permit(address owner, address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
     override
