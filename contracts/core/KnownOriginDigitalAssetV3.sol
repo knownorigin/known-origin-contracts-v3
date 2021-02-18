@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.4; // FIXME bump to 0.8 and drop safemath?
+// FIXME bump to 0.8 and drop safemath?
+pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/introspection/ERC165.sol";
@@ -675,7 +676,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     override
     external {
         require(deadline >= block.timestamp, 'KODA: Deadline expired');
-        require(exists(tokenId), "KODA: Invalid token");
         require(ownerOf(tokenId) == owner, "KODA: Invalid owner");
 
         // Create digest to check signatures
