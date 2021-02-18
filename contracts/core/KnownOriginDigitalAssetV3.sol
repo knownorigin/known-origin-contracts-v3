@@ -660,7 +660,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
             abi.encodePacked(
                 '\x19\x01',
                 DOMAIN_SEPARATOR,
-                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, tokenId, nonces[owner]++, deadline))
+                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, tokenId, nonces[owner]++, deadline))
             )
         );
 
