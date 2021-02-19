@@ -6,6 +6,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
+interface IERC223 {
+    function transfer(address to, uint value, bytes calldata _data) external returns (bool success);
+}
+
 interface IERC721 {
     function ownerOf(uint256 tokenId) external view returns (address owner);
 }
@@ -51,13 +55,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function transferERC20(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) external override {
-        require(_value > 0, "");
-
-        // todo should support approve or approved for all as those people could transfer the token and do this operation
-        require(IERC721(address(this)).ownerOf(_tokenId) == msg.sender, "");
-        require(_to != address(0), "");
-        require(ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract), "");
-        require(ERC20Balances[_tokenId][_erc20Contract] >= _value, "");
+        _prepareERC20LikeTransfer(_tokenId, _to, _erc20Contract, _value);
 
         IERC20(_erc20Contract).transfer(_to, _value);
 
@@ -65,7 +63,11 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function transferERC223(uint256 _tokenId, address _to, address _erc223Contract, uint256 _value, bytes calldata _data) external override {
-        // todo: erc223
+        _prepareERC20LikeTransfer(_tokenId, _to, _erc223Contract, _value);
+
+        IERC223(_erc223Contract).transfer(_to, _value, _data);
+
+        emit TransferERC20(_tokenId, _to, _erc223Contract, _value);
     }
 
     function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) external override {
@@ -102,6 +104,22 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     /// --- Internal ----
+
+    function _prepareERC20LikeTransfer(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) private {
+        require(_value > 0, "");
+
+        // todo should support approve or approved for all as those people could transfer the token and do this operation
+        require(IERC721(address(this)).ownerOf(_tokenId) == msg.sender, "");
+        require(_to != address(0), "");
+        require(ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract), "");
+        require(ERC20Balances[_tokenId][_erc20Contract] >= _value, "");
+
+        ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract].sub(_value);
+
+        if (ERC20Balances[_tokenId][_erc20Contract] == 0) {
+            ERC20sEmbeddedInNft[_tokenId].remove(_erc20Contract);
+        }
+    }
 
     function _whitelistChildContract(address _newChildContractAddress) internal {
         whitelistedContracts[_newChildContractAddress] = true;
