@@ -17,9 +17,6 @@ import "./KODAV3Core.sol";
 import "../programmable/ITokenUriResolver.sol";
 import "./permit/NFTPermit.sol";
 
-// TODO remove me
-import "hardhat/console.sol";
-
 // FIXME Use safe-math for all calcs?
 
 // FIXME bring over OZ 721 test suite for comparison and so I can sleep at night
@@ -44,9 +41,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
     event AdminTokenUriResolverSet(address indexed _tokenUriResolver);
 
-    // Edition number pointer
-    uint256 public editionPointer;
-
     // Royalties registry
     IERC2981 public royaltiesRegistryProxy;
 
@@ -58,6 +52,9 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
 
     // bool flag to setting tokenUri resolver
     bool public tokenUriResolverActive;
+
+    // Edition number pointer
+    uint256 public editionPointer;
 
     // tokens are minted in batches - the first token ID used is representative of the edition ID (for now)
     mapping(uint256 => EditionDetails) editionDetails;
@@ -149,30 +146,30 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         return _mintBatchEdition(_editionSize, _to, _uri);
     }
 
-//    // Mints batches of tokens emitting multiple Transfer events - via signed payloads
-//    function mintBatchEditionViaSig(uint256 _editionSize, address _to, string calldata _uri, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-//    public returns
-//    (uint256 _editionId) {
-//        require(deadline >= block.timestamp, 'KODA: Deadline expired');
-//        require(accessControls.hasMinterRole(_to), 'KODA: Minter not approved');
-//        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
-//
-//        {
-//            // Has the original signer signed it
-//            address recoveredAddress = ecrecover(
-//                keccak256(
-//                    abi.encodePacked(
-//                        '\x19\x01',
-//                        DOMAIN_SEPARATOR,
-//                        keccak256(abi.encode(MINT_BATCH_TYPEHASH, _editionSize, _to, _uri, mintingNonces[_to]++, deadline))
-//                    )
-//                ),
-//                v, r, s);
-//            require(recoveredAddress != address(0) && recoveredAddress == _to, 'KODA: INVALID_SIGNATURE');
-//        }
-//
-//        return _mintBatchEdition(_editionSize, _to, _uri);
-//    }
+    //    // Mints batches of tokens emitting multiple Transfer events - via signed payloads
+    //    function mintBatchEditionViaSig(uint256 _editionSize, address _to, string calldata _uri, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+    //    public returns
+    //    (uint256 _editionId) {
+    //        require(deadline >= block.timestamp, "KODA: Deadline expired");
+    //        require(accessControls.hasMinterRole(_to), "KODA: Minter not approved");
+    //        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
+    //
+    //        {
+    //            // Has the original signer signed it
+    //            address recoveredAddress = ecrecover(
+    //                keccak256(
+    //                    abi.encodePacked(
+    //                        "\x19\x01",
+    //                        DOMAIN_SEPARATOR,
+    //                        keccak256(abi.encode(MINT_BATCH_TYPEHASH, _editionSize, _to, _uri, mintingNonces[_to]++, deadline))
+    //                    )
+    //                ),
+    //                v, r, s);
+    //            require(recoveredAddress != address(0) && recoveredAddress == _to, "KODA: INVALID_SIGNATURE");
+    //        }
+    //
+    //        return _mintBatchEdition(_editionSize, _to, _uri);
+    //    }
 
     function _mintBatchEdition(uint256 _editionSize, address _to, string calldata _uri) internal returns (uint256) {
         uint256 start = generateNextEditionNumber();
@@ -295,19 +292,11 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     // Creator query //
     ///////////////////
 
-    function getCreatorOfEdition(uint256 _editionId)
-    public
-    override
-    view
-    returns (address _originalCreator) {
+    function getCreatorOfEdition(uint256 _editionId) public override view returns (address _originalCreator) {
         return _getCreatorOfEdition(_editionId);
     }
 
-    function getCreatorOfToken(uint256 _tokenId)
-    public
-    override
-    view
-    returns (address _originalCreator) {
+    function getCreatorOfToken(uint256 _tokenId) public override view returns (address _originalCreator) {
         return _getCreatorOfEdition(_editionFromTokenId(_tokenId));
     }
 
@@ -411,11 +400,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         return (_creator, _creator, _tokenId);
     }
 
-    function getNextAvailablePrimarySaleToken(uint256 _editionId)
-    public
-    override
-    view
-    returns (uint256 _tokenId) {
+    function getNextAvailablePrimarySaleToken(uint256 _editionId) public override view returns (uint256 _tokenId) {
         uint256 maxTokenId = _editionId + _getSizeOfEdition(_editionId);
 
         // TODO replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
@@ -450,10 +435,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     /// @param _to The new owner
     /// @param _tokenId The NFT to transfer
     /// @param _data Additional data with no specified format, sent in call to `_to`
-    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data)
-    override
-    external
-    {
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) override external {
         _safeTransferFrom(_from, _to, _tokenId, _data);
 
         // move the token
@@ -466,17 +448,14 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     /// @param _from The current owner of the NFT
     /// @param _to The new owner
     /// @param _tokenId The NFT to transfer
-    function safeTransferFrom(address _from, address _to, uint256 _tokenId)
-    override
-    external
-    {
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) override external {
         _safeTransferFrom(_from, _to, _tokenId, bytes(""));
 
         // move the token
         emit Transfer(_from, _to, _tokenId);
     }
 
-    function _safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) internal {
+    function _safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) private {
         _transferFrom(_from, _to, _tokenId);
 
         uint256 receiverCodeSize;
@@ -497,68 +476,6 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         }
     }
 
-    /// @notice Change or reaffirm the approved address for an NFT
-    /// @dev The zero address indicates there is no approved address.
-    ///      Throws unless `msg.sender` is the current NFT owner, or an authorized
-    ///      operator of the current owner.
-    /// @param _approved The new approved NFT controller
-    /// @param _tokenId The NFT to approve
-    function approve(address _approved, uint256 _tokenId)
-    override
-    external
-    {
-        address owner = ownerOf(_tokenId);
-        require(
-            _msgSender() == owner || isApprovedForAll(owner, _msgSender()),
-            "ERC721_INVALID_SENDER"
-        );
-
-        _approval(owner, _approved, _tokenId);
-    }
-
-    function _approval(address _owner, address _approved, uint256 _tokenId) internal {
-        approvals[_tokenId] = _approved;
-        emit Approval(_owner, _approved, _tokenId);
-    }
-
-    // TODO validate approval flow for both sold out and partially available editions and their tokens
-
-    /// @notice Enable or disable approval for a third party ("operator") to manage
-    ///         all of `msg.sender`'s assets
-    /// @dev Emits the ApprovalForAll event. The contract MUST allow
-    ///      multiple operators per owner.
-    /// @param _operator Address to add to the set of authorized operators
-    /// @param _approved True if the operator is approved, false to revoke approval
-    function setApprovalForAll(address _operator, bool _approved)
-    override
-    external
-    {
-        operatorApprovals[_msgSender()][_operator] = _approved;
-        emit ApprovalForAll(
-            _msgSender(),
-            _operator,
-            _approved
-        );
-    }
-
-    /// @notice Count all NFTs assigned to an owner
-    /// @dev NFTs assigned to the zero address are considered invalid, and this
-    ///      function throws for queries about the zero address.
-    /// @param _owner An address for whom to query the balance
-    /// @return The number of NFTs owned by `_owner`, possibly zero
-    function balanceOf(address _owner)
-    override
-    external
-    view
-    returns (uint256)
-    {
-        require(
-            _owner != address(0),
-            "ERC721_ZERO_OWNER"
-        );
-        return balances[_owner];
-    }
-
     /// @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
     ///         TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
     ///         THEY MAY BE PERMANENTLY LOST
@@ -569,20 +486,20 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     /// @param _from The current owner of the NFT
     /// @param _to The new owner
     /// @param _tokenId The NFT to transfer
-    function transferFrom(address _from, address _to, uint256 _tokenId)
-    override
-    public {
+    function transferFrom(address _from, address _to, uint256 _tokenId) override external {
         _transferFrom(_from, _to, _tokenId);
 
         // move the token
         emit Transfer(_from, _to, _tokenId);
     }
 
-    function _transferFrom(address _from, address _to, uint256 _tokenId) internal {
+    function _transferFrom(address _from, address _to, uint256 _tokenId) private {
         // enforce not being able to send to zero as we have explicit rules what a minted but unbound owner is
         require(_to != address(0), "ERC721_ZERO_TO_ADDRESS");
 
-        address owner = ownerOf(_tokenId);
+        // Ensure the owner is the sender
+        address owner = _ownerOf(_tokenId, _editionFromTokenId(_tokenId));
+        require(owner != address(0), "ERC721_ZERO_OWNER");
         require(_from == owner, "ERC721_OWNER_MISMATCH");
 
         address spender = _msgSender();
@@ -611,11 +528,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     /// @dev NFTs assigned to zero address are considered invalid, and queries about them do throw.
     /// @param _tokenId The identifier for an NFT
     /// @return The address of the owner of the NFT
-    function ownerOf(uint256 _tokenId)
-    override
-    public
-    view
-    returns (address) {
+    function ownerOf(uint256 _tokenId) override public view returns (address) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         address owner = _ownerOf(_tokenId, editionId);
         require(owner != address(0), "ERC721_ZERO_OWNER");
@@ -640,16 +553,59 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
         return address(0);
     }
 
+    /// @notice Change or reaffirm the approved address for an NFT
+    /// @dev The zero address indicates there is no approved address.
+    ///      Throws unless `msg.sender` is the current NFT owner, or an authorized
+    ///      operator of the current owner.
+    /// @param _approved The new approved NFT controller
+    /// @param _tokenId The NFT to approve
+    function approve(address _approved, uint256 _tokenId) override external {
+        address owner = ownerOf(_tokenId);
+        require(
+            _msgSender() == owner || isApprovedForAll(owner, _msgSender()),
+            "ERC721_INVALID_SENDER"
+        );
+
+        _approval(owner, _approved, _tokenId);
+    }
+
+    function _approval(address _owner, address _approved, uint256 _tokenId) internal {
+        approvals[_tokenId] = _approved;
+        emit Approval(_owner, _approved, _tokenId);
+    }
+
+    // TODO validate approval flow for both sold out and partially available editions and their tokens
+
+    /// @notice Enable or disable approval for a third party ("operator") to manage
+    ///         all of `msg.sender`"s assets
+    /// @dev Emits the ApprovalForAll event. The contract MUST allow
+    ///      multiple operators per owner.
+    /// @param _operator Address to add to the set of authorized operators
+    /// @param _approved True if the operator is approved, false to revoke approval
+    function setApprovalForAll(address _operator, bool _approved) override external {
+        operatorApprovals[_msgSender()][_operator] = _approved;
+        emit ApprovalForAll(
+            _msgSender(),
+            _operator,
+            _approved
+        );
+    }
+
+    /// @notice Count all NFTs assigned to an owner
+    /// @dev NFTs assigned to the zero address are considered invalid, and this
+    ///      function throws for queries about the zero address.
+    /// @param _owner An address for whom to query the balance
+    /// @return The number of NFTs owned by `_owner`, possibly zero
+    function balanceOf(address _owner) override external view returns (uint256) {
+        require(_owner != address(0), "ERC721_ZERO_OWNER");
+        return balances[_owner];
+    }
+
     /// @notice Get the approved address for a single NFT
     /// @dev Throws if `_tokenId` is not a valid NFT.
     /// @param _tokenId The NFT to find the approved address for
     /// @return The approved address for this NFT, or the zero address if there is none
-    function getApproved(uint256 _tokenId)
-    override
-    public
-    view
-    returns (address)
-    {
+    function getApproved(uint256 _tokenId) override public view returns (address){
         return approvals[_tokenId];
     }
 
@@ -657,12 +613,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     /// @param _owner The address that owns the NFTs
     /// @param _operator The address that acts on behalf of the owner
     /// @return True if `_operator` is an approved operator for `_owner`, false otherwise
-    function isApprovedForAll(address _owner, address _operator)
-    override
-    public
-    view
-    returns (bool)
-    {
+    function isApprovedForAll(address _owner, address _operator) override public view returns (bool){
         return operatorApprovals[_owner][_operator];
     }
 
@@ -672,16 +623,16 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
 
     // FIXME can we move this higher up to the NFTPermit contract with a virtual _approval() method on
 
-    function permit(address owner, address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+    function permit(address owner, address spender, uint256 tokenId, uint deadline, uint8 v, bytes32 r, bytes32 s)
     override
     external {
-        require(deadline >= block.timestamp, 'KODA: Deadline expired');
+        require(deadline >= block.timestamp, "KODA: Deadline expired");
         require(ownerOf(tokenId) == owner, "KODA: Invalid owner");
 
         // Create digest to check signatures
         bytes32 digest = keccak256(
             abi.encodePacked(
-                '\x19\x01',
+                "\x19\x01",
                 DOMAIN_SEPARATOR,
                 keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, tokenId, nonces[owner]++, deadline))
             )
@@ -689,7 +640,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
 
         // Has the original signer signed it
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, 'KODA: INVALID_SIGNATURE');
+        require(recoveredAddress != address(0) && recoveredAddress == owner, "KODA: INVALID_SIGNATURE");
 
         // set approval for signature if passed
         _approval(owner, spender, tokenId);
@@ -698,8 +649,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     // TODO confirm coverage for callback and magic receiver
 
     function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory _data)
-    private returns (bool)
-    {
+    private returns (bool) {
         if (!Address.isContract(to)) {
             return true;
         }
@@ -721,10 +671,9 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
             } else {
                 revert("ERC721: transfer to non ERC721Receiver implementer");
             }
-        } else {
-            bytes4 retval = abi.decode(returndata, (bytes4));
-            return (retval == ERC721_RECEIVED);
         }
+        bytes4 retval = abi.decode(returndata, (bytes4));
+        return (retval == ERC721_RECEIVED);
     }
 
     /// @notice An extension to the default ERC721 behaviour, derived from ERC-875.

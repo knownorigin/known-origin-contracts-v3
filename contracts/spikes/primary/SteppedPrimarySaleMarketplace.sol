@@ -9,8 +9,6 @@ import "../../core/IKODAV3.sol";
 import "../../access/KOAccessControls.sol";
 import "../../core/Konstants.sol";
 
-// TODO remove me
-import "hardhat/console.sol";
 
 // TODO - maybe this whole primary sale logic should be part of the base NFT to make is cheaper ... ?
 
@@ -71,8 +69,6 @@ contract SteppedPrimarySaleMarketplace is Context {
     function makePurchase(uint256 _editionId) public payable {
         Price storage price = pricing[_editionId];
 
-//        console.log("basePrice %s | currentStep %s | stepPrice %s", price.basePrice, price.currentStep, price.stepPrice);
-
         // Determine current price based on current step
         uint256 cost = price.basePrice.add(
             price.currentStep.mul(price.stepPrice)
@@ -92,8 +88,6 @@ contract SteppedPrimarySaleMarketplace is Context {
         uint256 payment = msg.value.sub(
             msg.value.div(modulo).mul(KO_COMMISSION_FEE)
         );
-
-        console.log("payment %s | msg.value %s", payment, msg.value);
 
         // send money to creator via royalty hook
         (bool success,) = receiver.call{value : payment}("");

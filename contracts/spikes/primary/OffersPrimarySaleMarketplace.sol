@@ -9,9 +9,6 @@ import "../../core/IKODAV3.sol";
 import "../../access/KOAccessControls.sol";
 import "../../core/Konstants.sol";
 
-// TODO remove me
-import "hardhat/console.sol";
-
 // TODO signature based method for relayer/GSN option
 
 contract OffersPrimarySaleMarketplace is Context {

@@ -11,8 +11,6 @@ import "../access/KOAccessControls.sol";
 import "../core/KODAV3Core.sol";
 import "../core/IKODAV3.sol";
 
-import "hardhat/console.sol";
-
 // TODO CREATE2 to generate vanity deployment address
 //  - https://blog.cotten.io/ethereums-eip-1014-create-2-d17b1a184498
 //  - https://ethgasstation.info/blog/what-is-create2/
@@ -114,15 +112,31 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
         platformAccount = _platformAccount;
     }
 
-    // Buy now
+    // FIXME - create buy now and offers signature model where off-chain signatures can be provider to buy the items
+
+    // FIXME auctions with 24hr countdowns and reserve
+    //      - user places item (edition or token) for bid, sets reserve price and end date
+    //      - when bids come in, once over the reserve, count down trigger kicks in
+    //      - once a new bid comes in, in the last 10 minutes - timer is extended 15mins
+    //      - Once timer closed - no more bids possible
+    //      - Once time closed - either the winner or owner can action it
+    //      - Only really doable on 1 of 1"s ?
+
+    // FIXME only can be on one sales mechanic at a time
+
+    // FIXME Ability to set price/listing in multiple tokens e.g. ETH / DAI / WETH / WBTC
+    //      - do we need a list of tokens to allow payments in?
+    //      - is this really a different contract?
+
+    // Buy now (basic)
     //  - edition (primary) - DONE
     //  - token (secondary) - DONE
 
-    // Offers
+    // Offers (basic)
     // - editions (primary) - DONE
     // - token (secondary) - DONE
 
-    // Stepped auctions
+    // FIXME Stepped auctions
     //  - optional start date
     //  - base price and step
     //  - cannot be changed once triggered
@@ -143,7 +157,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     // TODO expose both contract & minter listing access protected methods - contract takes in creator, minter assumes creator and needs to check KODA for edition creator
 
     /////////////////////////////////
-    // Primary 'buy now' sale flow //
+    // Primary "buy now" sale flow //
     /////////////////////////////////
 
     // TODO startDate - uint32 = (2^32 - 1) equals to 4294967295, i.e. Sun Feb 07 2106
@@ -187,7 +201,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     }
 
     ////////////////////////////////
-    // Primary 'offers' sale flow //
+    // Primary "offers" sale flow //
     ////////////////////////////////
 
     function placeEditionBid(uint256 _editionId) public payable nonReentrant {
@@ -259,8 +273,6 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     function facilitateNextPrimarySale(uint256 _editionId, uint256 _paymentAmount, address _buyer) internal returns (uint256) {
         // get next token to sell along with the royalties recipient and the original creator
         (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
-
-        // console.log("receiver %s | creator %s | tokenId %s", receiver, creator, tokenId);
 
         // split money
         handleEditionSaleFunds(receiver, _paymentAmount);
@@ -335,7 +347,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ///////////////////////////////////
-    // Secondary sale 'buy now' flow //
+    // Secondary sale "buy now" flow //
     ///////////////////////////////////
 
     function listToken(uint256 _tokenId, uint256 _listingPrice, uint256 _startDate) public {
@@ -394,7 +406,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     }
 
     /////////////////////////////////
-    // Secondary sale 'offer' flow //
+    // Secondary sale "offer" flow //
     /////////////////////////////////
 
     function placeTokenBid(uint256 _tokenId) public payable nonReentrant {
@@ -461,7 +473,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     }
 
     //////////////////////////////
-    // Secondary sale 'helpers' //
+    // Secondary sale "helpers" //
     //////////////////////////////
 
     /// sales and funds
@@ -534,7 +546,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /////////////////////////////////////////
-    // Primary sale 'dynamic pricing' flow //
+    // Primary sale "dynamic pricing" flow //
     /////////////////////////////////////////
 
     // FIXME thoughts on this pattern? gives some complexity with limits, but is more GAS heavy
@@ -576,7 +588,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /////////////////////////////////////////
-    // Primary sale 'stepped pricing' flow //
+    // Primary sale "stepped pricing" flow //
     /////////////////////////////////////////
 
     // Stepped auctions

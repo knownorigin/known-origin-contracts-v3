@@ -17,7 +17,7 @@ contract SimpleIERC2981 is IERC2981 {
     }
 
     /**
-     * @notice Called to return both the creator's address and the royalty percentage
+     * @notice Called to return both the creator"s address and the royalty percentage
      *          this would be the main function called by marketplaces unless they specifically need just the royaltyAmount
      * @notice Percentage is calculated as a fixed point with a scaling factor of 10,000,
      *          such that 100% would be the value (1000000) where, 1000000/10000 = 100. 1% * would be the value 10000/10000 = 1

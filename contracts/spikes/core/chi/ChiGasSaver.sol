@@ -2,9 +2,6 @@
 
 pragma solidity 0.7.6;
 
-// TODO remove me
-import "hardhat/console.sol";
-
 // TODO whats the best way to test this?
 abstract contract IFreeFromUpTo {
     function freeFromUpTo(address from, uint256 value) external virtual returns (uint256 freed);

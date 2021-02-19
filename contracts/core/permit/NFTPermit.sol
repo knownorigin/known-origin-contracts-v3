@@ -6,7 +6,7 @@ pragma solidity 0.7.6;
 // Variant assumes "value" param replaced with "tokenId" due to non-fungible nature
 
 interface INFTPermit {
-    function permit(address owner, address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
+    function permit(address owner, address spender, uint256 tokenId, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
 }
 
 // FIXME - can we use this for cheapness? - https://github.com/0xProject/0x-monorepo/blob/development/contracts/utils/contracts/src/LibEIP712.sol
@@ -35,7 +35,7 @@ abstract contract NFTPermit is INFTPermit {
 
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
-                keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256(bytes(name)),
                 keccak256(bytes(version)),
                 chainId,
