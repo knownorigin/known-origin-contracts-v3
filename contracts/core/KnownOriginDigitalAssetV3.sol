@@ -80,7 +80,7 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     // A onchain reference to accounts which have been lost/hacked etc
     mapping(address => bool) public reportedArtistAccounts;
 
-    // ERC-2615 permit nonces
+    // ERC-2612-style permit nonces
     mapping(address => uint256) public nonces;
 
     // Signature based minting nonces
