@@ -57,7 +57,39 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     mapping(address => bool) public whitelistedContracts;
 
     function tokenFallback(address _from, uint256 _value, bytes calldata _data) external override {
-        // todo: erc223
+        address _erc223Contract = msg.sender;
+
+        require(whitelistedContracts[_erc223Contract], "tokenFallback: Specified contract not whitelisted");
+        require(_value > 0, "tokenFallback: Value cannot be zero");
+        require(_data.length > 0, "_data must contain the uint256 tokenId to transfer the token to.");
+
+        // convert up to 32 bytes of_data to uint256, owner nft tokenId passed as uint in bytes
+        uint256 tokenId;
+
+        assembly {
+            tokenId := calldataload(132)
+        }
+
+        if (_data.length < 32) {
+            tokenId = tokenId >> 256 - _data.length * 8;
+        }
+
+        // todo should support approve or approved for all as those people could transfer the token and do this operation
+        require(IERC721(address(this)).ownerOf(tokenId) == _from, "getERC20: Only token owner");
+
+        bool nftAlreadyContainsERC223 = ERC20sEmbeddedInNft[tokenId].contains(_erc223Contract);
+        require(
+            nftAlreadyContainsERC223 || totalERC20Contracts(tokenId) <= maxERC20sPerNFT,
+            "getERC20: Token limit for number of unique ERC20s reached"
+        );
+
+        if (!nftAlreadyContainsERC223) {
+            ERC20sEmbeddedInNft[tokenId].add(_erc223Contract);
+        }
+
+        ERC20Balances[tokenId][_erc223Contract] = ERC20Balances[tokenId][_erc223Contract].add(_value);
+
+        emit ReceivedERC20(_from, tokenId, _erc223Contract, _value);
     }
 
     function balanceOfERC20(uint256 _tokenId, address _erc20Contract) external override view returns (uint256) {
