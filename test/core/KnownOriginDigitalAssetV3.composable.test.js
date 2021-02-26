@@ -71,6 +71,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     this.erc20Token2 = await MockERC20.new({from: owner})
     this.erc20Token3 = await MockERC20.new({from: owner})
     this.erc20Token4 = await MockERC20.new({from: owner})
+    this.erc20Token5 = await MockERC20.new({from: owner})
 
     // whitelist the ERC20s in order to allow them to be wrapped
     await this.token.whitelistERC20(this.erc20Token1.address);
@@ -305,5 +306,71 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     })
   })
 
+  describe.only('getERC20() validation', () => {
+    it('Reverts when value is zero', async () => {
+      await expectRevert(
+        this.token.getERC20(
+          owner,
+          firstEditionTokenId,
+          this.erc20Token1.address,
+          '0',
+          {from: owner}
+        ),
+        "getERC20: Value cannot be zero"
+      )
+    })
 
+    // skip due to hardhat revert inference reasons :/
+    it.skip('Reverts when not token owner', async () => {
+      await expectRevert(
+        this.token.getERC20(
+          owner,
+          firstEditionTokenId,
+          this.erc20Token1.address,
+          ONE_THOUSAND_TOKENS,
+          {from: random}
+        ),
+        "getERC20: Only token owner"
+      )
+    })
+
+    it('Reverts when ERC20 owner is not token owner', async () => {
+      await expectRevert(
+        this.token.getERC20(
+          random,
+          firstEditionTokenId,
+          this.erc20Token1.address,
+          ONE_THOUSAND_TOKENS,
+          {from: owner}
+        ),
+        "getERC20: ERC20 owner must be the token owner"
+      )
+    })
+
+    it('Reverts when ERC20 is not whitelisted', async () => {
+      await expectRevert(
+        this.token.getERC20(
+          owner,
+          firstEditionTokenId,
+          this.erc20Token5.address,
+          ONE_THOUSAND_TOKENS,
+          {from: owner}
+        ),
+        "getERC20: Specified contract not whitelisted"
+      )
+    })
+
+    it('Reverts when not enough allowance', async () => {
+      await expectRevert(
+        this.token.getERC20(
+          owner,
+          firstEditionTokenId,
+          this.erc20Token4.address,
+          ONE_THOUSAND_TOKENS,
+          {from: owner}
+        ),
+        "getERC20: Amount exceeds allowance"
+      )
+    })
+  })
 })
