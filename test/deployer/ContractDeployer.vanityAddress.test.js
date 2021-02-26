@@ -37,7 +37,7 @@ contract('MinterFactory', function (accounts) {
 
   // based on this https://solidity-by-example.org/app/create2/
 
-  it('should deploy contract to the address generated with the same salt', async () => {
+  it.skip('should deploy contract to the address generated with the same salt', async () => {
     const deployerFactory = await ContractDeployer.new();
     const bytes = await deployerFactory.getKodaV3Bytecode(this.accessControls.address, ZERO_ADDRESS, STARTING_EDITION, {from: deployer});
 
@@ -50,7 +50,7 @@ contract('MinterFactory', function (accounts) {
     expect(address).to.be.equal(predicatedAddress);
   });
 
-  it('deployed contract should be configured correctly', async () => {
+  it.skip('deployed contract should be configured correctly', async () => {
     const deployerFactory = await ContractDeployer.new();
     const bytes = await deployerFactory.getKodaV3Bytecode(this.accessControls.address, ZERO_ADDRESS, STARTING_EDITION, {from: deployer});
 

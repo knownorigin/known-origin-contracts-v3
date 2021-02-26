@@ -30,12 +30,6 @@ interface ERC998ERC20TopDownEnumerable {
     function erc20ContractByIndex(uint256 _tokenId, uint256 _index) external view returns (address);
 }
 
-interface IComposableAdminMethods {
-    function whitelistERC20ERC223(address _address) external;
-    function removeWhitelistForERC20ERC223(address _address) external;
-    function updateMaxERC20sPerNFT(uint256 _max) external;
-}
-
 abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDownEnumerable {
     using SafeMath for uint256;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -149,6 +143,15 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     function erc20ContractByIndex(uint256 _tokenId, uint256 _index) override external view returns (address) {
         return ERC20sEmbeddedInNft[_tokenId].at(_index);
     }
+
+    /// --- Admin ----
+    // To be overriden by implementing class
+
+    function whitelistERC20(address _address) virtual public;
+
+    function removeWhitelistForERC20ERC223(address _address) virtual public;
+
+    function updateMaxERC20sPerNFT(uint256 _max) virtual public;
 
     /// --- Internal ----
 
