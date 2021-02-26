@@ -83,7 +83,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     await this.token.mintToken(owner, 'random', {from: contract});
   });
 
-  describe.only('Wrapping ERC20s', () => {
+  describe('Wrapping ERC20s', () => {
     describe('A single ERC20 within a KODA NFT', () => {
       beforeEach(async () => {
         await addERC20BalanceToNFT(
@@ -238,7 +238,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     })
   })
 
-  describe.only('removeWhitelistForERC20()', () => {
+  describe('removeWhitelistForERC20()', () => {
     it('As admin can remove whitelist', async () => {
       expect(await this.token.whitelistedContracts(this.erc20Token1.address)).to.be.true
 
@@ -248,7 +248,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     })
   })
 
-  describe.only('updateMaxERC20sPerNFT()', () => {
+  describe('updateMaxERC20sPerNFT()', () => {
     it('Can update the max NFTs per NFT and exceed the old limit', async () => {
       // wrap 3
       await addERC20BalanceToNFT(
@@ -306,7 +306,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     })
   })
 
-  describe.only('getERC20() validation', () => {
+  describe('getERC20() validation', () => {
     it('Reverts when value is zero', async () => {
       await expectRevert(
         this.token.getERC20(
@@ -370,6 +370,22 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           {from: owner}
         ),
         "getERC20: Amount exceeds allowance"
+      )
+    })
+  })
+
+  describe('transferERC20() validation', () => {
+    it('Reverts if amount is zero', async () => {
+      await expectRevert(
+        this.token.transferERC20(firstEditionTokenId, random, this.erc20Token1.address, '0'),
+        "_prepareERC20LikeTransfer: Value cannot be zero"
+      )
+    })
+
+    it('Reverts if token is not wrapped in NFT', async () => {
+      await expectRevert(
+        this.token.transferERC20(firstEditionTokenId, random, this.erc20Token5.address, ONE_THOUSAND_TOKENS),
+        "_prepareERC20LikeTransfer: No such ERC20/ERC223 wrapped in token"
       )
     })
   })

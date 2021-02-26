@@ -18,10 +18,10 @@ interface ERC998ERC20TopDown {
     event ReceivedERC20(address indexed _from, uint256 indexed _tokenId, address indexed _erc20Contract, uint256 _value);
     event TransferERC20(uint256 indexed _tokenId, address indexed _to, address indexed _erc20Contract, uint256 _value);
 
-    function tokenFallback(address _from, uint256 _value, bytes calldata _data) external;
+
     function balanceOfERC20(uint256 _tokenId, address _erc20Contract) external view returns (uint256);
     function transferERC20(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) external;
-    function transferERC223(uint256 _tokenId, address _to, address _erc223Contract, uint256 _value, bytes calldata _data) external;
+
     function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) external;
 }
 
@@ -50,41 +50,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     // ERC20/ERC223 contract -> whether it is allowed to be wrapped within any token
     mapping(address => bool) public whitelistedContracts;
 
-    function tokenFallback(address _from, uint256 _value, bytes calldata _data) external override {
-        address _erc223Contract = msg.sender;
 
-        require(whitelistedContracts[_erc223Contract], "tokenFallback: Specified contract not whitelisted");
-        require(_value > 0, "tokenFallback: Value cannot be zero");
-        require(_data.length > 0, "_data must contain the uint256 tokenId to transfer the token to.");
-
-        // convert up to 32 bytes of_data to uint256, owner nft tokenId passed as uint in bytes
-        uint256 tokenId;
-
-        assembly {
-            tokenId := calldataload(132)
-        }
-
-        if (_data.length < 32) {
-            tokenId = tokenId >> 256 - _data.length * 8;
-        }
-
-        // todo should support approve or approved for all as those people could transfer the token and do this operation
-        require(IERC721(address(this)).ownerOf(tokenId) == _from, "getERC20: Only token owner");
-
-        bool nftAlreadyContainsERC223 = ERC20sEmbeddedInNft[tokenId].contains(_erc223Contract);
-        require(
-            nftAlreadyContainsERC223 || totalERC20Contracts(tokenId) <= maxERC20sPerNFT,
-            "getERC20: Token limit for number of unique ERC20s reached"
-        );
-
-        if (!nftAlreadyContainsERC223) {
-            ERC20sEmbeddedInNft[tokenId].add(_erc223Contract);
-        }
-
-        ERC20Balances[tokenId][_erc223Contract] = ERC20Balances[tokenId][_erc223Contract].add(_value);
-
-        emit ReceivedERC20(_from, tokenId, _erc223Contract, _value);
-    }
 
     function balanceOfERC20(uint256 _tokenId, address _erc20Contract) external override view returns (uint256) {
         return ERC20Balances[_tokenId][_erc20Contract];
@@ -98,13 +64,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         emit TransferERC20(_tokenId, _to, _erc20Contract, _value);
     }
 
-    function transferERC223(uint256 _tokenId, address _to, address _erc223Contract, uint256 _value, bytes calldata _data) external override {
-        _prepareERC20LikeTransfer(_tokenId, _to, _erc223Contract, _value);
 
-        IERC223(_erc223Contract).transfer(_to, _value, _data);
-
-        emit TransferERC20(_tokenId, _to, _erc223Contract, _value);
-    }
 
     // todo; do we need reentrancy guard?
     function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) external override {
