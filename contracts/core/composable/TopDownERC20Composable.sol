@@ -117,7 +117,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
         bool nftAlreadyContainsERC20 = ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract);
         require(
-            nftAlreadyContainsERC20 || totalERC20Contracts(_tokenId) <= maxERC20sPerNFT,
+            nftAlreadyContainsERC20 || totalERC20Contracts(_tokenId) < maxERC20sPerNFT,
             "getERC20: Token limit for number of unique ERC20s reached"
         );
 
@@ -149,7 +149,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
     function whitelistERC20(address _address) virtual public;
 
-    function removeWhitelistForERC20ERC223(address _address) virtual public;
+    function removeWhitelistForERC20(address _address) virtual public;
 
     function updateMaxERC20sPerNFT(uint256 _max) virtual public;
 
@@ -177,6 +177,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         emit ContractWhitelisted(_erc20ERC223);
     }
 
+    // note: this will not brick NFTs that have this token. Just stops people adding new balances
     function _removeWhitelistERC20ERC223(address _erc20ERC223) internal {
         whitelistedContracts[_erc20ERC223] = false;
         emit WhitelistRemoved(_erc20ERC223);

@@ -704,7 +704,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
         _whitelistERC20ERC223(_address);
     }
 
-    function removeWhitelistForERC20ERC223(address _address) override public {
+    function removeWhitelistForERC20(address _address) override public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
         _removeWhitelistERC20ERC223(_address);
     }

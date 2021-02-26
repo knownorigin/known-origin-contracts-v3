@@ -70,17 +70,19 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     this.erc20Token1 = await MockERC20.new({from: owner})
     this.erc20Token2 = await MockERC20.new({from: owner})
     this.erc20Token3 = await MockERC20.new({from: owner})
+    this.erc20Token4 = await MockERC20.new({from: owner})
 
     // whitelist the ERC20s in order to allow them to be wrapped
     await this.token.whitelistERC20(this.erc20Token1.address);
     await this.token.whitelistERC20(this.erc20Token2.address);
     await this.token.whitelistERC20(this.erc20Token3.address);
+    await this.token.whitelistERC20(this.erc20Token4.address);
 
     // mint some KODA
     await this.token.mintToken(owner, 'random', {from: contract});
   });
 
-  describe('Wrapping ERC20s', () => {
+  describe.only('Wrapping ERC20s', () => {
     describe('A single ERC20 within a KODA NFT', () => {
       beforeEach(async () => {
         await addERC20BalanceToNFT(
@@ -211,7 +213,97 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
         expect(
           await this.token.balanceOfERC20(firstEditionTokenId, this.erc20Token2.address)
         ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
+
+        // transfer all of token 2
+        await this.token.transferERC20(
+          firstEditionTokenId,
+          random,
+          this.erc20Token2.address,
+          ONE_THOUSAND_TOKENS
+        )
+
+        expect(
+          await this.token.balanceOfERC20(firstEditionTokenId, this.erc20Token2.address)
+        ).to.be.bignumber.equal('0')
+
+        const balanceOfRandomForErc20Token2 = await this.erc20Token2.balanceOf(random)
+        expect(balanceOfRandomForErc20Token2).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
+
+        // this now means total contracts should go down
+        expect(
+          await this.token.totalERC20Contracts(firstEditionTokenId)
+        ).to.be.bignumber.equal('2')
       })
     })
   })
+
+  describe.only('removeWhitelistForERC20()', () => {
+    it('As admin can remove whitelist', async () => {
+      expect(await this.token.whitelistedContracts(this.erc20Token1.address)).to.be.true
+
+      await this.token.removeWhitelistForERC20(this.erc20Token1.address)
+
+      expect(await this.token.whitelistedContracts(this.erc20Token1.address)).to.be.false
+    })
+  })
+
+  describe.only('updateMaxERC20sPerNFT()', () => {
+    it('Can update the max NFTs per NFT and exceed the old limit', async () => {
+      // wrap 3
+      await addERC20BalanceToNFT(
+        this.erc20Token1,
+        ONE_THOUSAND_TOKENS,
+        this.token,
+        firstEditionTokenId,
+        owner
+      )
+
+      await addERC20BalanceToNFT(
+        this.erc20Token2,
+        ONE_THOUSAND_TOKENS,
+        this.token,
+        firstEditionTokenId,
+        owner
+      )
+
+      await addERC20BalanceToNFT(
+        this.erc20Token3,
+        ONE_THOUSAND_TOKENS,
+        this.token,
+        firstEditionTokenId,
+        owner
+      )
+
+      await expectRevert(
+        this.token.getERC20(
+          owner,
+          firstEditionTokenId,
+          this.erc20Token4.address,
+          ONE_THOUSAND_TOKENS,
+          {from: owner}
+        ),
+        "getERC20: Token limit for number of unique ERC20s reached"
+      )
+
+      await this.token.updateMaxERC20sPerNFT('4')
+
+      await addERC20BalanceToNFT(
+        this.erc20Token4,
+        ONE_THOUSAND_TOKENS,
+        this.token,
+        firstEditionTokenId,
+        owner
+      )
+
+      expect(
+        await this.token.totalERC20Contracts(firstEditionTokenId)
+      ).to.be.bignumber.equal('4')
+
+      expect(
+        await this.token.erc20ContractByIndex(firstEditionTokenId, '3')
+      ).to.be.equal(this.erc20Token4.address)
+    })
+  })
+
+
 })
