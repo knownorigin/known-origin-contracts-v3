@@ -16,6 +16,7 @@ import "./IKODAV3Minter.sol";
 import "./KODAV3Core.sol";
 import "../programmable/ITokenUriResolver.sol";
 import "./permit/NFTPermit.sol";
+import { TopDownERC20Composable } from "./composable/TopDownERC20Composable.sol";
 
 // FIXME Use safe-math for all calcs?
 
@@ -28,7 +29,7 @@ import "./permit/NFTPermit.sol";
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKODAV3, ERC165 {
+contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3Minter, KODAV3Core, IKODAV3, ERC165 {
     using SafeMath for uint256;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
@@ -697,6 +698,21 @@ contract KnownOriginDigitalAssetV3 is NFTPermit, IKODAV3Minter, KODAV3Core, IKOD
     /////////////////////
     // Admin functions //
     /////////////////////
+
+    function whitelistERC20(address _address) override public {
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        _whitelistERC20ERC223(_address);
+    }
+
+    function removeWhitelistForERC20(address _address) override public {
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        _removeWhitelistERC20ERC223(_address);
+    }
+
+    function updateMaxERC20sPerNFT(uint256 _max) override public {
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        _updateMaxERC20sPerNFT(_max);
+    }
 
     function reportEditionId(uint256 _editionId, bool _reported) public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
