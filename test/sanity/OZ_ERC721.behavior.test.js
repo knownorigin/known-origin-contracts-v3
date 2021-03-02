@@ -6,6 +6,8 @@ const { shouldSupportInterfaces } = require('../core/SupportsInterface.behavior'
 
 const ERC721ReceiverMock = artifacts.require('ERC721ReceiverMock');
 
+const wrapReason = reason => `VM Exception while processing transaction: revert ${reason}`;
+
 const Error = [ 'None', 'RevertWithMessage', 'RevertWithoutMessage', 'Panic' ]
     .reduce((acc, entry, idx) => Object.assign({ [entry]: idx }, acc), {});
 
@@ -51,7 +53,7 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
             context('when querying the zero address', () => {
                 it('throws', async () => {
                     await expectRevert(
-                        this.token.balanceOf(ZERO_ADDRESS), 'ERC721: balance query for the zero address',
+                        this.token.balanceOf(ZERO_ADDRESS), wrapReason('ERC721_ZERO_OWNER'),
                     );
                 });
             });
@@ -71,7 +73,7 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
 
                 it('reverts', async () => {
                     await expectRevert(
-                        this.token.ownerOf(tokenId), 'ERC721: owner query for nonexistent token',
+                        this.token.ownerOf(tokenId), wrapReason('ERC721_ZERO_OWNER'),
                     );
                 });
             });
@@ -188,7 +190,7 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
                     it('reverts', async () => {
                         await expectRevert(
                             transferFunction.call(this, other, other, tokenId, { from: owner }),
-                            'ERC721: transfer of token that is not own',
+                            wrapReason('ERC721_OWNER_MISMATCH'),
                         );
                     });
                 });
@@ -197,7 +199,7 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
                     it('reverts', async () => {
                         await expectRevert(
                             transferFunction.call(this, owner, other, tokenId, { from: other }),
-                            'ERC721: transfer caller is not owner nor approved',
+                            wrapReason('ERC721_INVALID_SPENDER'),
                         );
                     });
                 });
@@ -206,7 +208,7 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
                     it('reverts', async () => {
                         await expectRevert(
                             transferFunction.call(this, owner, other, nonExistentTokenId, { from: owner }),
-                            'ERC721: operator query for nonexistent token',
+                            wrapReason('ERC721_ZERO_OWNER'),
                         );
                     });
                 });
@@ -215,7 +217,7 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
                     it('reverts', async () => {
                         await expectRevert(
                             transferFunction.call(this, owner, ZERO_ADDRESS, tokenId, { from: owner }),
-                            'ERC721: transfer to the zero address',
+                            wrapReason('ERC721_ZERO_TO_ADDRESS'),
                         );
                     });
                 });
@@ -281,7 +283,7 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
                                         nonExistentTokenId,
                                         { from: owner },
                                     ),
-                                    'ERC721: operator query for nonexistent token',
+                                    wrapReason('ERC721_ZERO_OWNER'),
                                 );
                             });
                         });
@@ -301,7 +303,7 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
                         const invalidReceiver = await ERC721ReceiverMock.new('0x42', Error.None);
                         await expectRevert(
                             this.token.safeTransferFrom(owner, invalidReceiver.address, tokenId, { from: owner }),
-                            'ERC721: transfer to non ERC721Receiver implementer',
+                            wrapReason('ERC721_INVALID_SELECTOR'),
                         );
                     });
                 });
@@ -319,9 +321,8 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
                 describe('to a receiver contract that reverts without message', () => {
                     it('reverts', async () => {
                         const revertingReceiver = await ERC721ReceiverMock.new(RECEIVER_MAGIC_VALUE, Error.RevertWithoutMessage);
-                        await expectRevert(
-                            this.token.safeTransferFrom(owner, revertingReceiver.address, tokenId, { from: owner }),
-                            'ERC721: transfer to non ERC721Receiver implementer',
+                        await expectRevert.unspecified(
+                            this.token.safeTransferFrom(owner, revertingReceiver.address, tokenId, { from: owner })
                         );
                     });
                 });
@@ -338,9 +339,8 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
                 describe('to a contract that does not implement the required function', () => {
                     it('reverts', async () => {
                         const nonReceiver = this.token;
-                        await expectRevert(
-                            this.token.safeTransferFrom(owner, nonReceiver.address, tokenId, { from: owner }),
-                            'ERC721: transfer to non ERC721Receiver implementer',
+                        await expectRevert.unspecified(
+                            this.token.safeTransferFrom(owner, nonReceiver.address, tokenId, { from: owner })
                         );
                     });
                 });
@@ -379,7 +379,7 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
                         const invalidReceiver = await ERC721ReceiverMock.new('0x42', Error.None);
                         await expectRevert(
                             this.token.safeMint(invalidReceiver.address, tokenId),
-                            'ERC721: transfer to non ERC721Receiver implementer',
+                            wrapReason('ERC721ReceiverMock: reverting'),
                         );
                     });
                 });
@@ -399,7 +399,7 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
                         const revertingReceiver = await ERC721ReceiverMock.new(RECEIVER_MAGIC_VALUE, Error.RevertWithoutMessage);
                         await expectRevert(
                             this.token.safeMint(revertingReceiver.address, tokenId),
-                            'ERC721: transfer to non ERC721Receiver implementer',
+                            wrapReason('ERC721ReceiverMock'),
                         );
                     });
                 });
@@ -418,7 +418,7 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
                         const nonReceiver = this.token;
                         await expectRevert(
                             this.token.safeMint(nonReceiver.address, tokenId),
-                            'ERC721: transfer to non ERC721Receiver implementer',
+                            wrapReason('ERC721_INVALID_SELECTOR'),
                         );
                     });
                 });
@@ -507,23 +507,28 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
             context('when the address that receives the approval is the owner', () => {
                 it('reverts', async () => {
                     await expectRevert(
-                        this.token.approve(owner, tokenId, { from: owner }), 'ERC721: approval to current owner',
+                        this.token.approve(owner, tokenId, { from: owner }),
+                        wrapReason('ERC721_APPROVED_IS_OWNER'),
                     );
                 });
             });
 
             context('when the sender does not own the given token ID', () => {
                 it('reverts', async () => {
-                    await expectRevert(this.token.approve(approved, tokenId, { from: other }),
-                        'ERC721: approve caller is not owner nor approved');
+                    await expectRevert(
+                        this.token.approve(approved, tokenId, { from: other }),
+                        wrapReason('ERC721_INVALID_SENDER')
+                    );
                 });
             });
 
             context('when the sender is approved for the given token ID', () => {
                 it('reverts', async () => {
                     await this.token.approve(approved, tokenId, { from: owner });
-                    await expectRevert(this.token.approve(anotherApproved, tokenId, { from: approved }),
-                        'ERC721: approve caller is not owner nor approved for all');
+                    await expectRevert(
+                        this.token.approve(anotherApproved, tokenId, { from: approved }),
+                        wrapReason('ERC721_INVALID_SENDER')
+                    );
                 });
             });
 
@@ -540,7 +545,7 @@ function shouldBehaveLikeERC721 (errorPrefix, accounts) {
             context('when the given token ID does not exist', () => {
                 it('reverts', async () => {
                     await expectRevert(this.token.approve(approved, nonExistentTokenId, { from: operator }),
-                        'ERC721: owner query for nonexistent token');
+                        'ERC721_ZERO_OWNER');
                 });
             });
         });
