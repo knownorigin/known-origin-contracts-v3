@@ -87,19 +87,9 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     // - editions (primary) - DONE
     // - token (secondary) - DONE
 
-    // TODO
     //  Stepped auctions
     // - editions (primary) - IN PROGRESS
     // - token (secondary) - N/A
-
-    // TODO (super stretch goal)
-    // auctions with 24hr countdowns and reserve
-    //  - user places item (edition or token) for bid, sets reserve price and end date
-    //  - when bids come in, once over the reserve, count down trigger kicks in
-    //  - once a new bid comes in, in the last 10 minutes - timer is extended 15mins
-    //  - Once timer closed - no more bids possible
-    //  - Once time closed - either the winner or owner can action it
-    //  - Only really doable on 1 of 1"s ?
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -309,7 +299,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
         // TODO events
     }
 
-    function buyNextStep(uint256 _editionId) public payable {
+    function buyNextStep(uint256 _editionId) public nonReentrant payable {
         require(editionStep[_editionId].seller != address(0), "Edition not enabled for stepped listing");
 
         (uint128 _basePrice, uint128 _step, uint128 _startDate, uint128 _currentStep) = _getCurrentEditionStep(_editionId);
@@ -331,7 +321,7 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     }
 
     // creates an exit from a step if required but forces a buy now price
-    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice) public {
+    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice) nonReentrant public {
         Stepped storage stepConfig = editionStep[_editionId];
         require(_listingPrice >= minBidAmount, "List not enough");
         require(stepConfig.seller == _msgSender(), "Only callable from seller");
