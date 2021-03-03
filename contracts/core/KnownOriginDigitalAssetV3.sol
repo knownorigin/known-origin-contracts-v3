@@ -16,7 +16,7 @@ import "./IKODAV3Minter.sol";
 import "./KODAV3Core.sol";
 import "../programmable/ITokenUriResolver.sol";
 import "./permit/NFTPermit.sol";
-import { TopDownERC20Composable } from "./composable/TopDownERC20Composable.sol";
+import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 
 // FIXME Use safe-math for all calcs?
 
@@ -239,10 +239,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
     function editionURI(uint256 _editionId) public view returns (string memory) {
         EditionDetails storage edition = editionDetails[_editionId];
         require(edition.editionConfig != 0, "KODA: Edition does not exist");
-        if (tokenUriResolverActive) {
-            if (tokenUriResolver.isDefined(_editionId)) {
-                return tokenUriResolver.editionURI(_editionId);
-            }
+
+        if (tokenUriResolverActive && tokenUriResolver.isDefined(_editionId)) {
+            return tokenUriResolver.editionURI(_editionId);
         }
         return edition.uri;
     }
@@ -252,10 +251,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
         require(edition.editionConfig != 0, "KODA: Token does not exist");
-        if (tokenUriResolverActive) {
-            if (tokenUriResolver.isDefined(editionId)) {
-                return tokenUriResolver.editionURI(editionId);
-            }
+
+        if (tokenUriResolverActive && tokenUriResolver.isDefined(editionId)) {
+            return tokenUriResolver.editionURI(editionId);
         }
         return edition.uri;
     }
@@ -642,35 +640,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
 
         // set approval for signature if passed
         _approval(owner, spender, tokenId);
-    }
-
-    // TODO confirm coverage for callback and magic receiver
-    function _checkOnERC721Received(address _from, address _to, uint256 _tokenId, bytes memory _data)
-    private returns (bool) {
-        if (!Address.isContract(_to)) {
-            return true;
-        }
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory returndata) = _to.call(abi.encodeWithSelector(
-                IERC721Receiver(_to).onERC721Received.selector,
-                _msgSender(),
-                _from,
-                _tokenId,
-                _data
-            ));
-        if (!success) {
-            if (returndata.length > 0) {
-                // solhint-disable-next-line no-inline-assembly
-                assembly {
-                    let returndata_size := mload(returndata)
-                    revert(add(32, returndata), returndata_size)
-                }
-            } else {
-                revert("ERC721: transfer to non ERC721Receiver implementer");
-            }
-        }
-        bytes4 retval = abi.decode(returndata, (bytes4));
-        return (retval == ERC721_RECEIVED);
     }
 
     /// @notice An extension to the default ERC721 behaviour, derived from ERC-875.
