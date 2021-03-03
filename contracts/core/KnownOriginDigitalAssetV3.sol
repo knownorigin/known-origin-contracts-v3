@@ -81,7 +81,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
     // A onchain reference to accounts which have been lost/hacked etc
     mapping(address => bool) public reportedArtistAccounts;
 
-    // ERC-2615 permit nonces
+    // ERC-2612-style permit nonces
     mapping(address => uint256) public nonces;
 
     // Signature based minting nonces
@@ -562,11 +562,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
     /// @param _tokenId The NFT to approve
     function approve(address _approved, uint256 _tokenId) override external {
         address owner = ownerOf(_tokenId);
-        require(
-            _msgSender() == owner || isApprovedForAll(owner, _msgSender()),
-            "ERC721_INVALID_SENDER"
-        );
-
+        require(_approved != owner, "ERC721_APPROVED_IS_OWNER");
+        require(_msgSender() == owner || isApprovedForAll(owner, _msgSender()), "ERC721_INVALID_SENDER");
         _approval(owner, _approved, _tokenId);
     }
 
@@ -648,18 +645,17 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
     }
 
     // TODO confirm coverage for callback and magic receiver
-
-    function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory _data)
+    function _checkOnERC721Received(address _from, address _to, uint256 _tokenId, bytes memory _data)
     private returns (bool) {
-        if (!Address.isContract(to)) {
+        if (!Address.isContract(_to)) {
             return true;
         }
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory returndata) = to.call(abi.encodeWithSelector(
-                IERC721Receiver(to).onERC721Received.selector,
+        (bool success, bytes memory returndata) = _to.call(abi.encodeWithSelector(
+                IERC721Receiver(_to).onERC721Received.selector,
                 _msgSender(),
-                from,
-                tokenId,
+                _from,
+                _tokenId,
                 _data
             ));
         if (!success) {

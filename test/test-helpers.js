@@ -4,7 +4,7 @@ const {expect} = require('chai');
 const validateEditionAndToken = async function (
   {tokenId, editionId, owner, ownerBalance, creator, creatorBalance, size, uri}
 ) {
-  console.log(`Validate token [${tokenId}] and edition [${editionId}]`);
+  //console.log(`Validate token [${tokenId}] and edition [${editionId}]`);
 
   if (ownerBalance) {
     expect(await this.token.balanceOf(owner)).to.be.bignumber.equal(ownerBalance, "Failed owner balance validation");
@@ -34,7 +34,7 @@ const validateEditionAndToken = async function (
 }
 
 const validateToken = async function ({tokenId, editionId, owner, creator, size, uri}) {
-  console.log(`Validate token [${tokenId}]`);
+  //console.log(`Validate token [${tokenId}]`);
 
   const _editionId = await this.token.getEditionIdOfToken(tokenId);
   expect(_editionId).to.bignumber.equal(editionId, "Failed Edition ID validation")
