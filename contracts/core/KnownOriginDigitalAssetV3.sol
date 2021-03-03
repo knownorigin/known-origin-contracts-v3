@@ -716,7 +716,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
         emit AdminEditionReported(_editionId, _reported);
     }
 
-    function reportEditionId(address _account, bool _reported) public {
+    function reportArtistAccount(address _account, bool _reported) public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
         reportedArtistAccounts[_account] = _reported;
         emit AdminArtistAccountReported(_account, _reported);
@@ -751,7 +751,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
     // TODO test
     /// @dev Allows for the ability to extract stuck ERC20 tokens
     /// @dev Only callable from admin
-    function withdrawStuckEther(address _tokenAddress, uint256 _amount, address _withdrawalAccount) public {
+    function withdrawStuckTokens(address _tokenAddress, uint256 _amount, address _withdrawalAccount) public {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have admin role");
         IERC20(_tokenAddress).transferFrom(address(this), _withdrawalAccount, _amount);
     }

@@ -87,7 +87,6 @@ contract('KODAV3Marketplace', function (accounts) {
 
       //address _creator, uint128 _basePrice, uint128 _step, uint128 _startDate, uint128 _currentStep
       const listing = await this.marketplace.getEditionStepConfig(firstEditionTokenId);
-      console.log("listing", listing);
       expect(listing._creator).to.be.equal(minter);
       expect(listing._basePrice).to.be.bignumber.equal(_1_ETH);
       expect(listing._step).to.be.bignumber.equal(_0_1_ETH);

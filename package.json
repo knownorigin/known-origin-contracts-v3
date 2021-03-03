@@ -10,7 +10,7 @@
   "scripts": {
     "compile": "npx hardhat compile --show-stack-traces",
     "coverage": "npx hardhat coverage",
-    "test": "npx hardhat test",
+    "test": "npx hardhat test --verbose",
     "gas": "REPORT_GAS=true npx hardhat test"
   },
   "devDependencies": {
