@@ -33,7 +33,6 @@ contract('ERC721', function (accounts) {
     None: 0,
     RevertWithMessage: 1,
     RevertWithoutMessage: 2,
-    Panic: 3
   }
 
   beforeEach(async () => {
@@ -1045,7 +1044,7 @@ contract('ERC721', function (accounts) {
 
         describe('to a receiver contract that throws', () => {
           it('reverts', async () => {
-            const revertingReceiver = await ERC721ReceiverMock.new(RECEIVER_MAGIC_VALUE, Error.RevertWithoutMessage);
+            const revertingReceiver = await ERC721ReceiverMock.new(RECEIVER_MAGIC_VALUE, Error.RevertWithMessage);
             await expectRevert(
               this.token.safeTransferFrom(owner, revertingReceiver.address, tokenId, {from: owner}),
               'ERC721ReceiverMock: reverting',

@@ -8,8 +8,7 @@ contract ERC721ReceiverMock is IERC721Receiver {
     enum Error {
         None,
         RevertWithMessage,
-        RevertWithoutMessage,
-        Panic
+        RevertWithoutMessage
     }
 
     bytes4 private immutable _retval;
@@ -29,9 +28,6 @@ contract ERC721ReceiverMock is IERC721Receiver {
             revert("ERC721ReceiverMock: reverting");
         } else if (_error == Error.RevertWithoutMessage) {
             revert();
-        } else if (_error == Error.Panic) {
-            uint256 a = uint256(0) / uint256(0);
-            a;
         }
         emit Received(operator, from, tokenId, data, gasleft());
         return _retval;
