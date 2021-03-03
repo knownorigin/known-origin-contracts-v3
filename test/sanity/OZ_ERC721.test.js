@@ -6,21 +6,25 @@ const {
     shouldBehaveLikeERC721Metadata,
 } = require('./OZ_ERC721.behavior.test');
 
-const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
-const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
-const KOAccessControls = artifacts.require('KOAccessControls');
+describe('ERC721', function () {
 
-contract('ERC721', function (accounts) {
-    const [owner, minter, contract] = accounts;
     const name = "KnownOriginDigitalAsset";
     const symbol = "KODA";
     const STARTING_EDITION = "10000";
 
-    beforeEach(async () => {
-        
-        const legacyAccessControls = await SelfServiceAccessControls.new();
+    beforeEach( async function() {
+
+        const accounts = await ethers.getSigners();
+        const addresses = accounts.map(a => a.address);
+        const [owner, minter, contract] = addresses;
+
+        // Legacy access controls
+        const legacyAccessControlsContract = await ethers.getContractFactory("SelfServiceAccessControls");
+        const legacyAccessControls = await legacyAccessControlsContract.deploy();
+
         // setup access controls
-        this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
+        const KOAccessControlsContract = await ethers.getContractFactory("KOAccessControls");
+        this.accessControls = await KOAccessControlsContract.deploy(legacyAccessControls.address);
 
         // grab the roles
         this.MINTER_ROLE = await this.accessControls.MINTER_ROLE();
@@ -31,11 +35,10 @@ contract('ERC721', function (accounts) {
         await this.accessControls.grantRole(this.MINTER_ROLE, minter, {from: owner});
 
         // Create token V3
-        this.token = await KnownOriginDigitalAssetV3.new(
-            this.accessControls.address,
+        const KnownOriginDigitalAssetV3Contract = await ethers.getContractFactory("KnownOriginDigitalAssetV3");
+        this.token = await KnownOriginDigitalAssetV3Contract.deploy(this.accessControls.address,
             ZERO_ADDRESS, // no royalties address
-            STARTING_EDITION,
-            {from: owner}
+            STARTING_EDITION
         );
 
         // Set contract roles
@@ -44,6 +47,6 @@ contract('ERC721', function (accounts) {
 
     });
 
-    shouldBehaveLikeERC721('ERC721', accounts);
-    shouldBehaveLikeERC721('ERC721', name, symbol, accounts);
+    shouldBehaveLikeERC721('ERC721');
+    shouldBehaveLikeERC721Metadata('ERC721', name, symbol);
 });
