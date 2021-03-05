@@ -5,8 +5,8 @@ pragma solidity 0.7.6;
 import "@openzeppelin/contracts/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-import "./IERC2309.sol";
-import "./IERC2981.sol";
+import { IERC2309 } from "./IERC2309.sol";
+import { IERC2981 } from "./IERC2981.sol";
 
 interface IKODAV3 is
 IERC165, // Contract introspection

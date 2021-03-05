@@ -5,8 +5,8 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 
-import "./IKOAccessControlsLookup.sol";
-import "./legacy/ISelfServiceAccessControls.sol";
+import { IKOAccessControlsLookup } from "./IKOAccessControlsLookup.sol";
+import { ISelfServiceAccessControls } from "./legacy/ISelfServiceAccessControls.sol";
 
 contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
 

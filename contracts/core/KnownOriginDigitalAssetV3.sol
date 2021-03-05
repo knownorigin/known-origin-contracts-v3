@@ -8,13 +8,15 @@ import "@openzeppelin/contracts/introspection/ERC165.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/GSN/Context.sol";
 
-import "../access/IKOAccessControlsLookup.sol";
+import { IKOAccessControlsLookup } from "../access/IKOAccessControlsLookup.sol";
 
-import "./IKODAV3.sol";
-import "./IKODAV3Minter.sol";
-import "./KODAV3Core.sol";
-import "../programmable/ITokenUriResolver.sol";
+import { IERC2981 } from "./IERC2981.sol";
+import { IKODAV3 } from "./IKODAV3.sol";
+import { IKODAV3Minter } from "./IKODAV3Minter.sol";
+import { Konstants } from "./Konstants.sol";
+import { ITokenUriResolver } from "../programmable/ITokenUriResolver.sol";
 import { NFTPermit } from "./permit/NFTPermit.sol";
 import { TopDownERC20Composable } from "./composable/TopDownERC20Composable.sol";
 
@@ -29,13 +31,14 @@ import { TopDownERC20Composable } from "./composable/TopDownERC20Composable.sol"
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3Minter, KODAV3Core, IKODAV3, ERC165 {
+contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3Minter, Konstants, IKODAV3, ERC165, Context {
     using SafeMath for uint256;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
     bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
     bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
 
+    event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
     event AdminEditionReported(uint256 indexed _editionId, bool indexed _reported);
     event AdminArtistAccountReported(address indexed _account, bool indexed _reported);
     event AdditionalMetaDataSet(uint256 indexed _editionId);
@@ -84,6 +87,10 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
     // Signature based minting nonces
     mapping(address => uint256) public mintingNonces;
 
+    // TODO confirm default decimal precision
+    // Secondary sale commission
+    uint256 public secondarySaleRoyalty = 100000; // 10%
+
     // TODO generate properly
     // keccak256("MintBatchViaSig(uint256 editionSize, address to, string uri,uint256 nonce,uint256 deadline)");
     bytes32 public constant MINT_BATCH_TYPEHASH = 0x48d39b37a35214940203bbbd4f383519797769b13d936f387d89430afef27688;
@@ -93,12 +100,15 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
         string uri; // the referenced metadata
     }
 
+    IKOAccessControlsLookup public accessControls;
+
     constructor(
         IKOAccessControlsLookup _accessControls,
         IERC2981 _royaltiesRegistryProxy,
         uint256 _editionPointer
-    )
-    KODAV3Core(_accessControls) {
+    ) {
+        accessControls = _accessControls;
+
         editionPointer = _editionPointer;
 
         // optional registry address
@@ -635,6 +645,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
     /////////////////////
     // Admin functions //
     /////////////////////
+
+    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) public {
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
+        secondarySaleRoyalty = _secondarySaleRoyalty;
+        emit AdminUpdateSecondaryRoyalty(_secondarySaleRoyalty);
+    }
 
     function whitelistERC20(address _address) override public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
