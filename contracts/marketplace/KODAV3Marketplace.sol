@@ -101,6 +101,8 @@ contract KODAV3Marketplace is KODAV3Core, ReentrancyGuard, IKODAV3Marketplace {
     //  - approvals go astray/removed - approvals may need to be mapped in subgraph
     //  - when an edition sells out - implicit failure due to creator not owning anymore - we dont explicitly check remaining due to GAS
 
+    // FIXME multiple buys at once?
+
     // TODO expose both contract & minter listing access protected methods
     //      - contract takes in creator, minter assumes creator and needs to check KODA for edition creator
 
