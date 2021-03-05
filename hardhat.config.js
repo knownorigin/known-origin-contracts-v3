@@ -4,6 +4,7 @@ require("@nomiclabs/hardhat-truffle5");
 require('solidity-coverage');
 require('hardhat-gas-reporter');
 require('@nomiclabs/hardhat-solhint');
+require('hardhat-contract-sizer')
 
 const INFURA_PROJECT_ID = process.env.INFURA_PROJECT_ID;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
