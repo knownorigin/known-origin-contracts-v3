@@ -15,8 +15,8 @@ import "./IKODAV3.sol";
 import "./IKODAV3Minter.sol";
 import "./KODAV3Core.sol";
 import "../programmable/ITokenUriResolver.sol";
-import "./permit/NFTPermit.sol";
-import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
+import { NFTPermit } from "./permit/NFTPermit.sol";
+import { TopDownERC20Composable } from "./composable/TopDownERC20Composable.sol";
 
 // FIXME Use safe-math for all calcs?
 
@@ -80,9 +80,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
 
     // A onchain reference to accounts which have been lost/hacked etc
     mapping(address => bool) public reportedArtistAccounts;
-
-    // ERC-2612-style permit nonces
-    mapping(address => uint256) public nonces;
 
     // Signature based minting nonces
     mapping(address => uint256) public mintingNonces;
@@ -565,7 +562,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
         _approval(owner, _approved, _tokenId);
     }
 
-    function _approval(address _owner, address _approved, uint256 _tokenId) internal {
+    function _approval(address _owner, address _approved, uint256 _tokenId) override internal {
         approvals[_tokenId] = _approved;
         emit Approval(_owner, _approved, _tokenId);
     }
@@ -616,31 +613,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
     /////////////////////////////
     // ERC-2612 Permit Variant //
     /////////////////////////////
-
-    // FIXME can we move this higher up to the NFTPermit contract with a virtual _approval() method on
-
-    function permit(address owner, address spender, uint256 tokenId, uint deadline, uint8 v, bytes32 r, bytes32 s)
-    override
-    external {
-        require(deadline >= block.timestamp, "KODA: Deadline expired");
-        require(ownerOf(tokenId) == owner, "KODA: Invalid owner");
-
-        // Create digest to check signatures
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                DOMAIN_SEPARATOR,
-                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, tokenId, nonces[owner]++, deadline))
-            )
-        );
-
-        // Has the original signer signed it
-        address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, "KODA: INVALID_SIGNATURE");
-
-        // set approval for signature if passed
-        _approval(owner, spender, tokenId);
-    }
 
     /// @notice An extension to the default ERC721 behaviour, derived from ERC-875.
     /// @dev Allowing for batch transfers from the provided address, will fail if from does not own all the tokens
