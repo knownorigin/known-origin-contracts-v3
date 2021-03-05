@@ -6,10 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-
-interface IERC721 {
-    function ownerOf(uint256 tokenId) external view returns (address owner);
-}
+import { IERC721 } from "../IERC721Lean.sol";
 
 // todo: this does not include the ERC223
 interface ERC998ERC20TopDown {

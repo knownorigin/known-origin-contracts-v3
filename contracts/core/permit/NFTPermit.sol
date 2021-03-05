@@ -2,6 +2,8 @@
 
 pragma solidity 0.7.6;
 
+import { IERC721 } from "../IERC721Lean.sol";
+
 // Based on https://eips.ethereum.org/EIPS/eip-2612 ERC-20 permit style but for erc-721 tokens
 // Variant assumes "value" param replaced with "tokenId" due to non-fungible nature
 
@@ -21,6 +23,9 @@ abstract contract NFTPermit is INFTPermit {
 
     // KODA version
     string public version = "3";
+
+    // ERC-2612-style permit nonces
+    mapping(address => uint256) public nonces;
 
     // Permit domain
     bytes32 public DOMAIN_SEPARATOR;
@@ -48,4 +53,29 @@ abstract contract NFTPermit is INFTPermit {
         assembly {chainId := chainid()}
         return chainId;
     }
+
+    function permit(address owner, address spender, uint256 tokenId, uint deadline, uint8 v, bytes32 r, bytes32 s)
+    override
+    external {
+        require(deadline >= block.timestamp, "KODA: Deadline expired");
+        require(IERC721(address(this)).ownerOf(tokenId) == owner, "KODA: Invalid owner");
+
+        // Create digest to check signatures
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, tokenId, nonces[owner]++, deadline))
+            )
+        );
+
+        // Has the original signer signed it
+        address recoveredAddress = ecrecover(digest, v, r, s);
+        require(recoveredAddress != address(0) && recoveredAddress == owner, "KODA: INVALID_SIGNATURE");
+
+        // set approval for signature if passed
+        _approval(owner, spender, tokenId);
+    }
+
+    function _approval(address _owner, address _approved, uint256 _tokenId) internal virtual;
 }
