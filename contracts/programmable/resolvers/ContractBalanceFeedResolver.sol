@@ -7,14 +7,14 @@ import "../ITokenUriResolver.sol";
 
 contract ContractBalanceFeedResolver is Context, ITokenUriResolver {
 
-    function editionURI(uint256 _editionId) override external  view returns (string memory) {
+    function editionURI(uint256 _editionId) override external view returns (string memory) {
         if (isContractBalanceAboveThreshold()) {
             return "1";
         }
         return "2";
     }
 
-    function isDefined(uint256) override external  view returns (bool) {
+    function isDefined(uint256) override external view returns (bool) {
         return true;
     }
 

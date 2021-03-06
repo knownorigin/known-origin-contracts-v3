@@ -335,7 +335,7 @@ contract ChiToken is IERC20, ERC20WithoutTotalSupply {
     uint256 public totalMinted;
     uint256 public totalBurned;
 
-    function totalSupply() public view override returns(uint256) {
+    function totalSupply() public view override returns (uint256) {
         return totalMinted - totalBurned;
     }
 
@@ -386,42 +386,43 @@ contract ChiToken is IERC20, ERC20WithoutTotalSupply {
 
     function _destroyChildren(uint256 value) internal {
         assembly {
-            let i := sload(totalBurned.slot)
-            let end := add(i, value)
-            sstore(totalBurned.slot, end)
+            let i := sload
+    (totalBurned.slot)
+    let end := add(i, value)
+    sstore(totalBurned.slot, end)
 
-            let data := mload(0x40)
-            mstore(data, 0xff0000000000004946c0e9F43F4Dee607b0eF1fA1c0000000000000000000000)
-            mstore(add(data, 53), 0x3c1644c68e5d6cb380c36d1bf847fdbc0c7ac28030025a2fc5e63cce23c16348)
-            let ptr := add(data, 21)
-            for { } lt(i, end) { i := add(i, 1) } {
-                mstore(ptr, i)
-                pop(call(gas(), keccak256(data, 85), 0, 0, 0, 0, 0))
-            }
-        }
+    let data := mload(0x40)
+    mstore(data, 0xff0000000000004946c0e9F43F4Dee607b0eF1fA1c0000000000000000000000)
+    mstore(add(data, 53), 0x3c1644c68e5d6cb380c36d1bf847fdbc0c7ac28030025a2fc5e63cce23c16348)
+    let ptr := add(data, 21)
+    for {} lt(i, end) {i := add(i, 1)} {
+    mstore(ptr, i)
+    pop(call(gas(), keccak256(data, 85), 0, 0, 0, 0, 0))
     }
+    }
+}
 
-    function free(uint256 value) public returns (uint256)  {
-        if (value > 0) {
-            _burn(msg.sender, value);
-            _destroyChildren(value);
-        }
-        return value;
-    }
+function free(uint256 value) public returns (uint256)  {
+if (value > 0) {
+_burn(msg.sender, value);
+_destroyChildren(value);
+}
+return value;
+}
 
-    function freeUpTo(uint256 value) public returns (uint256) {
-        return free(Math.min(value, balanceOf(msg.sender)));
-    }
+function freeUpTo(uint256 value) public returns (uint256) {
+return free(Math.min(value, balanceOf(msg.sender)));
+}
 
-    function freeFrom(address from, uint256 value) public returns (uint256) {
-        if (value > 0) {
-            _burnFrom(from, value);
-            _destroyChildren(value);
-        }
-        return value;
-    }
+function freeFrom(address from, uint256 value) public returns (uint256) {
+if (value > 0) {
+_burnFrom(from, value);
+_destroyChildren(value);
+}
+return value;
+}
 
-    function freeFromUpTo(address from, uint256 value) public returns (uint256) {
-        return freeFrom(from, Math.min(Math.min(value, balanceOf(from)), allowance(from, msg.sender)));
-    }
+function freeFromUpTo(address from, uint256 value) public returns (uint256) {
+return freeFrom(from, Math.min(Math.min(value, balanceOf(from)), allowance(from, msg.sender)));
+}
 }

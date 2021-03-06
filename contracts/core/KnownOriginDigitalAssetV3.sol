@@ -3,22 +3,22 @@
 // FIXME bump to 0.8 and drop safemath?
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/introspection/ERC165.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/GSN/Context.sol";
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {ERC165} from "@openzeppelin/contracts/introspection/ERC165.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
 
-import { IKOAccessControlsLookup } from "../access/IKOAccessControlsLookup.sol";
-
-import { IERC2981 } from "./IERC2981.sol";
-import { IKODAV3 } from "./IKODAV3.sol";
-import { IKODAV3Minter } from "./IKODAV3Minter.sol";
-import { Konstants } from "./Konstants.sol";
-import { ITokenUriResolver } from "../programmable/ITokenUriResolver.sol";
-import { NFTPermit } from "./permit/NFTPermit.sol";
-import { TopDownERC20Composable } from "./composable/TopDownERC20Composable.sol";
+import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
+import {IERC2981} from "./IERC2981.sol";
+import {IKODAV3} from "./IKODAV3.sol";
+import {IKODAV3Minter} from "./IKODAV3Minter.sol";
+import {Konstants} from "./Konstants.sol";
+import {ITokenUriResolver} from "../programmable/ITokenUriResolver.sol";
+import {NFTPermit} from "./permit/NFTPermit.sol";
+import {MintBatchViaSig} from "./permit/MintBatchViaSig.sol";
+import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 
 // FIXME Use safe-math for all calcs?
 
@@ -31,7 +31,7 @@ import { TopDownERC20Composable } from "./composable/TopDownERC20Composable.sol"
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3Minter, Konstants, IKODAV3, ERC165, Context {
+contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, NFTPermit, Konstants, ERC165, IKODAV3Minter, IKODAV3, Context {
     using SafeMath for uint256;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
@@ -44,6 +44,18 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
     event AdditionalMetaDataSet(uint256 indexed _editionId);
     event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
     event AdminTokenUriResolverSet(address indexed _tokenUriResolver);
+
+    // Token name
+    string public name = "KnownOriginDigitalAsset";
+
+    // Token symbol
+    string public symbol = "KODA";
+
+    // KODA version
+    string public version = "3";
+
+    // KODA V3 Domain separator - used by Permit() and MintBatchBySig()
+    bytes32 public DOMAIN_SEPARATOR;
 
     // Royalties registry
     IERC2981 public royaltiesRegistryProxy;
@@ -84,16 +96,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
     // A onchain reference to accounts which have been lost/hacked etc
     mapping(address => bool) public reportedArtistAccounts;
 
-    // Signature based minting nonces
-    mapping(address => uint256) public mintingNonces;
-
-    // TODO confirm default decimal precision
+    // TODO confirm default decimal precision (EIP-2981 compatibility required)
     // Secondary sale commission
     uint256 public secondarySaleRoyalty = 100000; // 10%
-
-    // TODO generate properly
-    // keccak256("MintBatchViaSig(uint256 editionSize, address to, string uri,uint256 nonce,uint256 deadline)");
-    bytes32 public constant MINT_BATCH_TYPEHASH = 0x48d39b37a35214940203bbbd4f383519797769b13d936f387d89430afef27688;
 
     struct EditionDetails {
         uint256 editionConfig; // combined creator and size
@@ -107,6 +112,20 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
         IERC2981 _royaltiesRegistryProxy,
         uint256 _editionPointer
     ) {
+        // Grab chain ID
+        uint256 chainId;
+        assembly {chainId := chainid()}
+
+        // Construct and set the KODA V3 domain separator
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes(name)),
+                keccak256(bytes(version)),
+                chainId,
+                address(this)
+            ));
+
         accessControls = _accessControls;
 
         editionPointer = _editionPointer;
@@ -126,22 +145,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
     override
     returns (uint256 _tokenId) {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
-
-        // Edition number is the first token ID
-        uint256 nextEditionNumber = generateNextEditionNumber();
-
-        // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
-
-        // assign balance
-        balances[_to] = balances[_to].add(1);
-
-        // edition of 1
-        _defineEditionConfig(nextEditionNumber, 1, _to, _uri);
-
-        // Single Transfer event for a single token
-        emit Transfer(address(0), _to, nextEditionNumber);
-
-        return nextEditionNumber;
+        return _mintBatchEdition(1, _to, _uri);
     }
 
     // Mints batches of tokens emitting multiple Transfer events
@@ -150,36 +154,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
     override
     returns (uint256 _editionId) {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
-        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
         return _mintBatchEdition(_editionSize, _to, _uri);
     }
 
-    //    // Mints batches of tokens emitting multiple Transfer events - via signed payloads
-    //    function mintBatchEditionViaSig(uint256 _editionSize, address _to, string calldata _uri, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-    //    public returns
-    //    (uint256 _editionId) {
-    //        require(deadline >= block.timestamp, "KODA: Deadline expired");
-    //        require(accessControls.hasMinterRole(_to), "KODA: Minter not approved");
-    //        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
-    //
-    //        {
-    //            // Has the original signer signed it
-    //            address recoveredAddress = ecrecover(
-    //                keccak256(
-    //                    abi.encodePacked(
-    //                        "\x19\x01",
-    //                        DOMAIN_SEPARATOR,
-    //                        keccak256(abi.encode(MINT_BATCH_TYPEHASH, _editionSize, _to, _uri, mintingNonces[_to]++, deadline))
-    //                    )
-    //                ),
-    //                v, r, s);
-    //            require(recoveredAddress != address(0) && recoveredAddress == _to, "KODA: INVALID_SIGNATURE");
-    //        }
-    //
-    //        return _mintBatchEdition(_editionSize, _to, _uri);
-    //    }
+    function _mintBatchEdition(uint256 _editionSize, address _to, string calldata _uri) internal override returns (uint256) {
+        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
 
-    function _mintBatchEdition(uint256 _editionSize, address _to, string calldata _uri) internal returns (uint256) {
         uint256 start = generateNextEditionNumber();
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
         // assign balance
@@ -620,10 +600,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
         return operatorApprovals[_owner][_operator];
     }
 
-    /////////////////////////////
-    // ERC-2612 Permit Variant //
-    /////////////////////////////
-
     /// @notice An extension to the default ERC721 behaviour, derived from ERC-875.
     /// @dev Allowing for batch transfers from the provided address, will fail if from does not own all the tokens
     function batchTransferFrom(address _from, address _to, uint256[] calldata _tokenIds) public {
@@ -711,6 +687,20 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, IKODAV3
     function withdrawStuckTokens(address _tokenAddress, uint256 _amount, address _withdrawalAccount) public {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have admin role");
         IERC20(_tokenAddress).transferFrom(address(this), _withdrawalAccount, _amount);
+    }
+
+    function getChainId() public pure returns (uint256) {
+        uint256 chainId;
+        assembly {chainId := chainid()}
+        return chainId;
+    }
+
+    function _domainSeparator() internal virtual override (NFTPermit, MintBatchViaSig) returns (bytes32) {
+        return DOMAIN_SEPARATOR;
+    }
+
+    function _hasMinterRole(address _minter) internal virtual override returns (bool) {
+        return accessControls.hasMinterRole(_minter);
     }
 
     ///////////////////////

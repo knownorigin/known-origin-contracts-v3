@@ -2,14 +2,13 @@
 
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/GSN/Context.sol";
-
-import { IKODAV3Marketplace } from "./IKODAV3Marketplace.sol";
-import { IKOAccessControlsLookup } from "../access/IKOAccessControlsLookup.sol";
-import { IKODAV3 } from "../core/IKODAV3.sol";
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
+import {IKODAV3Marketplace} from "./IKODAV3Marketplace.sol";
+import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
+import {IKODAV3} from "../core/IKODAV3.sol";
 
 contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
     using SafeMath for uint256;
@@ -80,8 +79,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
     // platform funds collector
     address public platformAccount;
 
-    // TODO confirm default decimal precision
-
+    // TODO confirm default decimal precision (EIP-2981 compatibility required)
     // Secondary sale commission
     uint256 public secondarySaleRoyalty = 100000; // 10%
 

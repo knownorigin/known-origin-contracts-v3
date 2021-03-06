@@ -44,7 +44,8 @@ contract FundsReceiver is IFundsHandler, IFundsDrainable {
 
         // accept funds
         uint256 balance = address(this).balance;
-        uint256 singleUnitOfValue = balance / 100000; // FIXME use safe-math
+        uint256 singleUnitOfValue = balance / 100000;
+        // FIXME use safe-math
 
         // split according to total
         for (uint256 i = 0; i < recipients.length; i++) {

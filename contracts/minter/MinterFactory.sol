@@ -2,11 +2,11 @@
 
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/GSN/Context.sol";
+import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
 
-import "../core/IKODAV3Minter.sol";
-import "../marketplace/IKODAV3Marketplace.sol";
-import "../access/IKOAccessControlsLookup.sol";
+import {IKODAV3Minter} from "../core/IKODAV3Minter.sol";
+import {IKODAV3Marketplace} from "../marketplace/IKODAV3Marketplace.sol";
+import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 
 contract MinterFactory is Context {
 

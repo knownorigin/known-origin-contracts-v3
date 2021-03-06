@@ -11,6 +11,7 @@
     "compile": "npx hardhat compile --show-stack-traces",
     "coverage": "npx hardhat coverage",
     "test": "npx hardhat test --verbose",
+    "contract-size": "npx hardhat size-contracts",
     "gas": "REPORT_GAS=true npx hardhat test"
   },
   "devDependencies": {

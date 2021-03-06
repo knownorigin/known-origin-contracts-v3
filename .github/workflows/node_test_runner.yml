@@ -20,6 +20,6 @@ jobs:
       - name: Install and test
         run: |
           npm install
-          npm test
+          npm run coverage
         env:
           CI: true

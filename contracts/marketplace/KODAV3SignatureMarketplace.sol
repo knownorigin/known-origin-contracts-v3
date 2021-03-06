@@ -8,9 +8,9 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { IKODAV3Marketplace } from "./IKODAV3Marketplace.sol";
-import { IKOAccessControlsLookup } from "../access/IKOAccessControlsLookup.sol";
-import { IKODAV3 } from "../core/IKODAV3.sol";
+import {IKODAV3Marketplace} from "./IKODAV3Marketplace.sol";
+import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
+import {IKODAV3} from "../core/IKODAV3.sol";
 
 contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
     using SafeMath for uint256;
@@ -172,14 +172,14 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
 
         //todo: sell out logic
         // if we are about to sellout - send any open offers back to the bidder
-//        if (tokenId == koda.maxTokenIdOfEdition(_editionId)) {
-//
-//            // send money back to top bidder if existing offer found
-//            Offer storage offer = editionOffers[_editionId];
-//            if (offer.offer > 0) {
-//                _refundBidder(offer.bidder, offer.offer);
-//            }
-//        }
+        //        if (tokenId == koda.maxTokenIdOfEdition(_editionId)) {
+        //
+        //            // send money back to top bidder if existing offer found
+        //            Offer storage offer = editionOffers[_editionId];
+        //            if (offer.offer > 0) {
+        //                _refundBidder(offer.bidder, offer.offer);
+        //            }
+        //        }
 
         return tokenId;
     }
