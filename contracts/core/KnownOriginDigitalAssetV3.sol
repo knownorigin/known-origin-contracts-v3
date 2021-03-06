@@ -22,8 +22,6 @@ import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 
 // FIXME Use safe-math for all calcs?
 
-// FIXME bring over OZ 721 test suite for comparison and so I can sleep at night
-
 // FIXME Add composable support - https://github.com/mattlockyer/composables-998/blob/master/contracts/ComposableTopDown.sol
 
 // FIXME add 712 Mint signature variant methods - checks signer has minter role - allows for caller from another contract/service

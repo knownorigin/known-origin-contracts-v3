@@ -4,8 +4,8 @@ pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/GSN/Context.sol";
 import "./IEditionRegistry.sol";
-import "../access/KOAccessControls.sol";
-import "../core/Konstants.sol";
+import "../../access/KOAccessControls.sol";
+import "../../core/Konstants.sol";
 
 contract EditionRegistry is IEditionRegistry, Konstants, Context {
 
