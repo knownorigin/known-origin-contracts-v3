@@ -56,5 +56,5 @@ module.exports = {
     coverage: {
       url: 'http://localhost:8555',
     }
-  }
+  },
 };

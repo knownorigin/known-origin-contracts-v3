@@ -2,6 +2,8 @@
 
 pragma solidity 0.7.6;
 
+// FIXME add new Mint signature variant method for consecutive batch mint
+
 // TODO test minting logic
 abstract contract MintBatchViaSig {
 

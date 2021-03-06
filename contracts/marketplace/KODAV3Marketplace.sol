@@ -6,11 +6,15 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
-import {IKODAV3Marketplace} from "./IKODAV3Marketplace.sol";
+import {
+IKODAV3PrimarySaleMarketplace,
+IKODAV3SecondarySaleMarketplace
+} from "./IKODAV3Marketplace.sol";
+
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
-contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
+contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySaleMarketplace, Context {
     using SafeMath for uint256;
 
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
@@ -18,28 +22,6 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
     event AdminUpdateSecondarySaleCommission(uint256 _platformSecondarySaleCommission);
     event AdminUpdateModulo(uint256 _modulo);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
-
-    // token buy now
-    event TokenListed(uint256 indexed _tokenId, address indexed _seller, uint256 _price);
-    event TokenDeListed(uint256 indexed _tokenId);
-    event TokenPurchased(uint256 indexed _tokenId, address indexed _buyer, address indexed _seller, uint256 _price);
-
-    // token offers
-    event TokenBidPlaced(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
-    event TokenBidAccepted(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
-    event TokenBidRejected(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
-    event TokenBidWithdrawn(uint256 indexed _tokenId, address indexed _bidder);
-
-    // edition buy now
-    event EditionListed(uint256 indexed _editionId, uint256 _price, uint256 _startDate);
-    event EditionDeListed(uint256 indexed _editionId);
-    event EditionPurchased(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price);
-
-    // edition offers
-    event EditionBidPlaced(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
-    event EditionBidWithdrawn(uint256 indexed _editionId, address indexed _bidder);
-    event EditionBidAccepted(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _amount);
-    event EditionBidRejected(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
 
     struct Offer {
         uint256 offer;
@@ -183,7 +165,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
     }
 
     // FIXME drop?
-    function delistEdition(uint256 _editionId) public {
+    function delistEdition(uint256 _editionId) public override {
         require(editionListings[_editionId].seller == _msgSender(), "Caller not the lister");
 
         delete editionListings[_editionId];
@@ -193,7 +175,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
         emit EditionDeListed(_editionId);
     }
 
-    function buyEditionToken(uint256 _editionId) public payable nonReentrant {
+    function buyEditionToken(uint256 _editionId) public override payable nonReentrant {
         (address _seller, uint128 _listingPrice, uint128 _startDate) = _getEditionListing(_editionId);
         require(address(0) != _seller, "No listing found");
         require(msg.value >= _listingPrice, "List price not satisfied");
@@ -239,7 +221,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
 
     // TODO reserve price?
 
-    function placeEditionBid(uint256 _editionId) public payable nonReentrant {
+    function placeEditionBid(uint256 _editionId) public override payable nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.offer.add(minBidAmount) >= msg.value, "Bid not high enough");
 
@@ -258,7 +240,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
     }
 
     // TODO lock in period for 24hrs?
-    function withdrawEditionBid(uint256 _editionId) public nonReentrant {
+    function withdrawEditionBid(uint256 _editionId) public override nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder == _msgSender(), "Not bidder");
 
@@ -271,7 +253,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
         emit EditionBidWithdrawn(_editionId, _msgSender());
     }
 
-    function rejectEditionBid(uint256 _editionId) public nonReentrant {
+    function rejectEditionBid(uint256 _editionId) public override nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
         require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
@@ -285,7 +267,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
         emit EditionBidRejected(_editionId, _msgSender(), offer.offer);
     }
 
-    function acceptEditionBid(uint256 _editionId, uint256 _offerPrice) public nonReentrant {
+    function acceptEditionBid(uint256 _editionId, uint256 _offerPrice) public override nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
         require(offer.offer == _offerPrice, "Offer price has changed");
@@ -303,7 +285,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
     // Primary sale "stepped pricing" flow //
     /////////////////////////////////////////
 
-    function listSteppedEditionAuction(address _creator, uint256 _editionId, uint256 _basePrice, uint256 _step, uint256 _startDate) public {
+    function listSteppedEditionAuction(address _creator, uint256 _editionId, uint256 _basePrice, uint256 _step, uint256 _startDate) public override {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         require(_basePrice >= minBidAmount, "Base price not enough");
         require(editionStep[_editionId].seller == address(0), "Unable to setup listing again");
@@ -320,10 +302,10 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
         // Store listing data
         editionStep[_editionId] = Stepped(stepConfig, extraConfig, _creator);
 
-        // TODO events
+        emit EditionSteppedSaleListed(_editionId, _basePrice, _step, _startDate);
     }
 
-    function buyNextStep(uint256 _editionId) public nonReentrant payable {
+    function buyNextStep(uint256 _editionId) public override nonReentrant payable {
         require(editionStep[_editionId].seller != address(0), "Edition not enabled for stepped listing");
 
         (uint128 _basePrice, uint128 _step, uint128 _startDate, uint128 _currentStep) = _getCurrentEditionStep(_editionId);
@@ -334,7 +316,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
         uint256 expectedPrice = uint256(_basePrice).add(uint256(_step).mul(_currentStep));
         require(msg.value >= expectedPrice, "Not enough peanuts supplied");
 
-        facilitateNextPrimarySale(_editionId, expectedPrice, _msgSender());
+        uint256 tokenId = facilitateNextPrimarySale(_editionId, expectedPrice, _msgSender());
 
         // TODO test this magic
         // send back excess if supplied - will allow UX flow of setting max price to pay
@@ -342,10 +324,12 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
             (bool success,) = _msgSender().call{value : msg.value.sub(expectedPrice)}("");
             require(success, "failed to send overspend back");
         }
+
+        emit EditionSteppedSaleBuy(_editionId, tokenId, _msgSender(), expectedPrice, _currentStep);
     }
 
     // creates an exit from a step if required but forces a buy now price
-    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice) nonReentrant public {
+    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice) public override nonReentrant {
         Stepped storage stepConfig = editionStep[_editionId];
         require(_listingPrice >= minBidAmount, "List not enough");
         require(stepConfig.seller == _msgSender(), "Only callable from seller");
@@ -357,6 +341,8 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
         delete editionStep[_editionId];
 
         emit EditionListed(_editionId, _listingPrice, 0);
+
+        // TODO do we need an event to signify the conversion?
     }
 
     function getEditionStepConfig(uint256 _editionId) public view returns (address _creator, uint128 _basePrice, uint128 _step, uint128 _startDate, uint128 _currentStep) {
@@ -441,7 +427,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
     // Secondary sale "buy now" flow //
     ///////////////////////////////////
 
-    function listToken(uint256 _tokenId, uint256 _listingPrice, uint256 _startDate) public {
+    function listToken(uint256 _tokenId, uint256 _listingPrice, uint256 _startDate) public override {
         // Check ownership before listing
         require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
 
@@ -461,7 +447,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
         emit TokenListed(_tokenId, _msgSender(), _listingPrice);
     }
 
-    function delistToken(uint256 _tokenId) public {
+    function delistToken(uint256 _tokenId) public override {
         // check listing found
         require(tokenListings[_tokenId].seller != address(0), "No listing found");
 
@@ -474,7 +460,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
         emit TokenDeListed(_tokenId);
     }
 
-    function buyToken(uint256 _tokenId) public payable nonReentrant {
+    function buyToken(uint256 _tokenId) public payable override nonReentrant {
 
         (address _seller, uint128 _listingPrice, uint128 _startDate) = _getTokenListing(_tokenId);
 
@@ -500,7 +486,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
     // Secondary sale "offer" flow //
     /////////////////////////////////
 
-    function placeTokenBid(uint256 _tokenId) public payable nonReentrant {
+    function placeTokenBid(uint256 _tokenId) public payable override nonReentrant {
         Offer storage offer = tokenOffers[_tokenId];
         require(offer.offer.add(minBidAmount) >= msg.value, "Bid not high enough");
 
@@ -518,7 +504,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
         emit TokenBidPlaced(_tokenId, koda.ownerOf(_tokenId), _msgSender(), msg.value);
     }
 
-    function withdrawTokenBid(uint256 _tokenId) public nonReentrant {
+    function withdrawTokenBid(uint256 _tokenId) public override nonReentrant {
         Offer storage offer = tokenOffers[_tokenId];
         require(offer.bidder == _msgSender(), "Not bidder");
 
@@ -531,7 +517,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
         emit TokenBidWithdrawn(_tokenId, _msgSender());
     }
 
-    function rejectTokenBid(uint256 _tokenId) public nonReentrant {
+    function rejectTokenBid(uint256 _tokenId) public override nonReentrant {
         Offer storage offer = tokenOffers[_tokenId];
         require(offer.bidder != address(0), "No open bid");
 
@@ -547,7 +533,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3Marketplace, Context {
         emit TokenBidRejected(_tokenId, currentOwner, offer.bidder, offer.offer);
     }
 
-    function acceptTokenBid(uint256 _tokenId, uint256 _offerPrice) public nonReentrant {
+    function acceptTokenBid(uint256 _tokenId, uint256 _offerPrice) public override nonReentrant {
         Offer storage offer = tokenOffers[_tokenId];
         require(offer.bidder != address(0), "No open bid");
         require(offer.offer == _offerPrice, "Offer price has changed");

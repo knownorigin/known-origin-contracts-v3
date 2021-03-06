@@ -5,7 +5,7 @@ pragma solidity 0.7.6;
 import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
 
 import {IKODAV3Minter} from "../core/IKODAV3Minter.sol";
-import {IKODAV3Marketplace} from "../marketplace/IKODAV3Marketplace.sol";
+import {IKODAV3PrimarySaleMarketplace} from "../marketplace/IKODAV3Marketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 
 contract MinterFactory is Context {
@@ -17,7 +17,7 @@ contract MinterFactory is Context {
 
     IKODAV3Minter public koda;
 
-    IKODAV3Marketplace public marketplace;
+    IKODAV3PrimarySaleMarketplace public marketplace;
 
     // frozen out for..
     uint256 public freezeWindow = 1 days;
@@ -31,7 +31,7 @@ contract MinterFactory is Context {
     constructor(
         IKOAccessControlsLookup _accessControls,
         IKODAV3Minter _koda,
-        IKODAV3Marketplace _marketplace
+        IKODAV3PrimarySaleMarketplace _marketplace
     ) {
         accessControls = _accessControls;
         koda = _koda;
