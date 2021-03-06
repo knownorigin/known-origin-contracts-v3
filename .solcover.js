@@ -19,10 +19,6 @@ module.exports = {
     'spikes/core/chi/ChiGasSaver.sol',
     'spikes/core/chi/ChiToken.sol',
 
-    // shared edition ID registry
-    'spikes/registry/EditionRegistry.sol',
-    'spikes/registry/IEditionRegistry.sol',
-
     // token royalties (not edition aware)
     'spikes/royalties/ITokenRoyaltiesRegistry.sol',
     'spikes/royalties/TokenRoyaltiesRegistry.sol',
