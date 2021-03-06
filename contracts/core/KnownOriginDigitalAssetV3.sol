@@ -16,8 +16,8 @@ import {IKODAV3} from "./IKODAV3.sol";
 import {IKODAV3Minter} from "./IKODAV3Minter.sol";
 import {Konstants} from "./Konstants.sol";
 import {ITokenUriResolver} from "../programmable/ITokenUriResolver.sol";
-import {NFTPermit} from "./permit/NFTPermit.sol";
-import {MintBatchViaSig} from "./permit/MintBatchViaSig.sol";
+import {NFTPermit} from "./mixins/NFTPermit.sol";
+import {MintBatchViaSig} from "./mixins/MintBatchViaSig.sol";
 import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 
 // FIXME Use safe-math for all calcs?
@@ -159,7 +159,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
 
         uint256 start = generateNextEditionNumber();
+
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
+
         // assign balance
         balances[_to] = balances[_to].add(_editionSize);
 

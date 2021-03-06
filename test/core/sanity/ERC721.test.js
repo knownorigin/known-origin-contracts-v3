@@ -7,7 +7,7 @@ const web3 = require('web3');
 
 const {expect} = require('chai');
 
-const {shouldSupportInterfaces} = require('./SupportsInterface.behavior');
+const {shouldSupportInterfaces} = require('../SupportsInterface.behavior');
 const {validateEditionAndToken} = require('../test-helpers');
 
 const ERC721ReceiverMock = artifacts.require('ERC721ReceiverMock');
