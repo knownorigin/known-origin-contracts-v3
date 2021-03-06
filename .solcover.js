@@ -1,19 +1,22 @@
 module.exports = {
   copyPackages: ['@openzeppelin/contracts'],
   skipFiles: [
-    'access/legacy/ISelfServiceAccessControls.sol',
+
     'access/legacy/libs/AccessControl.sol',
     'access/legacy/libs/Ownable.sol',
     'access/legacy/libs/RBAC.sol',
     'access/legacy/libs/Roles.sol',
     'access/legacy/libs/Whitelist.sol',
-    'access/legacy/SelfServiceAccessControls.sol',
+
+    'collaborators/IFundsDrainable.sol',
+    'collaborators/IFundsHandler.sol',
+    'collaborators/impl/FundsReceiver.sol',
+    'collaborators/impl/FundsSplitter.sol',
 
     'programmable/resolvers/ContractBalanceFeedResolver.sol',
     'programmable/resolvers/ManuallyChangingToken.sol',
     'programmable/resolvers/RandomBlockResolver.sol',
     'programmable/resolvers/UniswapPriceFeedResolver.sol',
-    'programmable/TokenUriResolverRegistry.sol',
 
     'royalties/EditionRoyaltiesRegistry.sol',
 

@@ -704,10 +704,6 @@ contract('ERC721', (accounts) => {
         expect(await this.token.ownerOf(firstTokenId)).to.equal(owner);
       });
 
-      // FIXME we dont do this as we dont provide token IDs
-      it.skip('reverts when adding a token id that already exists', async () => {
-        await expectRevert(this.token.mintToken(owner, baseURI, {from: contract}), 'ERC721: token already minted');
-      });
     });
   });
 
@@ -738,7 +734,7 @@ contract('ERC721', (accounts) => {
     });
   });
 
-  // TODO confirm we dont want burn .... ?
+  // FIXME confirm we dont want burn .... ?
   describe.skip('_burn', () => {
     it('reverts when burning a non-existent token id', async () => {
       await expectRevert(

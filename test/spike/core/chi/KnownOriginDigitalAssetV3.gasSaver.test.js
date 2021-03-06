@@ -16,7 +16,7 @@ const ChiToken = artifacts.require('ChiToken');
 
 const {validateEditionAndToken} = require('../../../test-helpers');
 
-contract('ERC721', function (accounts) {
+contract('KODA CHI Token Tests', function (accounts) {
   const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD] = accounts;
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';

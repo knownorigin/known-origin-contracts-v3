@@ -251,7 +251,7 @@ contract('ERC721', function (accounts) {
       });
 
       context('when querying the zero address', () => {
-        it.skip('throws', async () => {
+        it('throws', async () => {
           await expectRevert(
             this.token.balanceOf(ZERO_ADDRESS), 'ERC721_ZERO_OWNER',
           );
@@ -776,7 +776,7 @@ contract('ERC721', function (accounts) {
       });
 
       context('when querying the zero address', () => {
-        it.skip('throws', async () => {
+        it('throws', async () => {
           await expectRevert(
             this.token.balanceOf(ZERO_ADDRESS), 'ERC721_ZERO_OWNER',
           );
@@ -1301,7 +1301,7 @@ contract('ERC721', function (accounts) {
       });
 
       context('when querying the zero address', () => {
-        it.skip('throws', async () => {
+        it('throws', async () => {
           await expectRevert(
             this.token.balanceOf(ZERO_ADDRESS), 'ERC721_ZERO_OWNER',
           );

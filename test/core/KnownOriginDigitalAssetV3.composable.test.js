@@ -321,7 +321,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     })
 
     // skip due to hardhat revert inference reasons :/
-    it.skip('Reverts when not token owner', async () => {
+    it('Reverts when not token owner', async () => {
       await expectRevert(
         this.token.getERC20(
           owner,
