@@ -2,28 +2,28 @@ module.exports = {
   copyPackages: ['@openzeppelin/contracts'],
   skipFiles: [
 
+    // KODA V2 stuff (inherited)
     'access/legacy/libs/AccessControl.sol',
     'access/legacy/libs/Ownable.sol',
     'access/legacy/libs/RBAC.sol',
     'access/legacy/libs/Roles.sol',
     'access/legacy/libs/Whitelist.sol',
 
-    'collaborators/IFundsDrainable.sol',
-    'collaborators/IFundsHandler.sol',
-    'collaborators/impl/FundsReceiver.sol',
-    'collaborators/impl/FundsSplitter.sol',
-
+    // Experimental
     'programmable/resolvers/ContractBalanceFeedResolver.sol',
     'programmable/resolvers/ManuallyChangingToken.sol',
     'programmable/resolvers/RandomBlockResolver.sol',
     'programmable/resolvers/UniswapPriceFeedResolver.sol',
 
-    'royalties/EditionRoyaltiesRegistry.sol',
-
+    // Gas token
     'spikes/core/chi/ChiGasSaver.sol',
     'spikes/core/chi/ChiToken.sol',
+
+    // shared edition ID registry
     'spikes/registry/EditionRegistry.sol',
     'spikes/registry/IEditionRegistry.sol',
+
+    // token royalties (not edition aware)
     'spikes/royalties/ITokenRoyaltiesRegistry.sol',
     'spikes/royalties/TokenRoyaltiesRegistry.sol',
   ]

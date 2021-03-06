@@ -5,15 +5,15 @@ const _ = require('lodash');
 
 const {expect} = require('chai');
 
-const {shouldSupportInterfaces} = require('../SupportsInterface.behavior');
-const {validateEditionAndToken} = require('../../test-helpers');
+const {shouldSupportInterfaces} = require('../core/SupportsInterface.behavior');
+const {validateEditionAndToken} = require('../test-helpers');
 
 const ERC721ReceiverMock = artifacts.require('ERC721ReceiverMock');
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
-contract('ERC721', function (accounts) {
+contract('ERC721 baseline tests', function (accounts) {
   const [owner, minter, contract, approved, anotherApproved, operator, other, collectorA] = accounts;
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';

@@ -1,6 +1,4 @@
-const {makeInterfaceId} = require('@openzeppelin/test-helpers');
-
-const {BN, constants, expectEvent, expectRevert} = require('@openzeppelin/test-helpers');
+const {BN, constants, expectEvent, expectRevert, makeInterfaceId} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
 const {expect} = require('chai');
@@ -62,7 +60,7 @@ for (const k of Object.getOwnPropertyNames(INTERFACES)) {
   }
 }
 
-contract('ERC721', (accounts) => {
+contract('OpenZeppelin ERC721 spec test', (accounts) => {
   const [owner, minter, contract, approved, anotherApproved, operator, other] = accounts;
   const name = "KnownOriginDigitalAsset";
   const symbol = "KODA";
@@ -209,6 +207,7 @@ contract('ERC721', (accounts) => {
           expect(await this.token.getApproved(tokenId)).to.be.equal(ZERO_ADDRESS);
         });
 
+        // TODO approval flow confirmation
         it.skip('emits an Approval event', async () => {
           expectEvent.inLogs(logs, 'Approval', {owner, approved: ZERO_ADDRESS, tokenId: tokenId});
         });
@@ -642,6 +641,7 @@ contract('ERC721', (accounts) => {
 
       context('when the operator is the owner', () => {
         // FIXME we no longer revert on this on 0x
+        // TODO approval flow confirmation
         it.skip('reverts', async () => {
           await expectRevert(
             this.token.setApprovalForAll(owner, true, {from: owner}),
@@ -654,6 +654,7 @@ contract('ERC721', (accounts) => {
     describe('getApproved', async () => {
       context('when token is not minted', async () => {
         // FIXME we no longer revert on this on 0x
+        // TODO approval flow confirmation
         it.skip('reverts', async () => {
           await expectRevert(
             this.token.getApproved(nonExistentTokenId),
