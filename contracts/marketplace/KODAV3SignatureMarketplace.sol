@@ -11,6 +11,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
+import "hardhat/console.sol";
+
 contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
     using SafeMath for uint256;
 
@@ -29,8 +31,8 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
     // Permit domain
     bytes32 public DOMAIN_SEPARATOR;
 
-    // keccak256("Permit(address _creator,address _editionId,uint256 _price,address _paymentToken,uint256 _startDate,uint256 nonce,uint256 deadline)");
-    bytes32 public constant PERMIT_TYPEHASH = 0xf3382276f6888783a091a3aaa8e9e7f25b042fdb1cf10e366884472180bbdcf6;
+    // keccak256("Permit(address _creator,address _editionId,uint256 _price,address _paymentToken,uint256 _startDate,uint256 nonce)");
+    bytes32 public constant PERMIT_TYPEHASH = 0xe5ea8149e9b023b903163e5566c4bfbc4b3ca830f7f5f70157b91046afe0bc87;
 
     // FIXME get GAS costings for using a counter and draw down method for KO funds?
     // platform funds collector
@@ -68,36 +70,29 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
         uint256 _price,
         address _paymentToken,
         uint256 _startDate,
-        uint256 _deadline,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
     ) public view returns (bool) {
-        if (_deadline < block.timestamp) {
-            return false;
-        }
-
         // Create digest to check signatures
         bytes32 digest = getListingDigest(
             _creator,
             _editionId,
             _price,
             _paymentToken,
-            _startDate,
-            _deadline
+            _startDate
         );
 
         return ecrecover(digest, _v, _r, _s) == _creator;
     }
 
-    // todo add a test make sure you cant sell someone else's work
     function buyEditionToken(
         address _creator,
         uint256 _editionId,
         uint256 _price,
         address _paymentToken,
         uint256 _startDate,
-        uint256 _deadline,
+        uint256 _nonce,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
@@ -109,7 +104,6 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
                 _price,
                 _paymentToken,
                 _startDate,
-                _deadline,
                 _v,
                 _r,
                 _s
@@ -139,14 +133,13 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
         uint256 _editionId,
         uint256 _price,
         address _paymentToken,
-        uint256 _startDate,
-        uint256 _deadline
+        uint256 _startDate
     ) public view returns (bytes32) {
         return keccak256(
             abi.encodePacked(
                 "\x19\x01",
                 DOMAIN_SEPARATOR,
-                keccak256(abi.encode(PERMIT_TYPEHASH, _creator, _editionId, _price, _paymentToken, _startDate, listingNonces[_msgSender()][_editionId] + 1, _deadline))
+                keccak256(abi.encode(PERMIT_TYPEHASH, _creator, _editionId, _price, _paymentToken, _startDate, listingNonces[_creator][_editionId] + 1))
             )
         );
     }

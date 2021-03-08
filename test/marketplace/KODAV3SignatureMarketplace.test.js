@@ -93,7 +93,6 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
 
       // get nonce
       const nonce = (await this.marketplace.listingNonces(owner, STARTING_EDITION)).addn(1);
-      const deadline = MAX_UINT256;
 
       // Generate digest
       const price = 5
@@ -103,7 +102,6 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
         price,
         ZERO_ADDRESS,
         0,
-        deadline,
         nonce
       );
 
@@ -119,7 +117,6 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
         5,
         ZERO_ADDRESS,
         0,
-        deadline,
         v,
         r,
         s
@@ -138,8 +135,7 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
         STARTING_EDITION.addn(1000),
         price,
         ZERO_ADDRESS,
-        0,
-        MAX_UINT256
+        0
       )
 
       this.artist = minter
@@ -172,6 +168,8 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
         }
       )
 
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(random)
+
       await expectEvent(receipt, 'EditionPurchased', {
         _editionId: STARTING_EDITION.addn(1000),
         _tokenId: firstEditionTokenId,
@@ -189,8 +187,7 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
         STARTING_EDITION.addn(1000),
         price,
         ZERO_ADDRESS,
-        0,
-        MAX_UINT256
+        0
       )
 
       const {v, r, s} = this.artistSignature
@@ -213,9 +210,88 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
         "ERC721_OWNER_MISMATCH"
       )
     })
+
+    it('Reverts when listing nonce has been invalidated', async () => {
+      // random buys one token
+      const {v, r, s} = this.artistSignature
+      await this.marketplace.buyEditionToken(
+        this.artist,
+        STARTING_EDITION.addn(1000),
+        this.price,
+        ZERO_ADDRESS,
+        0,
+        MAX_UINT256,
+        v,
+        r,
+        s,
+        {
+          value: this.price,
+          from: random
+        }
+      )
+
+      const nonceBefore = await this.marketplace.listingNonces(this.artist, STARTING_EDITION.addn(1000));
+
+      // artist creates a new listing but first invalidates token
+      await this.marketplace.invalidateListingNonce(STARTING_EDITION.addn(1000), {from: minter})
+
+      const nonceAfter = (await this.marketplace.listingNonces(this.artist, STARTING_EDITION.addn(1000)));
+
+      expect(nonceAfter.sub(nonceBefore)).to.be.bignumber.equal('1')
+
+      // try to buy from old listing
+      await expectRevert(
+        this.marketplace.buyEditionToken(
+          this.artist,
+          STARTING_EDITION.addn(1000),
+          this.price,
+          ZERO_ADDRESS,
+          0,
+          MAX_UINT256,
+          v,
+          r,
+          s,
+          {
+            value: this.price,
+            from: random
+          }
+        ),
+        "Invalid listing"
+      )
+
+      // create new listing and let buyer pay new price
+      const price = ether('2')
+      this.artistSignature = await createSignatureListing(
+        minter,
+        minterPk,
+        STARTING_EDITION.addn(1000),
+        price,
+        ZERO_ADDRESS,
+        0
+      )
+
+      await this.marketplace.buyEditionToken(
+        this.artist,
+        STARTING_EDITION.addn(1000),
+        price,
+        ZERO_ADDRESS,
+        0,
+        MAX_UINT256,
+        this.artistSignature.v,
+        this.artistSignature.r,
+        this.artistSignature.s,
+        {
+          value: price,
+          from: random
+        }
+      )
+
+      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(random)
+      expect(await this.token.ownerOf(firstEditionTokenId.addn(1))).to.be.equal(random)
+    })
   })
 
-  const createSignatureListing = async (sender, senderPk, editionId, price, paymentTokenAddress, startDate, deadline) => {
+  const createSignatureListing = async (sender, senderPk, editionId, price, paymentTokenAddress, startDate) => {
     const wallet = new ethers.Wallet(
       senderPk,
       this.provider
@@ -231,7 +307,6 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
       price,
       paymentTokenAddress,
       startDate,
-      deadline,
       nonce
     );
 
@@ -261,10 +336,10 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
     )
   }
 
-  const PERMIT_TYPEHASH = keccak256(toUtf8Bytes('Permit(address _creator,address _editionId,uint256 _price,address _paymentToken,uint256 _startDate,uint256 nonce,uint256 deadline)'));
+  const PERMIT_TYPEHASH = keccak256(toUtf8Bytes('Permit(address _creator,address _editionId,uint256 _price,address _paymentToken,uint256 _startDate,uint256 nonce)'));
 
-  const getListingDigest = async (owner, editionId, price, paymentToken, startDate, deadline, nonce) => {
-    // console.log({owner, spender, tokenId, nonce, deadline});
+  const getListingDigest = async (owner, editionId, price, paymentToken, startDate, nonce) => {
+    // console.log({owner, spender, tokenId, nonce});
 
     const DOMAIN_SEPARATOR = getDomainSeparator()
 
@@ -277,8 +352,8 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
           DOMAIN_SEPARATOR,
           keccak256(
             defaultAbiCoder.encode(
-              ['bytes32', 'address', 'uint256', 'uint256', 'address', 'uint256', 'uint256', 'uint256'],
-              [PERMIT_TYPEHASH, owner, editionId.toString(), price.toString(), paymentToken.toString(), startDate.toString(), nonce.toString(), deadline.toString()]
+              ['bytes32', 'address', 'uint256', 'uint256', 'address', 'uint256', 'uint256'],
+              [PERMIT_TYPEHASH, owner, editionId.toString(), price.toString(), paymentToken.toString(), startDate.toString(), nonce.toString()]
             )
           )
         ]
