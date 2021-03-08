@@ -323,7 +323,7 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
         expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(minter)
 
         await this.mockERC20.approve(this.marketplace.address, this.price, {from: random})
-        const balanceOfMarketplaceBefore = await this.mockERC20.balanceOf(this.marketplace.address)
+        const balanceOfKOBefore = await this.mockERC20.balanceOf(koCommission)
 
         const {v, r, s} = this.artistSignature
         const { receipt } = await this.marketplace.buyEditionToken(
@@ -341,8 +341,8 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
           }
         )
 
-        const balanceOfMarketplaceAfter = await this.mockERC20.balanceOf(this.marketplace.address)
-        expect(balanceOfMarketplaceAfter.sub(balanceOfMarketplaceBefore)).to.be.bignumber.equal(this.price)
+        const balanceOfKOAfter = await this.mockERC20.balanceOf(koCommission)
+        expect(balanceOfKOAfter.sub(balanceOfKOBefore)).to.be.bignumber.equal(this.price.divn(10000000).muln(1500000))
 
         expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(random)
 

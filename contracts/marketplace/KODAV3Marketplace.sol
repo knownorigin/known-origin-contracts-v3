@@ -70,7 +70,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     uint256 public platformSecondarySaleCommission = 250000;  // 2.50000%
 
     // precision 100.00000%
-    uint256 public modulo = 10000000;
+    uint256 public modulo = 100_00000;
 
     // Minimum bid/list amount
     uint256 public minBidAmount = 0.01 ether;

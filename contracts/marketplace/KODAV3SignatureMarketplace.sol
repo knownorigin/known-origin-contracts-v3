@@ -25,6 +25,13 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
     // edition buy now
     event EditionPurchased(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price);
 
+    // KO commission
+    uint256 public platformPrimarySaleCommission = 15_00000;  // 15.00000%
+    uint256 public platformSecondarySaleCommission = 2_50000;  // 2.50000%
+
+    // precision 100.00000%
+    uint256 public modulo = 100_00000;
+
     // address -> Edition ID -> nonce
     mapping(address => mapping(uint256 => uint256)) public listingNonces;
 
@@ -115,11 +122,15 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
 
         if (_paymentToken == address(0)) {
             require(msg.value >= _price, "List price in ETH not satisfied");
-        } else {
-            IERC20(_paymentToken).transferFrom(_msgSender(), address(this), _price);
         }
 
-        uint256 tokenId = facilitateNextPrimarySale(_creator, _editionId, _price, _msgSender());
+        uint256 tokenId = facilitateNextPrimarySale(
+            _creator,
+            _editionId,
+            _paymentToken,
+            _price,
+            _msgSender()
+        );
 
         emit EditionPurchased(_editionId, tokenId, _msgSender(), _price);
     }
@@ -144,13 +155,12 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
         );
     }
 
-    function facilitateNextPrimarySale(address _from, uint256 _editionId, uint256 _paymentAmount, address _buyer) internal returns (uint256) {
+    function facilitateNextPrimarySale(address _from, uint256 _editionId, address _paymentToken, uint256 _paymentAmount, address _buyer) internal returns (uint256) {
         // get next token to sell along with the royalties recipient and the original creator
         (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
 
         // split money
-        // todo
-        //handleEditionSaleFunds(receiver, _paymentAmount);
+        handleEditionSaleFunds(receiver, _paymentToken, _paymentAmount);
 
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(_from, _buyer, tokenId);
@@ -172,6 +182,26 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
         //        }
 
         return tokenId;
+    }
+
+    function handleEditionSaleFunds(address _receiver, address _paymentToken, uint256 _paymentAmount) internal {
+
+        // TODO could we save gas here by maintaining a counter for KO platform funds and having a drain method?
+
+        bool _isEthSale = _paymentToken == address(0);
+        uint256 koCommission = _paymentAmount.div(modulo).mul(platformPrimarySaleCommission);
+        uint256 receiverCommission = _paymentAmount.sub(koCommission);
+        if (_isEthSale) {
+            (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
+            require(koCommissionSuccess, "Edition commission payment failed");
+
+            (bool success,) = _receiver.call{value : receiverCommission}("");
+            require(success, "Edition payment failed");
+        } else {
+            IERC20 paymentToken = IERC20(_paymentToken);
+            paymentToken.transferFrom(_msgSender(), platformAccount, koCommission);
+            paymentToken.transferFrom(_msgSender(), _receiver, receiverCommission);
+        }
     }
 
     function getChainId() public view returns (uint256) {
