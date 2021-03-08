@@ -13,6 +13,7 @@ const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3')
 const KOAccessControls = artifacts.require('KOAccessControls');
 const KODAV3Marketplace = artifacts.require('KODAV3SignatureMarketplace');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
+const MockERC20 = artifacts.require('MockERC20');
 
 contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
 
@@ -127,121 +128,33 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
   })
 
   describe('buyEditionToken()', () => {
-    beforeEach(async () => {
-      const price = ether('1')
-      this.artistSignature = await createSignatureListing(
-        minter,
-        minterPk,
-        STARTING_EDITION.addn(1000),
-        price,
-        ZERO_ADDRESS,
-        0
-      )
-
-      this.artist = minter
-      this.price = price
-
-      // Ensure owner is approved as this will fail if not
-      await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
-
-      // create 3 tokens to the minter
-      await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
-    })
-
-    it('Given a valid ETH listing, can buy a token from an edition', async () => {
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(minter)
-
-      const {v, r, s} = this.artistSignature
-      const { receipt } = await this.marketplace.buyEditionToken(
-        this.artist,
-        STARTING_EDITION.addn(1000),
-        this.price,
-        ZERO_ADDRESS,
-        0,
-        MAX_UINT256,
-        v,
-        r,
-        s,
-        {
-          value: this.price,
-          from: random
-        }
-      )
-
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(random)
-
-      await expectEvent(receipt, 'EditionPurchased', {
-        _editionId: STARTING_EDITION.addn(1000),
-        _tokenId: firstEditionTokenId,
-        _buyer: random,
-        _price: this.price
-      })
-    })
-
-    it('Reverts when someone lists someone elses token and then someone tried to buy tokens', async () => {
-      // owner creates a listing for minter's tokens
-      const price = ether('1')
-      this.artistSignature = await createSignatureListing(
-        owner,
-        ownerPk,
-        STARTING_EDITION.addn(1000),
-        price,
-        ZERO_ADDRESS,
-        0
-      )
-
-      const {v, r, s} = this.artistSignature
-      await expectRevert(
-        this.marketplace.buyEditionToken(
-          owner,
+    describe('ETH listings', () => {
+      beforeEach(async () => {
+        const price = ether('1')
+        this.artistSignature = await createSignatureListing(
+          minter,
+          minterPk,
           STARTING_EDITION.addn(1000),
           price,
           ZERO_ADDRESS,
-          0,
-          MAX_UINT256,
-          v,
-          r,
-          s,
-          {
-            value: price,
-            from: random
-          }
-        ),
-        "ERC721_OWNER_MISMATCH"
-      )
-    })
+          0
+        )
 
-    it('Reverts when listing nonce has been invalidated', async () => {
-      // random buys one token
-      const {v, r, s} = this.artistSignature
-      await this.marketplace.buyEditionToken(
-        this.artist,
-        STARTING_EDITION.addn(1000),
-        this.price,
-        ZERO_ADDRESS,
-        0,
-        MAX_UINT256,
-        v,
-        r,
-        s,
-        {
-          value: this.price,
-          from: random
-        }
-      )
+        this.artist = minter
+        this.price = price
 
-      const nonceBefore = await this.marketplace.listingNonces(this.artist, STARTING_EDITION.addn(1000));
+        // Ensure owner is approved as this will fail if not
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
-      // artist creates a new listing but first invalidates token
-      await this.marketplace.invalidateListingNonce(STARTING_EDITION.addn(1000), {from: minter})
+        // create 3 tokens to the minter
+        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+      })
 
-      const nonceAfter = (await this.marketplace.listingNonces(this.artist, STARTING_EDITION.addn(1000)));
+      it('Given a valid ETH listing, can buy a token from an edition', async () => {
+        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(minter)
 
-      expect(nonceAfter.sub(nonceBefore)).to.be.bignumber.equal('1')
-
-      // try to buy from old listing
-      await expectRevert(
-        this.marketplace.buyEditionToken(
+        const {v, r, s} = this.artistSignature
+        const { receipt } = await this.marketplace.buyEditionToken(
           this.artist,
           STARTING_EDITION.addn(1000),
           this.price,
@@ -255,39 +168,191 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
             value: this.price,
             from: random
           }
-        ),
-        "Invalid listing"
-      )
+        )
 
-      // create new listing and let buyer pay new price
-      const price = ether('2')
-      this.artistSignature = await createSignatureListing(
-        minter,
-        minterPk,
-        STARTING_EDITION.addn(1000),
-        price,
-        ZERO_ADDRESS,
-        0
-      )
+        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(random)
 
-      await this.marketplace.buyEditionToken(
-        this.artist,
-        STARTING_EDITION.addn(1000),
-        price,
-        ZERO_ADDRESS,
-        0,
-        MAX_UINT256,
-        this.artistSignature.v,
-        this.artistSignature.r,
-        this.artistSignature.s,
-        {
-          value: price,
-          from: random
-        }
-      )
+        await expectEvent(receipt, 'EditionPurchased', {
+          _editionId: STARTING_EDITION.addn(1000),
+          _tokenId: firstEditionTokenId,
+          _buyer: random,
+          _price: this.price
+        })
+      })
 
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(random)
-      expect(await this.token.ownerOf(firstEditionTokenId.addn(1))).to.be.equal(random)
+      it('Reverts when someone lists someone elses token and then someone tried to buy tokens', async () => {
+        // owner creates a listing for minter's tokens
+        const price = ether('1')
+        this.artistSignature = await createSignatureListing(
+          owner,
+          ownerPk,
+          STARTING_EDITION.addn(1000),
+          price,
+          ZERO_ADDRESS,
+          0
+        )
+
+        const {v, r, s} = this.artistSignature
+        await expectRevert(
+          this.marketplace.buyEditionToken(
+            owner,
+            STARTING_EDITION.addn(1000),
+            price,
+            ZERO_ADDRESS,
+            0,
+            MAX_UINT256,
+            v,
+            r,
+            s,
+            {
+              value: price,
+              from: random
+            }
+          ),
+          "ERC721_OWNER_MISMATCH"
+        )
+      })
+
+      it('Reverts when listing nonce has been invalidated', async () => {
+        // random buys one token
+        const {v, r, s} = this.artistSignature
+        await this.marketplace.buyEditionToken(
+          this.artist,
+          STARTING_EDITION.addn(1000),
+          this.price,
+          ZERO_ADDRESS,
+          0,
+          MAX_UINT256,
+          v,
+          r,
+          s,
+          {
+            value: this.price,
+            from: random
+          }
+        )
+
+        const nonceBefore = await this.marketplace.listingNonces(this.artist, STARTING_EDITION.addn(1000));
+
+        // artist creates a new listing but first invalidates token
+        await this.marketplace.invalidateListingNonce(STARTING_EDITION.addn(1000), {from: minter})
+
+        const nonceAfter = (await this.marketplace.listingNonces(this.artist, STARTING_EDITION.addn(1000)));
+
+        expect(nonceAfter.sub(nonceBefore)).to.be.bignumber.equal('1')
+
+        // try to buy from old listing
+        await expectRevert(
+          this.marketplace.buyEditionToken(
+            this.artist,
+            STARTING_EDITION.addn(1000),
+            this.price,
+            ZERO_ADDRESS,
+            0,
+            MAX_UINT256,
+            v,
+            r,
+            s,
+            {
+              value: this.price,
+              from: random
+            }
+          ),
+          "Invalid listing"
+        )
+
+        // create new listing and let buyer pay new price
+        const price = ether('2')
+        this.artistSignature = await createSignatureListing(
+          minter,
+          minterPk,
+          STARTING_EDITION.addn(1000),
+          price,
+          ZERO_ADDRESS,
+          0
+        )
+
+        await this.marketplace.buyEditionToken(
+          this.artist,
+          STARTING_EDITION.addn(1000),
+          price,
+          ZERO_ADDRESS,
+          0,
+          MAX_UINT256,
+          this.artistSignature.v,
+          this.artistSignature.r,
+          this.artistSignature.s,
+          {
+            value: price,
+            from: random
+          }
+        )
+
+        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(random)
+        expect(await this.token.ownerOf(firstEditionTokenId.addn(1))).to.be.equal(random)
+      })
+    })
+
+    describe('ERC20 listings', () => {
+      beforeEach(async () => {
+        this.mockERC20 = await MockERC20.new({from: owner})
+
+        const price = ether('1')
+        await this.mockERC20.transfer(random, price, {from: owner})
+
+        this.artistSignature = await createSignatureListing(
+          minter,
+          minterPk,
+          STARTING_EDITION.addn(1000),
+          price,
+          this.mockERC20.address,
+          0
+        )
+
+        this.artist = minter
+        this.price = price
+
+        // Ensure owner is approved as this will fail if not
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // create 3 tokens to the minter
+        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+      })
+
+      it('Given a valid listing, can buy a token from an edition', async () => {
+        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(minter)
+
+        await this.mockERC20.approve(this.marketplace.address, this.price, {from: random})
+        const balanceOfMarketplaceBefore = await this.mockERC20.balanceOf(this.marketplace.address)
+
+        const {v, r, s} = this.artistSignature
+        const { receipt } = await this.marketplace.buyEditionToken(
+          this.artist,
+          STARTING_EDITION.addn(1000),
+          this.price,
+          this.mockERC20.address,
+          0,
+          MAX_UINT256,
+          v,
+          r,
+          s,
+          {
+            from: random
+          }
+        )
+
+        const balanceOfMarketplaceAfter = await this.mockERC20.balanceOf(this.marketplace.address)
+        expect(balanceOfMarketplaceAfter.sub(balanceOfMarketplaceBefore)).to.be.bignumber.equal(this.price)
+
+        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(random)
+
+        await expectEvent(receipt, 'EditionPurchased', {
+          _editionId: STARTING_EDITION.addn(1000),
+          _tokenId: firstEditionTokenId,
+          _buyer: random,
+          _price: this.price
+        })
+      })
     })
   })
 
