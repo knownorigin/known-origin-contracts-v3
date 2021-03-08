@@ -23,10 +23,11 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
     // edition buy now
     event EditionPurchased(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price);
 
-    mapping(address => uint256) public listingNonces;
+    // address -> Edition ID -> nonce
+    mapping(address => mapping(uint256 => uint256)) public listingNonces;
 
     // Permit domain
-    bytes32 public DOMAIN_SEPARATOR; // todo construct this in constructor
+    bytes32 public DOMAIN_SEPARATOR;
 
     // keccak256("Permit(address _creator,address _editionId,uint256 _price,address _paymentToken,uint256 _startDate,uint256 nonce,uint256 deadline)");
     bytes32 public constant PERMIT_TYPEHASH = 0xf3382276f6888783a091a3aaa8e9e7f25b042fdb1cf10e366884472180bbdcf6;
@@ -76,8 +77,6 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
             return false;
         }
 
-        // todo check if real artist?
-
         // Create digest to check signatures
         bytes32 digest = getListingDigest(
             _creator,
@@ -91,6 +90,7 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
         return ecrecover(digest, _v, _r, _s) == _creator;
     }
 
+    // todo add a test make sure you cant sell someone else's work
     function buyEditionToken(
         address _creator,
         uint256 _editionId,
@@ -117,7 +117,7 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
             "Invalid listing"
         );
 
-        require(block.timestamp >= _startDate, "List not available yet");
+        require(block.timestamp >= _startDate, "Tokens not available for purchase yet");
 
         if (_paymentToken == address(0)) {
             require(msg.value >= _price, "List price in ETH not satisfied");
@@ -125,15 +125,13 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
             IERC20(_paymentToken).transferFrom(_msgSender(), address(this), _price);
         }
 
-        listingNonces[_creator] = listingNonces[_creator].add(1);
+        uint256 tokenId = facilitateNextPrimarySale(_creator, _editionId, _price, _msgSender());
 
-        uint256 tokenId = facilitateNextPrimarySale(_editionId, msg.value, _msgSender());
-
-        emit EditionPurchased(_editionId, tokenId, _msgSender(), msg.value);
+        emit EditionPurchased(_editionId, tokenId, _msgSender(), _price);
     }
 
-    function invalidateListingNonce() public {
-        listingNonces[_msgSender()] = listingNonces[_msgSender()].add(1);
+    function invalidateListingNonce(uint256 _editionId) public {
+        listingNonces[_msgSender()][_editionId] = listingNonces[_msgSender()][_editionId].add(1);
     }
 
     function getListingDigest(
@@ -143,17 +141,17 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
         address _paymentToken,
         uint256 _startDate,
         uint256 _deadline
-    ) internal view returns (bytes32) {
+    ) public view returns (bytes32) {
         return keccak256(
             abi.encodePacked(
                 "\x19\x01",
                 DOMAIN_SEPARATOR,
-                keccak256(abi.encode(PERMIT_TYPEHASH, _creator, _editionId, _price, _paymentToken, _startDate, listingNonces[_msgSender()] + 1, _deadline))
+                keccak256(abi.encode(PERMIT_TYPEHASH, _creator, _editionId, _price, _paymentToken, _startDate, listingNonces[_msgSender()][_editionId] + 1, _deadline))
             )
         );
     }
 
-    function facilitateNextPrimarySale(uint256 _editionId, uint256 _paymentAmount, address _buyer) internal returns (uint256) {
+    function facilitateNextPrimarySale(address _from, uint256 _editionId, uint256 _paymentAmount, address _buyer) internal returns (uint256) {
         // get next token to sell along with the royalties recipient and the original creator
         (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
 
@@ -162,7 +160,7 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
         //handleEditionSaleFunds(receiver, _paymentAmount);
 
         // send token to buyer (assumes approval has been made, if not then this will fail)
-        koda.safeTransferFrom(creator, _buyer, tokenId);
+        koda.safeTransferFrom(_from, _buyer, tokenId);
 
         // FIXME we could in theory remove this
         //      - and use the current approach of KO where a bidder must pull back any funds once its sold out on primary
@@ -181,5 +179,11 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
         //        }
 
         return tokenId;
+    }
+
+    function getChainId() public view returns (uint256) {
+        uint256 chainId;
+        assembly {chainId := chainid()}
+        return chainId;
     }
 }
