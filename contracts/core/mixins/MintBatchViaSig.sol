@@ -8,14 +8,14 @@ pragma solidity 0.7.6;
 abstract contract MintBatchViaSig {
 
     // TODO generate properly
-    // keccak256("MintBatchViaSig(uint256 editionSize, address to, string uri, uint256 nonce, uint256 deadline)");
+    // keccak256("MintBatchViaSig(uint96 editionSize, address to, string uri, uint256 nonce, uint256 deadline)");
     bytes32 public constant MINT_BATCH_TYPEHASH = 0x48d39b37a35214940203bbbd4f383519797769b13d936f387d89430afef27688;
 
     // Signature based minting nonces
     mapping(address => uint256) public mintingNonces;
 
     // Mints batches of tokens emitting multiple Transfer events - via signed payloads
-    function mintBatchEditionViaSig(uint256 _editionSize, address _to, string calldata _uri, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+    function mintBatchEditionViaSig(uint96 _editionSize, address _to, string calldata _uri, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
     public returns
     (uint256 _editionId) {
         require(deadline != 0 && deadline >= block.timestamp, "KODA: Deadline expired");
@@ -44,5 +44,5 @@ abstract contract MintBatchViaSig {
 
     function _hasMinterRole(address _minter) internal virtual returns (bool);
 
-    function _mintBatchEdition(uint256 _editionSize, address _to, string calldata _uri) internal virtual returns (uint256);
+    function _mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri) internal virtual returns (uint256);
 }

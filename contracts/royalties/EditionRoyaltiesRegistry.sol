@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "../collaborators/IFundsHandler.sol";
-import "../collaborators/impl/FundsReceiver.sol";
+import "../collaborators/simple/FundsReceiver.sol";
 
 import "../access/KOAccessControls.sol";
 

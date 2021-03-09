@@ -1181,7 +1181,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
   describe('updateSecondaryRoyalty()', async () => {
     it('can update if admin', async () => {
-      expect(await this.token.secondarySaleRoyalty()).to.be.bignumber.equal('10000000');
+      expect(await this.token.secondarySaleRoyalty()).to.be.bignumber.equal('10_00000');
       const receipt = await this.token.updateSecondaryRoyalty('99999', {from: owner});
 
       expectEvent.inLogs(receipt.logs, 'AdminUpdateSecondaryRoyalty', {
@@ -1196,6 +1196,12 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
         this.token.updateSecondaryRoyalty('10000', {from: collectorA}),
         'KODA: Caller not admin'
       );
+    });
+  });
+
+  describe('hasRoyalties()', async () => {
+    it('KO has royalties for life', async () => {
+      expect(await this.token.hasRoyalties()).to.be.equal(true);
     });
   });
 

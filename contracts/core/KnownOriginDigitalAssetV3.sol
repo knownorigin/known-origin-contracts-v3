@@ -60,8 +60,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     uint256 public editionPointer;
 
     struct EditionDetails {
-        // TODO flatten out to two smaller props that can be squashed
-        uint256 editionConfig; // combined creator and size
+        address creator;
+        uint96 editionSize;
         string uri; // the referenced metadata
     }
 
@@ -91,7 +91,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
 
     // TODO confirm default decimal precision (EIP-2981 compatibility required)
     // Secondary sale commission
-    uint256 public secondarySaleRoyalty = 100_00000; // 10%
+    uint256 public secondarySaleRoyalty = 10_00000; // 10%
 
     IKOAccessControlsLookup public accessControls;
 
@@ -121,8 +121,11 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
         // optional registry address - can be constructed as zero address
         royaltiesRegistryProxy = _royaltiesRegistryProxy;
 
-        _registerInterface(0x80ac58cd); // _INTERFACE_ID_ERC721
-        _registerInterface(0x5b5e139f); // _INTERFACE_ID_ERC721_METADATA
+        // INTERFACE_ID_ERC721
+        _registerInterface(0x80ac58cd);
+
+        // INTERFACE_ID_ERC721_METADATA
+        _registerInterface(0x5b5e139f);
     }
 
     function mintToken(address _to, string calldata _uri)
@@ -134,7 +137,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     }
 
     // Mints batches of tokens emitting multiple Transfer events
-    function mintBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
+    function mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri)
     public
     override
     returns (uint256 _editionId) {
@@ -142,7 +145,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
         return _mintBatchEdition(_editionSize, _to, _uri);
     }
 
-    function _mintBatchEdition(uint256 _editionSize, address _to, string calldata _uri) internal override returns (uint256) {
+    function _mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri) internal override returns (uint256) {
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
 
         uint256 start = generateNextEditionNumber();
@@ -164,7 +167,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     }
 
     // Mints batches of tokens but emits a single ConsecutiveTransfer event EIP-2309
-    function mintConsecutiveBatchEdition(uint256 _editionSize, address _to, string calldata _uri)
+    function mintConsecutiveBatchEdition(uint96 _editionSize, address _to, string calldata _uri)
     public
     override
     returns (uint256 _editionId) {
@@ -187,21 +190,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
         return start;
     }
 
-    function _defineEditionConfig(uint256 _editionId, uint256 _editionSize, address _to, string calldata _uri) internal {
+    function _defineEditionConfig(uint256 _editionId, uint96 _editionSize, address _to, string calldata _uri) internal {
         // TODO do we need a require for MAX_EDITION_ID ... ? max edition size
         require(_editionSize <= MAX_EDITION_ID, "Unable to make any more editions");
 
-        // store address and size in config | address = holds a 20 byte value
-        uint256 editionConfig = uint256(_to);
-
-        // 256 bits can be stored in a single uint256 32 byte slot
-        // 20 byte address takes up 160 bits leaving 96 bits left over
-        // shift and store edition size in this section
-        // edition size can now occupy a max of 12 bytes, or 96 bits
-        editionConfig |= _editionSize << 160;
-
         // Store edition blob to be the next token pointer
-        editionDetails[_editionId] = EditionDetails(editionConfig, _uri);
+        editionDetails[_editionId] = EditionDetails(_to, _editionSize, _uri);
     }
 
     function generateNextEditionNumber() internal returns (uint256) {
@@ -211,7 +205,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
 
     function editionURI(uint256 _editionId) public view returns (string memory) {
         EditionDetails storage edition = editionDetails[_editionId];
-        require(edition.editionConfig != 0, "KODA: Edition does not exist");
+        require(edition.editionSize != 0, "KODA: Edition does not exist");
 
         if (tokenUriResolverActive() && tokenUriResolver.isDefined(_editionId)) {
             return tokenUriResolver.editionURI(_editionId);
@@ -222,7 +216,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     function tokenURI(uint256 _tokenId) public view returns (string memory) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
-        require(edition.editionConfig != 0, "KODA: Token does not exist");
+        require(edition.editionSize != 0, "KODA: Token does not exist");
 
         if (tokenUriResolverActive() && tokenUriResolver.isDefined(editionId)) {
             return tokenUriResolver.editionURI(editionId);
@@ -250,15 +244,11 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
-
-        // Extract creator and size of edition
-        uint256 editionConfig = edition.editionConfig;
-
         return (
-        address(editionConfig), // originCreator
+        edition.creator, // originCreator
         _ownerOf(_tokenId, editionId), // owner
         editionId,
-        uint256(uint40(editionConfig >> 160)), // size
+        edition.editionSize, // size
         edition.uri
         );
     }
@@ -277,7 +267,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
 
     function _getCreatorOfEdition(uint256 _editionId) internal view returns (address _originalCreator) {
         // drop the other size bits
-        return address(editionDetails[_editionId].editionConfig);
+        return editionDetails[_editionId].creator;
     }
 
     ////////////////
@@ -285,16 +275,11 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     ////////////////
 
     function getSizeOfEdition(uint256 _editionId) public override view returns (uint256 _size) {
-        return _getSizeOfEdition(_editionId);
+        return editionDetails[_editionId].editionSize;
     }
 
     function getEditionSizeOfToken(uint256 _tokenId) public override view returns (uint256 _size) {
-        return _getSizeOfEdition(_editionFromTokenId(_tokenId));
-    }
-
-    function _getSizeOfEdition(uint256 _editionId) internal view returns (uint256 _size) {
-        // gab the size from the end of the slot
-        return uint256(uint40(editionDetails[_editionId].editionConfig >> 160));
+        return editionDetails[_editionFromTokenId(_tokenId)].editionSize;
     }
 
     /////////////////////
@@ -302,7 +287,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     /////////////////////
 
     function editionExists(uint256 _editionId) public override view returns (bool) {
-        return editionDetails[_editionId].editionConfig > 0;
+        return editionDetails[_editionId].editionSize > 0;
     }
 
     function exists(uint256 _tokenId) public override view returns (bool) {
@@ -311,7 +296,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     }
 
     function maxTokenIdOfEdition(uint256 _editionId) public override view returns (uint256 _tokenId) {
-        return _getSizeOfEdition(_editionId) + _editionId;
+        return editionDetails[_editionId].editionSize + _editionId;
     }
 
     ////////////////
@@ -387,7 +372,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     }
 
     function getNextAvailablePrimarySaleToken(uint256 _editionId) public override view returns (uint256 _tokenId) {
-        uint256 maxTokenId = _editionId + _getSizeOfEdition(_editionId);
+        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
 
         // TODO replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
 
@@ -536,7 +521,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
 
         // fall back to edition creator
         address possibleCreator = _getCreatorOfEdition(_editionId);
-        if (possibleCreator != address(0) && (_getSizeOfEdition(_editionId) + _editionId - 1) >= _tokenId) {
+        if (possibleCreator != address(0) && (editionDetails[_editionId].editionSize + _editionId - 1) >= _tokenId) {
             return possibleCreator;
         }
 

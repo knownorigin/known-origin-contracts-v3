@@ -50,7 +50,7 @@ contract MinterFactory is Context {
         marketplace.listEdition(_msgSender(), editionId, _price, _startDate);
     }
 
-    function mintBatchEditionAndSetBuyNowPrice(uint256 _editionSize, uint128 _price, uint128 _startDate, string calldata _uri)
+    function mintBatchEditionAndSetBuyNowPrice(uint96 _editionSize, uint128 _price, uint128 _startDate, string calldata _uri)
     external {
         require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
         require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
@@ -62,7 +62,7 @@ contract MinterFactory is Context {
         marketplace.listEdition(_msgSender(), editionId, _price, _startDate);
     }
 
-    function mintConsecutiveBatchEditionAndSetBuyNowPrice(uint256 _editionSize, uint128 _price, uint128 _startDate, string calldata _uri)
+    function mintConsecutiveBatchEditionAndSetBuyNowPrice(uint96 _editionSize, uint128 _price, uint128 _startDate, string calldata _uri)
     external {
         require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
         require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");

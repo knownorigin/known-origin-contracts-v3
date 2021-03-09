@@ -3,8 +3,8 @@
 pragma solidity 0.7.6;
 
 // FIXME decide on push vs pull
-import "../../collaborators/impl/FundsSplitter.sol";
-import "../../collaborators/impl/FundsReceiver.sol";
+import "../../collaborators/simple/FundsSplitter.sol";
+import "../../collaborators/simple/FundsReceiver.sol";
 import "../../collaborators/IFundsHandler.sol";
 
 import "./ITokenRoyaltiesRegistry.sol";
