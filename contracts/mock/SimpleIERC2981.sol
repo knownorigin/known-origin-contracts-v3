@@ -2,9 +2,11 @@
 
 pragma solidity 0.7.6;
 
-import "../core/IERC2981.sol";
+import {ERC165} from "@openzeppelin/contracts/introspection/ERC165.sol";
 
-contract SimpleIERC2981 is IERC2981 {
+import {IERC2981} from "../core/IERC2981.sol";
+
+contract SimpleIERC2981 is ERC165, IERC2981 {
 
     mapping(uint256 => uint256) internal tokenIdToAmount;
     mapping(uint256 => address) internal tokenIdToReceiver;

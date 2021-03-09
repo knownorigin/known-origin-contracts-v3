@@ -8,7 +8,9 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {IERC721Ownable} from "../IERC721Ownable.sol";
 
-// TODO should we really use SafeERC20 from OZ?
+// FIXME Add composable support - https://github.com/mattlockyer/composables-998/blob/master/contracts/ComposableTopDown.sol
+
+// TODO should we really use SafeERC20 from OZ to make it safe for all ERC20?
 
 // todo: this does not include the ERC223
 interface ERC998ERC20TopDown {
@@ -109,6 +111,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
     /// --- Internal ----
 
+    // FIXME Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.
     function _prepareERC20LikeTransfer(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) private {
         require(_value > 0, "_prepareERC20LikeTransfer: Value cannot be zero");
 

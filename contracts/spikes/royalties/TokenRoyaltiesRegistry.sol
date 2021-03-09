@@ -10,9 +10,10 @@ import "../../collaborators/IFundsHandler.sol";
 import "./ITokenRoyaltiesRegistry.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC165} from "@openzeppelin/contracts/introspection/ERC165.sol";
 
-contract TokenRoyaltiesRegistry is ITokenRoyaltiesRegistry, Ownable {
+contract TokenRoyaltiesRegistry is ERC165, ITokenRoyaltiesRegistry, Ownable {
 
     struct MultiHolder {
         address defaultRecipient;

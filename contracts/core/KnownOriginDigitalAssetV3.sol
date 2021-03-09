@@ -23,8 +23,6 @@ import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 
 // FIXME Use safe-math for all calcs?
 
-// FIXME Add composable support - https://github.com/mattlockyer/composables-998/blob/master/contracts/ComposableTopDown.sol
-
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
@@ -57,14 +55,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     // Royalties registry
     IERC2981 public royaltiesRegistryProxy;
 
-    // bool flag to setting proxy or not
-    bool public royaltyRegistryActive;
-
     // Token URI resolver
     ITokenUriResolver public tokenUriResolver;
-
-    // bool flag to setting tokenUri resolver
-    bool public tokenUriResolverActive;
 
     // Edition number pointer
     uint256 public editionPointer;
@@ -127,11 +119,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
 
         editionPointer = _editionPointer;
 
-        // optional registry address
-        if (address(_royaltiesRegistryProxy) != address(0)) {
-            royaltiesRegistryProxy = _royaltiesRegistryProxy;
-            royaltyRegistryActive = true;
-        }
+        // optional registry address - can be constructed as zero address
+        royaltiesRegistryProxy = _royaltiesRegistryProxy;
 
         _registerInterface(_INTERFACE_ID_ERC721);
         _registerInterface(_INTERFACE_ID_ERC721_METADATA);
@@ -221,27 +210,29 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
         return editionPointer;
     }
 
-    // FIXME test
     function editionURI(uint256 _editionId) public view returns (string memory) {
         EditionDetails storage edition = editionDetails[_editionId];
         require(edition.editionConfig != 0, "KODA: Edition does not exist");
 
-        if (tokenUriResolverActive && tokenUriResolver.isDefined(_editionId)) {
+        if (tokenUriResolverActive() && tokenUriResolver.isDefined(_editionId)) {
             return tokenUriResolver.editionURI(_editionId);
         }
         return edition.uri;
     }
 
-    // FIXME test
     function tokenURI(uint256 _tokenId) public view returns (string memory) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
         require(edition.editionConfig != 0, "KODA: Token does not exist");
 
-        if (tokenUriResolverActive && tokenUriResolver.isDefined(editionId)) {
+        if (tokenUriResolverActive() && tokenUriResolver.isDefined(editionId)) {
             return tokenUriResolver.editionURI(editionId);
         }
         return edition.uri;
+    }
+
+    function tokenUriResolverActive() public view returns (bool) {
+        return address(tokenUriResolver) != address(0);
     }
 
     function editionAdditionalMetaData(uint256 _editionId) public view returns (string memory) {
@@ -341,9 +332,10 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     function royaltyInfo(uint256 _tokenId)
     external
     override
+    view
     returns (address receiver, uint256 amount) {
         // If we have a registry - use it
-        if (royaltyRegistryActive) {
+        if (royaltyRegistryActive()) {
             // any registry must be edition aware so to only store one entry for all within the edition
             return royaltiesRegistryProxy.royaltyInfo(_editionFromTokenId(_tokenId));
         }
@@ -355,10 +347,11 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     function royaltyAndCreatorInfo(uint256 _editionId)
     external
     override
+    view
     returns (address receiver, address creator, uint256 amount) {
         address originalCreator = _getCreatorOfEdition(_editionId);
 
-        if (royaltyRegistryActive) {
+        if (royaltyRegistryActive()) {
             (address _receiver, uint256 _amount) = royaltiesRegistryProxy.royaltyInfo(_editionId);
             return (_receiver, originalCreator, _amount);
         }
@@ -373,11 +366,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     function facilitateNextPrimarySale(uint256 _editionId)
     public
     override
+    view
     returns (address receiver, address creator, uint256 tokenId) {
         uint256 _tokenId = getNextAvailablePrimarySaleToken(_editionId);
         address _creator = _getCreatorOfEdition(_editionId);
 
-        if (royaltyRegistryActive) {
+        if (royaltyRegistryActive()) {
             (address _receiver,) = royaltiesRegistryProxy.royaltyInfo(_editionId);
             return (_receiver, _creator, _tokenId);
         }
@@ -402,6 +396,10 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
 
     function hadPrimarySaleOfToken(uint256 _tokenId) public override view returns (bool) {
         return owners[_tokenId] != address(0);
+    }
+
+    function royaltyRegistryActive() public view returns (bool) {
+        return address(royaltiesRegistryProxy) != address(0);
     }
 
     //////////////
@@ -658,15 +656,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     function setRoyaltiesRegistryProxy(IERC2981 _royaltiesRegistryProxy) public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
         royaltiesRegistryProxy = _royaltiesRegistryProxy;
-        royaltyRegistryActive = address(_royaltiesRegistryProxy) != address(0);
         emit AdminRoyaltiesRegistryProxySet(address(_royaltiesRegistryProxy));
     }
 
-    // TODO test
     function setTokenUriResolver(ITokenUriResolver _tokenUriResolver) public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
         tokenUriResolver = _tokenUriResolver;
-        tokenUriResolverActive = address(_tokenUriResolver) != address(0);
         emit AdminTokenUriResolverSet(address(_tokenUriResolver));
     }
 

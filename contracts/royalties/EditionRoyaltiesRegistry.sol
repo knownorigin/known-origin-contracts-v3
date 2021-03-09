@@ -14,7 +14,9 @@ import "../core/IERC2981.sol";
 import "../core/IKODAV3.sol";
 import "../core/Konstants.sol";
 
-contract EditionRoyaltiesRegistry is IERC2981, Konstants, Context {
+import {ERC165} from "@openzeppelin/contracts/introspection/ERC165.sol";
+
+contract EditionRoyaltiesRegistry is ERC165, IERC2981, Konstants, Context {
 
     // EIP712 Precomputed hashes:
     // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)")
