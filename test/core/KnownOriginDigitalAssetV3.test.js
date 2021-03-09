@@ -906,6 +906,23 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
   });
 
+  describe('reportArtistAccount()', async () => {
+    it('should report edition', async () => {
+      await this.token.reportArtistAccount(minter, true, {from: owner});
+      expect(await this.token.reportedArtistAccounts(minter)).to.be.equal(true);
+
+      await this.token.reportArtistAccount(minter, false, {from: owner});
+      expect(await this.token.reportedArtistAccounts(minter)).to.be.equal(false);
+    });
+
+    it('revert if not admin', async () => {
+      await expectRevert(
+        this.token.reportArtistAccount(minter, true, {from: collabDao}),
+        'KODA: Caller must have admin role'
+      );
+    });
+  });
+
   describe('lockInAdditionalMetaData()', async () => {
     it('should lockInAdditionalMetaData()', async () => {
       await this.token.mintToken(owner, TOKEN_URI, {from: contract});
@@ -1156,8 +1173,28 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
     it('reverts if not admin', async () => {
       await expectRevert(
-        this.token.withdrawStuckTokens(erc20.address, '1000', minter, {from: collectorA}),
+        this.token.withdrawStuckTokens(this.token.address, '1000', minter, {from: collectorA}),
         'KODA: Caller must have contract or admin role'
+      );
+    });
+  });
+
+  describe('updateSecondaryRoyalty()', async () => {
+    it('can update if admin', async () => {
+      expect(await this.token.secondarySaleRoyalty()).to.be.bignumber.equal('1000000');
+      const receipt = await this.token.updateSecondaryRoyalty('99999', {from: owner});
+
+      expectEvent.inLogs(receipt.logs, 'AdminUpdateSecondaryRoyalty', {
+        _secondarySaleRoyalty: '99999'
+      });
+
+      expect(await this.token.secondarySaleRoyalty()).to.be.bignumber.equal('99999');
+    });
+
+    it('reverts if not admin', async () => {
+      await expectRevert(
+        this.token.updateSecondaryRoyalty('10000', {from: collectorA}),
+        'KODA: Caller not admin'
       );
     });
   });
