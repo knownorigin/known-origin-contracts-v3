@@ -29,6 +29,10 @@ contract('KODAV3Marketplace', function (accounts) {
   const _0_0_0_1_ETH = ether('0.001');
   const _0_1_ETH = ether('0.1');
   const _1_ETH = ether('1');
+  const _1_5_ETH = ether('1.5');
+  const _0_5_ETH = ether('0.5');
+
+  const _100_GWEI = new BN(web3.utils.toWei('100', 'gwei').toString());
 
   const firstEditionTokenId = new BN('11000');
   const secondEditionTokenId = new BN('12000');
@@ -397,7 +401,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
           });
 
-          it('collectors can purchase stepped edition tokens up to listed limit', async () => {
+          it('buyers can purchase stepped edition tokens up to listed limit', async () => {
 
             const edition = firstEditionTokenId;
             const token1 = edition;
@@ -432,9 +436,130 @@ contract('KODAV3Marketplace', function (accounts) {
             expect(await this.token.ownerOf(token3)).to.be.equal(collectorC);
           });
 
+          it("any overpayment is returned to the buyer after a purchase", async () => {
+
+            const edition = firstEditionTokenId;
+
+            // Get the buyer's starting wallet balance
+            const tracker = await balance.tracker(collectorA);
+            const startBalance = await tracker.get();
+
+            // Collector A buys a token at 100 gwei gas, gets a receipt
+            const gasPrice = _100_GWEI;
+            const receipt = await this.marketplace.buyNextStep(edition, {from: collectorA, value: _1_5_ETH, gasPrice });
+
+            // Determine the gas cost associated with the transaction
+            const gasUsed = new BN( receipt.receipt.cumulativeGasUsed );
+            const txCost = gasUsed.mul(gasPrice);
+
+            // Expected balance is starting balance less tx cost and 1 ETH (cost of the first token in the edition)
+            const expectedBalance = startBalance.sub(_1_ETH).sub(txCost);
+
+            const endBalance = await tracker.get();
+            expect(endBalance).to.be.bignumber.equal(expectedBalance);
+
+          });
+
         })
       });
 
-  })
+    describe("convertSteppedAuctionToListing()", () => {
 
+      beforeEach(async () => {
+        // Ensure owner is approved as this will fail if not
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // create firstEdition of 3 tokens to the minter
+        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+
+        // time of latest block
+        const latestBlockTime = await time.latest();
+
+        // list firstEdition for sale at 0.1 ETH per token, starting immediately
+        const start = latestBlockTime;
+        await this.marketplace.listSteppedEditionAuction(
+            minter,
+            firstEditionTokenId,
+            _1_ETH,
+            _0_1_ETH,
+            start,
+            {from: contract}
+          );
+
+      });
+
+      it('cannot be converted unless list price is equal to or greater than minimum bid', async () => {
+
+        const edition = firstEditionTokenId;
+        const listingPrice = ZERO;
+
+        // seller attempts to convert to listed edition with invalid list price
+        await expectRevert(
+            this.marketplace.convertSteppedAuctionToListing(edition, listingPrice, {from: minter}),
+            "List price not enough"
+        )
+
+      });
+
+      context("on successful conversion", () => {
+
+        it('emits an EditionListed event', async () => {
+
+          const edition = firstEditionTokenId;
+          const listingPrice = _1_ETH;
+
+          // seller converts to listed edition
+          const receipt = await this.marketplace.convertSteppedAuctionToListing(
+              edition,
+              listingPrice,
+              {from: minter}
+          );
+
+          expectEvent(receipt, 'EditionListed', {
+            _editionId: edition,
+            _price: _1_ETH,
+            _startDate: ZERO
+          });
+
+        });
+
+        it('listing can be verified by reading its configuration', async () => {
+
+          const edition = firstEditionTokenId;
+          const listingPrice = _1_ETH;
+
+          // seller converts to listed edition
+          await this.marketplace.convertSteppedAuctionToListing(edition, listingPrice, {from: minter});
+
+          //address _seller, uint128 _listingPrice, uint128 _startDate
+          const listing = await this.marketplace.getEditionListing(edition);
+          expect(listing._seller).to.be.equal(minter);
+          expect(listing._listingPrice).to.be.bignumber.equal(_1_ETH);
+          expect(listing._startDate).to.be.bignumber.equal(ZERO);
+
+        });
+
+        it('cannot be purchased via stepped auction once converted to listing', async () => {
+
+          const edition = firstEditionTokenId;
+          const token1Price = _1_ETH;
+          const listingPrice = token1Price;
+
+          // seller converts to listed edition
+          await this.marketplace.convertSteppedAuctionToListing(edition, listingPrice, {from: minter});
+
+          // collector A attempts to buy a token when the stepped auction has been converted to listing
+          await expectRevert(
+              this.marketplace.buyNextStep(edition, {
+                from: collectorA,
+                value: token1Price
+              }),
+              "Edition not listed for stepped auction"
+          )
+
+        });
+
+      })
+    })
+  })
 });

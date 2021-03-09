@@ -29,7 +29,8 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     }
 
     struct Listing {
-        uint256 listingConfig; // uint128(price)|uint128(startDate)
+        uint128 price;
+        uint128 startDate;
         address seller;
     }
 
@@ -148,20 +149,12 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // Primary "buy now" sale flow //
     /////////////////////////////////
 
-    // TODO startDate - uint32 = (2^32 - 1) equals to 4294967295, i.e. Sun Feb 07 2106
-    // TODO fixme we pass in uint256 but then map to unit128 - fix and add tests
-    function listEdition(address _creator, uint256 _editionId, uint256 _listingPrice, uint256 _startDate) public override {
+    function listEdition(address _creator, uint256 _editionId, uint128 _listingPrice, uint128 _startDate) public override {
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
-        // TODO add lots of tests about scaling up and down to store these things
-
-        // 32 bytes / 2 = 16 bytes = 16 * 8 = 128 | uint256(uint128(price),uint128(date))
-        uint256 listingConfig = uint256(_listingPrice);
-        listingConfig |= _startDate << 128;
-
-        // Store listing data
-        editionListings[_editionId] = Listing(listingConfig, _creator);
+       // Store listing data
+        editionListings[_editionId] = Listing(_listingPrice, _startDate, _creator);
 
         emit EditionListed(_editionId, _listingPrice, _startDate);
     }
@@ -178,10 +171,10 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     }
 
     function buyEditionToken(uint256 _editionId) public override payable nonReentrant {
-        (address _seller, uint128 _listingPrice, uint128 _startDate) = _getEditionListing(_editionId);
-        require(address(0) != _seller, "No listing found");
-        require(msg.value >= _listingPrice, "List price not satisfied");
-        require(block.timestamp >= _startDate, "List not available yet");
+        Listing storage listing = editionListings[_editionId];
+        require(address(0) != listing.seller, "No listing found");
+        require(msg.value >= listing.price, "List price not satisfied");
+        require(block.timestamp >= listing.startDate, "List not available yet");
 
         uint256 tokenId = facilitateNextPrimarySale(_editionId, msg.value, _msgSender());
 
@@ -192,16 +185,19 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     /// Edition listing accessors //
     ////////////////////////////////
 
-    function getEditionListing(uint256 _editionId) public view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
-        return _getEditionListing(_editionId);
-    }
-
-    function _getEditionListing(uint256 _editionId) internal view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
+    function getEditionListing(uint256 _editionId)
+    public
+    view
+    returns (
+        address _seller,
+        uint128 _listingPrice,
+        uint128 _startDate
+    ) {
         Listing storage listing = editionListings[_editionId];
         return (
-        listing.seller, // original seller
-        uint128(listing.listingConfig), // price
-        uint128(listing.listingConfig >> 128) // date
+            listing.seller, // original seller
+            listing.price,
+            listing.startDate
         );
     }
 
@@ -210,11 +206,11 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     }
 
     function getEditionListingPrice(uint256 _editionId) public view returns (uint128 _listingPrice) {
-        return uint128(editionListings[_editionId].listingConfig);
+        return uint128(editionListings[_editionId].price);
     }
 
     function getEditionListingDate(uint256 _editionId) public view returns (uint128 _startDate) {
-        return uint128(editionListings[_editionId].listingConfig >> 128);
+        return uint128(editionListings[_editionId].startDate);
     }
 
     ////////////////////////////////
@@ -321,7 +317,6 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         uint16 nextStep = step + 1; // no safemath for uint16
         steppedAuction.currentStep = nextStep;
 
-        // TODO test this magic
         // send back excess if supplied - will allow UX flow of setting max price to pay
         if (msg.value > expectedPrice) {
             (bool success,) = _msgSender().call{value : msg.value.sub(expectedPrice)}("");
@@ -333,12 +328,12 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
 
     // creates an exit from a step if required but forces a buy now price
     function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice) public override nonReentrant {
-        Stepped storage stepConfig = editionStep[_editionId];
-        require(_listingPrice >= minBidAmount, "List not enough");
-        require(stepConfig.seller == _msgSender(), "Only callable from seller");
+        Stepped storage steppedAuction = editionStep[_editionId];
+        require(_listingPrice >= minBidAmount, "List price not enough");
+        require(steppedAuction.seller == _msgSender(), "Only seller can convert");
 
         // Store listing data
-        editionListings[_editionId] = Listing(uint256(_listingPrice), stepConfig.seller);
+        editionListings[_editionId] = Listing(_listingPrice, 0, steppedAuction.seller);
 
         // Clear up the step logic
         delete editionStep[_editionId];
@@ -437,7 +432,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // Secondary sale "buy now" flow //
     ///////////////////////////////////
 
-    function listToken(uint256 _tokenId, uint256 _listingPrice, uint256 _startDate) public override {
+    function listToken(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) public override {
         // Check ownership before listing
         require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
 
@@ -447,12 +442,8 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         // Check price over min bid
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
-        // 32 bytes / 2 = 16 bytes = 16 * 8 = 128 | uint256(uint128(price),uint128(date))
-        uint256 listingConfig = uint256(_listingPrice);
-        listingConfig |= _startDate << 128;
-
         // List the token
-        tokenListings[_tokenId] = Listing(listingConfig, _msgSender());
+        tokenListings[_tokenId] = Listing(_listingPrice, _startDate, _msgSender());
 
         emit TokenListed(_tokenId, _msgSender(), _listingPrice);
     }
@@ -472,16 +463,15 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
 
     function buyToken(uint256 _tokenId) public payable override nonReentrant {
 
-        (address _seller, uint128 _listingPrice, uint128 _startDate) = _getTokenListing(_tokenId);
+        Listing storage listing = tokenListings[_tokenId];
 
-        require(address(0) != _seller, "No listing found");
-        require(msg.value >= _listingPrice, "List price not satisfied");
-        require(block.timestamp >= _startDate, "List not available yet");
-
+        require(address(0) != listing.seller, "No listing found");
+        require(msg.value >= listing.price, "List price not satisfied");
+        require(block.timestamp >= listing.startDate, "List not available yet");
 
         // check current owner is the lister as it may have changed hands
         address currentOwner = koda.ownerOf(_tokenId);
-        require(_seller == currentOwner, "Listing not valid, token owner has changed");
+        require(listing.seller == currentOwner, "Listing not valid, token owner has changed");
 
         // trade the token
         facilitateSecondarySale(_tokenId, msg.value, currentOwner, _msgSender());
@@ -604,15 +594,11 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     /// Token accessors
 
     function getTokenListing(uint256 _tokenId) public view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
-        return _getTokenListing(_tokenId);
-    }
-
-    function _getTokenListing(uint256 _tokenId) internal view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
         Listing storage listing = tokenListings[_tokenId];
         return (
-        listing.seller, // original seller
-        uint128(listing.listingConfig), // price
-        uint128(listing.listingConfig >> 128) // date
+            listing.seller, // original seller
+            listing.price, // price
+            listing.startDate // date
         );
     }
 
@@ -621,11 +607,11 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     }
 
     function getTokenListingPrice(uint256 _tokenId) public view returns (uint128 _listingPrice) {
-        return uint128(tokenListings[_tokenId].listingConfig);
+        return uint128(tokenListings[_tokenId].price);
     }
 
     function getTokenListingDate(uint256 _tokenId) public view returns (uint128 _startDate) {
-        return uint128(tokenListings[_tokenId].listingConfig >> 128);
+        return uint128(tokenListings[_tokenId].startDate);
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
