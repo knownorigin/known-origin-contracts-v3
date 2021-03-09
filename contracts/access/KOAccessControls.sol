@@ -53,6 +53,10 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
         return hasRole(CONTRACT_ROLE, _address) || hasRole(MINTER_ROLE, _address);
     }
 
+    function hasContractOrAdminRole(address _address) external override view returns (bool) {
+        return hasRole(CONTRACT_ROLE, _address) || hasRole(DEFAULT_ADMIN_ROLE, _address);
+    }
+
     ///////////////
     // Modifiers //
     ///////////////

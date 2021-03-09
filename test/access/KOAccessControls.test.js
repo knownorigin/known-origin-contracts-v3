@@ -123,4 +123,26 @@ contract('KOAccessControls tests', function (accounts) {
     });
   });
 
+  describe('hasContractOrAdminRole()', async () => {
+    it('via contract role', async () => {
+      expect(await this.accessControls.hasContractOrAdminRole(account)).to.be.equal(false);
+
+      await this.accessControls.addContractRole(account, {from: deployer});
+      expect(await this.accessControls.hasContractOrAdminRole(account)).to.be.equal(true);
+
+      await this.accessControls.removeContractRole(account, {from: deployer});
+      expect(await this.accessControls.hasContractOrAdminRole(account)).to.be.equal(false);
+    });
+
+    it('via admin role', async () => {
+      expect(await this.accessControls.hasContractOrMinterRole(account)).to.be.equal(false);
+
+      await this.accessControls.addAdminRole(account, {from: deployer});
+      expect(await this.accessControls.hasContractOrAdminRole(account)).to.be.equal(true);
+
+      await this.accessControls.removeAdminRole(account, {from: deployer});
+      expect(await this.accessControls.hasContractOrAdminRole(account)).to.be.equal(false);
+    });
+  });
+
 });

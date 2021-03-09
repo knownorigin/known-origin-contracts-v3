@@ -3,19 +3,14 @@ const {ZERO_ADDRESS} = constants;
 
 const _ = require('lodash');
 
-const web3 = require('web3');
-
 const {expect} = require('chai');
 
-const {shouldSupportInterfaces} = require('./SupportsInterface.behavior');
-const {validateEditionAndToken} = require('../test-helpers');
-
-const ERC721ReceiverMock = artifacts.require('ERC721ReceiverMock');
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
 const SimpleIERC2981 = artifacts.require('SimpleIERC2981');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
+const MockERC20 = artifacts.require('MockERC20');
 
 contract('KnownOriginDigitalAssetV3 test', function (accounts) {
   const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD, collabDao] = accounts;
@@ -121,21 +116,21 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       const tokenId = firstEditionTokenId.add(new BN('4'));
       await expectRevert(
         this.token.transferFrom(owner, owner, tokenId, {from: owner}),
-        "ERC721_ZERO_OWNER"
+        'ERC721_ZERO_OWNER'
       );
     });
 
     it('token minted - cannot send to zero address', async () => {
       await expectRevert(
         this.token.transferFrom(owner, ZERO_ADDRESS, firstEditionTokenId, {from: owner}),
-        "ERC721_ZERO_TO_ADDRESS"
+        'ERC721_ZERO_TO_ADDRESS'
       );
     });
 
     it('token minted - cannot send a token which does not exist', async () => {
       await expectRevert(
         this.token.transferFrom(owner, collectorA, thirdEditionTokenId, {from: owner}),
-        "ERC721_ZERO_OWNER"
+        'ERC721_ZERO_OWNER'
       );
     });
 
@@ -147,7 +142,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.transferFrom(owner, collectorB, firstEditionTokenId, {from: owner}),
-        "ERC721_OWNER_MISMATCH"
+        'ERC721_OWNER_MISMATCH'
       );
     });
 
@@ -156,7 +151,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.transferFrom(owner, collectorA, tokenId, {from: owner}),
-        "ERC721_ZERO_OWNER"
+        'ERC721_ZERO_OWNER'
       );
     });
   });
@@ -180,7 +175,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // fails at sending one more than batch
       await expectRevert(
         this.token.transferFrom(owner, collectorA, end + 1, {from: owner}),
-        "ERC721_ZERO_OWNER"
+        'ERC721_ZERO_OWNER'
       );
     });
 
@@ -256,14 +251,14 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('batch minted - cannot send to zero address', async () => {
       await expectRevert(
         this.token.transferFrom(owner, ZERO_ADDRESS, firstEditionTokenId, {from: owner}),
-        "ERC721_ZERO_TO_ADDRESS"
+        'ERC721_ZERO_TO_ADDRESS'
       );
     });
 
     it('batch minted - cannot send a token which does not exist', async () => {
       await expectRevert(
         this.token.transferFrom(owner, collectorA, thirdEditionTokenId, {from: owner}),
-        "ERC721_ZERO_OWNER"
+        'ERC721_ZERO_OWNER'
       );
     });
 
@@ -275,7 +270,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.transferFrom(owner, collectorB, firstEditionTokenId, {from: owner}),
-        "ERC721_OWNER_MISMATCH"
+        'ERC721_OWNER_MISMATCH'
       );
     });
 
@@ -284,7 +279,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.transferFrom(owner, collectorA, tokenId, {from: owner}),
-        "ERC721_ZERO_OWNER"
+        'ERC721_ZERO_OWNER'
       );
     });
 
@@ -321,7 +316,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // fails at sending one more than batch
       await expectRevert(
         this.token.transferFrom(owner, collectorA, end + 1, {from: owner}),
-        "ERC721_ZERO_OWNER"
+        'ERC721_ZERO_OWNER'
       );
     });
 
@@ -397,14 +392,14 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('batch minted - cannot send to zero address', async () => {
       await expectRevert(
         this.token.transferFrom(owner, ZERO_ADDRESS, firstEditionTokenId, {from: owner}),
-        "ERC721_ZERO_TO_ADDRESS"
+        'ERC721_ZERO_TO_ADDRESS'
       );
     });
 
     it('batch minted - cannot send a token which does not exist', async () => {
       await expectRevert(
         this.token.transferFrom(owner, collectorA, thirdEditionTokenId, {from: owner}),
-        "ERC721_ZERO_OWNER"
+        'ERC721_ZERO_OWNER'
       );
     });
 
@@ -416,7 +411,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.transferFrom(owner, collectorB, firstEditionTokenId, {from: owner}),
-        "ERC721_OWNER_MISMATCH"
+        'ERC721_OWNER_MISMATCH'
       );
     });
 
@@ -425,7 +420,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.transferFrom(owner, collectorA, tokenId, {from: owner}),
-        "ERC721_ZERO_OWNER"
+        'ERC721_ZERO_OWNER'
       );
     });
 
@@ -458,8 +453,8 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
     it('reverts when edition is not valid', async () => {
       await expectRevert(
-        this.token.editionURI("9999999"),
-        "Edition does not exist"
+        this.token.editionURI('9999999'),
+        'Edition does not exist'
       );
     });
 
@@ -484,7 +479,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if no contract role', async () => {
       await expectRevert(
         this.token.mintToken(owner, TOKEN_URI, {from: collabDao}),
-        "KODA: Caller must have contract role"
+        'KODA: Caller must have contract role'
       );
     });
   });
@@ -516,14 +511,14 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if no contract role', async () => {
       await expectRevert(
         this.token.mintConsecutiveBatchEdition(10, owner, TOKEN_URI, {from: collabDao}),
-        "KODA: Caller must have contract role"
+        'KODA: Caller must have contract role'
       );
     });
 
     it('revert if edtion size to big', async () => {
       await expectRevert(
         this.token.mintConsecutiveBatchEdition(this.MAX_EDITION_SIZE.add(ONE), owner, TOKEN_URI, {from: contract}),
-        "KODA: Invalid edition size"
+        'KODA: Invalid edition size'
       );
     });
   });
@@ -555,14 +550,14 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if no contract role', async () => {
       await expectRevert(
         this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: collabDao}),
-        "KODA: Caller must have contract role"
+        'KODA: Caller must have contract role'
       );
     });
 
     it('revert if edtion size to big', async () => {
       await expectRevert(
         this.token.mintBatchEdition(this.MAX_EDITION_SIZE.add(ONE), owner, TOKEN_URI, {from: contract}),
-        "KODA: Invalid edition size"
+        'KODA: Invalid edition size'
       );
     });
   });
@@ -809,7 +804,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('reverts if no edition ID found', async () => {
       await expectRevert(
         this.token.getNextAvailablePrimarySaleToken.call(nonExistentTokenId),
-        "KODA: No tokens left on the primary market"
+        'KODA: No tokens left on the primary market'
       );
     });
 
@@ -833,7 +828,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId),
-        "KODA: No tokens left on the primary market"
+        'KODA: No tokens left on the primary market'
       );
     });
 
@@ -879,7 +874,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // covering this here to prove you can not reset the zero address and go back to a token already with a primary sale
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA}); // sell one
       await expectRevert(this.token.transferFrom(collectorB, ZERO_ADDRESS, firstEditionTokenId, {from: collectorB}),
-        "ERC721_ZERO_TO_ADDRESS"
+        'ERC721_ZERO_TO_ADDRESS'
       ); // send back
     });
   });
@@ -906,7 +901,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if not admin', async () => {
       await expectRevert(
         this.token.reportEditionId(STARTING_EDITION, true, {from: collabDao}),
-        "KODA: Caller must have admin role"
+        'KODA: Caller must have admin role'
       );
     });
   });
@@ -914,20 +909,20 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
   describe('lockInAdditionalMetaData()', async () => {
     it('should lockInAdditionalMetaData()', async () => {
       await this.token.mintToken(owner, TOKEN_URI, {from: contract});
-      await this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello", {from: owner});
-      expect(await this.token.additionalEditionMetaData(firstEditionTokenId)).to.be.equal("hello");
+      await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
+      expect(await this.token.additionalEditionMetaData(firstEditionTokenId)).to.be.equal('hello');
     });
 
     it('should editionAdditionalMetaData()', async () => {
       await this.token.mintToken(owner, TOKEN_URI, {from: contract});
-      await this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello", {from: owner});
-      expect(await this.token.editionAdditionalMetaData(firstEditionTokenId)).to.be.equal("hello");
+      await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
+      expect(await this.token.editionAdditionalMetaData(firstEditionTokenId)).to.be.equal('hello');
     });
 
     it('should tokenAdditionalMetaData()', async () => {
       await this.token.mintToken(owner, TOKEN_URI, {from: contract});
-      await this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello", {from: owner});
-      expect(await this.token.tokenAdditionalMetaData(firstEditionTokenId)).to.be.equal("hello");
+      await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
+      expect(await this.token.tokenAdditionalMetaData(firstEditionTokenId)).to.be.equal('hello');
     });
 
     it('revert if not creator', async () => {
@@ -938,8 +933,8 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
         tokenId: firstEditionTokenId
       });
       await expectRevert(
-        this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello", {from: collabDao}),
-        "KODA: unable to set when not creator"
+        this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: collabDao}),
+        'KODA: unable to set when not creator'
       );
     });
 
@@ -950,10 +945,10 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
         to: owner,
         tokenId: firstEditionTokenId
       });
-      await this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello", {from: owner});
+      await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
       await expectRevert(
-        this.token.lockInAdditionalMetaData(firstEditionTokenId, "hello again", {from: owner}),
-        "KODA: can only be set once"
+        this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello again', {from: owner}),
+        'KODA: can only be set once'
       );
     });
   });
@@ -1014,7 +1009,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
     it('can transfer a selection of primary tokens', async () => {
       const tokensToMove = [firstEditionTokenId, firstEditionTokenId.add(new BN('1')), firstEditionTokenId.add(new BN('2'))];
-      await this.token.batchTransferFrom(owner, collectorA, tokensToMove)
+      await this.token.batchTransferFrom(owner, collectorA, tokensToMove);
       for (const id of tokensToMove) {
         expect(await this.token.ownerOf(id)).to.be.equal(collectorA);
       }
@@ -1022,12 +1017,12 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
     it('can transfer a selection of secondary tokens', async () => {
       const tokensToMove = [firstEditionTokenId, firstEditionTokenId.add(new BN('1')), firstEditionTokenId.add(new BN('2'))];
-      await this.token.batchTransferFrom(owner, collectorA, tokensToMove, {from: owner})
+      await this.token.batchTransferFrom(owner, collectorA, tokensToMove, {from: owner});
       for (const id of tokensToMove) {
         expect(await this.token.ownerOf(id)).to.be.equal(collectorA);
       }
 
-      await this.token.batchTransferFrom(collectorA, collectorB, tokensToMove, {from: collectorA})
+      await this.token.batchTransferFrom(collectorA, collectorB, tokensToMove, {from: collectorA});
       for (const id of tokensToMove) {
         expect(await this.token.ownerOf(id)).to.be.equal(collectorB);
       }
@@ -1043,18 +1038,18 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       ];
 
       // send 3 to "owner"
-      await this.token.batchTransferFrom(collectorA, owner, collectorATokensToMove, {from: collectorA})
+      await this.token.batchTransferFrom(collectorA, owner, collectorATokensToMove, {from: collectorA});
       for (const id of collectorATokensToMove) {
         expect(await this.token.ownerOf(id)).to.be.equal(owner);
       }
 
       // Owner mints some more
-      const ownerTokens = [firstEditionTokenId, firstEditionTokenId.add(new BN('1')), firstEditionTokenId.add(new BN('2'))]
+      const ownerTokens = [firstEditionTokenId, firstEditionTokenId.add(new BN('1')), firstEditionTokenId.add(new BN('2'))];
       const tokensToMove = [
         ...ownerTokens,
         ...collectorATokensToMove
       ];
-      await this.token.batchTransferFrom(owner, collectorB, tokensToMove, {from: owner})
+      await this.token.batchTransferFrom(owner, collectorB, tokensToMove, {from: owner});
 
       // Check B owners all 6 tokens
       for (const id of tokensToMove) {
@@ -1071,7 +1066,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.batchTransferFrom(collectorA, owner, collectorATokensToMove, {from: collectorA}),
-        "ERC721_OWNER_MISMATCH"
+        'ERC721_OWNER_MISMATCH'
       );
     });
   });
@@ -1134,15 +1129,38 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('reverts if a token does not exist', async () => {
       await expectRevert(
         this.token.consecutiveBatchTransferFrom(owner, collectorA, firstEditionTokenId, secondEditionTokenId, {from: owner}),
-        "ERC721_ZERO_OWNER"
+        'ERC721_ZERO_OWNER'
       );
     });
   });
 
   describe('max edition number validation', async () => {
     it('knows the max edition ID', async () => {
-      expect(await this.token.MAX_EDITION_ID()).to.be.bignumber.equal("79228162514264337593543950335");
+      expect(await this.token.MAX_EDITION_ID()).to.be.bignumber.equal('79228162514264337593543950335');
     });
   });
+
+  describe('withdrawStuckTokens()', async () => {
+    it('can recover stuck tokens if admin', async () => {
+      const erc20 = await MockERC20.new({from: owner});
+      await erc20.transfer(this.token.address, '1000', {from: owner});
+
+      expect(await erc20.balanceOf(this.token.address)).to.be.bignumber.equal('1000');
+      expect(await erc20.balanceOf(minter)).to.be.bignumber.equal('0');
+
+      await this.token.withdrawStuckTokens(erc20.address, '1000', minter, {from: owner});
+
+      expect(await erc20.balanceOf(this.token.address)).to.be.bignumber.equal('0');
+      expect(await erc20.balanceOf(minter)).to.be.bignumber.equal('1000');
+    });
+
+    it('reverts if not admin', async () => {
+      await expectRevert(
+        this.token.withdrawStuckTokens(erc20.address, '1000', minter, {from: collectorA}),
+        'KODA: Caller must have contract or admin role'
+      );
+    });
+  });
+
 
 });

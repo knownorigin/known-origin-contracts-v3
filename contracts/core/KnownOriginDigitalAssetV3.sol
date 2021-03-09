@@ -6,6 +6,7 @@ pragma solidity 0.7.6;
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {ERC165} from "@openzeppelin/contracts/introspection/ERC165.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
@@ -669,22 +670,20 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
         emit AdminTokenUriResolverSet(address(_tokenUriResolver));
     }
 
-    // TODO add method stuck ERC721 retrieval ... ? I vote no as we can then use this address as the burn address?
-
-    // TODO test
-    /// @dev Allows for the ability to extract stuck Ether
-    /// @dev Only callable from admin
-    function withdrawStuckEther(address payable _withdrawalAccount) public {
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have admin role");
-        _withdrawalAccount.transfer(address(this).balance);
-    }
-
-    // TODO test
     /// @dev Allows for the ability to extract stuck ERC20 tokens
     /// @dev Only callable from admin
     function withdrawStuckTokens(address _tokenAddress, uint256 _amount, address _withdrawalAccount) public {
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have admin role");
+        require(accessControls.hasContractOrAdminRole(_msgSender()), "KODA: Caller must have contract or admin role");
+        IERC20(_tokenAddress).approve(address(this), _amount);
         IERC20(_tokenAddress).transferFrom(address(this), _withdrawalAccount, _amount);
+    }
+
+    // TODO add method stuck ERC721 retrieval ... ? I vote no as we can then use this address as the burn address?
+    /// @dev Allows for the ability to extract stuck ERC721 tokens
+    /// @dev Only callable from admin
+    function withdrawStuckERC721(address _tokenAddress, uint256 _amount, address _withdrawalAccount) public {
+        require(accessControls.hasContractOrAdminRole(_msgSender()), "KODA: Caller must have contract or admin role");
+        IERC721(_tokenAddress).safeTransferFrom(address(this), _withdrawalAccount, _amount);
     }
 
     function getChainId() public pure returns (uint256) {

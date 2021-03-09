@@ -9,4 +9,6 @@ interface IKOAccessControlsLookup {
     function hasContractRole(address _address) external view returns (bool);
 
     function hasContractOrMinterRole(address _address) external view returns (bool);
+
+    function hasContractOrAdminRole(address _address) external view returns (bool);
 }
