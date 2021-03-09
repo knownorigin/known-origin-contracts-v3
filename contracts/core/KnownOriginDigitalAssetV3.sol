@@ -30,8 +30,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     using SafeMath for uint256;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
-    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
-    bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
 
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
     event AdminEditionReported(uint256 indexed _editionId, bool indexed _reported);
@@ -61,6 +59,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     // Edition number pointer
     uint256 public editionPointer;
 
+    struct EditionDetails {
+        // TODO flatten out to two smaller props that can be squashed
+        uint256 editionConfig; // combined creator and size
+        string uri; // the referenced metadata
+    }
+
     // tokens are minted in batches - the first token ID used is representative of the edition ID (for now)
     mapping(uint256 => EditionDetails) editionDetails;
 
@@ -87,12 +91,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
 
     // TODO confirm default decimal precision (EIP-2981 compatibility required)
     // Secondary sale commission
-    uint256 public secondarySaleRoyalty = 1000000; // 10%
-
-    struct EditionDetails {
-        uint256 editionConfig; // combined creator and size
-        string uri; // the referenced metadata
-    }
+    uint256 public secondarySaleRoyalty = 100_00000; // 10%
 
     IKOAccessControlsLookup public accessControls;
 
@@ -122,8 +121,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
         // optional registry address - can be constructed as zero address
         royaltiesRegistryProxy = _royaltiesRegistryProxy;
 
-        _registerInterface(_INTERFACE_ID_ERC721);
-        _registerInterface(_INTERFACE_ID_ERC721_METADATA);
+        _registerInterface(0x80ac58cd); // _INTERFACE_ID_ERC721
+        _registerInterface(0x5b5e139f); // _INTERFACE_ID_ERC721_METADATA
     }
 
     function mintToken(address _to, string calldata _uri)
@@ -334,13 +333,17 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     override
     view
     returns (address receiver, uint256 amount) {
-        // If we have a registry - use it
-        if (royaltyRegistryActive()) {
-            // any registry must be edition aware so to only store one entry for all within the edition
-            return royaltiesRegistryProxy.royaltyInfo(_editionFromTokenId(_tokenId));
+
+        uint256 editionId = _editionFromTokenId(_tokenId);
+
+        // If we have a registry and its defined, use it
+        if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(editionId)) {
+
+            // Note: any registry must be edition aware so to only store one entry for all within the edition
+            return royaltiesRegistryProxy.royaltyInfo(editionId);
         }
 
-        return (_getCreatorOfEdition(_editionFromTokenId(_tokenId)), secondarySaleRoyalty);
+        return (_getCreatorOfEdition(editionId), secondarySaleRoyalty);
     }
 
     // Expanded method at edition level and expanding on the funds receiver and the creator
@@ -351,12 +354,16 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     returns (address receiver, address creator, uint256 amount) {
         address originalCreator = _getCreatorOfEdition(_editionId);
 
-        if (royaltyRegistryActive()) {
+        if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)) {
             (address _receiver, uint256 _amount) = royaltiesRegistryProxy.royaltyInfo(_editionId);
             return (_receiver, originalCreator, _amount);
         }
 
         return (originalCreator, originalCreator, secondarySaleRoyalty);
+    }
+
+    function hasRoyalties(uint256 _tokenId) external override view returns (bool){
+        return true;
     }
 
     ////////////////////////////////////
@@ -674,12 +681,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     }
 
     // TODO add method stuck ERC721 retrieval ... ? I vote no as we can then use this address as the burn address?
-    /// @dev Allows for the ability to extract stuck ERC721 tokens
-    /// @dev Only callable from admin
-    function withdrawStuckERC721(address _tokenAddress, uint256 _amount, address _withdrawalAccount) public {
-        require(accessControls.hasContractOrAdminRole(_msgSender()), "KODA: Caller must have contract or admin role");
-        IERC721(_tokenAddress).safeTransferFrom(address(this), _withdrawalAccount, _amount);
-    }
 
     function getChainId() public pure returns (uint256) {
         uint256 chainId;

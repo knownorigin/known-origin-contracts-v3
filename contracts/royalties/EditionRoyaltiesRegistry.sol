@@ -101,6 +101,11 @@ contract EditionRoyaltiesRegistry is ERC165, IERC2981, Konstants, Context {
         return (koda.getCreatorOfEdition(_editionId), agreement.expectedRoyalty);
     }
 
+    // TODO
+    function hasRoyalties(uint256 _tokenId) external override view returns (bool) {
+        return true;
+    }
+
     ////////////
     // Agreement methods //
     ////////////

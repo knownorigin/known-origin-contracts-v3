@@ -53,7 +53,7 @@ contract('KnownOriginDigitalAssetV3 Royalties resolver', function (accounts) {
     this.secondarySaleRoyalty = await this.token.secondarySaleRoyalty();
 
   });
-  
+
   // describe('', async () => {
   //
   //   beforeEach(async () => {

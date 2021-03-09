@@ -23,14 +23,14 @@ interface IERC2981 is IERC165 {
      */
     function royaltyInfo(uint256 _tokenId) external view returns (address _receiver, uint256 _amount);
 
+    /**
+     * @dev Returns true if implemented
+     * @param _tokenId The token ID to check if royalties are defined
+     * @dev this is how the marketplace can see if the contract has royalties, other than using the supportsInterface() call.
+     */
+    function hasRoyalties(uint256 _tokenId) external view returns (bool);
+
     // FIXME
-    //    /**
-    //     * @dev Returns true if implemented
-    //     * @param _tokenId The token ID to check if royalties are defined
-    //     * @dev this is how the marketplace can see if the contract has royalties, other than using the supportsInterface() call.
-    //     */
-    //    function hasRoyalties(uint256 _tokenId) external view returns (bool);
-    //
     //    /**
     //     * @dev Called by the marketplace after the transfer of royalties has happened, so that the contract has a record
     //     * @dev emits ReceivedRoyalties event;
