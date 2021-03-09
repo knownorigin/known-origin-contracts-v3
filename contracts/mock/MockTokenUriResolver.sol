@@ -4,6 +4,7 @@ pragma solidity 0.7.6;
 
 import "../programmable/ITokenUriResolver.sol";
 
+// N:B: Mock contract for testing purposes only
 contract MockTokenUriResolver is ITokenUriResolver {
 
     mapping(uint256 => string) overrides;

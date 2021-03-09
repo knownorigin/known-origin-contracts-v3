@@ -102,7 +102,7 @@ contract EditionRoyaltiesRegistry is ERC165, IERC2981, Konstants, Context {
     }
 
     // TODO
-    function hasRoyalties(uint256 _tokenId) external override view returns (bool) {
+    function hasRoyalties(uint256 _tokenId) external override pure returns (bool) {
         return true;
     }
 

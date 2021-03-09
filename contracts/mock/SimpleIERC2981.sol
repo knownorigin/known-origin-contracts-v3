@@ -6,6 +6,7 @@ import {ERC165} from "@openzeppelin/contracts/introspection/ERC165.sol";
 
 import {IERC2981} from "../core/IERC2981.sol";
 
+// N:B: Mock contract for testing purposes only
 contract SimpleIERC2981 is ERC165, IERC2981 {
 
     mapping(uint256 => uint256) internal tokenIdToAmount;

@@ -101,7 +101,7 @@ contract TokenRoyaltiesRegistry is ERC165, ITokenRoyaltiesRegistry, Ownable {
         return (holder.defaultRecipient, holder.royaltyAmount);
     }
 
-    function hasRoyalties(uint256 _tokenId) external override view returns (bool) {
+    function hasRoyalties(uint256 _tokenId) external override pure returns (bool) {
         return true;
     }
 
