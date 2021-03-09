@@ -26,6 +26,10 @@ contract('KODAV3Marketplace', function (accounts) {
   const ONE = new BN('1');
   const ZERO = new BN('0');
 
+  const _0_0_0_1_ETH = ether('0.001');
+  const _0_1_ETH = ether('0.1');
+  const _1_ETH = ether('1');
+
   const firstEditionTokenId = new BN('11000');
   const secondEditionTokenId = new BN('12000');
   const thirdEditionTokenId = new BN('13000');
@@ -63,53 +67,374 @@ contract('KODAV3Marketplace', function (accounts) {
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
+  context("stepped auctions", () => {
+
+    describe("listSteppedEditionAuction()", () => {
+
+        beforeEach(async () => {
+          // Ensure owner is approved as this will fail if not
+          await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+          // create 3 tokens to the minter
+          await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+        });
+
+        it('must be called by contract role', async () => {
+
+          const token = firstEditionTokenId;
+
+          // list edition for sale at 0.1 ETH per token
+          const start = await time.latest();
+
+          await expectRevert(
+              this.marketplace.listSteppedEditionAuction(minter, token, _1_ETH, _0_1_ETH, start, {from: minter}),
+              "Caller must have contract role"
+          )
+
+        });
+
+        it('must be valid edition', async () => {
+
+          const edition = nonExistentTokenId;
+
+          // list edition for sale at 0.1 ETH per token
+          const start = await time.latest();
+
+          await expectRevert(
+              this.marketplace.listSteppedEditionAuction(minter, edition, _1_ETH, _0_1_ETH, start, {from: contract}),
+              "Nonexistent edition"
+          )
+
+        });
+
+        it('lister must be edition creator', async () => {
+
+          const edition = firstEditionTokenId;
+
+          // list edition for sale at 0.1 ETH per token
+          const start = await time.latest();
+
+          await expectRevert(
+              this.marketplace.listSteppedEditionAuction(collectorA, edition, _1_ETH, _0_1_ETH, start, {from: contract}),
+              "Only creator can list edition"
+          )
+
+        });
+
+        it('must have base price greater than or equal to minimum bid amount', async () => {
+
+          const token = firstEditionTokenId;
+
+          // attempt to list edition for sale at 0.001 ETH per token
+          const start = await time.latest();
+
+          await expectRevert(
+              this.marketplace.listSteppedEditionAuction(minter, token, _0_0_0_1_ETH, _0_1_ETH, start, {from: contract}),
+              "Base price not enough"
+          )
+
+        });
+
+        it('cannot list same edition twice', async () => {
+
+          const token = firstEditionTokenId;
+
+          // list edition for sale at 0.1 ETH per token twice
+          const start = await time.latest();
+
+          await this.marketplace.listSteppedEditionAuction(minter, token, _1_ETH, _0_1_ETH, start, {from: contract});
+
+          await expectRevert(
+              this.marketplace.listSteppedEditionAuction(minter, token, _1_ETH, _0_1_ETH, start, {from: contract}),
+              "Unable to setup listing again"
+          )
+
+        });
+
+        context('on successful listing', () => {
+
+          it('emits an EditionSteppedSaleListed event', async () => {
+
+            const token = firstEditionTokenId;
+
+            // list edition for sale at 0.1 ETH per token
+            const start = await time.latest();
+            const receipt = await this.marketplace.listSteppedEditionAuction(minter, token, _1_ETH, _0_1_ETH, start, {from: contract});
+            expectEvent(receipt, 'EditionSteppedSaleListed', {
+              _editionId: token,
+              _basePrice: _1_ETH,
+              _stepPrice: _0_1_ETH,
+              _startDate: start
+            });
+
+          });
+
+          it('listing can be verified by reading its configuration', async () => {
+
+            const token = firstEditionTokenId;
+
+            // list edition for sale at 0.1 ETH per token
+            const start = await time.latest();
+
+            await this.marketplace.listSteppedEditionAuction(minter, token, _1_ETH, _0_1_ETH, start, {from: contract});
+
+            //address _creator, uint128 _basePrice, uint128 _step, uint128 _startDate, uint128 _currentStep
+            const listing = await this.marketplace.getSteppedAuctionState(token);
+            expect(listing.creator).to.be.equal(minter);
+            expect(listing.basePrice).to.be.bignumber.equal(_1_ETH);
+            expect(listing.stepPrice).to.be.bignumber.equal(_0_1_ETH);
+            expect(listing.startDate).to.be.bignumber.equal(start);
+            expect(listing.currentStep).to.be.bignumber.equal('0');
+
+          });
+
+        })
+
+      });
+
+    describe("buyNextStep()", () => {
+
+        beforeEach(async () => {
+          // Ensure owner is approved as this will fail if not
+          await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+          // create firstEdition of 3 tokens to the minter
+          await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+
+          // create secondEdition of 3 tokens to the minter
+          await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+
+          // time of latest block
+          const latestBlockTime = await time.latest();
+
+          // list firstEdition for sale at 0.1 ETH per token, starting immediately
+          const start = latestBlockTime;
+          await this.marketplace.listSteppedEditionAuction(minter, firstEditionTokenId, _1_ETH, _0_1_ETH, start, {from: contract});
+
+          // list secondEdition for sale at 0.1 ETH per token, starting in 24 hours
+          const tomorrow = new Date(Number(latestBlockTime.toString()));
+          tomorrow.setDate(tomorrow.getDate()+1); // wraps automagically
+          const deferredStart = new BN(tomorrow.getTime());
+          await this.marketplace.listSteppedEditionAuction(minter, secondEditionTokenId, _1_ETH, _0_1_ETH, deferredStart, {from: contract});
+
+        });
+
+        it('cannot buy an edition not listed for stepped auction', async () => {
+
+          const token = thirdEditionTokenId;
+
+          // collector A attempts to buy a token not listed for stepped auction
+          await expectRevert(
+              this.marketplace.buyNextStep(token, {from: collectorA, value: _1_ETH}),
+              "Edition not listed for stepped auction"
+          )
+
+        });
+
+        it('cannot buy an edition that is listed to start at a later time', async () => {
+
+          const token = secondEditionTokenId;
+
+          // collector A attempts to buy a token listed for step auction starting tomorrow
+          await expectRevert(
+              this.marketplace.buyNextStep(token, {from: collectorA, value: _1_ETH}),
+              "Not started yet"
+          )
+
+        });
+
+        context('once auction has begun', () => {
+
+          it('cannot purchase stepped edition tokens with less than the step adjusted price', async () => {
+
+            const edition = firstEditionTokenId;
+
+            const stepPrice = _0_1_ETH;
+            const token1Price = _1_ETH;
+            const token2Price = token1Price.add(stepPrice.mul(new BN("1")))
+
+            // collector A buys a token
+            await this.marketplace.buyNextStep(edition, {
+              from: collectorA,
+              value: token1Price
+            });
+
+            // collector B buys a token
+            await this.marketplace.buyNextStep(edition, {
+              from: collectorB,
+              value: token2Price
+            });
+
+            // collector C attempts to buys a token with less than the step adjusted price
+            await expectRevert(
+                this.marketplace.buyNextStep(edition, {
+                  from: collectorC,
+                  value: token2Price
+                }),
+                "Expected price not met"
+            )
+
+          });
+
+          it('cannot purchase stepped edition tokens beyond listed limit', async () => {
+
+            const edition = firstEditionTokenId;
+
+            const stepPrice = _0_1_ETH;
+            const token1Price = _1_ETH;
+            const token2Price = token1Price.add(stepPrice.mul(new BN("1")))
+            const token3Price = token1Price.add(stepPrice.mul(new BN("2")))
+            const token4Price = token1Price.add(stepPrice.mul(new BN("3")))
+
+            // collector A buys a token
+            await this.marketplace.buyNextStep(edition, {
+              from: collectorA,
+              value: token1Price
+            });
+
+            // collector B buys a token
+            await this.marketplace.buyNextStep(edition, {
+              from: collectorB,
+              value: token2Price
+            });
+
+            // collector C buys a token
+            await this.marketplace.buyNextStep(edition, {
+              from: collectorC,
+              value: token3Price
+            });
+
+            // collector D attempts to buys a token after limit is reached
+            await expectRevert(
+                this.marketplace.buyNextStep(edition, {
+                  from: collectorD,
+                  value: token4Price
+                }),
+                "KODA: No tokens left on the primary market"
+            )
+
+          });
+
+          it('emits an EditionSteppedSaleBuy event on successful purchase', async () => {
+
+            const edition = firstEditionTokenId;
+
+            // collector A buys a token
+            const receipt = await this.marketplace.buyNextStep(edition, {from: collectorA, value: _1_ETH});
+            expectEvent(receipt, 'EditionSteppedSaleBuy', {
+              _editionId: edition,
+              _tokenId: edition,
+              _buyer: collectorA,
+              _price: _1_ETH,
+              _currentStep: ZERO
+            });
+
+          });
+
+          it("auction's currentStep is incremented after a purchase", async () => {
+
+            const edition = firstEditionTokenId;
+
+            let auctionState = await this.marketplace.getSteppedAuctionState(edition);
+            expect(auctionState.currentStep).to.be.bignumber.equal(ZERO);
+
+            // collector A buys a token
+            await this.marketplace.buyNextStep(edition, {from: collectorA, value: _1_ETH});
+
+            auctionState = await this.marketplace.getSteppedAuctionState(edition);
+            expect(auctionState.currentStep).to.be.bignumber.equal(ONE);
+
+          });
+
+          it('token price incremented appropriately with each step', async () => {
+
+            const edition = firstEditionTokenId;
+            const token1 = edition;
+            const token2 = token1.add(ONE);
+            const token3 = token2.add(ONE);
+
+            const stepPrice = _0_1_ETH;
+            const token1Price = _1_ETH;
+            const token2Price = token1Price.add(stepPrice.mul(new BN("1")))
+            const token3Price = token1Price.add(stepPrice.mul(new BN("2")))
+            const token4price = token1Price.add(stepPrice.mul(new BN("3")))
+
+            // Before any purchases
+            let expectedPrice = await this.marketplace.getNextEditionSteppedPrice(edition);
+            expect(expectedPrice).to.be.bignumber.equal(token1Price);
+
+            // collector A buys a token
+            await this.marketplace.buyNextStep(edition, {from: collectorA, value: _1_ETH});
+
+            // Expected price of second token
+            expectedPrice = await this.marketplace.getNextEditionSteppedPrice(edition);
+            expect(expectedPrice).to.be.bignumber.equal(token2Price);
+
+            // collector B buys a token
+            await this.marketplace.buyNextStep(edition, {
+              from: collectorB,
+              value: token2Price
+            });
+
+            // Expected price of third token
+            expectedPrice = await this.marketplace.getNextEditionSteppedPrice(edition);
+            expect(expectedPrice).to.be.bignumber.equal(token3Price);
+
+            // collector C buys a token
+            await this.marketplace.buyNextStep(edition, {
+              from: collectorC,
+              value: token3Price
+            });
+
+            // Expected price of third token
+            expectedPrice = await this.marketplace.getNextEditionSteppedPrice(edition);
+            expect(expectedPrice).to.be.bignumber.equal(token4price);
 
 
-  describe("listSteppedEditionAuction()", () => {
+            expect(await this.token.ownerOf(token1)).to.be.equal(collectorA);
+            expect(await this.token.ownerOf(token2)).to.be.equal(collectorB);
+            expect(await this.token.ownerOf(token3)).to.be.equal(collectorC);
 
-    const _0_1_ETH = ether('0.1');
-    const _1_ETH = ether('1');
+          });
 
-    beforeEach(async () => {
-      // Ensure owner is approved as this will fail if not
-      await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+          it('collectors can purchase stepped edition tokens up to listed limit', async () => {
 
-      // create 100 tokens to the minter
-      await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
-    });
+            const edition = firstEditionTokenId;
+            const token1 = edition;
+            const token2 = token1.add(ONE);
+            const token3 = token2.add(ONE);
 
-    it('can list and purchase upto limit (of 3)', async () => {
+            const stepPrice = _0_1_ETH;
+            const token1Price = _1_ETH;
+            const token2Price = token1Price.add(stepPrice.mul(new BN("1")))
+            const token3Price = token1Price.add(stepPrice.mul(new BN("2")))
 
-      // list edition for sale at 0.1 ETH per token
-      const start = await time.latest();
+            // collector A buys a token
+            await this.marketplace.buyNextStep(edition, {
+              from: collectorA,
+              value: token1Price
+            });
 
-      await this.marketplace.listSteppedEditionAuction(minter, firstEditionTokenId, _1_ETH, _0_1_ETH, start, {from: contract});
+            // collector B buys a token
+            await this.marketplace.buyNextStep(edition, {
+              from: collectorB,
+              value: token2Price
+            });
 
-      //address _creator, uint128 _basePrice, uint128 _step, uint128 _startDate, uint128 _currentStep
-      const listing = await this.marketplace.getEditionStepConfig(firstEditionTokenId);
-      expect(listing._creator).to.be.equal(minter);
-      expect(listing._basePrice).to.be.bignumber.equal(_1_ETH);
-      expect(listing._step).to.be.bignumber.equal(_0_1_ETH);
-      expect(listing._startDate).to.be.bignumber.equal(start);
-      expect(listing._currentStep).to.be.bignumber.equal('0');
+            // collector C buys a token
+            await this.marketplace.buyNextStep(edition, {
+              from: collectorC,
+              value: token3Price
+            });
 
-      const token1 = firstEditionTokenId;
-      const token2 = firstEditionTokenId.add(ONE);
-      const token3 = token2.add(ONE);
+            expect(await this.token.ownerOf(token1)).to.be.equal(collectorA);
+            expect(await this.token.ownerOf(token2)).to.be.equal(collectorB);
+            expect(await this.token.ownerOf(token3)).to.be.equal(collectorC);
+          });
 
-      // collector A buys a token
-      await this.marketplace.buyNextStep(firstEditionTokenId, {from: collectorA, value: _1_ETH});
+        })
+      });
 
-      // collector B buys a token
-      await this.marketplace.buyNextStep(firstEditionTokenId, {from: collectorB, value: _1_ETH.add(_0_1_ETH.mul(new BN("2")))});
-
-      // collector C buys a token
-      await this.marketplace.buyNextStep(firstEditionTokenId, {from: collectorC, value: _1_ETH.add(_0_1_ETH.mul(new BN("3")))});
-
-      expect(await this.token.ownerOf(token1)).to.be.equal(collectorA);
-      expect(await this.token.ownerOf(token2)).to.be.equal(collectorB);
-      expect(await this.token.ownerOf(token3)).to.be.equal(collectorC);
-    });
-  });
+  })
 
 });

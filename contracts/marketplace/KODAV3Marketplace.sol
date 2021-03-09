@@ -34,9 +34,11 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     }
 
     struct Stepped {
-        uint256 stepConfig; // uint128(price)|uint128(step)
-        uint256 extraConfig; // uint128(startDate)|uint96(currentStep)
+        uint128 basePrice;
+        uint128 stepPrice;
+        uint128 startDate;
         address seller;
+        uint16 currentStep;
     }
 
     // Edition ID to Offer mapping
@@ -285,38 +287,39 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // Primary sale "stepped pricing" flow //
     /////////////////////////////////////////
 
-    function listSteppedEditionAuction(address _creator, uint256 _editionId, uint256 _basePrice, uint256 _step, uint256 _startDate) public override {
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
+    function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate) public override {
+        require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
         require(_basePrice >= minBidAmount, "Base price not enough");
         require(editionStep[_editionId].seller == address(0), "Unable to setup listing again");
-
-        // TODO add lots of tests about scaling up and down to store these things
-
-        // uint256(uint128(price)|uint128(step))
-        uint256 stepConfig = uint128(_basePrice);
-        stepConfig |= _step << 128;
-
-        // uint256(uint128(startDate)|uint128(currentStep))
-        uint256 extraConfig = uint128(_startDate);
+        require(koda.editionExists(_editionId) == true, "Nonexistent edition");
+        require(koda.getCreatorOfToken(_editionId) == _creator, "Only creator can list edition");
 
         // Store listing data
-        editionStep[_editionId] = Stepped(stepConfig, extraConfig, _creator);
+        editionStep[_editionId] = Stepped(
+            _basePrice,
+            _stepPrice,
+            _startDate,
+            _creator,
+            uint16(0)
+        );
 
-        emit EditionSteppedSaleListed(_editionId, _basePrice, _step, _startDate);
+        emit EditionSteppedSaleListed(_editionId, _basePrice, _stepPrice, _startDate);
     }
 
     function buyNextStep(uint256 _editionId) public override nonReentrant payable {
-        require(editionStep[_editionId].seller != address(0), "Edition not enabled for stepped listing");
+        Stepped storage steppedAuction = editionStep[_editionId];
+        require(steppedAuction.seller != address(0), "Edition not listed for stepped auction");
+        require(steppedAuction.startDate <= block.timestamp, "Not started yet");
 
-        (uint128 _basePrice, uint128 _step, uint128 _startDate, uint128 _currentStep) = _getCurrentEditionStep(_editionId);
-        require(_startDate <= block.timestamp, "Not started yet");
-
-        // TODO cover this in tests...
-        // base price + (step price * current step)
-        uint256 expectedPrice = uint256(_basePrice).add(uint256(_step).mul(_currentStep));
-        require(msg.value >= expectedPrice, "Not enough peanuts supplied");
+        uint256 expectedPrice = _getNextEditionSteppedPrice(_editionId);
+        require(msg.value >= expectedPrice, "Expected price not met");
 
         uint256 tokenId = facilitateNextPrimarySale(_editionId, expectedPrice, _msgSender());
+
+        // Bump the current step
+        uint16 step = steppedAuction.currentStep;
+        uint16 nextStep = step + 1; // no safemath for uint16
+        steppedAuction.currentStep = nextStep;
 
         // TODO test this magic
         // send back excess if supplied - will allow UX flow of setting max price to pay
@@ -325,7 +328,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
             require(success, "failed to send overspend back");
         }
 
-        emit EditionSteppedSaleBuy(_editionId, tokenId, _msgSender(), expectedPrice, _currentStep);
+        emit EditionSteppedSaleBuy(_editionId, tokenId, _msgSender(), expectedPrice, step);
     }
 
     // creates an exit from a step if required but forces a buy now price
@@ -345,29 +348,36 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         // TODO do we need an event to signify the conversion?
     }
 
-    function getEditionStepConfig(uint256 _editionId) public view returns (address _creator, uint128 _basePrice, uint128 _step, uint128 _startDate, uint128 _currentStep) {
-        Stepped storage stepConfig = editionStep[_editionId];
+    // get the current state of a stepped auction
+    function getSteppedAuctionState(uint256 _editionId)
+    public
+    view
+    returns (
+        address creator,
+        uint128 basePrice,
+        uint128 stepPrice,
+        uint128 startDate,
+        uint16 currentStep
+    ) {
+        Stepped storage steppedAuction = editionStep[_editionId];
         return (
-        stepConfig.seller,
-        uint128(stepConfig.stepConfig),
-        uint128(stepConfig.stepConfig >> 128),
-        uint128(stepConfig.extraConfig),
-        uint128(stepConfig.extraConfig >> 128)
+            steppedAuction.seller,
+            steppedAuction.basePrice,
+            steppedAuction.stepPrice,
+            steppedAuction.startDate,
+            steppedAuction.currentStep
         );
     }
 
-    function getCurrentEditionStep(uint256 _editionId) public view returns (uint128 _basePrice, uint128 _step, uint128 _startDate, uint128 _currentStep) {
-        return _getCurrentEditionStep(_editionId);
+    // Get the next
+    function getNextEditionSteppedPrice(uint256 _editionId) public view returns (uint256 price) {
+        price = _getNextEditionSteppedPrice(_editionId);
     }
 
-    function _getCurrentEditionStep(uint256 _editionId) internal view returns (uint128 _basePrice, uint128 _step, uint128 _startDate, uint128 _currentStep) {
-        Stepped storage stepConfig = editionStep[_editionId];
-        return (
-        uint128(stepConfig.stepConfig),
-        uint128(stepConfig.stepConfig >> 128),
-        uint128(stepConfig.extraConfig),
-        uint128(stepConfig.extraConfig >> 128)
-        );
+    function _getNextEditionSteppedPrice(uint256 _editionId) internal view returns (uint256 price) {
+        Stepped storage steppedAuction = editionStep[_editionId];
+        uint256 stepAmount = uint256(steppedAuction.stepPrice).mul(uint256(steppedAuction.currentStep));
+        price = uint256(steppedAuction.basePrice).add(stepAmount);
     }
 
     //////////////////////////
