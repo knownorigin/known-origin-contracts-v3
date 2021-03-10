@@ -32,8 +32,6 @@ contract('KODAV3Marketplace', function (accounts) {
   const _1_5_ETH = ether('1.5');
   const _0_5_ETH = ether('0.5');
 
-  const _100_GWEI = new BN(web3.utils.toWei('100', 'gwei').toString());
-
   const firstEditionTokenId = new BN('11000');
   const secondEditionTokenId = new BN('12000');
   const thirdEditionTokenId = new BN('13000');
@@ -444,9 +442,9 @@ contract('KODAV3Marketplace', function (accounts) {
             const tracker = await balance.tracker(collectorA);
             const startBalance = await tracker.get();
 
-            // Collector A buys a token at 100 gwei gas, gets a receipt
-            const gasPrice = _100_GWEI;
-            const receipt = await this.marketplace.buyNextStep(edition, {from: collectorA, value: _1_5_ETH, gasPrice });
+            // Collector A buys a token at 1 gwei gas, gets a receipt
+            const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString());
+            const receipt = await this.marketplace.buyNextStep(edition, {from: collectorA, value: _1_5_ETH, gasPrice});
 
             // Determine the gas cost associated with the transaction
             const gasUsed = new BN( receipt.receipt.cumulativeGasUsed );
