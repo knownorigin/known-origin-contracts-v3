@@ -347,8 +347,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
         return (originalCreator, originalCreator, secondarySaleRoyalty);
     }
 
-    function hasRoyalties(uint256 _tokenId) external override view returns (bool){
-        return true;
+    function hasRoyalties(uint256 _tokenId) external override view returns (bool) {
+        require(exists(_tokenId), "KODA: Token does not exist");
+        if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionFromTokenId(_tokenId))) {
+            return true;
+        }
+        return secondarySaleRoyalty > 0;
     }
 
     ////////////////////////////////////

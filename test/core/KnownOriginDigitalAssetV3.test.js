@@ -1200,8 +1200,25 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
   });
 
   describe('hasRoyalties()', async () => {
-    it('KO has royalties for life', async () => {
-      expect(await this.token.hasRoyalties()).to.be.equal(true);
+
+    beforeEach(async () => {
+      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+    });
+
+    it('fails if the token does not exist', async () => {
+      await expectRevert(
+        this.token.hasRoyalties('99999'),
+        'KODA: Token does not exist',
+      );
+    });
+
+    it('when secondary sale royalties set, KO reports royalties', async () => {
+      expect(await this.token.hasRoyalties(firstEditionTokenId)).to.be.equal(true);
+    });
+
+    it('when secondary sale royalties NOT set, KO reports royalties', async () => {
+      await this.token.updateSecondaryRoyalty('0', {from: owner});
+      expect(await this.token.hasRoyalties(firstEditionTokenId)).to.be.equal(false);
     });
   });
 
