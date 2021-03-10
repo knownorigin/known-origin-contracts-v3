@@ -1181,7 +1181,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
   describe('updateSecondaryRoyalty()', async () => {
     it('can update if admin', async () => {
-      expect(await this.token.secondarySaleRoyalty()).to.be.bignumber.equal('10_00000');
+      expect(await this.token.secondarySaleRoyalty()).to.be.bignumber.equal('1250000');
       const receipt = await this.token.updateSecondaryRoyalty('99999', {from: owner});
 
       expectEvent.inLogs(receipt.logs, 'AdminUpdateSecondaryRoyalty', {

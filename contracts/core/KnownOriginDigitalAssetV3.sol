@@ -91,7 +91,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
 
     // TODO confirm default decimal precision (EIP-2981 compatibility required)
     // Secondary sale commission
-    uint256 public secondarySaleRoyalty = 10_00000; // 10%
+    uint256 public secondarySaleRoyalty = 12_50000; // 12.5%
 
     IKOAccessControlsLookup public accessControls;
 

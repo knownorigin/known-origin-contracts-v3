@@ -23,6 +23,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     event AdminUpdateModulo(uint256 _modulo);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
 
+    // TODO do we need start date on offers?
     struct Offer {
         uint256 offer;
         address bidder;
@@ -66,11 +67,11 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
 
     // TODO confirm default decimal precision (EIP-2981 compatibility required)
     // Secondary sale commission
-    uint256 public secondarySaleRoyalty = 100000; // 10%
+    uint256 public secondarySaleRoyalty = 12_50000; // 12.5%
 
     // KO commission
-    uint256 public platformPrimarySaleCommission = 1500000;  // 15.00000%
-    uint256 public platformSecondarySaleCommission = 250000;  // 2.50000%
+    uint256 public platformPrimarySaleCommission = 15_00000;  // 15.00000%
+    uint256 public platformSecondarySaleCommission = 2_50000;  // 2.50000%
 
     // precision 100.00000%
     uint256 public modulo = 100_00000;
@@ -607,11 +608,11 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     }
 
     function getTokenListingPrice(uint256 _tokenId) public view returns (uint128 _listingPrice) {
-        return uint128(tokenListings[_tokenId].price);
+        return tokenListings[_tokenId].price;
     }
 
     function getTokenListingDate(uint256 _tokenId) public view returns (uint128 _startDate) {
-        return uint128(tokenListings[_tokenId].startDate);
+        return tokenListings[_tokenId].startDate;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
