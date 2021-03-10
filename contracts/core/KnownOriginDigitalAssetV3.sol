@@ -311,14 +311,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
     // ERC-2981 //
     //////////////
 
-    // FIXME Function declared as view, but this expression (potentially) modifies the state and thus requires non-payable (the default) or payable.
     // Abstract away token royalty registry, proxy through to the implementation
     function royaltyInfo(uint256 _tokenId)
     external
     override
     view
     returns (address receiver, uint256 amount) {
-
         uint256 editionId = _editionFromTokenId(_tokenId);
 
         // If we have a registry and its defined, use it
@@ -340,6 +338,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
         address originalCreator = _getCreatorOfEdition(_editionId);
 
         if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)) {
+            // Note: any registry must be edition aware so to only store one entry for all within the edition
             (address _receiver, uint256 _amount) = royaltiesRegistryProxy.royaltyInfo(_editionId);
             return (_receiver, originalCreator, _amount);
         }
@@ -648,7 +647,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
         emit AdminArtistAccountReported(_account, _reported);
     }
 
-    // TODO test
     function setRoyaltiesRegistryProxy(IERC2981 _royaltiesRegistryProxy) public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
         royaltiesRegistryProxy = _royaltiesRegistryProxy;

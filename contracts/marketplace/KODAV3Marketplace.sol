@@ -23,10 +23,11 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     event AdminUpdateModulo(uint256 _modulo);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
 
-    // TODO do we need start date on offers?
+    // Reserve price off-chain
     struct Offer {
         uint256 offer;
         address bidder;
+//        uint128 startDate; // TODO use this property
     }
 
     struct Listing {
@@ -154,7 +155,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
-       // Store listing data
+        // Store listing data
         editionListings[_editionId] = Listing(_listingPrice, _startDate, _creator);
 
         emit EditionListed(_editionId, _listingPrice, _startDate);
@@ -196,9 +197,9 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     ) {
         Listing storage listing = editionListings[_editionId];
         return (
-            listing.seller, // original seller
-            listing.price,
-            listing.startDate
+        listing.seller, // original seller
+        listing.price,
+        listing.startDate
         );
     }
 
@@ -217,8 +218,6 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     ////////////////////////////////
     // Primary "offers" sale flow //
     ////////////////////////////////
-
-    // TODO reserve price?
 
     function placeEditionBid(uint256 _editionId) public override payable nonReentrant {
         Offer storage offer = editionOffers[_editionId];
@@ -288,7 +287,10 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
         require(_basePrice >= minBidAmount, "Base price not enough");
         require(editionStep[_editionId].seller == address(0), "Unable to setup listing again");
+
+        // TODO do we need this?
         require(koda.editionExists(_editionId) == true, "Nonexistent edition");
+
         require(koda.getCreatorOfToken(_editionId) == _creator, "Only creator can list edition");
 
         // Store listing data
@@ -315,7 +317,8 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
 
         // Bump the current step
         uint16 step = steppedAuction.currentStep;
-        uint16 nextStep = step + 1; // no safemath for uint16
+        uint16 nextStep = step + 1;
+        // no safemath for uint16
         steppedAuction.currentStep = nextStep;
 
         // send back excess if supplied - will allow UX flow of setting max price to pay
@@ -357,11 +360,11 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     ) {
         Stepped storage steppedAuction = editionStep[_editionId];
         return (
-            steppedAuction.seller,
-            steppedAuction.basePrice,
-            steppedAuction.stepPrice,
-            steppedAuction.startDate,
-            steppedAuction.currentStep
+        steppedAuction.seller,
+        steppedAuction.basePrice,
+        steppedAuction.stepPrice,
+        steppedAuction.startDate,
+        steppedAuction.currentStep
         );
     }
 
@@ -597,9 +600,9 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     function getTokenListing(uint256 _tokenId) public view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
         Listing storage listing = tokenListings[_tokenId];
         return (
-            listing.seller, // original seller
-            listing.price, // price
-            listing.startDate // date
+        listing.seller, // original seller
+        listing.price, // price
+        listing.startDate // date
         );
     }
 
