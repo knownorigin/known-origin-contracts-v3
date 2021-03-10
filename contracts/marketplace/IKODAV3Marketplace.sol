@@ -9,11 +9,12 @@ interface IEditionBuyNowMarketplace {
     event EditionDeListed(uint256 indexed _editionId);
     event EditionPurchased(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price);
 
-    function listEdition(address _creator, uint256 _editionId, uint256 _listingPrice, uint256 _startDate) external;
+    function listEdition(address _creator, uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
 
     function delistEdition(uint256 _editionId) external;
 
     function buyEditionToken(uint256 _editionId) external payable;
+
 }
 
 interface IEditionOffersMarketplace {
@@ -34,14 +35,15 @@ interface IEditionOffersMarketplace {
 
 interface IEditionSteppedMarketplace {
 
-    event EditionSteppedSaleListed(uint256 indexed _editionId, uint256 _basePrice, uint256 _step, uint256 _startDate);
-    event EditionSteppedSaleBuy(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price, uint256 _currentStep);
+    event EditionSteppedSaleListed(uint256 indexed _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate);
+    event EditionSteppedSaleBuy(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price, uint16 _currentStep);
 
-    function listSteppedEditionAuction(address _creator, uint256 _editionId, uint256 _basePrice, uint256 _step, uint256 _startDate) external;
+    function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate) external;
 
     function buyNextStep(uint256 _editionId) external payable;
 
     function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice) external;
+
 }
 
 
@@ -71,7 +73,7 @@ interface IKODAV3SecondarySaleMarketplace is IEditionBuyNowMarketplace, IEdition
     event TokenBidRejected(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
     event TokenBidWithdrawn(uint256 indexed _tokenId, address indexed _bidder);
 
-    function listToken(uint256 _tokenId, uint256 _listingPrice, uint256 _startDate) external;
+    function listToken(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) external;
 
     function delistToken(uint256 _tokenId) external;
 
