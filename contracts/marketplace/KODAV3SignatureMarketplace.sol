@@ -45,6 +45,16 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
     // platform funds collector
     address public platformAccount;
 
+    // TODO Ability to set price/listing in multiple tokens e.g. ETH / DAI / WETH / WBTC
+    //      - do we need a list of tokens to allow payments in?
+    //      - is this really a different contract?
+
+    // TODO Multi coin payment support
+    //      - approved list of tokens?
+    //      - reentrancy safe
+    //      - requires user approval to buy
+    //      - can only be listed in ETH or ERC20/223 ?
+
     IKODAV3 public koda;
     IKOAccessControlsLookup public accessControls;
 

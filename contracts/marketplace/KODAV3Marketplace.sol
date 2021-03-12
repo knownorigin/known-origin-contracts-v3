@@ -27,7 +27,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     struct Offer {
         uint256 offer;
         address bidder;
-//        uint128 startDate; // TODO use this property
+        // uint128 startDate; // TODO use this property
     }
 
     struct Listing {
@@ -115,21 +115,9 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // TODO expose both contract & minter listing access protected methods
     //      - contract takes in creator, minter assumes creator and needs to check KODA for edition creator
 
-    // TODO create buy now and offers signature model where off-chain signatures can be provider to buy the items
-
     // TODO enforce rules on sale mechanics i.e. can you have offers and buy now price?
     // TODO only can be on one sales mechanic at a time
     //      - create ability to move between auction modes - clearing down open bids when required
-
-    // TODO Ability to set price/listing in multiple tokens e.g. ETH / DAI / WETH / WBTC
-    //      - do we need a list of tokens to allow payments in?
-    //      - is this really a different contract?
-
-    // TODO Multi coin payment support
-    //      - approved list of tokens?
-    //      - reentrancy safe
-    //      - requires user approval to buy
-    //      - can only be listed in ETH or ERC20/223 ?
 
     // TODO admin functions for fixing issues/draining tokens & ETH
     // TODO review admin methods
@@ -221,7 +209,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
 
     function placeEditionBid(uint256 _editionId) public override payable nonReentrant {
         Offer storage offer = editionOffers[_editionId];
-        require(offer.offer.add(minBidAmount) >= msg.value, "Bid not high enough");
+        require(msg.value >= offer.offer.add(minBidAmount), "Bid not high enough");
 
         // No contracts can bid to prevent money lockups on reverts
         require(!Address.isContract(_msgSender()), "Cannot offer as a contract");
@@ -240,7 +228,8 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // TODO lock in period for 24hrs?
     function withdrawEditionBid(uint256 _editionId) public override nonReentrant {
         Offer storage offer = editionOffers[_editionId];
-        require(offer.bidder == _msgSender(), "Not bidder");
+        require(offer.offer > 0, "No open bid");
+        require(offer.bidder == _msgSender(), "Caller not the top bidder");
 
         // send money back to top bidder
         _refundBidder(offer.bidder, offer.offer);
@@ -254,15 +243,15 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     function rejectEditionBid(uint256 _editionId) public override nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
-        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
+        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Caller not the creator");
 
         // send money back to top bidder
         _refundBidder(offer.bidder, offer.offer);
 
+        emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
+
         // delete offer
         delete editionOffers[_editionId];
-
-        emit EditionBidRejected(_editionId, _msgSender(), offer.offer);
     }
 
     function acceptEditionBid(uint256 _editionId, uint256 _offerPrice) public override nonReentrant {
@@ -273,10 +262,10 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
 
         uint256 tokenId = facilitateNextPrimarySale(_editionId, offer.offer, offer.bidder);
 
+        emit EditionBidAccepted(_editionId, tokenId, offer.bidder, offer.offer);
+
         // clear open offer
         delete editionOffers[_editionId];
-
-        emit EditionBidAccepted(_editionId, tokenId, offer.bidder, offer.offer);
     }
 
     /////////////////////////////////////////
