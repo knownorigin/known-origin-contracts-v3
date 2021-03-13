@@ -24,6 +24,8 @@ interface IEditionOffersMarketplace {
     event EditionBidAccepted(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _amount);
     event EditionBidRejected(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
 
+    function enableOffers(address _creator, uint256 _editionId, uint128 _startDate) external;
+
     function placeEditionBid(uint256 _editionId) external payable;
 
     function withdrawEditionBid(uint256 _editionId) external;

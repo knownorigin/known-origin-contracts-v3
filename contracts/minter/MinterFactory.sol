@@ -28,6 +28,10 @@ contract MinterFactory is Context {
     // Frequency override list for users - you can temporarily add in address which disables the freeze time check
     mapping(address => bool) public frequencyOverride;
 
+    enum SaleType {
+        BUY_NOW, OFFERS, STEPPED
+    }
+
     constructor(
         IKOAccessControlsLookup _accessControls,
         IKODAV3Minter _koda,
@@ -37,6 +41,56 @@ contract MinterFactory is Context {
         koda = _koda;
         marketplace = _marketplace;
     }
+
+    ////////
+    // V2 //
+    ////////
+
+    function mintToken(SaleType saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
+        require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
+        require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintToken(_msgSender(), _uri);
+
+        setupSalesMechanic(editionId, saleType, _startDate, _basePrice, _stepPrice);
+    }
+
+    function mintBatchEdition(SaleType saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
+        require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
+        require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
+
+        setupSalesMechanic(editionId, saleType, _startDate, _basePrice, _stepPrice);
+    }
+
+    function mintConsecutiveBatchEdition(SaleType saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
+        require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
+        require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintConsecutiveBatchEdition(_editionSize, _msgSender(), _uri);
+
+        setupSalesMechanic(editionId, saleType, _startDate, _basePrice, _stepPrice);
+    }
+
+    function setupSalesMechanic(uint256 _editionId, SaleType saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
+        if (SaleType.BUY_NOW == saleType) {
+            marketplace.listEdition(_msgSender(), _editionId, _basePrice, _startDate);
+        }
+        else if (SaleType.STEPPED == saleType) {
+            marketplace.listSteppedEditionAuction(_msgSender(), _editionId, _basePrice, _stepPrice, _startDate);
+        }
+        else if (SaleType.OFFERS == saleType) {
+            marketplace.enableOffers(_msgSender(), _editionId, _startDate);
+        }
+    }
+
+    ////////
+    // V1 //
+    ////////
 
     function mintTokenAndSetBuyNowPrice(uint128 _price, uint128 _startDate, string calldata _uri)
     external {

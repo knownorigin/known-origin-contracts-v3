@@ -207,6 +207,10 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // Primary "offers" sale flow //
     ////////////////////////////////
 
+    function enableOffers(address _creator, uint256 _editionId, uint128 _startDate) external override {
+        // TODO store start date and wire up to the test and payment flow
+    }
+
     function placeEditionBid(uint256 _editionId) public override payable nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(msg.value >= offer.offer.add(minBidAmount), "Bid not high enough");
