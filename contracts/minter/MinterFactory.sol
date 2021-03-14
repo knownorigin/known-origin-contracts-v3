@@ -88,46 +88,6 @@ contract MinterFactory is Context {
         }
     }
 
-    ////////
-    // V1 //
-    ////////
-
-    function mintTokenAndSetBuyNowPrice(uint128 _price, uint128 _startDate, string calldata _uri)
-    external {
-        require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
-        require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
-
-        // Make tokens & edition
-        uint256 editionId = koda.mintToken(_msgSender(), _uri);
-
-        // list it for sale
-        marketplace.listEdition(_msgSender(), editionId, _price, _startDate);
-    }
-
-    function mintBatchEditionAndSetBuyNowPrice(uint96 _editionSize, uint128 _price, uint128 _startDate, string calldata _uri)
-    external {
-        require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
-        require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
-
-        // Make token & edition
-        uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
-
-        // list it for sale
-        marketplace.listEdition(_msgSender(), editionId, _price, _startDate);
-    }
-
-    function mintConsecutiveBatchEditionAndSetBuyNowPrice(uint96 _editionSize, uint128 _price, uint128 _startDate, string calldata _uri)
-    external {
-        require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
-        require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
-
-        // Make token & edition
-        uint256 editionId = koda.mintConsecutiveBatchEdition(_editionSize, _msgSender(), _uri);
-
-        // list it for sale
-        marketplace.listEdition(_msgSender(), editionId, _price, _startDate);
-    }
-
     //////////////////////
     // Internal helpers //
     //////////////////////

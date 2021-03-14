@@ -112,6 +112,8 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
 
     // FIXME multiple buys at once?
 
+    // FIXME do we need a global emergency stop "pause"
+
     // TODO expose both contract & minter listing access protected methods
     //      - contract takes in creator, minter assumes creator and needs to check KODA for edition creator
 

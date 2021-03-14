@@ -4,7 +4,7 @@ const {ZERO_ADDRESS} = constants;
 const _ = require('lodash');
 
 const web3 = require('web3');
-const {ether} = require("@openzeppelin/test-helpers");
+const {ether} = require('@openzeppelin/test-helpers');
 
 const {expect} = require('chai');
 
@@ -24,6 +24,10 @@ contract('MinterFactory', function (accounts) {
   const STARTING_EDITION = '10000';
 
   const ETH_ONE = ether('1');
+
+  const SaleType = {
+    BUY_NOW: 0, OFFERS: 1, STEPPED: 2
+  };
 
   const firstEditionTokenId = new BN('11000');
 
@@ -51,7 +55,7 @@ contract('MinterFactory', function (accounts) {
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: deployer});
 
     // Create marketplace and enable in whitelist
-    this.marketplace = await KODAV3Marketplace.new(this.accessControls.address, this.token.address, koCommission, {from: deployer})
+    this.marketplace = await KODAV3Marketplace.new(this.accessControls.address, this.token.address, koCommission, {from: deployer});
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.marketplace.address, {from: deployer});
 
     // Create minting factory
@@ -64,11 +68,11 @@ contract('MinterFactory', function (accounts) {
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.factory.address, {from: deployer});
   });
 
-  describe("mintToken()", () => {
+  describe('mintToken() - Buy Now', () => {
 
     beforeEach(async () => {
       this.startDate = Date.now();
-      const receipt = await this.factory.mintTokenAndSetBuyNowPrice(ETH_ONE, this.startDate, TOKEN_URI, {from: artist});
+      const receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
       await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
         from: ZERO_ADDRESS,
         to: artist,
@@ -78,28 +82,28 @@ contract('MinterFactory', function (accounts) {
 
     it('edition created', async () => {
       const editionDetails = await this.token.getEditionDetails(firstEditionTokenId);
-      expect(editionDetails._originalCreator).to.equal(artist, "Failed edition details creator validation")
-      expect(editionDetails._owner).to.equal(artist, "Failed edition details owner validation")
-      expect(editionDetails._editionId).to.bignumber.equal(firstEditionTokenId, "Failed edition details edition validation")
-      expect(editionDetails._size).to.bignumber.equal('1', "Failed edition details size validation")
-      expect(editionDetails._uri).to.equal(TOKEN_URI, "Failed edition details uri validation")
+      expect(editionDetails._originalCreator).to.equal(artist, 'Failed edition details creator validation');
+      expect(editionDetails._owner).to.equal(artist, 'Failed edition details owner validation');
+      expect(editionDetails._editionId).to.bignumber.equal(firstEditionTokenId, 'Failed edition details edition validation');
+      expect(editionDetails._size).to.bignumber.equal('1', 'Failed edition details size validation');
+      expect(editionDetails._uri).to.equal(TOKEN_URI, 'Failed edition details uri validation');
     });
 
     it('edition listed', async () => {
       const {_seller, _listingPrice, _startDate} = await this.marketplace.getEditionListing(firstEditionTokenId);
-      expect(_seller).to.equal(artist, "Failed edition details edition validation")
-      expect(_startDate).to.bignumber.equal(this.startDate.toString(), "Failed edition details size validation")
-      expect(_listingPrice).to.bignumber.equal(ETH_ONE, "Failed edition details uri validation")
+      expect(_seller).to.equal(artist, 'Failed edition details edition validation');
+      expect(_startDate).to.bignumber.equal(this.startDate.toString(), 'Failed edition details size validation');
+      expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
     });
   });
 
-  describe("mintBatchEditionAndSetBuyNowPrice() - edition size 10", () => {
+  describe('mintBatchEdition() - Buy Now - edition size 10', () => {
 
     const editionSize = '10';
 
     beforeEach(async () => {
       this.startDate = Date.now();
-      const receipt = await this.factory.mintBatchEditionAndSetBuyNowPrice(editionSize, ETH_ONE, this.startDate, TOKEN_URI, {from: artist});
+      const receipt = await this.factory.mintBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
       await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
         from: ZERO_ADDRESS,
         to: artist,
@@ -109,29 +113,29 @@ contract('MinterFactory', function (accounts) {
 
     it('edition created', async () => {
       const editionDetails = await this.token.getEditionDetails(firstEditionTokenId);
-      expect(editionDetails._originalCreator).to.equal(artist, "Failed edition details creator validation")
-      expect(editionDetails._owner).to.equal(artist, "Failed edition details owner validation")
-      expect(editionDetails._editionId).to.bignumber.equal(firstEditionTokenId, "Failed edition details edition validation")
-      expect(editionDetails._size).to.bignumber.equal(editionSize, "Failed edition details size validation")
-      expect(editionDetails._uri).to.equal(TOKEN_URI, "Failed edition details uri validation")
+      expect(editionDetails._originalCreator).to.equal(artist, 'Failed edition details creator validation');
+      expect(editionDetails._owner).to.equal(artist, 'Failed edition details owner validation');
+      expect(editionDetails._editionId).to.bignumber.equal(firstEditionTokenId, 'Failed edition details edition validation');
+      expect(editionDetails._size).to.bignumber.equal(editionSize, 'Failed edition details size validation');
+      expect(editionDetails._uri).to.equal(TOKEN_URI, 'Failed edition details uri validation');
     });
 
     it('edition listed', async () => {
       const {_seller, _listingPrice, _startDate} = await this.marketplace.getEditionListing(firstEditionTokenId);
-      expect(_seller).to.equal(artist, "Failed edition details edition validation")
-      expect(_startDate).to.bignumber.equal(this.startDate.toString(), "Failed edition details size validation")
-      expect(_listingPrice).to.bignumber.equal(ETH_ONE, "Failed edition details uri validation")
+      expect(_seller).to.equal(artist, 'Failed edition details edition validation');
+      expect(_startDate).to.bignumber.equal(this.startDate.toString(), 'Failed edition details size validation');
+      expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
     });
 
   });
 
-  describe("mintConsecutiveBatchEditionAndSetBuyNowPrice() - edition size 10", () => {
+  describe('mintConsecutiveBatchEdition() - Buy Now - edition size 10', () => {
 
     const editionSize = '10';
 
     beforeEach(async () => {
       this.startDate = Date.now();
-      const receipt = await this.factory.mintConsecutiveBatchEditionAndSetBuyNowPrice(editionSize, ETH_ONE, this.startDate, TOKEN_URI, {from: artist});
+      const receipt = await this.factory.mintConsecutiveBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
       const start = firstEditionTokenId.toNumber();
       const end = start + parseInt(editionSize);
       await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'ConsecutiveTransfer', {
@@ -144,18 +148,18 @@ contract('MinterFactory', function (accounts) {
 
     it('edition created', async () => {
       const editionDetails = await this.token.getEditionDetails(firstEditionTokenId);
-      expect(editionDetails._originalCreator).to.equal(artist, "Failed edition details creator validation")
-      expect(editionDetails._owner).to.equal(artist, "Failed edition details owner validation")
-      expect(editionDetails._editionId).to.bignumber.equal(firstEditionTokenId, "Failed edition details edition validation")
-      expect(editionDetails._size).to.bignumber.equal(editionSize, "Failed edition details size validation")
-      expect(editionDetails._uri).to.equal(TOKEN_URI, "Failed edition details uri validation")
+      expect(editionDetails._originalCreator).to.equal(artist, 'Failed edition details creator validation');
+      expect(editionDetails._owner).to.equal(artist, 'Failed edition details owner validation');
+      expect(editionDetails._editionId).to.bignumber.equal(firstEditionTokenId, 'Failed edition details edition validation');
+      expect(editionDetails._size).to.bignumber.equal(editionSize, 'Failed edition details size validation');
+      expect(editionDetails._uri).to.equal(TOKEN_URI, 'Failed edition details uri validation');
     });
 
     it('edition listed', async () => {
       const {_seller, _listingPrice, _startDate} = await this.marketplace.getEditionListing(firstEditionTokenId);
-      expect(_seller).to.equal(artist, "Failed edition details edition validation")
-      expect(_startDate).to.bignumber.equal(this.startDate.toString(), "Failed edition details size validation")
-      expect(_listingPrice).to.bignumber.equal(ETH_ONE, "Failed edition details uri validation")
+      expect(_seller).to.equal(artist, 'Failed edition details edition validation');
+      expect(_startDate).to.bignumber.equal(this.startDate.toString(), 'Failed edition details size validation');
+      expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
     });
   });
 
