@@ -1,11 +1,7 @@
 const {BN, constants, time, expectEvent, expectRevert, balance} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
-
 const _ = require('lodash');
-
-const web3 = require('web3');
 const {ether} = require('@openzeppelin/test-helpers');
-
 const {expect} = require('chai');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
@@ -23,14 +19,11 @@ contract('KODAV3Marketplace', function (accounts) {
   const STARTING_EDITION = '10000';
 
   const _0_1_ETH = ether('0.1');
-  const ETH_ONE = ether('1');
   const ONE = new BN('1');
   const ZERO = new BN('0');
 
   const firstEditionTokenId = new BN('11000');
   const secondEditionTokenId = new BN('12000');
-  const thirdEditionTokenId = new BN('13000');
-  const nonExistentTokenId = new BN('99999999999');
 
   beforeEach(async () => {
     const legacyAccessControls = await SelfServiceAccessControls.new();
@@ -188,7 +181,7 @@ contract('KODAV3Marketplace', function (accounts) {
       // Ensure owner is approved as this will fail if not
       await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
-      // create 100 tokens to the minter
+      // create 3 tokens to the minter
       await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
 
       this.start = await time.latest();
@@ -262,7 +255,7 @@ contract('KODAV3Marketplace', function (accounts) {
         // Ensure owner is approved as this will fail if not
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
-        // create 100 tokens to the minter
+        // create 3 tokens to the minter
         await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
 
         this.start = await time.latest();
@@ -320,7 +313,7 @@ contract('KODAV3Marketplace', function (accounts) {
       // Ensure owner is approved as this will fail if not
       await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
-      // create 100 tokens to the minter
+      // create 3 tokens to the minter
       await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
 
       this.start = await time.latest();
@@ -491,7 +484,7 @@ contract('KODAV3Marketplace', function (accounts) {
         // Ensure owner is approved as this will fail if not
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
-        // create 100 tokens to the minter
+        // create 3 tokens to the minter
         await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
 
         const start = await time.latest();
@@ -558,7 +551,7 @@ contract('KODAV3Marketplace', function (accounts) {
         // Ensure owner is approved as this will fail if not
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
-        // create 100 tokens to the minter
+        // create 3 tokens to the minter
         await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
 
         const start = await time.latest();
@@ -620,7 +613,7 @@ contract('KODAV3Marketplace', function (accounts) {
         // Ensure owner is approved as this will fail if not
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
-        // create 100 tokens to the minter
+        // create 3 tokens to the minter
         await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
 
         const start = await time.latest();
