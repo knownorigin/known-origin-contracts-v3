@@ -667,7 +667,49 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
         IERC20(_tokenAddress).transferFrom(address(this), _withdrawalAccount, _amount);
     }
 
-    // TODO add method stuck ERC721 retrieval ... ? I vote no as we can then use this address as the burn address?
+    // TODO Burn not really possible ... ?
+    /// @dev Function to burn a token
+    ///      Reverts if the given token ID doesn't exist
+    /// @param _tokenId ID of the token to be burned by the msg.sender
+    function burn(uint256 _tokenId) public {
+        require(exists(_tokenId), "KODA: Token does not exist");
+
+        address owner = ownerOf(_tokenId);
+        // TODO is it right to allow burns for approved caller?
+        require(_msgSender() == owner || isApprovedForAll(owner, _msgSender()), "ERC721_INVALID_SENDER");
+        require(owner == _msgSender(), "ERC721_OWNER_MISMATCH");
+
+        // clear owner and reduce balance
+        owners[_tokenId] = address(0);
+        balances[owner] = balances[owner] - 1;
+
+        emit Transfer(owner, address(0), _tokenId);
+    }
+
+    // TODO Burn not really possible ... ?
+    /// @dev Function squashes all unsold primary sale tokens from an edition
+    ///      Reverts not called by edition creator
+    /// @param _editionId ID of the edition to be burned by the msg.sender
+    function burnEdition(uint256 _editionId) public {
+        EditionDetails storage edition = editionDetails[_editionId];
+        require(edition.creator > _msgSender(), "Only callable from edition owner");
+
+        // Note: we dont alter the edition size - we let higher up the stack manage this to save storage and complexities
+
+        uint256 maxTokenId = _editionId + edition.editionSize;
+
+        for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
+
+            // if a owner is not set - assume still unsold primary and burn ...
+            if (owners[tokenId] == address(0)) {
+
+                // clear owner and reduce balance
+                balances[edition.creator] = balances[edition.creator] - 1;
+
+                emit Transfer(edition.creator, address(0), tokenId);
+            }
+        }
+    }
 
     function getChainId() public pure returns (uint256) {
         uint256 chainId;

@@ -123,6 +123,4 @@ contract MinterFactory is Context {
         emit AdminFreezeWindowChanged(_freezeWindow);
     }
 
-    // TODO withdrawStuckEther ?
-    // TODO withdrawStuckNFTs ?
 }
