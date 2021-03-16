@@ -179,7 +179,8 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           firstEditionTokenId,
           random,
           this.erc20Token1.address,
-          xferAmount
+          xferAmount,
+          {from: owner}
         )
 
         // random should have the tokens

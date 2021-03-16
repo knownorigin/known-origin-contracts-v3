@@ -3,13 +3,12 @@
 pragma solidity 0.7.6;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
-import {IERC721Ownable} from "../IERC721Ownable.sol";
-
-// TODO should we really use SafeERC20 from OZ to make it safe for all ERC20?
 
 interface ERC998ERC20TopDown {
     event ReceivedERC20(address indexed _from, uint256 indexed _tokenId, address indexed _erc20Contract, uint256 _value);
@@ -27,6 +26,7 @@ interface ERC998ERC20TopDownEnumerable {
 
 abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDownEnumerable, ReentrancyGuard, Context {
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -60,8 +60,16 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) external override nonReentrant {
         require(_value > 0, "getERC20: Value cannot be zero");
 
-        // todo should support approve or approved for all as those people could transfer the token and do this operation
-        require(IERC721Ownable(address(this)).ownerOf(_tokenId) == _msgSender(), "getERC20: Only token owner");
+        address spender = _msgSender();
+        IERC721 self = IERC721(address(this));
+
+        address owner = self.ownerOf(_tokenId);
+        require(
+            owner == spender
+            || self.isApprovedForAll(owner, spender)
+            || self.getApproved(_tokenId) == spender,
+            "getERC20: Only token owner"
+        );
         require(_from == _msgSender(), "getERC20: ERC20 owner must be the token owner");
         require(whitelistedContracts[_erc20Contract], "getERC20: Specified contract not whitelisted");
 
@@ -78,10 +86,9 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract].add(_value);
 
         IERC20 token = IERC20(_erc20Contract);
-        address self = address(this);
-        require(token.allowance(_from, self) >= _value, "getERC20: Amount exceeds allowance");
+        require(token.allowance(_from, address(this)) >= _value, "getERC20: Amount exceeds allowance");
 
-        token.transferFrom(_from, self, _value);
+        token.safeTransferFrom(_from, address(this), _value);
 
         emit ReceivedERC20(_from, _tokenId, _erc20Contract, _value);
     }
@@ -109,8 +116,17 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     function _prepareERC20LikeTransfer(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) private {
         require(_value > 0, "_prepareERC20LikeTransfer: Value cannot be zero");
 
-        // todo should support approve or approved for all as those people could transfer the token and do this operation
-        require(IERC721Ownable(address(this)).ownerOf(_tokenId) == _msgSender(), "_prepareERC20LikeTransfer: Not owner");
+        address spender = _msgSender();
+        IERC721 self = IERC721(address(this));
+
+        address owner = self.ownerOf(_tokenId);
+        require(
+            owner == spender
+            || self.isApprovedForAll(owner, spender)
+            || self.getApproved(_tokenId) == spender,
+            "_prepareERC20LikeTransfer: Not owner"
+        );
+
         require(ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract), "_prepareERC20LikeTransfer: No such ERC20 wrapped in token");
 
         ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract].sub(
