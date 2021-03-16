@@ -68,7 +68,7 @@ contract('MinterFactory', function (accounts) {
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.factory.address, {from: deployer});
   });
 
-  describe('mintToken() - Buy Now', () => {
+  describe.only('mintToken() - Buy Now', () => {
 
     beforeEach(async () => {
       this.startDate = Date.now();
@@ -78,6 +78,12 @@ contract('MinterFactory', function (accounts) {
         to: artist,
         tokenId: firstEditionTokenId
       });
+
+      // ensure that the artist cannot mint again within the freeze window
+      await expectRevert(
+        this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist}),
+        "KODA: Caller unable to create yet"
+      )
     });
 
     it('edition created', async () => {
@@ -97,7 +103,7 @@ contract('MinterFactory', function (accounts) {
     });
   });
 
-  describe('mintBatchEdition() - Buy Now - edition size 10', () => {
+  describe.only('mintBatchEdition() - Buy Now - edition size 10', () => {
 
     const editionSize = '10';
 
@@ -109,6 +115,12 @@ contract('MinterFactory', function (accounts) {
         to: artist,
         tokenId: firstEditionTokenId
       });
+
+      // ensure that the artist cannot mint again within the freeze window
+      await expectRevert(
+        this.factory.mintBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist}),
+        "KODA: Caller unable to create yet"
+      )
     });
 
     it('edition created', async () => {
@@ -129,7 +141,7 @@ contract('MinterFactory', function (accounts) {
 
   });
 
-  describe('mintConsecutiveBatchEdition() - Buy Now - edition size 10', () => {
+  describe.only('mintConsecutiveBatchEdition() - Buy Now - edition size 10', () => {
 
     const editionSize = '10';
 
@@ -144,6 +156,12 @@ contract('MinterFactory', function (accounts) {
         fromTokenId: start.toString(),
         toTokenId: end.toString()
       });
+
+      // ensure that the artist cannot mint again within the freeze window
+      await expectRevert(
+        this.factory.mintConsecutiveBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist}),
+        "KODA: Caller unable to create yet"
+      )
     });
 
     it('edition created', async () => {
