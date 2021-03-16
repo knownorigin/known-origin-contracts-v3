@@ -59,9 +59,8 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // Token ID to Listing
     mapping(uint256 => Listing) public tokenListings;
 
-    // TODO CLIFF wire in edition start date
-    // Edition ID to Start
-    //mapping(uint256 => Listing) public editionStart;
+    // Edition ID to StartDate
+    mapping(uint256 => uint256) public editionStart;
 
     // KODA token
     IKODAV3 public koda;
@@ -216,17 +215,25 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // Primary "offers" sale flow //
     ////////////////////////////////
 
-    // TODO: CLIFF store in editionStart mapping above. Can it just be a date that's stored by Edition id?
-    function enableOffers(address _creator, uint256 _editionId, uint128 _startDate) external override {
-        // TODO store start date and wire up to the test and payment flow
+    function enableEditionOffers(address _creator, uint256 _editionId, uint128 _startDate) external override {
+        require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
+        editionStart[_editionId] = _startDate;
     }
 
     function placeEditionBid(uint256 _editionId) public override payable nonReentrant {
+
         Offer storage offer = editionOffers[_editionId];
         require(msg.value >= offer.offer.add(minBidAmount), "Bid not high enough");
 
         // No contracts can bid to prevent money lockups on reverts
         require(!Address.isContract(_msgSender()), "Cannot offer as a contract");
+
+        // Honor start date if set
+        uint256 startDate = editionStart[_editionId];
+        if (startDate > 0) {
+            require(block.timestamp >= startDate, "Not yet accepting offers");
+            delete editionStart[_editionId]; // elapsed, so free storage
+        }
 
         // send money back to top bidder if existing offer found
         if (offer.offer > 0) {
@@ -239,11 +246,10 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         emit EditionBidPlaced(_editionId, _msgSender(), msg.value);
     }
 
-    // TODO only allow withdrawal after the lock in period
     function withdrawEditionBid(uint256 _editionId) public override nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.offer > 0, "No open bid");
-        require(offer.bidder == _msgSender(), "Caller not the top bidder");
+        require(offer.bidder == _msgSender(), "Not the top bidder");
         require(block.timestamp >= (offer.lockupUntil), "Bid lockup not elapsed");
 
         // send money back to top bidder

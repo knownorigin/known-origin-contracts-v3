@@ -132,6 +132,19 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
         });
 
+        it('offer is recorded correctly', async () => {
+
+          const token = firstTokenId;
+
+          // offer minimum bid for token
+          await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
+
+          // Check recorded values
+          const {offer, bidder} = await this.marketplace.tokenOffers(token);
+          expect(bidder).to.be.equal(collectorA);
+          expect(offer).to.be.bignumber.equal(_0_5_ETH);
+        });
+
         it('can place minimum bid as first bid on token', async () => {
 
           const token = firstTokenId;
@@ -198,7 +211,6 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         it('cannot bid again with same amount', async () => {
 
           const token = firstTokenId;
-          const BID_OK = ether('0.51');
 
           // collector A places offer 0.5 ETH for token
           await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
@@ -229,6 +241,20 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
       });
 
+      it('reverts if you attempt to withdraw before lockup elapses', async () => {
+
+        await this.marketplace.placeTokenBid(firstTokenId, {
+          from: collectorA,
+          value: _0_5_ETH
+        });
+
+        await expectRevert(
+            this.marketplace.withdrawTokenBid(firstTokenId, {from: collectorA}),
+            "Bid lockup not elapsed"
+        );
+
+      });
+
       it('reverts if no current bid', async () => {
 
         const token = firstTokenId;
@@ -241,14 +267,14 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
       });
 
-      it('reverts if not bidder', async () => {
+      it('reverts if not called by top bidder', async () => {
 
         const token = firstTokenId;
 
         // collector A places offer 0.5 ETH for token
         await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
 
-        // collector B attempts to withdraw collecter A's bid
+        // collector B attempts to withdraw collector A's bid
         await expectRevert(
             this.marketplace.withdrawTokenBid(token, {from: collectorB}),
             'Not bidder'
@@ -258,7 +284,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
       describe('on success', () => {
 
-        it('can place first bid on token then withdraw it', async () => {
+        it('can withdraw bid after lockup period elapses', async () => {
 
           const token = firstTokenId;
 
@@ -300,29 +326,30 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
         });
 
-        it('previous bidder refunded when outbid', async () => {
+        it('highest bidder refunded when bid withdrawn', async () => {
 
           const token = firstTokenId;
-          const BID_OK = ether('0.51');
 
           // collector A places offer 0.5 ETH for token
           await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
+
+          // Back to the future...
+          await time.increase(time.duration.hours(LOCKUP_HOURS));
 
           // Get the buyer's starting wallet balance
           const tracker = await balance.tracker(collectorA);
           const startBalance = await tracker.get();
 
-          // collector B places offer 0.51 ETH for token (ok bid)
-          const receipt = await this.marketplace.placeTokenBid(token, {from: collectorB, value: BID_OK});
-          expectEvent(receipt, 'TokenBidPlaced', {
-            _tokenId: token,
-            _currentOwner: minter,
-            _bidder: collectorB,
-            _amount: BID_OK
-          });
+          //  collector A withdraws bid at 1 gwei gas, gets a receipt
+          const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString());
+          const receipt = await this.marketplace.withdrawTokenBid(token, {from: collectorA, gasPrice});
 
-          // Expected balance is starting balance plus .5 ETH, the previous bid amount
-          const expectedBalance = startBalance.add(_0_5_ETH);
+          // Determine the gas cost associated with the transaction
+          const gasUsed = new BN( receipt.receipt.cumulativeGasUsed );
+          const txCost = gasUsed.mul(gasPrice);
+
+          // Expected balance is starting balance less tx cost plus .5 ETH, the previous bid amount
+          const expectedBalance = startBalance.add(_0_5_ETH).sub(txCost);
           const endBalance = await tracker.get();
           expect(endBalance).to.be.bignumber.equal(expectedBalance);
 
@@ -410,7 +437,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         // collector A places offer 0.5 ETH for token
         await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
 
-        // collector B attempts to reject collecter A's bid
+        // collector B attempts to reject collector A's bid
         await expectRevert(
             this.marketplace.rejectTokenBid(token, {from: collectorB}),
             'Not current owner'
@@ -505,6 +532,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
     describe('acceptTokenBid()', () => {
 
       const _0_5_ETH = ether('0.5');
+      const _0_1_ETH = ether('0.1');
 
       beforeEach(async () => {
 
@@ -535,12 +563,25 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         // collector A places offer 0.5 ETH for token
         await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
 
-        // collector B attempts to reject collecter A's bid
+        // collector B attempts to reject collector A's bid
         await expectRevert(
             this.marketplace.acceptTokenBid(token, _0_5_ETH, {from: collectorB}),
             'Not current owner'
         );
 
+      });
+
+      it('reverts if amount supplied is different than highest bid', async () => {
+
+        const token = firstTokenId;
+
+        // offer 0.5 ETH for token (first bid)
+        await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
+
+        await expectRevert(
+            this.marketplace.acceptTokenBid(token, _0_1_ETH, {from: minter}),
+            'Offer price has changed'
+        );
       });
 
       describe('on success', () => {
@@ -561,6 +602,10 @@ contract('KODAV3Marketplace token bids', function (accounts) {
             _amount: _0_5_ETH
           });
 
+        });
+
+        xit('KO and artist commission is split', async () => {
+          // TODO implement this test
         });
 
         it('owner cannot accept offer twice', async () => {
