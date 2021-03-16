@@ -12,7 +12,7 @@ const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3')
 const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
-const MinterFactory = artifacts.require('MinterFactory');
+const MinterFactory = artifacts.require('MintingFactory');
 
 const {validateEditionAndToken} = require('../test-helpers');
 

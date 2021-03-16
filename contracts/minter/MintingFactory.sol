@@ -8,7 +8,7 @@ import {IKODAV3Minter} from "../core/IKODAV3Minter.sol";
 import {IKODAV3PrimarySaleMarketplace} from "../marketplace/IKODAV3Marketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 
-contract MinterFactory is Context {
+contract MintingFactory is Context {
 
     event AdminFreezeWindowChanged(uint256 _account);
     event AdminFrequencyOverrideChanged(address _account, bool _override);
@@ -46,46 +46,48 @@ contract MinterFactory is Context {
     // V2 //
     ////////
 
-    function mintToken(SaleType saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
+    function mintToken(SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
         require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
         require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
 
         // Make tokens & edition
         uint256 editionId = koda.mintToken(_msgSender(), _uri);
 
-        setupSalesMechanic(editionId, saleType, _startDate, _basePrice, _stepPrice);
+        setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
     }
 
-    function mintBatchEdition(SaleType saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
+    function mintBatchEdition(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
         require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
         require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
 
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
 
-        setupSalesMechanic(editionId, saleType, _startDate, _basePrice, _stepPrice);
+        setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
     }
 
-    function mintConsecutiveBatchEdition(SaleType saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
+    function mintConsecutiveBatchEdition(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
         require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
         require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
 
         // Make tokens & edition
         uint256 editionId = koda.mintConsecutiveBatchEdition(_editionSize, _msgSender(), _uri);
 
-        setupSalesMechanic(editionId, saleType, _startDate, _basePrice, _stepPrice);
+        setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
     }
 
-    function setupSalesMechanic(uint256 _editionId, SaleType saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
-        if (SaleType.BUY_NOW == saleType) {
+    function setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
+        if (SaleType.BUY_NOW == _saleType) {
             marketplace.listEdition(_msgSender(), _editionId, _basePrice, _startDate);
         }
-        else if (SaleType.STEPPED == saleType) {
+        else if (SaleType.STEPPED == _saleType) {
             marketplace.listSteppedEditionAuction(_msgSender(), _editionId, _basePrice, _stepPrice, _startDate);
         }
-        else if (SaleType.OFFERS == saleType) {
+        else if (SaleType.OFFERS == _saleType) {
             marketplace.enableOffers(_msgSender(), _editionId, _startDate);
         }
+
+        _recordSuccessfulMint(_msgSender());
     }
 
     //////////////////////
@@ -93,10 +95,7 @@ contract MinterFactory is Context {
     //////////////////////
 
     function _canCreateNewEdition(address _account) internal view returns (bool) {
-        if (frequencyOverride[_account]) {
-            return true;
-        }
-        return (block.timestamp >= frozenTil[_account]);
+        return frequencyOverride[_account] ? true : block.timestamp >= frozenTil[_account];
     }
 
     function _recordSuccessfulMint(address _account) internal {
@@ -122,7 +121,4 @@ contract MinterFactory is Context {
         freezeWindow = _freezeWindow;
         emit AdminFreezeWindowChanged(_freezeWindow);
     }
-
-    // TODO withdrawStuckEther ?
-    // TODO withdrawStuckNFTs ?
 }
