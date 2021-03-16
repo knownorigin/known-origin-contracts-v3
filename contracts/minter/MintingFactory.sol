@@ -95,11 +95,15 @@ contract MintingFactory is Context {
     //////////////////////
 
     function _canCreateNewEdition(address _account) internal view returns (bool) {
-        return frequencyOverride[_account] ? true : block.timestamp >= frozenTil[_account];
+        return frequencyOverride[_account] ? true : _getNow() >= frozenTil[_account];
     }
 
     function _recordSuccessfulMint(address _account) internal {
-        frozenTil[_account] = block.timestamp + freezeWindow;
+        frozenTil[_account] = _getNow() + freezeWindow;
+    }
+
+    function _getNow() internal virtual view returns (uint256) {
+        return block.timestamp;
     }
 
     ////////////////////

@@ -12,7 +12,7 @@ const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3')
 const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
-const MinterFactory = artifacts.require('MintingFactory');
+const MinterFactory = artifacts.require('MockMintingFactory');
 
 const {validateEditionAndToken} = require('../test-helpers');
 
@@ -68,7 +68,7 @@ contract('MinterFactory', function (accounts) {
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.factory.address, {from: deployer});
   });
 
-  describe.only('mintToken() - Buy Now', () => {
+  describe('mintToken() - Buy Now', () => {
 
     beforeEach(async () => {
       this.startDate = Date.now();
@@ -101,9 +101,22 @@ contract('MinterFactory', function (accounts) {
       expect(_startDate).to.bignumber.equal(this.startDate.toString(), 'Failed edition details size validation');
       expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
     });
+
+    it('After freeze window can mint again', async () => {
+      const frozenTil = await this.factory.frozenTil(artist)
+      await this.factory.setNow(frozenTil.addn(5))
+
+      this.startDate = Date.now();
+      const receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
+      await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: artist,
+        tokenId: firstEditionTokenId.addn(1000)
+      });
+    })
   });
 
-  describe.only('mintBatchEdition() - Buy Now - edition size 10', () => {
+  describe('mintBatchEdition() - Buy Now - edition size 10', () => {
 
     const editionSize = '10';
 
@@ -139,9 +152,21 @@ contract('MinterFactory', function (accounts) {
       expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
     });
 
+    it('After freeze window can mint again', async () => {
+      const frozenTil = await this.factory.frozenTil(artist)
+      await this.factory.setNow(frozenTil.addn(5))
+
+      this.startDate = Date.now();
+      const receipt = await this.factory.mintBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
+      await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: artist,
+        tokenId: firstEditionTokenId.addn(1000)
+      });
+    })
   });
 
-  describe.only('mintConsecutiveBatchEdition() - Buy Now - edition size 10', () => {
+  describe('mintConsecutiveBatchEdition() - Buy Now - edition size 10', () => {
 
     const editionSize = '10';
 
@@ -179,6 +204,23 @@ contract('MinterFactory', function (accounts) {
       expect(_startDate).to.bignumber.equal(this.startDate.toString(), 'Failed edition details size validation');
       expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
     });
+
+    it('After freeze window can mint again', async () => {
+      const frozenTil = await this.factory.frozenTil(artist)
+      await this.factory.setNow(frozenTil.addn(5))
+
+      this.startDate = Date.now();
+      const receipt = await this.factory.mintConsecutiveBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
+
+      const start = firstEditionTokenId.addn(1000).toNumber();
+      const end = start + parseInt(editionSize);
+      await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'ConsecutiveTransfer', {
+        fromAddress: ZERO_ADDRESS,
+        toAddress: artist,
+        fromTokenId: start.toString(),
+        toTokenId: end.toString()
+      });
+    })
   });
 
 });
