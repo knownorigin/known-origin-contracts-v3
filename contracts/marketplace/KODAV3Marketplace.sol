@@ -486,9 +486,11 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     /////////////////////////////////
 
     function placeTokenBid(uint256 _tokenId) public payable override nonReentrant {
+        // Check for highest offer
         Offer storage offer = tokenOffers[_tokenId];
-        require(offer.offer.add(minBidAmount) >= msg.value, "Bid not high enough");
+        require(msg.value >= offer.offer.add(minBidAmount), "Bid not high enough");
 
+        // TODO create testing contract for this
         // No contracts can place a bid to prevent money lockups on refunds
         require(!Address.isContract(_msgSender()), "Cannot make an offer as a contract");
 
@@ -505,6 +507,9 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
 
     function withdrawTokenBid(uint256 _tokenId) public override nonReentrant {
         Offer storage offer = tokenOffers[_tokenId];
+        require(offer.bidder != address(0), "No open bid");
+
+        // caller must be bidder
         require(offer.bidder == _msgSender(), "Not bidder");
 
         // send money back to top bidder
@@ -517,7 +522,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     }
 
     function rejectTokenBid(uint256 _tokenId) public override nonReentrant {
-        Offer storage offer = tokenOffers[_tokenId];
+        Offer memory offer = tokenOffers[_tokenId];
         require(offer.bidder != address(0), "No open bid");
 
         address currentOwner = koda.ownerOf(_tokenId);
@@ -533,7 +538,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     }
 
     function acceptTokenBid(uint256 _tokenId, uint256 _offerPrice) public override nonReentrant {
-        Offer storage offer = tokenOffers[_tokenId];
+        Offer memory offer = tokenOffers[_tokenId];
         require(offer.bidder != address(0), "No open bid");
         require(offer.offer == _offerPrice, "Offer price has changed");
 

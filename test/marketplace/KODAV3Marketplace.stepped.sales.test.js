@@ -1,19 +1,14 @@
 const {BN, constants, time, expectEvent, expectRevert, balance} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
-const _ = require('lodash');
-
 const web3 = require('web3');
 const {ether} = require("@openzeppelin/test-helpers");
-
 const {expect} = require('chai');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
-
-const {validateEditionAndToken} = require('../test-helpers');
 
 contract('KODAV3Marketplace', function (accounts) {
   const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD] = accounts;
@@ -22,7 +17,6 @@ contract('KODAV3Marketplace', function (accounts) {
 
   const STARTING_EDITION = '10000';
 
-  const ETH_ONE = ether('1');
   const ONE = new BN('1');
   const ZERO = new BN('0');
 
@@ -30,7 +24,6 @@ contract('KODAV3Marketplace', function (accounts) {
   const _0_1_ETH = ether('0.1');
   const _1_ETH = ether('1');
   const _1_5_ETH = ether('1.5');
-  const _0_5_ETH = ether('0.5');
 
   const firstEditionTokenId = new BN('11000');
   const secondEditionTokenId = new BN('12000');
@@ -486,7 +479,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
       });
 
-      it('cannot be converted unless list price is equal to or greater than minimum bid', async () => {
+      it('reverts unless list price is equal to or greater than minimum bid', async () => {
 
         const edition = firstEditionTokenId;
         const listingPrice = ZERO;
