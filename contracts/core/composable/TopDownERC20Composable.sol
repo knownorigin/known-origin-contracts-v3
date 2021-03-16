@@ -6,31 +6,26 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
 import {IERC721Ownable} from "../IERC721Ownable.sol";
-
-// FIXME Add composable support - https://github.com/mattlockyer/composables-998/blob/master/contracts/ComposableTopDown.sol
 
 // TODO should we really use SafeERC20 from OZ to make it safe for all ERC20?
 
-// todo: this does not include the ERC223
 interface ERC998ERC20TopDown {
     event ReceivedERC20(address indexed _from, uint256 indexed _tokenId, address indexed _erc20Contract, uint256 _value);
     event TransferERC20(uint256 indexed _tokenId, address indexed _to, address indexed _erc20Contract, uint256 _value);
 
     function balanceOfERC20(uint256 _tokenId, address _erc20Contract) external view returns (uint256);
-
     function transferERC20(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) external;
-
     function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) external;
 }
 
 interface ERC998ERC20TopDownEnumerable {
     function totalERC20Contracts(uint256 _tokenId) external view returns (uint256);
-
     function erc20ContractByIndex(uint256 _tokenId, uint256 _index) external view returns (address);
 }
 
-abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDownEnumerable, ReentrancyGuard {
+abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDownEnumerable, ReentrancyGuard, Context {
     using SafeMath for uint256;
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -62,13 +57,12 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         emit TransferERC20(_tokenId, _to, _erc20Contract, _value);
     }
 
-    // todo; do we need reentrancy guard?
     function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) external override nonReentrant {
         require(_value > 0, "getERC20: Value cannot be zero");
 
         // todo should support approve or approved for all as those people could transfer the token and do this operation
-        require(IERC721Ownable(address(this)).ownerOf(_tokenId) == msg.sender, "getERC20: Only token owner");
-        require(_from == msg.sender, "getERC20: ERC20 owner must be the token owner");
+        require(IERC721Ownable(address(this)).ownerOf(_tokenId) == _msgSender(), "getERC20: Only token owner");
+        require(_from == _msgSender(), "getERC20: ERC20 owner must be the token owner");
         require(whitelistedContracts[_erc20Contract], "getERC20: Specified contract not whitelisted");
 
         bool nftAlreadyContainsERC20 = ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract);
@@ -116,8 +110,8 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         require(_value > 0, "_prepareERC20LikeTransfer: Value cannot be zero");
 
         // todo should support approve or approved for all as those people could transfer the token and do this operation
-        require(IERC721Ownable(address(this)).ownerOf(_tokenId) == msg.sender, "_prepareERC20LikeTransfer: Not owner");
-        require(ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract), "_prepareERC20LikeTransfer: No such ERC20/ERC223 wrapped in token");
+        require(IERC721Ownable(address(this)).ownerOf(_tokenId) == _msgSender(), "_prepareERC20LikeTransfer: Not owner");
+        require(ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract), "_prepareERC20LikeTransfer: No such ERC20 wrapped in token");
 
         ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract].sub(
             _value,

@@ -9,7 +9,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
 
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IERC2981} from "./IERC2981.sol";
@@ -26,7 +25,7 @@ import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, NFTPermit, Konstants, ERC165, IKODAV3Minter, IKODAV3, Context {
+contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, NFTPermit, Konstants, ERC165, IKODAV3Minter, IKODAV3 {
     using SafeMath for uint256;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));

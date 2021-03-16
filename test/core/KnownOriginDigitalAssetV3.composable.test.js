@@ -385,7 +385,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     it('Reverts if token is not wrapped in NFT', async () => {
       await expectRevert(
         this.token.transferERC20(firstEditionTokenId, random, this.erc20Token5.address, ONE_THOUSAND_TOKENS),
-        "_prepareERC20LikeTransfer: No such ERC20/ERC223 wrapped in token"
+        "_prepareERC20LikeTransfer: No such ERC20 wrapped in token"
       )
     })
   })
