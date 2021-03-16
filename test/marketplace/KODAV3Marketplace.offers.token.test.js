@@ -16,6 +16,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
   const STARTING_EDITION = '10000';
   const MIN_BID = ether('0.01');
+  const LOCKUP_HOURS = 6;
 
   const firstTokenId = new BN('11000');
 
@@ -264,6 +265,9 @@ contract('KODAV3Marketplace token bids', function (accounts) {
           // offer 0.5 ETH for token (first bid)
           await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
 
+          // Back to the future...
+          await time.increase(time.duration.hours(LOCKUP_HOURS));
+
           // withdraw bid
           const receipt = await this.marketplace.withdrawTokenBid(token, {from: collectorA});
           expectEvent(receipt, 'TokenBidWithdrawn', {
@@ -283,6 +287,9 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
           // collector B outbids
           await this.marketplace.placeTokenBid(token, {from: collectorB, value: BID_OK});
+
+          // Back to the future...
+          await time.increase(time.duration.hours(LOCKUP_HOURS));
 
           // collector B withdraws bid
           const receipt = await this.marketplace.withdrawTokenBid(token, {from: collectorB});
@@ -328,6 +335,9 @@ contract('KODAV3Marketplace token bids', function (accounts) {
           // offer 0.5 ETH for token (first bid)
           await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
 
+          // Back to the future...
+          await time.increase(time.duration.hours(LOCKUP_HOURS));
+
           // withdraw bid
           await this.marketplace.withdrawTokenBid(token, {from: collectorA});
 
@@ -348,6 +358,9 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
           // offer 0.5 ETH for token (first bid)
           await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
+
+          // Back to the future...
+          await time.increase(time.duration.hours(LOCKUP_HOURS));
 
           // withdraw bid
           await this.marketplace.withdrawTokenBid(token, {from: collectorA});

@@ -27,7 +27,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     struct Offer {
         uint256 offer;
         address bidder;
-        // uint128 startDate; // TODO use this property
+        uint256 lockupUntil;
     }
 
     struct Listing {
@@ -59,6 +59,10 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // Token ID to Listing
     mapping(uint256 => Listing) public tokenListings;
 
+    // TODO CLIFF wire in edition start date
+    // Edition ID to Start
+    //mapping(uint256 => Listing) public editionStart;
+
     // KODA token
     IKODAV3 public koda;
 
@@ -79,6 +83,9 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
 
     // Minimum bid/list amount
     uint256 public minBidAmount = 0.01 ether;
+
+    // Bid lockup period
+    uint256 public bidLockupPeriod = 6 hours;
 
     IKOAccessControlsLookup public accessControls;
 
@@ -209,6 +216,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // Primary "offers" sale flow //
     ////////////////////////////////
 
+    // TODO: CLIFF store in editionStart mapping above. Can it just be a date that's stored by Edition id?
     function enableOffers(address _creator, uint256 _editionId, uint128 _startDate) external override {
         // TODO store start date and wire up to the test and payment flow
     }
@@ -226,16 +234,17 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         }
 
         // setup offer
-        editionOffers[_editionId] = Offer(msg.value, _msgSender());
+        editionOffers[_editionId] = Offer(msg.value, _msgSender(), getLockupTime());
 
         emit EditionBidPlaced(_editionId, _msgSender(), msg.value);
     }
 
-    // TODO lock in period for 24hrs?
+    // TODO only allow withdrawal after the lock in period
     function withdrawEditionBid(uint256 _editionId) public override nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.offer > 0, "No open bid");
         require(offer.bidder == _msgSender(), "Caller not the top bidder");
+        require(block.timestamp >= (offer.lockupUntil), "Bid lockup not elapsed");
 
         // send money back to top bidder
         _refundBidder(offer.bidder, offer.offer);
@@ -423,6 +432,10 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         require(success, "Edition offer refund failed");
     }
 
+    function getLockupTime() internal view returns (uint256 lockupUntil) {
+        lockupUntil = block.timestamp + bidLockupPeriod;
+    }
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -500,7 +513,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         }
 
         // setup offer
-        tokenOffers[_tokenId] = Offer(msg.value, _msgSender());
+        tokenOffers[_tokenId] = Offer(msg.value, _msgSender(), getLockupTime());
 
         emit TokenBidPlaced(_tokenId, koda.ownerOf(_tokenId), _msgSender(), msg.value);
     }
@@ -511,6 +524,9 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
 
         // caller must be bidder
         require(offer.bidder == _msgSender(), "Not bidder");
+
+        // cannot withdraw before lockup period elapses
+        require(block.timestamp >= (offer.lockupUntil), "Bid lockup not elapsed");
 
         // send money back to top bidder
         _refundSecondaryBidder(offer.bidder, offer.offer);
