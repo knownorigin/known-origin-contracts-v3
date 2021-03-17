@@ -17,7 +17,6 @@ import {IKODAV3Minter} from "./IKODAV3Minter.sol";
 import {Konstants} from "./Konstants.sol";
 import {ITokenUriResolver} from "../programmable/ITokenUriResolver.sol";
 import {NFTPermit} from "./mixins/NFTPermit.sol";
-import {MintBatchViaSig} from "./mixins/MintBatchViaSig.sol";
 import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 
 // FIXME Use safe-math for all calcs?
@@ -25,7 +24,7 @@ import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, NFTPermit, Konstants, ERC165, IKODAV3Minter, IKODAV3 {
+contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstants, ERC165, IKODAV3Minter, IKODAV3 {
     using SafeMath for uint256;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
@@ -144,7 +143,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
         return _mintBatchEdition(_editionSize, _to, _uri);
     }
 
-    function _mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri) internal override returns (uint256) {
+    function _mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri) internal returns (uint256) {
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
 
         uint256 start = generateNextEditionNumber();
@@ -674,12 +673,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, MintBatchViaSig, N
         return chainId;
     }
 
-    function _domainSeparator() internal virtual override (NFTPermit, MintBatchViaSig) returns (bytes32) {
+    function _domainSeparator() internal virtual override (NFTPermit) returns (bytes32) {
         return DOMAIN_SEPARATOR;
-    }
-
-    function _hasMinterRole(address _minter) internal virtual override returns (bool) {
-        return accessControls.hasMinterRole(_minter);
     }
 
     ///////////////////////
