@@ -65,7 +65,6 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function transferERC20(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) external override nonReentrant {
-        // todo handle transfer where erc20 is recorded at the edition level and when its at both levels
         _prepareERC20LikeTransfer(_tokenId, _to, _erc20Contract, _value);
 
         IERC20(_erc20Contract).transfer(_to, _value);
@@ -89,13 +88,16 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         require(_from == _msgSender(), "getERC20: ERC20 owner must be the token owner");
         require(whitelistedContracts[_erc20Contract], "getERC20: Specified contract not whitelisted");
 
+        IKODAV3 koda = IKODAV3(address(this));
+        uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+        bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[editionId].contains(_erc20Contract);
         bool nftAlreadyContainsERC20 = ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract);
         require(
-            nftAlreadyContainsERC20 || totalERC20Contracts(_tokenId) < maxERC20sPerNFT,
+            nftAlreadyContainsERC20 || editionAlreadyContainsERC20 || totalERC20Contracts(_tokenId) < maxERC20sPerNFT,
             "getERC20: Token limit for number of unique ERC20s reached"
         );
 
-        if (!nftAlreadyContainsERC20) {
+        if (!editionAlreadyContainsERC20 && !nftAlreadyContainsERC20) {
             ERC20sEmbeddedInNft[_tokenId].add(_erc20Contract);
         }
 
@@ -109,6 +111,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         emit ReceivedERC20(_from, _tokenId, _erc20Contract, _value);
     }
 
+    // todo - should we lock this down to be for pre-primary auction
     function addERC20ToEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) external nonReentrant {
         require(_value > 0, "addERC20ToEdition: Value cannot be zero");
 
@@ -211,7 +214,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         }
 
         // todo - is it possible to do something like this for an edition? potentially not as all tokens would have to spend their ERC20
-        if (ERC20Balances[_tokenId][_erc20Contract] == 0) {
+        if (nftContainsERC20 && ERC20Balances[_tokenId][_erc20Contract] == 0) {
             ERC20sEmbeddedInNft[_tokenId].remove(_erc20Contract);
         }
     }
