@@ -56,7 +56,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     // ERC20 contract -> whether it is allowed to be wrapped within any token
     mapping(address => bool) public whitelistedContracts;
 
-    function balanceOfERC20(uint256 _tokenId, address _erc20Contract) external override view returns (uint256) {
+    function balanceOfERC20(uint256 _tokenId, address _erc20Contract) public override view returns (uint256) {
         IKODAV3 koda = IKODAV3(address(this));
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
 
@@ -171,27 +171,49 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     /// --- Internal ----
 
     function _prepareERC20LikeTransfer(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) private {
-        require(_value > 0, "_prepareERC20LikeTransfer: Value cannot be zero");
-        require(_to != address(0), "_prepareERC20LikeTransfer: To cannot be zero address");
+        {
+            require(_value > 0, "_prepareERC20LikeTransfer: Value cannot be zero");
+            require(_to != address(0), "_prepareERC20LikeTransfer: To cannot be zero address");
 
-        address spender = _msgSender();
-        IERC721 self = IERC721(address(this));
+            IERC721 self = IERC721(address(this));
 
-        address owner = self.ownerOf(_tokenId);
-        require(
-            owner == spender
-            || self.isApprovedForAll(owner, spender)
-            || self.getApproved(_tokenId) == spender,
-            "_prepareERC20LikeTransfer: Not owner"
-        );
+            address owner = self.ownerOf(_tokenId);
+            require(
+                owner == _msgSender()
+                || self.isApprovedForAll(owner, _msgSender())
+                || self.getApproved(_tokenId) == _msgSender(),
+                "_prepareERC20LikeTransfer: Not owner"
+            );
+        }
 
-        require(ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract), "_prepareERC20LikeTransfer: No such ERC20 wrapped in token");
+        bool nftContainsERC20 = ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract);
 
-        ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract].sub(
-            _value,
-            "_prepareERC20LikeTransfer: Transfer amount exceeds NFT balance"
-        );
+        IKODAV3 koda = IKODAV3(address(this));
+        uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+        bool editionContainsERC20 = ERC20sEmbeddedInEdition[editionId].contains(_erc20Contract);
+        require(nftContainsERC20 || editionContainsERC20, "_prepareERC20LikeTransfer: No such ERC20 wrapped in token");
 
+        require(balanceOfERC20(_tokenId, _erc20Contract) >= _value, "_prepareERC20LikeTransfer: Transfer amount exceeds balance");
+
+        uint256 editionBalance = editionTokenERC20Balances[editionId][_erc20Contract];
+        uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId];
+        editionBalance = editionBalance.sub(spentTokens);
+
+        if (editionBalance >= _value) {
+            editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId] = spentTokens.add(_value);
+        } else if (ERC20Balances[_tokenId][_erc20Contract] >= _value) {
+            ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract].sub(_value);
+        } else {
+            // take from both balances
+            if (editionBalance > 0) {
+                editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId] = spentTokens.add(editionBalance);
+            }
+
+            uint256 amountOfTokensToSpendFromTokenBalance = _value.sub(editionBalance);
+            ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract].sub(amountOfTokensToSpendFromTokenBalance);
+        }
+
+        // todo - is it possible to do something like this for an edition? potentially not as all tokens would have to spend their ERC20
         if (ERC20Balances[_tokenId][_erc20Contract] == 0) {
             ERC20sEmbeddedInNft[_tokenId].remove(_erc20Contract);
         }
