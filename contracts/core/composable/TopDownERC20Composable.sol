@@ -59,7 +59,12 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     function balanceOfERC20(uint256 _tokenId, address _erc20Contract) external override view returns (uint256) {
         IKODAV3 koda = IKODAV3(address(this));
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
-        return editionTokenERC20Balances[editionId][_erc20Contract].add(ERC20Balances[_tokenId][_erc20Contract]);
+
+        uint256 editionBalance = editionTokenERC20Balances[editionId][_erc20Contract];
+        uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId];
+        editionBalance = editionBalance.sub(spentTokens);
+
+        return editionBalance.add(ERC20Balances[_tokenId][_erc20Contract]);
     }
 
     function transferERC20(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) external override nonReentrant {
