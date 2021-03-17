@@ -101,6 +101,8 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         return ERC20sEmbeddedInNft[_tokenId].at(_index);
     }
 
+    // TODO batch load tokens
+
     /// --- Admin ----
     // To be overriden by implementing class
 
