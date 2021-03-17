@@ -620,12 +620,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
 
     function whitelistERC20(address _address) override public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
-        _whitelistERC20ERC223(_address);
+        _whitelistERC20(_address);
     }
 
     function removeWhitelistForERC20(address _address) override public {
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
-        _removeWhitelistERC20ERC223(_address);
+        _removeWhitelistERC20(_address);
     }
 
     function updateMaxERC20sPerNFT(uint256 _max) override public {
