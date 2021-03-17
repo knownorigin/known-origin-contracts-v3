@@ -284,14 +284,14 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
             await this.token.editionTokenERC20Balances(await this.token.getEditionIdOfToken(firstEditionTokenId), this.erc20Token1.address)
           ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
 
+          // first and second token of edition should be enough to give us confidence
           expect(
             await this.token.balanceOfERC20(firstEditionTokenId, this.erc20Token1.address)
-          ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
+          ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS.div(this.editionSize))
 
-          // todo check second token of edition etc
-          // expect(
-          //   await this.token.balanceOfERC20(firstEditionTokenId, this.erc20Token1.address)
-          // ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
+          expect(
+            await this.token.balanceOfERC20(firstEditionTokenId.addn(1), this.erc20Token1.address)
+          ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS.div(this.editionSize))
 
           expect(
             await this.token.totalERC20Contracts(firstEditionTokenId)
@@ -319,9 +319,10 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
             await this.token.editionTokenERC20Balances(await this.token.getEditionIdOfToken(firstEditionTokenId), this.erc20Token1.address)
           ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
 
+          // 100 tokens at the edition level but 1000 tokens at the token level
           expect(
             await this.token.balanceOfERC20(firstEditionTokenId, this.erc20Token1.address)
-          ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS.muln(2))
+          ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS.add(ONE_THOUSAND_TOKENS.div(this.editionSize)))
 
           expect(
             await this.token.totalERC20Contracts(firstEditionTokenId)
@@ -339,7 +340,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
         it('Can transfer wrapped tokens out', async () => {
           expect(await this.erc20Token1.balanceOf(random)).to.be.bignumber.equal('0')
 
-          const xferAmount = ONE_THOUSAND_TOKENS.divn(2)
+          const xferAmount = ONE_THOUSAND_TOKENS.div(this.editionSize).divn(2)
           await this.token.transferERC20(
             firstEditionTokenId,
             random,

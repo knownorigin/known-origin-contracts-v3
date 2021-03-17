@@ -58,8 +58,9 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
 
         uint256 editionBalance = editionTokenERC20Balances[editionId][_erc20Contract];
+        uint256 tokenBalance = editionBalance.div(koda.getSizeOfEdition(editionId)); // todo I assume single mints will return a size of 1
         uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId];
-        editionBalance = editionBalance.sub(spentTokens);
+        editionBalance = tokenBalance.sub(spentTokens);
 
         return editionBalance.add(ERC20Balances[_tokenId][_erc20Contract]);
     }
@@ -195,7 +196,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
         require(balanceOfERC20(_tokenId, _erc20Contract) >= _value, "_prepareERC20LikeTransfer: Transfer amount exceeds balance");
 
-        uint256 editionBalance = editionTokenERC20Balances[editionId][_erc20Contract];
+        uint256 editionBalance = editionTokenERC20Balances[editionId][_erc20Contract].div(koda.getSizeOfEdition(editionId));
         uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId];
         editionBalance = editionBalance.sub(spentTokens);
 
