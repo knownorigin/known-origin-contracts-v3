@@ -4,8 +4,7 @@ pragma solidity 0.7.6;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import {EnumerableSet} from "./EnumerableSet.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
@@ -28,8 +27,6 @@ interface ERC998ERC20TopDownEnumerable {
 
 abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDownEnumerable, ReentrancyGuard, Context {
     using SafeMath for uint256;
-    using SafeERC20 for IERC20;
-    using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     event ContractWhitelisted(address indexed contractAddress);
@@ -71,7 +68,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         // todo handle transfer where erc20 is recorded at the edition level and when its at both levels
         _prepareERC20LikeTransfer(_tokenId, _to, _erc20Contract, _value);
 
-        IERC20(_erc20Contract).safeTransfer(_to, _value);
+        IERC20(_erc20Contract).transfer(_to, _value);
 
         emit TransferERC20(_tokenId, _to, _erc20Contract, _value);
     }
@@ -107,7 +104,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         IERC20 token = IERC20(_erc20Contract);
         require(token.allowance(_from, address(this)) >= _value, "getERC20: Amount exceeds allowance");
 
-        token.safeTransferFrom(_from, address(this), _value);
+        token.transferFrom(_from, address(this), _value);
 
         emit ReceivedERC20(_from, _tokenId, _erc20Contract, _value);
     }
@@ -136,7 +133,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         IERC20 token = IERC20(_erc20Contract);
         require(token.allowance(_from, address(this)) >= _value, "addERC20ToEdition: Amount exceeds allowance");
 
-        token.safeTransferFrom(_from, address(this), _value);
+        token.transferFrom(_from, address(this), _value);
 
         emit ReceivedERC20ForEdition(_from, _editionId, _erc20Contract, _value);
     }
