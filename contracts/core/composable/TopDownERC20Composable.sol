@@ -52,7 +52,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     function transferERC20(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) external override nonReentrant {
         _prepareERC20LikeTransfer(_tokenId, _to, _erc20Contract, _value);
 
-        IERC20(_erc20Contract).transfer(_to, _value);
+        IERC20(_erc20Contract).safeTransfer(_to, _value);
 
         emit TransferERC20(_tokenId, _to, _erc20Contract, _value);
     }
