@@ -69,11 +69,11 @@ contract('KnownOriginDigitalAssetV3 Royalties resolver', function (accounts) {
       const hasRoyalties = await this.token.hasRoyalties(firstEditionTokenId);
       expect(hasRoyalties).to.be.equal(true);
 
-      const royaltyInfo = await this.token.royaltyInfo(firstEditionTokenId);
+      const royaltyInfo = await this.token.royaltyInfo.call(firstEditionTokenId);
       expect(royaltyInfo.receiver).to.be.equal(owner);
       expect(royaltyInfo.amount).to.be.bignumber.equal('1250000');
 
-      const royaltyAndCreatorInfo = await this.token.royaltyAndCreatorInfo(firstEditionTokenId);
+      const royaltyAndCreatorInfo = await this.token.royaltyAndCreatorInfo.call(firstEditionTokenId);
       expect(royaltyAndCreatorInfo.receiver).to.be.equal(owner);
       expect(royaltyAndCreatorInfo.creator).to.be.equal(owner);
       expect(royaltyAndCreatorInfo.amount).to.be.bignumber.equal('1250000');
@@ -90,11 +90,11 @@ contract('KnownOriginDigitalAssetV3 Royalties resolver', function (accounts) {
       const hasRoyalties = await this.token.hasRoyalties(firstEditionTokenId);
       expect(hasRoyalties).to.be.equal(true);
 
-      const royaltyInfo = await this.token.royaltyInfo(firstEditionTokenId);
+      const royaltyInfo = await this.token.royaltyInfo.call(firstEditionTokenId);
       expect(royaltyInfo.receiver).to.be.equal(newReceiver);
       expect(royaltyInfo.amount).to.be.bignumber.equal('999999');
 
-      const royaltyAndCreatorInfo = await this.token.royaltyAndCreatorInfo(firstEditionTokenId);
+      const royaltyAndCreatorInfo = await this.token.royaltyAndCreatorInfo.call(firstEditionTokenId);
       expect(royaltyAndCreatorInfo.receiver).to.be.equal(newReceiver);
       expect(royaltyAndCreatorInfo.creator).to.be.equal(owner);
       expect(royaltyAndCreatorInfo.amount).to.be.bignumber.equal('999999');
