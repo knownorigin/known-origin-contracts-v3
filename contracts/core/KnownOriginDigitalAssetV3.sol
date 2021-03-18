@@ -36,6 +36,16 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
     event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
     event AdminTokenUriResolverSet(address indexed _tokenUriResolver);
 
+    modifier onlyContract(){
+        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
+        _;
+    }
+
+    modifier onlyAdmin(){
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        _;
+    }
+    
     // Token name
     string public name = "KnownOriginDigitalAsset";
 
@@ -129,8 +139,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
     function mintToken(address _to, string calldata _uri)
     public
     override
+    onlyContract
     returns (uint256 _tokenId) {
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         return _mintBatchEdition(1, _to, _uri);
     }
 
@@ -138,8 +148,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
     function mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri)
     public
     override
+    onlyContract
     returns (uint256 _editionId) {
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         return _mintBatchEdition(_editionSize, _to, _uri);
     }
 
@@ -168,8 +178,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
     function mintConsecutiveBatchEdition(uint96 _editionSize, address _to, string calldata _uri)
     public
     override
+    onlyContract
     returns (uint256 _editionId) {
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
 
         uint256 start = generateNextEditionNumber();
@@ -612,47 +622,39 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
     // Admin functions //
     /////////////////////
 
-    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
+    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) public onlyAdmin {
         secondarySaleRoyalty = _secondarySaleRoyalty;
         emit AdminUpdateSecondaryRoyalty(_secondarySaleRoyalty);
     }
 
-    function whitelistERC20(address _address) override public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+    function whitelistERC20(address _address) override onlyAdmin public {
         _whitelistERC20(_address);
     }
 
-    function removeWhitelistForERC20(address _address) override public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+    function removeWhitelistForERC20(address _address) override onlyAdmin public {
         _removeWhitelistERC20(_address);
     }
 
-    function updateMaxERC20sPerNFT(uint256 _max) override public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+    function updateMaxERC20sPerNFT(uint256 _max) override onlyAdmin public {
         _updateMaxERC20sPerNFT(_max);
     }
 
-    function reportEditionId(uint256 _editionId, bool _reported) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+    function reportEditionId(uint256 _editionId, bool _reported) onlyAdmin public {
         reportedEditionIds[_editionId] = _reported;
         emit AdminEditionReported(_editionId, _reported);
     }
 
-    function reportArtistAccount(address _account, bool _reported) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+    function reportArtistAccount(address _account, bool _reported) onlyAdmin public {
         reportedArtistAccounts[_account] = _reported;
         emit AdminArtistAccountReported(_account, _reported);
     }
 
-    function setRoyaltiesRegistryProxy(IERC2981 _royaltiesRegistryProxy) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+    function setRoyaltiesRegistryProxy(IERC2981 _royaltiesRegistryProxy) onlyAdmin public {
         royaltiesRegistryProxy = _royaltiesRegistryProxy;
         emit AdminRoyaltiesRegistryProxySet(address(_royaltiesRegistryProxy));
     }
 
-    function setTokenUriResolver(ITokenUriResolver _tokenUriResolver) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+    function setTokenUriResolver(ITokenUriResolver _tokenUriResolver) onlyAdmin public {
         tokenUriResolver = _tokenUriResolver;
         emit AdminTokenUriResolverSet(address(_tokenUriResolver));
     }

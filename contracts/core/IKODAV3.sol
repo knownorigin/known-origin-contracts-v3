@@ -13,9 +13,7 @@ IERC721, // NFTs
 IERC2309, // Consecutive batch mint
 IERC2981  // Royalties
 {
-    ///////////////////
-    // edition utils //
-    ///////////////////
+    // edition utils
 
     function getCreatorOfEdition(uint256 _editionId) external view returns (address _originalCreator);
 
@@ -37,9 +35,7 @@ IERC2981  // Royalties
     // Expanded royalty method for the edition, not token
     function royaltyAndCreatorInfo(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _amount);
 
-    /////////////////
-    // token utils //
-    /////////////////
+    // token utils
 
     function exists(uint256 _tokenId) external view returns (bool);
 

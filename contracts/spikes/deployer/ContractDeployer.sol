@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.7.6;
 
-import "../core/KnownOriginDigitalAssetV3.sol";
-import "../access/IKOAccessControlsLookup.sol";
+import "../../core/KnownOriginDigitalAssetV3.sol";
+import "../../access/IKOAccessControlsLookup.sol";
 
 // see: https://solidity-by-example.org/app/create2/
 contract ContractDeployer {

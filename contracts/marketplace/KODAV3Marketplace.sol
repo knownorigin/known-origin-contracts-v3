@@ -6,10 +6,7 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
-import {
-IKODAV3PrimarySaleMarketplace,
-IKODAV3SecondarySaleMarketplace
-} from "./IKODAV3Marketplace.sol";
+import {IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySaleMarketplace} from "./IKODAV3Marketplace.sol";
 
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
@@ -94,18 +91,6 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         accessControls = _accessControls;
     }
 
-    // Buy now (basic)
-    //  - edition (primary) - DONE
-    //  - token (secondary) - DONE
-
-    // Offers (basic)
-    // - editions (primary) - DONE
-    // - token (secondary) - DONE
-
-    //  Stepped auctions
-    // - editions (primary) - IN PROGRESS
-    // - token (secondary) - N/A
-
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -133,11 +118,6 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // TODO review all solidity docs
     // TODO review all public accessors
     // TODO review all events - ensure present for all actions for indexing
-
-    // TODO CREATE2 to generate vanity deployment address
-    //  - https://blog.cotten.io/ethereums-eip-1014-create-2-d17b1a184498
-    //  - https://ethgasstation.info/blog/what-is-create2/
-    //  - https://medium.com/coinmonks/on-efficient-ethereum-addresses-3fef0596e263
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -232,7 +212,9 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         uint256 startDate = editionStart[_editionId];
         if (startDate > 0) {
             require(block.timestamp >= startDate, "Not yet accepting offers");
-            delete editionStart[_editionId]; // elapsed, so free storage
+
+            // elapsed, so free storage
+            delete editionStart[_editionId];
         }
 
         // send money back to top bidder if existing offer found
@@ -403,7 +385,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, _buyer, tokenId);
 
-        // FIXME we could in theory remove this
+        // FIXME we could in theory remove this - write a test to prove its not needed and we can do withdrawals
         //      - and use the current approach of KO where a bidder must pull back any funds once its sold out on primary
         //      - would probs shave a good bit of GAS (profile the options)
         //      - could be replaced with a open method when in that state, monies are returned to bidder (future proof building tools to cover this)

@@ -1194,7 +1194,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('reverts if not admin', async () => {
       await expectRevert(
         this.token.updateSecondaryRoyalty('10000', {from: collectorA}),
-        'KODA: Caller not admin'
+        'KODA: Caller must have admin role'
       );
     });
   });
