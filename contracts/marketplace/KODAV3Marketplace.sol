@@ -20,6 +20,24 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     event AdminUpdateModulo(uint256 _modulo);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
 
+    modifier onlyContract(){
+        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller not contract");
+        _;
+    }
+
+    modifier onlyContractOrCreator(uint256 _editionId){
+        require(
+            accessControls.hasContractRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
+            "KODA: Caller not contract or edition owner"
+        );
+        _;
+    }
+
+    modifier onlyAdmin(){
+        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
+        _;
+    }
+
     // Reserve price off-chain
     struct Offer {
         uint256 offer;
@@ -44,6 +62,9 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // Edition ID to Offer mapping
     mapping(uint256 => Offer) public editionOffers;
 
+    // Edition ID to StartDate
+    mapping(uint256 => uint256) public editionOffersStartDate;
+
     // Edition ID to Listing
     mapping(uint256 => Listing) public editionListings;
 
@@ -55,9 +76,6 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
 
     // Token ID to Listing
     mapping(uint256 => Listing) public tokenListings;
-
-    // Edition ID to StartDate
-    mapping(uint256 => uint256) public editionStart;
 
     // KODA token
     IKODAV3 public koda;
@@ -91,10 +109,6 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         accessControls = _accessControls;
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     // assumes frontend protects against from these things from being called when:
     //  - they dont need to be e.g. listing an edition when its sold out
     //  - they cannot be done e.g. accepting an offer when the edition is sold out
@@ -105,30 +119,19 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
 
     // FIXME do we need a global emergency stop "pause"
 
-    // TODO expose both contract & minter listing access protected methods
-    //      - contract takes in creator, minter assumes creator and needs to check KODA for edition creator
+    // FIXME do we need a KO admin override feature to trigger accepts/rejects/refunds for offers?
 
-    // TODO enforce rules on sale mechanics i.e. can you have offers and buy now price?
-    // TODO only can be on one sales mechanic at a time
-    //      - create ability to move between auction modes - clearing down open bids when required
-
-    // TODO admin functions for fixing issues/draining tokens & ETH
-    // TODO review admin methods
-    // TODO review all error messages - short and concise
-    // TODO review all solidity docs
-    // TODO review all public accessors
-    // TODO review all events - ensure present for all actions for indexing
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // FIXME admin functions for fixing issues/draining tokens & ETH
 
     /////////////////////////////////
     // Primary "buy now" sale flow //
     /////////////////////////////////
 
-    function listEdition(address _creator, uint256 _editionId, uint128 _listingPrice, uint128 _startDate) public override {
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
+    // list edition with "buy now" price and start date
+    function listEdition(address _creator, uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
+    public
+    onlyContract
+    override {
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         // Store listing data
@@ -137,17 +140,21 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         emit EditionListed(_editionId, _listingPrice, _startDate);
     }
 
-    // FIXME drop?
+    // delist the "buy now" price - putting the edition in an "accepting offers" state
     function delistEdition(uint256 _editionId) public override {
         require(editionListings[_editionId].seller == _msgSender(), "Caller not the lister");
-
         delete editionListings[_editionId];
-
-        // TODO - do we send back any open offer?
-
         emit EditionDeListed(_editionId);
     }
 
+    // update the "buy now" price
+    function setEditionPriceListing(uint256 _editionId, uint128 _listingPrice) public {
+        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Caller not the lister");
+        editionListings[_editionId].price = _listingPrice;
+        // TODO fire event
+    }
+
+    // Buy an token from the edition on the primary market
     function buyEditionToken(uint256 _editionId) public override payable nonReentrant {
         Listing storage listing = editionListings[_editionId];
         require(address(0) != listing.seller, "No listing found");
@@ -159,6 +166,22 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         emit EditionPurchased(_editionId, tokenId, _msgSender(), msg.value);
     }
 
+    // convert from a "buy now" listing and converting to "accepting offers" with an optional start date
+    function convertFromBuyNowToOffers(uint256 _editionId, uint128 _startDate) public {
+        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Caller not the lister");
+        require(editionListings[_editionId].seller != address(0), "No listing found");
+        require(editionStep[_editionId].basePrice == 0, "Cannot convert from a step");
+        require(editionOffers[_editionId].offer == 0, "Already have offers set");
+
+        // clear listing
+        delete editionListings[_editionId];
+
+        // set the start date for the offer (optional)
+        editionOffersStartDate[_editionId] = _startDate;
+
+        // TODO emit event
+    }
+
     ////////////////////////////////
     /// Edition listing accessors //
     ////////////////////////////////
@@ -166,11 +189,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     function getEditionListing(uint256 _editionId)
     public
     view
-    returns (
-        address _seller,
-        uint128 _listingPrice,
-        uint128 _startDate
-    ) {
+    returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
         Listing storage listing = editionListings[_editionId];
         return (
         listing.seller, // original seller
@@ -195,13 +214,15 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // Primary "offers" sale flow //
     ////////////////////////////////
 
-    function enableEditionOffers(address _creator, uint256 _editionId, uint128 _startDate) external override {
-        require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
-        editionStart[_editionId] = _startDate;
+    function enableEditionOffers(uint256 _editionId, uint128 _startDate)
+    external
+    override
+    onlyContractOrCreator(_editionId) {
+        editionOffersStartDate[_editionId] = _startDate;
+        emit EditionAcceptingOffer(_editionId, _startDate);
     }
 
     function placeEditionBid(uint256 _editionId) public override payable nonReentrant {
-
         Offer storage offer = editionOffers[_editionId];
         require(msg.value >= offer.offer.add(minBidAmount), "Bid not high enough");
 
@@ -209,12 +230,12 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         require(!Address.isContract(_msgSender()), "Cannot offer as a contract");
 
         // Honor start date if set
-        uint256 startDate = editionStart[_editionId];
+        uint256 startDate = editionOffersStartDate[_editionId];
         if (startDate > 0) {
             require(block.timestamp >= startDate, "Not yet accepting offers");
 
             // elapsed, so free storage
-            delete editionStart[_editionId];
+            delete editionOffersStartDate[_editionId];
         }
 
         // send money back to top bidder if existing offer found
@@ -275,12 +296,14 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // Primary sale "stepped pricing" flow //
     /////////////////////////////////////////
 
-    function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate) public override {
-        require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
+    function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate)
+    public
+    override
+    onlyContractOrCreator(_editionId) {
         require(_basePrice >= minBidAmount, "Base price not enough");
         require(editionStep[_editionId].seller == address(0), "Unable to setup listing again");
 
-        // TODO do we need this?
+        // TODO do we need this - probably not as if not the contract which called is is broken?
         require(koda.editionExists(_editionId) == true, "Nonexistent edition");
 
         require(koda.getCreatorOfToken(_editionId) == _creator, "Only creator can list edition");
@@ -343,13 +366,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     function getSteppedAuctionState(uint256 _editionId)
     public
     view
-    returns (
-        address creator,
-        uint128 basePrice,
-        uint128 stepPrice,
-        uint128 startDate,
-        uint16 currentStep
-    ) {
+    returns (address creator, uint128 basePrice, uint128 stepPrice, uint128 startDate, uint16 currentStep) {
         Stepped storage steppedAuction = editionStep[_editionId];
         return (
         steppedAuction.seller,
@@ -424,10 +441,6 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         lockupUntil = block.timestamp + bidLockupPeriod;
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     ///////////////////////////////////
     // Secondary sale "buy now" flow //
     ///////////////////////////////////
@@ -462,7 +475,6 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     }
 
     function buyToken(uint256 _tokenId) public payable override nonReentrant {
-
         Listing storage listing = tokenListings[_tokenId];
 
         require(address(0) != listing.seller, "No listing found");
@@ -620,53 +632,31 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         return tokenListings[_tokenId].startDate;
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ///////////////////////////
-    // General Query Methods //
-    ///////////////////////////
-
-    // TODO
-
-    /////////////////////
-    // Setters Methods //
-    /////////////////////
-
-    // TODO
-
-
-    /////////////////////
+    ///////////////////
     // Admin Methods //
-    /////////////////////
+    ///////////////////
 
-    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
+    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) public onlyAdmin {
         secondarySaleRoyalty = _secondarySaleRoyalty;
         emit AdminUpdateSecondaryRoyalty(_secondarySaleRoyalty);
     }
 
-    function updatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
+    function updatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission) public onlyAdmin {
         platformPrimarySaleCommission = _platformPrimarySaleCommission;
         emit AdminUpdatePlatformPrimarySaleCommission(_platformPrimarySaleCommission);
     }
 
-    function updatePlatformSecondarySaleCommission(uint256 _platformSecondarySaleCommission) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
+    function updatePlatformSecondarySaleCommission(uint256 _platformSecondarySaleCommission) public onlyAdmin {
         platformSecondarySaleCommission = _platformSecondarySaleCommission;
         emit AdminUpdateSecondarySaleCommission(_platformSecondarySaleCommission);
     }
 
-    function updateModulo(uint256 _modulo) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
+    function updateModulo(uint256 _modulo) public onlyAdmin {
         modulo = _modulo;
         emit AdminUpdateModulo(_modulo);
     }
 
-    function updateMinBidAmount(uint256 _minBidAmount) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
+    function updateMinBidAmount(uint256 _minBidAmount) public onlyAdmin {
         minBidAmount = _minBidAmount;
         emit AdminUpdateMinBidAmount(_minBidAmount);
     }

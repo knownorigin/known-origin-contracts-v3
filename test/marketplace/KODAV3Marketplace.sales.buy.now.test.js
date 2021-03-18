@@ -220,7 +220,7 @@ contract('KODAV3Marketplace', function (accounts) {
       it('reverts if not contract role', async () => {
         await expectRevert(
           this.marketplace.listEdition(minter, secondEditionTokenId, _0_1_ETH, await time.latest(), {from: collectorA}),
-          'KODA: Caller must have contract role'
+          'KODA: Caller not contract'
         );
       });
 

@@ -84,7 +84,7 @@ contract MintingFactory is Context {
             marketplace.listSteppedEditionAuction(_msgSender(), _editionId, _basePrice, _stepPrice, _startDate);
         }
         else if (SaleType.OFFERS == _saleType) {
-            marketplace.enableEditionOffers(_msgSender(), _editionId, _startDate);
+            marketplace.enableEditionOffers(_editionId, _startDate);
         }
 
         _recordSuccessfulMint(_msgSender());

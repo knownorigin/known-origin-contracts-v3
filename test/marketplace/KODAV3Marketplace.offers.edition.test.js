@@ -75,8 +75,8 @@ contract('KODAV3Marketplace', function (accounts) {
         const duration = time.duration.days(1);
         const start = now.add(duration);
         await expectRevert(
-            this.marketplace.enableEditionOffers(minter, firstEditionTokenId, start, {from: collectorA}),
-            "KODA: Caller must have minter role"
+            this.marketplace.enableEditionOffers(firstEditionTokenId, start, {from: collectorA}),
+            "KODA: Caller not contract or edition owner"
         );
 
       });
@@ -89,7 +89,7 @@ contract('KODAV3Marketplace', function (accounts) {
           const duration = time.duration.days(1);
           const start = now.add(duration);
 
-          await this.marketplace.enableEditionOffers(minter, firstEditionTokenId, start, {from: minter});
+          await this.marketplace.enableEditionOffers(firstEditionTokenId, start, {from: minter});
 
           await expectRevert(
               this.marketplace.placeEditionBid(firstEditionTokenId, {
@@ -107,7 +107,7 @@ contract('KODAV3Marketplace', function (accounts) {
           const duration = time.duration.days(1);
           const start = now.add(duration);
 
-          await this.marketplace.enableEditionOffers(minter, firstEditionTokenId, start, {from: minter});
+          await this.marketplace.enableEditionOffers(firstEditionTokenId, start, {from: minter});
 
           // Back to the future...
           await time.increaseTo(start);
@@ -646,7 +646,7 @@ contract('KODAV3Marketplace', function (accounts) {
             'Offer price has changed'
         );
       });
-      
+
       describe('on success', () => {
 
         it('emits EditionBidAccepted event when owner accepts offer', async () => {

@@ -19,12 +19,13 @@ interface IEditionBuyNowMarketplace {
 
 interface IEditionOffersMarketplace {
 
+    event EditionAcceptingOffer(uint256 indexed _editionId, uint128 _startDate);
     event EditionBidPlaced(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
     event EditionBidWithdrawn(uint256 indexed _editionId, address indexed _bidder);
     event EditionBidAccepted(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _bidder, uint256 _amount);
     event EditionBidRejected(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
 
-    function enableEditionOffers(address _creator, uint256 _editionId, uint128 _startDate) external;
+    function enableEditionOffers(uint256 _editionId, uint128 _startDate) external;
 
     function placeEditionBid(uint256 _editionId) external payable;
 

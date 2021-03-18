@@ -62,7 +62,7 @@ contract('KODAV3Marketplace', function (accounts) {
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  context("stepped auctions", () => {
+  describe("stepped auctions", () => {
 
     describe("listSteppedEditionAuction()", () => {
 
@@ -82,8 +82,8 @@ contract('KODAV3Marketplace', function (accounts) {
           const start = await time.latest();
 
           await expectRevert(
-              this.marketplace.listSteppedEditionAuction(minter, token, _1_ETH, _0_1_ETH, start, {from: minter}),
-              "Caller must have contract role"
+              this.marketplace.listSteppedEditionAuction(minter, token, _1_ETH, _0_1_ETH, start, {from: collectorA}),
+              "KODA: Caller not contract or edition owner"
           )
 
         });
