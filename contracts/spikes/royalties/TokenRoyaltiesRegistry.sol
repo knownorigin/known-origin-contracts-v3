@@ -158,6 +158,12 @@ contract TokenRoyaltiesRegistry is ERC165, ITokenRoyaltiesRegistry, Ownable {
         });
     }
 
+    function receivedRoyalties(address _royaltyRecipient, address _buyer, uint256 _tokenId, address _tokenPaid, uint256 _amount)
+    external
+    override {
+        emit ReceivedRoyalties(_royaltyRecipient, _buyer, _tokenId, _tokenPaid, _amount);
+    }
+
     ///////////////////////////////
     // Multi-holder confirmation //
     ///////////////////////////////

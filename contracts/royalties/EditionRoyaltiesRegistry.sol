@@ -87,7 +87,7 @@ contract EditionRoyaltiesRegistry is ERC165, IERC2981, Konstants, Context {
     // ERC-2981 FACADE //
     ///////////
 
-    function royaltyInfo(uint256 _tokenId) external view override returns (address receiver, uint256 amount) {
+    function royaltyInfo(uint256 _tokenId) external override returns (address receiver, uint256 amount) {
         uint256 _editionId = _editionFromTokenId(_tokenId);
 
         EditionAgreement storage agreement = editionAgreements[_editionId];
@@ -104,6 +104,12 @@ contract EditionRoyaltiesRegistry is ERC165, IERC2981, Konstants, Context {
     // TODO
     function hasRoyalties(uint256 _tokenId) external override pure returns (bool) {
         return true;
+    }
+
+    function receivedRoyalties(address _royaltyRecipient, address _buyer, uint256 _tokenId, address _tokenPaid, uint256 _amount)
+    external
+    override {
+        emit ReceivedRoyalties(_royaltyRecipient, _buyer, _tokenId, _tokenPaid, _amount);
     }
 
     ////////////

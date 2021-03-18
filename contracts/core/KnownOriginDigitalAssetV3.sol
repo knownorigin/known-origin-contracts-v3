@@ -16,7 +16,6 @@ import {IKODAV3} from "./IKODAV3.sol";
 import {IKODAV3Minter} from "./IKODAV3Minter.sol";
 import {Konstants} from "./Konstants.sol";
 import {ITokenUriResolver} from "../programmable/ITokenUriResolver.sol";
-import {NFTPermit} from "./mixins/NFTPermit.sol";
 import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 
 // FIXME Use safe-math for all calcs?
@@ -24,7 +23,7 @@ import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstants, ERC165, IKODAV3Minter, IKODAV3 {
+contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165, IKODAV3Minter, IKODAV3 {
     using SafeMath for uint256;
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
@@ -45,7 +44,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
         require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
         _;
     }
-    
+
     // Token name
     string public name = "KnownOriginDigitalAsset";
 
@@ -54,9 +53,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
 
     // KODA version
     string public version = "3";
-
-    // KODA V3 Domain separator - used by Permit() and MintBatchBySig()
-    bytes32 public DOMAIN_SEPARATOR;
 
     // Royalties registry
     IERC2981 public royaltiesRegistryProxy;
@@ -108,20 +104,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
         IERC2981 _royaltiesRegistryProxy,
         uint256 _editionPointer
     ) {
-        // Grab chain ID
-        uint256 chainId;
-        assembly {chainId := chainid()}
-
-        // Construct and set the KODA V3 domain separator
-        DOMAIN_SEPARATOR = keccak256(
-            abi.encode(
-                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes(name)),
-                keccak256(bytes(version)),
-                chainId,
-                address(this)
-            ));
-
         accessControls = _accessControls;
 
         editionPointer = _editionPointer;
@@ -134,6 +116,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
 
         // INTERFACE_ID_ERC721_METADATA
         _registerInterface(0x5b5e139f);
+
+        // INTERFACE_ID_ERC721ROYALTIES
+        _registerInterface(0x4b7f2c2d);
     }
 
     function mintToken(address _to, string calldata _uri)
@@ -199,7 +184,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
     }
 
     function _defineEditionConfig(uint256 _editionId, uint96 _editionSize, address _to, string calldata _uri) internal {
-        // TODO do we need a require for MAX_EDITION_ID ... ? max edition size
         require(_editionSize <= MAX_EDITION_ID, "Unable to make any more editions");
 
         // Store edition blob to be the next token pointer
@@ -323,7 +307,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
     function royaltyInfo(uint256 _tokenId)
     external
     override
-    view
     returns (address receiver, uint256 amount) {
         uint256 editionId = _editionFromTokenId(_tokenId);
 
@@ -341,7 +324,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
     function royaltyAndCreatorInfo(uint256 _editionId)
     external
     override
-    view
     returns (address receiver, address creator, uint256 amount) {
         address originalCreator = _getCreatorOfEdition(_editionId);
 
@@ -362,6 +344,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
         return secondarySaleRoyalty > 0;
     }
 
+    function receivedRoyalties(address _royaltyRecipient, address _buyer, uint256 _tokenId, address _tokenPaid, uint256 _amount)
+    external
+    override {
+        emit ReceivedRoyalties(_royaltyRecipient, _buyer, _tokenId, _tokenPaid, _amount);
+    }
+
     ////////////////////////////////////
     // Primary Sale Utilities methods //
     ////////////////////////////////////
@@ -369,7 +357,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
     function facilitateNextPrimarySale(uint256 _editionId)
     public
     override
-    view
     returns (address receiver, address creator, uint256 tokenId) {
         uint256 _tokenId = getNextAvailablePrimarySaleToken(_editionId);
         address _creator = _getCreatorOfEdition(_editionId);
@@ -384,10 +371,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
 
     function getNextAvailablePrimarySaleToken(uint256 _editionId) public override view returns (uint256 _tokenId) {
         uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
-
-        // TODO replace with inline assembly to optimise looping costs (https://medium.com/@jeancvllr/solidity-tutorial-all-about-assembly-5acdfefde05c)
-
-        // TODO is a while more efficient ??
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
             // if no owner set - assume primary if not moved
             if (owners[tokenId] == address(0)) {
@@ -549,12 +532,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
         address owner = ownerOf(_tokenId);
         require(_approved != owner, "ERC721_APPROVED_IS_OWNER");
         require(_msgSender() == owner || isApprovedForAll(owner, _msgSender()), "ERC721_INVALID_SENDER");
-        _approval(owner, _approved, _tokenId);
-    }
-
-    function _approval(address _owner, address _approved, uint256 _tokenId) override internal {
         approvals[_tokenId] = _approved;
-        emit Approval(_owner, _approved, _tokenId);
+        emit Approval(owner, _approved, _tokenId);
     }
 
     // TODO validate approval flow for both sold out and partially available editions and their tokens
@@ -668,16 +647,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, NFTPermit, Konstan
     }
 
     // TODO add method stuck ERC721 retrieval ... ? I vote no as we can then use this address as the burn address?
-
-    function getChainId() public pure returns (uint256) {
-        uint256 chainId;
-        assembly {chainId := chainid()}
-        return chainId;
-    }
-
-    function _domainSeparator() internal virtual override (NFTPermit) returns (bytes32) {
-        return DOMAIN_SEPARATOR;
-    }
 
     ///////////////////////
     // Creator functions //

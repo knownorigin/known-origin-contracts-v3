@@ -561,15 +561,13 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // Secondary sale "helpers" //
     //////////////////////////////
 
-    /// sales and funds
-
     function facilitateSecondarySale(uint256 _tokenId, uint256 _paymentAmount, address _seller, address _buyer) internal {
         address originalCreator = koda.getCreatorOfToken(_tokenId);
 
         // split money
         handleSecondarySaleFunds(_seller, originalCreator, _paymentAmount);
 
-        // N:B. open offers are left for the bidder to withdraw or the new token owner to reject
+        // N:B. open offers are left for the bidder to withdraw or the new token owner to reject/accept
 
         // send token to buyer
         koda.safeTransferFrom(_seller, _buyer, _tokenId);

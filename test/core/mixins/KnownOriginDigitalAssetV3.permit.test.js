@@ -57,7 +57,7 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.marketplace.address, {from: owner});
   });
 
-  it('name, symbol, version, DOMAIN_SEPARATOR, PERMIT_TYPEHASH', async () => {
+  it.skip('name, symbol, version, DOMAIN_SEPARATOR, PERMIT_TYPEHASH', async () => {
     const name = await token.name();
     expect(name).to.eq('KnownOriginDigitalAsset');
     expect(await token.symbol()).to.eq('KODA');
@@ -69,7 +69,7 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     );
   });
 
-  it("should set allowance for token ID after permit transaction", async () => {
+  it.skip("should set allowance for token ID after permit transaction", async () => {
     const tokenId = firstEditionTokenId;
     const spender = contract;
 
@@ -103,7 +103,7 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     expect(await token.nonces(owner)).to.be.bignumber.eq("1");
   });
 
-  it("should fail to permit is not signed by the owner", async () => {
+  it.skip("should fail to permit is not signed by the owner", async () => {
     const tokenId = firstEditionTokenId;
     const spender = contract;
 
@@ -135,7 +135,7 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     expect(await token.nonces(owner)).to.be.bignumber.eq("0");
   });
 
-  it("should fail to permit if token does not exist", async () => {
+  it.skip("should fail to permit if token does not exist", async () => {
     const tokenId = secondEditionTokenId;
     const spender = contract;
 
@@ -167,7 +167,7 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     expect(await token.nonces(owner)).to.be.bignumber.eq("0");
   });
 
-  it("should fail to permit if deadline has passed", async () => {
+  it.skip("should fail to permit if deadline has passed", async () => {
     const tokenId = secondEditionTokenId;
     const spender = contract;
 
@@ -199,7 +199,7 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     expect(await token.nonces(owner)).to.be.bignumber.eq("0");
   });
 
-  it("should fail to permit if signed by the wrong account", async () => {
+  it.skip("should fail to permit if signed by the wrong account", async () => {
     const tokenId = firstEditionTokenId;
     const spender = contract;
 
