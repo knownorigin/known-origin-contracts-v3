@@ -58,11 +58,11 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
 
         uint256 editionBalance = editionTokenERC20Balances[editionId][_erc20Contract];
-        uint256 tokenBalance = editionBalance.div(koda.getSizeOfEdition(editionId)); // todo I assume single mints will return a size of 1
+        uint256 tokenEditionBalance = editionBalance.div(koda.getSizeOfEdition(editionId));
         uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId];
-        editionBalance = tokenBalance.sub(spentTokens);
+        tokenEditionBalance = tokenEditionBalance.sub(spentTokens);
 
-        return editionBalance.add(ERC20Balances[_tokenId][_erc20Contract]);
+        return tokenEditionBalance.add(ERC20Balances[_tokenId][_erc20Contract]);
     }
 
     function transferERC20(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) external override nonReentrant {
@@ -74,8 +74,9 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function getERC20s(address _from, uint256[] calldata _tokenIds, address _erc20Contract, uint256 _totalValue) external {
-        //todo require length > 0
-        //todo total val > 0
+        require(_tokenIds.length > 0, "Empty array");
+        require(_totalValue > 0, "Total value cannot be zero");
+
         uint256 valuePerToken = _totalValue.div(_tokenIds.length);
         for(uint i = 0; i < _tokenIds.length; i++) {
             getERC20(_from, _tokenIds[i], _erc20Contract, valuePerToken);
@@ -126,7 +127,6 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
         IKODAV3 koda = IKODAV3(address(this));
         require(koda.getCreatorOfEdition(_editionId) == _from, "_composeERC20IntoEdition: Only creator of edition");
-        //require(_from == _msgSender(), "_composeERC20IntoEdition: _from must be creator of edition");
         require(whitelistedContracts[_erc20Contract], "_composeERC20IntoEdition: Specified contract not whitelisted");
 
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract);
@@ -196,27 +196,37 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
         require(balanceOfERC20(_tokenId, _erc20Contract) >= _value, "_prepareERC20LikeTransfer: Transfer amount exceeds balance");
 
-        uint256 editionBalance = editionTokenERC20Balances[editionId][_erc20Contract].div(koda.getSizeOfEdition(editionId));
+        uint256 tokenInitialBalance = editionTokenERC20Balances[editionId][_erc20Contract].div(koda.getSizeOfEdition(editionId));
         uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId];
-        editionBalance = editionBalance.sub(spentTokens);
+        uint256 editionTokenBalance = tokenInitialBalance.sub(spentTokens);
 
-        if (editionBalance >= _value) {
+        if (editionTokenBalance >= _value) {
             editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId] = spentTokens.add(_value);
         } else if (ERC20Balances[_tokenId][_erc20Contract] >= _value) {
             ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract].sub(_value);
         } else {
             // take from both balances
-            if (editionBalance > 0) {
-                editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId] = spentTokens.add(editionBalance);
+            if (editionTokenBalance > 0) {
+                editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId] = spentTokens.add(editionTokenBalance);
             }
 
-            uint256 amountOfTokensToSpendFromTokenBalance = _value.sub(editionBalance);
+            uint256 amountOfTokensToSpendFromTokenBalance = _value.sub(editionTokenBalance);
             ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract].sub(amountOfTokensToSpendFromTokenBalance);
         }
 
-        // todo - is it possible to do something like this for an edition? potentially not as all tokens would have to spend their ERC20
         if (nftContainsERC20 && ERC20Balances[_tokenId][_erc20Contract] == 0) {
             ERC20sEmbeddedInNft[_tokenId].remove(_erc20Contract);
+        }
+
+        uint256 allTokensInEditionERC20Balance;
+        for(uint i = 0; i < koda.getSizeOfEdition(editionId); i++) {
+            uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][editionId.add(i)];
+            uint256 tokenBal = tokenInitialBalance.sub(spentTokens);
+            allTokensInEditionERC20Balance = allTokensInEditionERC20Balance.add(tokenBal);
+        }
+
+        if (allTokensInEditionERC20Balance == 0) {
+            ERC20sEmbeddedInEdition[editionId].remove(_erc20Contract);
         }
     }
 

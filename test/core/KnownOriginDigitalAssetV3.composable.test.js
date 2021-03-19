@@ -38,7 +38,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     )
   }
 
-  const addERC20BalanceToEdition = async (erc20, amount, kodaV3, owner, sender) => {
+  const mintEditionAndComposeERC20 = async (erc20, amount, kodaV3, owner, sender) => {
     // approve the NFT contract to pull in tokens
     await erc20.approve(kodaV3.address, amount, {from: owner})
 
@@ -267,7 +267,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     describe('Wrapping ERC20s', () => {
       describe('A single ERC20 within an edition', () => {
         beforeEach(async () => {
-          await addERC20BalanceToEdition(
+          await mintEditionAndComposeERC20(
             this.erc20Token1,
             ONE_THOUSAND_TOKENS,
             this.token,

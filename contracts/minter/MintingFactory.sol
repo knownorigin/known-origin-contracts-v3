@@ -86,16 +86,6 @@ contract MintingFactory is Context {
         setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
     }
 
-//    function mintConsecutiveBatchEditionAndComposeERC20s(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts)
-//    external {
-//        require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
-//        require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
-//
-//        uint256 editionId = koda.mintConsecutiveBatchEditionAndComposeERC20s(_editionSize, _msgSender(), _uri, _erc20s, _amounts);
-//
-//        setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
-//    }
-
     function setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
         if (SaleType.BUY_NOW == _saleType) {
             marketplace.listEdition(_msgSender(), _editionId, _basePrice, _startDate);
