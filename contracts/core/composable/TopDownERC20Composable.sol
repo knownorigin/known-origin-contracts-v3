@@ -218,15 +218,17 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
             ERC20sEmbeddedInNft[_tokenId].remove(_erc20Contract);
         }
 
-        uint256 allTokensInEditionERC20Balance;
-        for(uint i = 0; i < koda.getSizeOfEdition(editionId); i++) {
-            uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][editionId.add(i)];
-            uint256 tokenBal = tokenInitialBalance.sub(spentTokens);
-            allTokensInEditionERC20Balance = allTokensInEditionERC20Balance.add(tokenBal);
-        }
+        if (editionContainsERC20) {
+            uint256 allTokensInEditionERC20Balance;
+            for(uint i = 0; i < koda.getSizeOfEdition(editionId); i++) {
+                uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][editionId.add(i)];
+                uint256 tokenBal = tokenInitialBalance.sub(spentTokens);
+                allTokensInEditionERC20Balance = allTokensInEditionERC20Balance.add(tokenBal);
+            }
 
-        if (allTokensInEditionERC20Balance == 0) {
-            ERC20sEmbeddedInEdition[editionId].remove(_erc20Contract);
+            if (allTokensInEditionERC20Balance == 0) {
+                ERC20sEmbeddedInEdition[editionId].remove(_erc20Contract);
+            }
         }
     }
 
