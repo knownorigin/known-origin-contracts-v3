@@ -146,10 +146,11 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function erc20ContractByIndex(uint256 _tokenId, uint256 _index) override external view returns (address) {
-        if (_index >= ERC20sEmbeddedInNft[_tokenId].length()) {
+        uint256 numOfERC20sInNFT = ERC20sEmbeddedInNft[_tokenId].length();
+        if (_index >= numOfERC20sInNFT) {
             IKODAV3 koda = IKODAV3(address(this));
             uint256 editionId = koda.getEditionIdOfToken(_tokenId);
-            return ERC20sEmbeddedInEdition[editionId].at(_index);
+            return ERC20sEmbeddedInEdition[editionId].at(_index.sub(numOfERC20sInNFT));
         }
 
         return ERC20sEmbeddedInNft[_tokenId].at(_index);

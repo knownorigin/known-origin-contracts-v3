@@ -376,6 +376,56 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
             await this.token.editionTokenERC20TransferAmounts(await this.token.getEditionIdOfToken(firstEditionTokenId), this.erc20Token1.address, firstEditionTokenId)
           ).to.be.bignumber.equal(xferAmount)
         })
+
+        it('Can add a new ERC20 to a given set of edition tokens', async () => {
+          const editionId = await this.token.getEditionIdOfToken(firstEditionTokenId)
+
+          await this.erc20Token2.approve(this.token.address, ONE_THOUSAND_TOKENS, {from: owner})
+
+          const editionTokenIDs = Array(parseInt(this.editionSize.toString())).fill().map((_, i) => editionId.addn(i))
+          await this.token.getERC20s(
+            owner,
+            editionTokenIDs, // all tokens in edition
+            this.erc20Token2.address,
+            ONE_THOUSAND_TOKENS
+          )
+
+          for(let i = 0; i < editionTokenIDs.length; i++) {
+            const tokenId = editionTokenIDs[i]
+            expect(
+              await this.token.ERC20Balances(tokenId, this.erc20Token2.address)
+            ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS.div(this.editionSize))
+
+            // expect(
+            //   await this.token.editionTokenERC20Balances(tokenId, this.erc20Token1.address)
+            // ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
+
+            // first and second token of edition should be enough to give us confidence
+            expect(
+              await this.token.balanceOfERC20(tokenId, this.erc20Token2.address)
+            ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS.div(this.editionSize))
+
+            expect(
+              await this.token.totalERC20Contracts(tokenId)
+            ).to.be.bignumber.equal('2')
+
+            expect(
+              await this.token.erc20ContractByIndex(tokenId, '0')
+            ).to.be.equal(this.erc20Token2.address)
+
+            expect(
+              await this.token.erc20ContractByIndex(tokenId, '1')
+            ).to.be.equal(this.erc20Token1.address)
+          }
+
+          expect(
+            await this.erc20Token1.balanceOf(this.token.address)
+          ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
+
+          expect(
+            await this.erc20Token2.balanceOf(this.token.address)
+          ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
+        })
       })
     })
 
