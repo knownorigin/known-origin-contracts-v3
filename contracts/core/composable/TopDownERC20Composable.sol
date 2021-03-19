@@ -116,8 +116,8 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         require(_value > 0, "addERC20ToEdition: Value cannot be zero");
 
         IKODAV3 koda = IKODAV3(address(this));
-        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "addERC20ToEdition: Only creator of edition");
-        require(_from == _msgSender(), "addERC20ToEdition: _from must be creator of edition");
+        require(koda.getCreatorOfEdition(_editionId) == _from, "addERC20ToEdition: Only creator of edition");
+        //require(_from == _msgSender(), "addERC20ToEdition: _from must be creator of edition");
         require(whitelistedContracts[_erc20Contract], "addERC20ToEdition: Specified contract not whitelisted");
 
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract);
