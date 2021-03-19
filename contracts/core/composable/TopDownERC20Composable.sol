@@ -73,7 +73,16 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         emit TransferERC20(_tokenId, _to, _erc20Contract, _value);
     }
 
-    function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) external override nonReentrant {
+    function getERC20s(address _from, uint256[] calldata _tokenIds, address _erc20Contract, uint256 _totalValue) external {
+        //todo require length > 0
+        //todo total val > 0
+        uint256 valuePerToken = _totalValue.div(_tokenIds.length);
+        for(uint i = 0; i < _tokenIds.length; i++) {
+            getERC20(_from, _tokenIds[i], _erc20Contract, valuePerToken);
+        }
+    }
+
+    function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) public override nonReentrant {
         require(_value > 0, "getERC20: Value cannot be zero");
 
         address spender = _msgSender();
@@ -112,23 +121,23 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         emit ReceivedERC20(_from, _tokenId, _erc20Contract, _value);
     }
 
-    function _addERC20ToEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) internal nonReentrant {
-        require(_value > 0, "addERC20ToEdition: Value cannot be zero");
+    function _composeERC20IntoEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) internal nonReentrant {
+        require(_value > 0, "_composeERC20IntoEdition: Value cannot be zero");
 
         IKODAV3 koda = IKODAV3(address(this));
-        require(koda.getCreatorOfEdition(_editionId) == _from, "addERC20ToEdition: Only creator of edition");
-        //require(_from == _msgSender(), "addERC20ToEdition: _from must be creator of edition");
-        require(whitelistedContracts[_erc20Contract], "addERC20ToEdition: Specified contract not whitelisted");
+        require(koda.getCreatorOfEdition(_editionId) == _from, "_composeERC20IntoEdition: Only creator of edition");
+        //require(_from == _msgSender(), "_composeERC20IntoEdition: _from must be creator of edition");
+        require(whitelistedContracts[_erc20Contract], "_composeERC20IntoEdition: Specified contract not whitelisted");
 
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract);
-        require(!editionAlreadyContainsERC20, "addERC20ToEdition: Edition already contains ERC20");
-        require(ERC20sEmbeddedInEdition[_editionId].length() < maxERC20sPerNFT, "addERC20ToEdition: ERC20 limit exceeded");
+        require(!editionAlreadyContainsERC20, "_composeERC20IntoEdition: Edition already contains ERC20");
+        require(ERC20sEmbeddedInEdition[_editionId].length() < maxERC20sPerNFT, "_composeERC20IntoEdition: ERC20 limit exceeded");
 
         ERC20sEmbeddedInEdition[_editionId].add(_erc20Contract);
         editionTokenERC20Balances[_editionId][_erc20Contract] = editionTokenERC20Balances[_editionId][_erc20Contract].add(_value);
 
         IERC20 token = IERC20(_erc20Contract);
-        require(token.allowance(_from, address(this)) >= _value, "addERC20ToEdition: Amount exceeds allowance");
+        require(token.allowance(_from, address(this)) >= _value, "_composeERC20IntoEdition: Amount exceeds allowance");
 
         token.transferFrom(_from, address(this), _value);
 

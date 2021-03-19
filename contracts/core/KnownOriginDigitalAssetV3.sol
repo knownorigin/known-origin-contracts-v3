@@ -147,7 +147,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
         for(uint i = 0; i < _erc20s.length; i++) {
             address erc20 = _erc20s[i];
             uint256 amount = _amounts[i];
-            _addERC20ToEdition(_to, _editionId, erc20, amount);
+            _composeERC20IntoEdition(_to, _editionId, erc20, amount);
         }
     }
 
@@ -209,7 +209,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
 //        for(uint i = 0; i < _erc20s.length; i++) {
 //            address erc20 = _erc20s[i];
 //            uint256 amount = _amounts[i];
-//            _addERC20ToEdition(_msgSender(), _editionId, erc20, amount);
+//            _composeERC20IntoEdition(_msgSender(), _editionId, erc20, amount);
 //        }
 //    }
 
