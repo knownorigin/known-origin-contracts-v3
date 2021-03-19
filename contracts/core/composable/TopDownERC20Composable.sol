@@ -112,8 +112,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         emit ReceivedERC20(_from, _tokenId, _erc20Contract, _value);
     }
 
-    // todo - should we lock this down to be for pre-primary auction
-    function addERC20ToEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) external nonReentrant {
+    function _addERC20ToEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) internal nonReentrant {
         require(_value > 0, "addERC20ToEdition: Value cannot be zero");
 
         IKODAV3 koda = IKODAV3(address(this));
@@ -122,16 +121,10 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         require(whitelistedContracts[_erc20Contract], "addERC20ToEdition: Specified contract not whitelisted");
 
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract);
+        require(!editionAlreadyContainsERC20, "addERC20ToEdition: Edition already contains ERC20");
+        require(ERC20sEmbeddedInEdition[_editionId].length() < maxERC20sPerNFT, "addERC20ToEdition: ERC20 limit exceeded");
 
-        // Todo: In order to ensure individual NFTs do not violate the max limit, you would have to get edition size and loop through the tokens
-        require(
-            editionAlreadyContainsERC20 || ERC20sEmbeddedInEdition[_editionId].length() < maxERC20sPerNFT
-        );
-
-        if (!editionAlreadyContainsERC20) {
-            ERC20sEmbeddedInEdition[_editionId].add(_erc20Contract);
-        }
-
+        ERC20sEmbeddedInEdition[_editionId].add(_erc20Contract);
         editionTokenERC20Balances[_editionId][_erc20Contract] = editionTokenERC20Balances[_editionId][_erc20Contract].add(_value);
 
         IERC20 token = IERC20(_erc20Contract);
@@ -157,8 +150,6 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
         return ERC20sEmbeddedInNft[_tokenId].at(_index);
     }
-
-    // TODO batch load tokens
 
     /// --- Admin ----
     // To be overriden by implementing class
