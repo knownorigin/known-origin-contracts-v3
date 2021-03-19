@@ -125,8 +125,6 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     function _composeERC20IntoEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) internal nonReentrant {
         require(_value > 0, "_composeERC20IntoEdition: Value cannot be zero");
 
-        IKODAV3 koda = IKODAV3(address(this));
-        require(koda.getCreatorOfEdition(_editionId) == _from, "_composeERC20IntoEdition: Only creator of edition");
         require(whitelistedContracts[_erc20Contract], "_composeERC20IntoEdition: Specified contract not whitelisted");
 
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract);
@@ -136,10 +134,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         ERC20sEmbeddedInEdition[_editionId].add(_erc20Contract);
         editionTokenERC20Balances[_editionId][_erc20Contract] = editionTokenERC20Balances[_editionId][_erc20Contract].add(_value);
 
-        IERC20 token = IERC20(_erc20Contract);
-        require(token.allowance(_from, address(this)) >= _value, "_composeERC20IntoEdition: Amount exceeds allowance");
-
-        token.transferFrom(_from, address(this), _value);
+        IERC20(_erc20Contract).transferFrom(_from, address(this), _value);
 
         emit ReceivedERC20ForEdition(_from, _editionId, _erc20Contract, _value);
     }

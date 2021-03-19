@@ -43,12 +43,21 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     await erc20.approve(kodaV3.address, amount, {from: owner})
 
     // add the tokens to the desired edition
+    await mintEditionAndComposeERC20s([erc20], [amount], kodaV3, owner, sender)
+  }
+
+  const mintEditionAndComposeERC20s = async (erc20s, amounts, kodaV3, owner, sender) => {
+    for(let i = 0; i < erc20s.length; i++) {
+      const erc20 = erc20s[i]
+      await erc20.approve(kodaV3.address, amounts[i], {from: owner})
+    }
+
     await kodaV3.mintBatchEditionAndComposeERC20s(
       this.editionSize,
       owner,
       'random',
-      [erc20.address],
-      [amount],
+      erc20s.map(erc20 => erc20.address),
+      amounts,
       {from: sender}
     )
   }
@@ -367,6 +376,60 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
             await this.token.editionTokenERC20TransferAmounts(await this.token.getEditionIdOfToken(firstEditionTokenId), this.erc20Token1.address, firstEditionTokenId)
           ).to.be.bignumber.equal(xferAmount)
         })
+      })
+    })
+
+    describe('_composeERC20IntoEdition() validation', () => {
+      it('Reverts when value is zero', async () => {
+        await expectRevert(
+          mintEditionAndComposeERC20(
+            this.erc20Token1,
+            '0',
+            this.token,
+            owner,
+            contract
+          ),
+          "_composeERC20IntoEdition: Value cannot be zero"
+        )
+      })
+
+      it('Reverts when erc20 is not whitelisted', async () => {
+        await expectRevert(
+          mintEditionAndComposeERC20(
+            this.erc20Token5,
+            ONE_THOUSAND_TOKENS,
+            this.token,
+            owner,
+            contract
+          ),
+          "_composeERC20IntoEdition: Specified contract not whitelisted"
+        )
+      })
+
+      it('Reverts when trying to wrap the same ERC20 twice instead of specifying larger value', async () => {
+        await expectRevert(
+          mintEditionAndComposeERC20s(
+            [this.erc20Token1, this.erc20Token1],
+            [ONE_THOUSAND_TOKENS, ONE_THOUSAND_TOKENS],
+            this.token,
+            owner,
+            contract
+          ),
+          "_composeERC20IntoEdition: Edition already contains ERC20"
+        )
+      })
+
+      it('Reverts when exceeding the max ERC20 limit', async () => {
+        await expectRevert(
+          mintEditionAndComposeERC20s(
+            [this.erc20Token1, this.erc20Token2, this.erc20Token3, this.erc20Token4],
+            Array(4).fill(ONE_THOUSAND_TOKENS),
+            this.token,
+            owner,
+            contract
+          ),
+          "_composeERC20IntoEdition: ERC20 limit exceeded"
+        )
       })
     })
   })
