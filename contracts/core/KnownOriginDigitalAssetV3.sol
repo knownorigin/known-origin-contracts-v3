@@ -138,7 +138,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
         return _mintBatchEdition(_editionSize, _to, _uri);
     }
 
-    function mintBatchEditionAndComposeERC20s(uint96 _editionSize, address _to, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts) external override returns (uint256 _editionId) {
+    function mintBatchEditionAndComposeERC20s(uint96 _editionSize, address _to, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts)
+    external onlyContract override returns (uint256 _editionId) {
         require(_erc20s.length == _amounts.length, "Array length mismatch");
         require(_erc20s.length > 0, "Empty array");
         _editionId = _mintBatchEdition(_editionSize, _to, _uri);
@@ -197,6 +198,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
 
     function mintConsecutiveBatchEditionAndComposeERC20s(uint96 _editionSize, address _to, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts)
     override
+    onlyContract
     external
     returns (uint256 _editionId) {
         require(_erc20s.length == _amounts.length, "Array length mismatch");
