@@ -6,12 +6,12 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
-import {IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySaleMarketplace} from "./IKODAV3Marketplace.sol";
 
+import {IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySaleMarketplace} from "./IKODAV3Marketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
-contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySaleMarketplace, Context {
+contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySaleMarketplace, ReentrancyGuard, Context {
     using SafeMath for uint256;
 
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
@@ -28,7 +28,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     modifier onlyContractOrCreator(uint256 _editionId){
         require(
             accessControls.hasContractRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
-            "KODA: Caller not contract or edition owner"
+            "KODA: Caller not creator or contract"
         );
         _;
     }
@@ -80,7 +80,6 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     // KODA token
     IKODAV3 public koda;
 
-    // FIXME get GAS costings for using a counter and draw down method for KO funds?
     // platform funds collector
     address public platformAccount;
 
@@ -105,8 +104,8 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount) {
         koda = _koda;
-        platformAccount = _platformAccount;
         accessControls = _accessControls;
+        platformAccount = _platformAccount;
     }
 
     // assumes frontend protects against from these things from being called when:
@@ -115,11 +114,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     //  - approvals go astray/removed - approvals may need to be mapped in subgraph
     //  - when an edition sells out - implicit failure due to creator not owning anymore - we dont explicitly check remaining due to GAS
 
-    // FIXME multiple buys at once?
-
     // FIXME do we need a global emergency stop "pause"
-
-    // FIXME do we need a KO admin override feature to trigger accepts/rejects/refunds for offers?
 
     // FIXME admin functions for fixing issues/draining tokens & ETH
 
@@ -141,17 +136,26 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     }
 
     // delist the "buy now" price - putting the edition in an "accepting offers" state
-    function delistEdition(uint256 _editionId) public override {
-        require(editionListings[_editionId].seller == _msgSender(), "Caller not the lister");
+    function delistEdition(uint256 _editionId)
+    public
+    onlyContractOrCreator(_editionId)
+    override {
+        // Clear listing
         delete editionListings[_editionId];
+
+        // Emit event
         emit EditionDeListed(_editionId);
     }
 
     // update the "buy now" price
-    function setEditionPriceListing(uint256 _editionId, uint128 _listingPrice) public {
-        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Caller not the lister");
+    function setEditionPriceListing(uint256 _editionId, uint128 _listingPrice)
+    onlyContractOrCreator(_editionId)
+    public {
+        // Set price
         editionListings[_editionId].price = _listingPrice;
-        // TODO fire event
+
+        // Emit event
+        emit EditionPriceChanged(_editionId, _listingPrice);
     }
 
     // Buy an token from the edition on the primary market
@@ -167,10 +171,11 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     }
 
     // convert from a "buy now" listing and converting to "accepting offers" with an optional start date
-    function convertFromBuyNowToOffers(uint256 _editionId, uint128 _startDate) public {
-        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Caller not the lister");
-        require(editionListings[_editionId].seller != address(0), "No listing found");
+    function convertFromBuyNowToOffers(uint256 _editionId, uint128 _startDate)
+    public
+    onlyContractOrCreator(_editionId) {
         require(editionStep[_editionId].basePrice == 0, "Cannot convert from a step");
+        require(editionListings[_editionId].seller != address(0), "No listing found");
         require(editionOffers[_editionId].offer == 0, "Already have offers set");
 
         // clear listing
@@ -179,7 +184,8 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         // set the start date for the offer (optional)
         editionOffersStartDate[_editionId] = _startDate;
 
-        // TODO emit event
+        // Emit event
+        emit EditionAcceptingOffer(_editionId, _startDate);
     }
 
     ////////////////////////////////
@@ -218,7 +224,14 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     external
     override
     onlyContractOrCreator(_editionId) {
+
+        // clear any buy now price which could be set
+        delete editionListings[_editionId];
+
+        // setup offers only
         editionOffersStartDate[_editionId] = _startDate;
+
+        // Emit event
         emit EditionAcceptingOffer(_editionId, _startDate);
     }
 
@@ -253,15 +266,16 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         Offer storage offer = editionOffers[_editionId];
         require(offer.offer > 0, "No open bid");
         require(offer.bidder == _msgSender(), "Not the top bidder");
-        require(block.timestamp >= (offer.lockupUntil), "Bid lockup not elapsed");
+        require(block.timestamp >= offer.lockupUntil, "Bid lockup not elapsed");
 
         // send money back to top bidder
         _refundBidder(offer.bidder, offer.offer);
 
+        // emit event
+        emit EditionBidWithdrawn(_editionId, _msgSender());
+
         // delete offer
         delete editionOffers[_editionId];
-
-        emit EditionBidWithdrawn(_editionId, _msgSender());
     }
 
     function rejectEditionBid(uint256 _editionId) public override nonReentrant {
@@ -272,6 +286,7 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         // send money back to top bidder
         _refundBidder(offer.bidder, offer.offer);
 
+        // emit event
         emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
 
         // delete offer
@@ -284,11 +299,27 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         require(offer.offer == _offerPrice, "Offer price has changed");
         require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
 
+        // get a new token from the edition to transfer ownership
         uint256 tokenId = facilitateNextPrimarySale(_editionId, offer.offer, offer.bidder);
 
+        // emit event
         emit EditionBidAccepted(_editionId, tokenId, offer.bidder, offer.offer);
 
         // clear open offer
+        delete editionOffers[_editionId];
+    }
+
+    // emergency admin "reject" button for stuck bids
+    function adminRejectEditionBid(uint256 _editionId) public onlyAdmin {
+        Offer storage offer = editionOffers[_editionId];
+        require(offer.bidder != address(0), "No open bid");
+
+        // send money back to top bidder
+        _refundBidder(offer.bidder, offer.offer);
+
+        emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
+
+        // delete offer
         delete editionOffers[_editionId];
     }
 
@@ -302,10 +333,6 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     onlyContractOrCreator(_editionId) {
         require(_basePrice >= minBidAmount, "Base price not enough");
         require(editionStep[_editionId].seller == address(0), "Unable to setup listing again");
-
-        // TODO do we need this - probably not as if not the contract which called is is broken?
-        require(koda.editionExists(_editionId) == true, "Nonexistent edition");
-
         require(koda.getCreatorOfToken(_editionId) == _creator, "Only creator can list edition");
 
         // Store listing data
@@ -332,9 +359,9 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
 
         // Bump the current step
         uint16 step = steppedAuction.currentStep;
-        uint16 nextStep = step + 1;
+
         // no safemath for uint16
-        steppedAuction.currentStep = nextStep;
+        steppedAuction.currentStep = step + 1;
 
         // send back excess if supplied - will allow UX flow of setting max price to pay
         if (msg.value > expectedPrice) {
@@ -354,12 +381,11 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         // Store listing data
         editionListings[_editionId] = Listing(_listingPrice, 0, steppedAuction.seller);
 
-        // Clear up the step logic
-        delete editionStep[_editionId];
-
+        // emit event
         emit EditionListed(_editionId, _listingPrice, 0);
 
-        // TODO do we need an event to signify the conversion?
+        // Clear up the step logic
+        delete editionStep[_editionId];
     }
 
     // get the current state of a stepped auction
@@ -421,9 +447,6 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     }
 
     function handleEditionSaleFunds(address _receiver, uint256 _paymentAmount) internal {
-
-        // TODO could we save gas here by maintaining a counter for KO platform funds and having a drain method?
-
         uint256 koCommission = _paymentAmount.div(modulo).mul(platformPrimarySaleCommission);
         (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
         require(koCommissionSuccess, "Edition commission payment failed");
@@ -569,6 +592,20 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
         emit TokenBidAccepted(_tokenId, currentOwner, offer.bidder, offer.offer);
     }
 
+    // emergency admin "reject" button for stuck bids
+    function adminRejectTokenBid(uint256 _tokenId) public onlyAdmin {
+        Offer memory offer = tokenOffers[_tokenId];
+        require(offer.bidder != address(0), "No open bid");
+
+        // send money back to top bidder
+        _refundSecondaryBidder(offer.bidder, offer.offer);
+
+        // delete offer
+        delete tokenOffers[_tokenId];
+
+        emit TokenBidRejected(_tokenId, koda.ownerOf(_tokenId), offer.bidder, offer.offer);
+    }
+
     //////////////////////////////
     // Secondary sale "helpers" //
     //////////////////////////////
@@ -586,9 +623,6 @@ contract KODAV3Marketplace is ReentrancyGuard, IKODAV3PrimarySaleMarketplace, IK
     }
 
     function handleSecondarySaleFunds(address _receiver, address _originalCreator, uint256 _paymentAmount) internal {
-
-        // TODO could we save gas here by maintaining a counter for KO platform funds and having a drain method?
-
         // pay royalties
         uint256 creatorRoyalties = _paymentAmount.div(modulo).mul(secondarySaleRoyalty);
         (bool creatorSuccess,) = _originalCreator.call{value : creatorRoyalties}("");

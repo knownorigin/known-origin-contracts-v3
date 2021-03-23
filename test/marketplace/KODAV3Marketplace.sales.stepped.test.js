@@ -83,7 +83,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
           await expectRevert(
               this.marketplace.listSteppedEditionAuction(minter, token, _1_ETH, _0_1_ETH, start, {from: collectorA}),
-              "KODA: Caller not contract or edition owner"
+              "KODA: Caller not creator or contract"
           )
 
         });
@@ -97,7 +97,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
           await expectRevert(
               this.marketplace.listSteppedEditionAuction(minter, edition, _1_ETH, _0_1_ETH, start, {from: contract}),
-              "Nonexistent edition"
+              "Only creator can list edition"
           )
 
         });
@@ -183,8 +183,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
           });
 
-        })
-
+        });
       });
 
     describe("buyNextStep()", () => {
@@ -488,6 +487,18 @@ contract('KODAV3Marketplace', function (accounts) {
         await expectRevert(
             this.marketplace.convertSteppedAuctionToListing(edition, listingPrice, {from: minter}),
             "List price not enough"
+        )
+
+      });
+
+      it('reverts if not lister', async () => {
+
+        const edition = firstEditionTokenId;
+
+        // seller attempts to convert to listed edition with invalid list price
+        await expectRevert(
+            this.marketplace.convertSteppedAuctionToListing(edition, _0_1_ETH, {from: collectorA}),
+            "Only seller can convert"
         )
 
       });

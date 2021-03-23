@@ -10,7 +10,7 @@ const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
 contract('KODAV3Marketplace token bids', function (accounts) {
-  const [owner, minter, koCommission, contract, collectorA, collectorB] = accounts;
+  const [admin, owner, minter, koCommission, contract, collectorA, collectorB] = accounts;
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
@@ -26,19 +26,21 @@ contract('KODAV3Marketplace token bids', function (accounts) {
     this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
 
     // grab the roles
+    this.DEFAULT_ADMIN_ROLE = await this.accessControls.DEFAULT_ADMIN_ROLE();
     this.MINTER_ROLE = await this.accessControls.MINTER_ROLE();
     this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
 
     // Set up access controls with minter roles
+    await this.accessControls.grantRole(this.DEFAULT_ADMIN_ROLE, admin, {from: owner});
     await this.accessControls.grantRole(this.MINTER_ROLE, owner, {from: owner});
     await this.accessControls.grantRole(this.MINTER_ROLE, minter, {from: owner});
 
     // Create token V3
     this.token = await KnownOriginDigitalAssetV3.new(
-        this.accessControls.address,
-        ZERO_ADDRESS, // no royalties address
-        STARTING_EDITION,
-        {from: owner}
+      this.accessControls.address,
+      ZERO_ADDRESS, // no royalties address
+      STARTING_EDITION,
+      {from: owner}
     );
 
     // Set contract roles
@@ -75,8 +77,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
         // collector B places offer 0.50001 ETH for token (too low)
         await expectRevert(
-            this.marketplace.placeTokenBid(token, {from: collectorB, value: BID_TOO_LOW}),
-            'Bid not high enough'
+          this.marketplace.placeTokenBid(token, {from: collectorB, value: BID_TOO_LOW}),
+          'Bid not high enough'
         );
       });
 
@@ -90,8 +92,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
         // collector B places offer 0.50001 ETH for token (too low)
         await expectRevert(
-            this.marketplace.placeTokenBid(token, {from: collectorB, value: BID_TOO_LOW}),
-            'Bid not high enough'
+          this.marketplace.placeTokenBid(token, {from: collectorB, value: BID_TOO_LOW}),
+          'Bid not high enough'
         );
       });
 
@@ -109,8 +111,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
         // collector C places offer 0.510001 ETH for token (too low for next bid)
         await expectRevert(
-            this.marketplace.placeTokenBid(token, {from: collectorB, value: BID_TOO_LOW}),
-            'Bid not high enough'
+          this.marketplace.placeTokenBid(token, {from: collectorB, value: BID_TOO_LOW}),
+          'Bid not high enough'
         );
 
       });
@@ -217,8 +219,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
           // attempt to bid again with same offer
           await expectRevert(
-              this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH}),
-              'Bid not high enough'
+            this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH}),
+            'Bid not high enough'
           );
 
         });
@@ -249,8 +251,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         });
 
         await expectRevert(
-            this.marketplace.withdrawTokenBid(firstTokenId, {from: collectorA}),
-            "Bid lockup not elapsed"
+          this.marketplace.withdrawTokenBid(firstTokenId, {from: collectorA}),
+          'Bid lockup not elapsed'
         );
 
       });
@@ -261,8 +263,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
         // collector A attempts to withdraw bid when none exists
         await expectRevert(
-            this.marketplace.withdrawTokenBid(token, {from: collectorA}),
-            'No open bid'
+          this.marketplace.withdrawTokenBid(token, {from: collectorA}),
+          'No open bid'
         );
 
       });
@@ -276,8 +278,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
         // collector B attempts to withdraw collector A's bid
         await expectRevert(
-            this.marketplace.withdrawTokenBid(token, {from: collectorB}),
-            'Not bidder'
+          this.marketplace.withdrawTokenBid(token, {from: collectorB}),
+          'Not bidder'
         );
 
       });
@@ -345,7 +347,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
           const receipt = await this.marketplace.withdrawTokenBid(token, {from: collectorA, gasPrice});
 
           // Determine the gas cost associated with the transaction
-          const gasUsed = new BN( receipt.receipt.cumulativeGasUsed );
+          const gasUsed = new BN(receipt.receipt.cumulativeGasUsed);
           const txCost = gasUsed.mul(gasPrice);
 
           // Expected balance is starting balance less tx cost plus .5 ETH, the previous bid amount
@@ -394,8 +396,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
           // attempt to withdraw bid again
           await expectRevert(
-              this.marketplace.withdrawTokenBid(token, {from: collectorA}),
-              'No open bid'
+            this.marketplace.withdrawTokenBid(token, {from: collectorA}),
+            'No open bid'
           );
 
         });
@@ -424,8 +426,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
         // minter attempts to reject bid when none exists
         await expectRevert(
-            this.marketplace.rejectTokenBid(token, {from: minter}),
-            'No open bid'
+          this.marketplace.rejectTokenBid(token, {from: minter}),
+          'No open bid'
         );
 
       });
@@ -439,8 +441,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
         // collector B attempts to reject collector A's bid
         await expectRevert(
-            this.marketplace.rejectTokenBid(token, {from: collectorB}),
-            'Not current owner'
+          this.marketplace.rejectTokenBid(token, {from: collectorB}),
+          'Not current owner'
         );
 
       });
@@ -519,13 +521,13 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
           // attempt to reject bid again
           await expectRevert(
-              this.marketplace.rejectTokenBid(token, {from: minter}),
-              'No open bid'
+            this.marketplace.rejectTokenBid(token, {from: minter}),
+            'No open bid'
           );
 
         });
 
-      })
+      });
 
     });
 
@@ -550,8 +552,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
         // minter attempts to reject bid when none exists
         await expectRevert(
-            this.marketplace.acceptTokenBid(token, _0_5_ETH, {from: minter}),
-            'No open bid'
+          this.marketplace.acceptTokenBid(token, _0_5_ETH, {from: minter}),
+          'No open bid'
         );
 
       });
@@ -565,8 +567,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
         // collector B attempts to reject collector A's bid
         await expectRevert(
-            this.marketplace.acceptTokenBid(token, _0_5_ETH, {from: collectorB}),
-            'Not current owner'
+          this.marketplace.acceptTokenBid(token, _0_5_ETH, {from: collectorB}),
+          'Not current owner'
         );
 
       });
@@ -579,8 +581,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
 
         await expectRevert(
-            this.marketplace.acceptTokenBid(token, _0_1_ETH, {from: minter}),
-            'Offer price has changed'
+          this.marketplace.acceptTokenBid(token, _0_1_ETH, {from: minter}),
+          'Offer price has changed'
         );
       });
 
@@ -620,8 +622,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
           // attempt to accept offer twice
           await expectRevert(
-              this.marketplace.acceptTokenBid(token, _0_5_ETH, {from: minter}),
-              'No open bid'
+            this.marketplace.acceptTokenBid(token, _0_5_ETH, {from: minter}),
+            'No open bid'
           );
 
         });
@@ -641,10 +643,132 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
         });
 
-      })
+      });
 
     });
 
+    describe('adminRejectTokenBid()', () => {
+
+      const _0_5_ETH = ether('0.5');
+
+      beforeEach(async () => {
+
+        // Ensure owner is approved as this will fail if not
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // create 3 tokens to the minter
+        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+      });
+
+      it('reverts if no current bid', async () => {
+
+        const token = firstTokenId;
+
+        // minter attempts to reject bid when none exists
+        await expectRevert(
+          this.marketplace.adminRejectTokenBid(token, {from: admin}),
+          'No open bid'
+        );
+
+      });
+
+      it('reverts if not admin', async () => {
+
+        const token = firstTokenId;
+
+        // collector A places offer 0.5 ETH for token
+        await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
+
+        // collector B attempts to reject collector A's bid
+        await expectRevert(
+          this.marketplace.adminRejectTokenBid(token, {from: collectorB}),
+          'KODA: Caller not admin'
+        );
+
+      });
+
+      describe('on success', () => {
+
+        it('emits TokenBidRejected event when owner rejects offer', async () => {
+
+          const token = firstTokenId;
+
+          // offer 0.5 ETH for token (first bid)
+          await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
+
+          // reject bid
+          const receipt = await this.marketplace.adminRejectTokenBid(token, {from: admin});
+          expectEvent(receipt, 'TokenBidRejected', {
+            _tokenId: token,
+            _currentOwner: minter,
+            _bidder: collectorA,
+            _amount: _0_5_ETH
+          });
+
+        });
+
+        it('high bidder refunded when rejected', async () => {
+
+          const token = firstTokenId;
+
+          // collector A places offer 0.5 ETH for token
+          await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
+
+          // get the buyer's starting wallet balance
+          const tracker = await balance.tracker(collectorA);
+          const startBalance = await tracker.get();
+
+          // owner rejects bid
+          await this.marketplace.adminRejectTokenBid(token, {from: admin});
+
+          // collector A's expected balance is starting balance plus .5 ETH, the previous bid amount
+          const expectedBalance = startBalance.add(_0_5_ETH);
+          const endBalance = await tracker.get();
+          expect(endBalance).to.be.bignumber.equal(expectedBalance);
+
+        });
+
+        it('can place minimum bid after highest is rejected', async () => {
+
+          const token = firstTokenId;
+
+          // offer 0.5 ETH for token (first bid)
+          await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
+
+          // reject bid
+          await this.marketplace.adminRejectTokenBid(token, {from: admin});
+
+          // offer minimum bid for token
+          const receipt = await this.marketplace.placeTokenBid(token, {from: collectorB, value: MIN_BID});
+          expectEvent(receipt, 'TokenBidPlaced', {
+            _tokenId: token,
+            _currentOwner: minter,
+            _bidder: collectorB,
+            _amount: MIN_BID
+          });
+
+        });
+
+        it('admin cannot reject offer twice', async () => {
+
+          const token = firstTokenId;
+
+          // offer 0.5 ETH for token (first bid)
+          await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
+
+          // reject bid
+          await this.marketplace.adminRejectTokenBid(token, {from: admin});
+
+          // attempt to reject bid again
+          await expectRevert(
+            this.marketplace.adminRejectTokenBid(token, {from: admin}),
+            'No open bid'
+          );
+        });
+
+      });
+
+    });
   });
 
 });

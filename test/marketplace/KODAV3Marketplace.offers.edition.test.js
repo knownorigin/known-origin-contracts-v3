@@ -10,7 +10,7 @@ const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
 contract('KODAV3Marketplace', function (accounts) {
-  const [owner, minter, koCommission, contract, collectorA, collectorB] = accounts;
+  const [admin, owner, minter, koCommission, contract, collectorA, collectorB] = accounts;
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
@@ -27,10 +27,12 @@ contract('KODAV3Marketplace', function (accounts) {
     this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
 
     // grab the roles
+    this.DEFAULT_ADMIN_ROLE = await this.accessControls.DEFAULT_ADMIN_ROLE();
     this.MINTER_ROLE = await this.accessControls.MINTER_ROLE();
     this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
 
     // Set up access controls with minter roles
+    await this.accessControls.grantRole(this.DEFAULT_ADMIN_ROLE, admin, {from: owner});
     await this.accessControls.grantRole(this.MINTER_ROLE, owner, {from: owner});
     await this.accessControls.grantRole(this.MINTER_ROLE, minter, {from: owner});
 
@@ -76,7 +78,7 @@ contract('KODAV3Marketplace', function (accounts) {
         const start = now.add(duration);
         await expectRevert(
             this.marketplace.enableEditionOffers(firstEditionTokenId, start, {from: collectorA}),
-            "KODA: Caller not contract or edition owner"
+            "KODA: Caller not creator or contract"
         );
 
       });
@@ -707,6 +709,128 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
+    describe('adminRejectEditionBid()', () => {
+
+      const _0_5_ETH = ether('0.5');
+
+      beforeEach(async () => {
+
+        // Ensure creator is approved as this will fail if not
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // create 3 tokens to the minter
+        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+
+      });
+
+      it('reverts if no current bid', async () => {
+
+        const edition = firstEditionTokenId;
+
+        // minter attempts to reject bid when none exists
+        await expectRevert(
+          this.marketplace.adminRejectEditionBid(edition, {from: admin}),
+          'No open bid'
+        );
+
+      });
+
+      it('reverts if caller not creator', async () => {
+
+        const edition = firstEditionTokenId;
+
+        // collector A places offer 0.5 ETH for token
+        await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
+
+        // collector B attempts to reject collector A's bid
+        await expectRevert(
+          this.marketplace.adminRejectEditionBid(edition, {from: collectorB}),
+          'Caller not admin'
+        );
+
+      });
+
+      describe('on success', () => {
+
+        it('emits EditionBidRejected event when creator rejects offer', async () => {
+
+          const edition = firstEditionTokenId;
+
+          // offer 0.5 ETH for token (first bid)
+          await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
+
+          // reject bid
+          const receipt = await this.marketplace.adminRejectEditionBid(edition, {from: admin});
+          expectEvent(receipt, 'EditionBidRejected', {
+            _editionId: edition,
+            _bidder: collectorA,
+            _amount: _0_5_ETH
+          });
+
+        });
+
+        it('high bidder refunded when rejected', async () => {
+
+          const edition = firstEditionTokenId;
+
+          // collector A places offer 0.5 ETH for token
+          await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
+
+          // get the buyer's starting wallet balance
+          const tracker = await balance.tracker(collectorA);
+          const startBalance = await tracker.get();
+
+          // creator rejects bid
+          await this.marketplace.adminRejectEditionBid(edition, {from: admin});
+
+          // collector A's expected balance is starting balance plus .5 ETH, the previous bid amount
+          const expectedBalance = startBalance.add(_0_5_ETH);
+          const endBalance = await tracker.get();
+          expect(endBalance).to.be.bignumber.equal(expectedBalance);
+
+        });
+
+        it('can place minimum bid after highest is rejected', async () => {
+
+          const edition = firstEditionTokenId;
+
+          // offer 0.5 ETH for token (first bid)
+          await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
+
+          // reject bid
+          await this.marketplace.adminRejectEditionBid(edition, {from: admin});
+
+          // offer minimum bid for token
+          const receipt = await this.marketplace.placeEditionBid(edition, {from: collectorB, value: MIN_BID});
+          expectEvent(receipt, 'EditionBidPlaced', {
+            _editionId: edition,
+            _bidder: collectorB,
+            _amount: MIN_BID
+          });
+
+        });
+
+        it('creator cannot reject offer twice', async () => {
+
+          const edition = firstEditionTokenId;
+
+          // offer 0.5 ETH for token (first bid)
+          await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
+
+          // reject bid
+          await this.marketplace.adminRejectEditionBid(edition, {from: admin});
+
+          // attempt to reject bid again
+          await expectRevert(
+            this.marketplace.adminRejectEditionBid(edition, {from: admin}),
+            'No open bid'
+          );
+
+        });
+
+      })
+
+    });
 
   });
 

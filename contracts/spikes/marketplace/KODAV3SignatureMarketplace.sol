@@ -8,8 +8,8 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
-import {IKODAV3} from "../core/IKODAV3.sol";
+import {IKOAccessControlsLookup} from "../../access/IKOAccessControlsLookup.sol";
+import {IKODAV3} from "../../core/IKODAV3.sol";
 
 import "hardhat/console.sol";
 

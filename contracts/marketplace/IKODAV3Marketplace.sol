@@ -6,6 +6,7 @@ pragma solidity 0.7.6;
 interface IEditionBuyNowMarketplace {
 
     event EditionListed(uint256 indexed _editionId, uint256 _price, uint256 _startDate);
+    event EditionPriceChanged(uint256 indexed _editionId, uint256 _price);
     event EditionDeListed(uint256 indexed _editionId);
     event EditionPurchased(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price);
 

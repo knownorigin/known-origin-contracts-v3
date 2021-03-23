@@ -42,10 +42,6 @@ contract MintingFactory is Context {
         marketplace = _marketplace;
     }
 
-    ////////
-    // V2 //
-    ////////
-
     function mintToken(SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
         require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
         require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
@@ -90,9 +86,7 @@ contract MintingFactory is Context {
         _recordSuccessfulMint(_msgSender());
     }
 
-    //////////////////////
-    // Internal helpers //
-    //////////////////////
+    /// Internal helpers
 
     function _canCreateNewEdition(address _account) internal view returns (bool) {
         return frequencyOverride[_account] ? true : _getNow() >= frozenTil[_account];
@@ -106,9 +100,7 @@ contract MintingFactory is Context {
         return block.timestamp;
     }
 
-    ////////////////////
-    // Public helpers //
-    ////////////////////
+    /// Public helpers
 
     function canCreateNewEdition(address _account) public view returns (bool) {
         return _canCreateNewEdition(_account);
