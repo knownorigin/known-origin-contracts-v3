@@ -138,6 +138,19 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
         return _mintBatchEdition(_editionSize, _to, _uri);
     }
 
+    function mintBatchEditionAndComposeERC20s(uint96 _editionSize, address _to, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts)
+    external onlyContract override returns (uint256 _editionId) {
+        require(_erc20s.length == _amounts.length, "Array length mismatch");
+        require(_erc20s.length > 0, "Empty array");
+        _editionId = _mintBatchEdition(_editionSize, _to, _uri);
+
+        for(uint i = 0; i < _erc20s.length; i++) {
+            address erc20 = _erc20s[i];
+            uint256 amount = _amounts[i];
+            _composeERC20IntoEdition(_to, _editionId, erc20, amount);
+        }
+    }
+
     function _mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri) internal returns (uint256) {
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
 

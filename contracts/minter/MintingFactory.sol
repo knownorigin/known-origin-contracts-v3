@@ -62,6 +62,16 @@ contract MintingFactory is Context {
         setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
     }
 
+    function mintBatchEditionAndComposeERC20s(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts)
+    external {
+        require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
+        require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
+
+        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(_editionSize, _msgSender(), _uri, _erc20s, _amounts);
+
+        setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+    }
+
     function mintConsecutiveBatchEdition(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
         require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
         require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");

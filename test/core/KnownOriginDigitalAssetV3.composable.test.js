@@ -38,16 +38,26 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     )
   }
 
-  const addERC20BalanceToEdition = async (erc20, amount, kodaV3, editionId, sender) => {
+  const mintEditionAndComposeERC20 = async (erc20, amount, kodaV3, owner, sender) => {
     // approve the NFT contract to pull in tokens
-    await erc20.approve(kodaV3.address, amount, {from: sender})
+    await erc20.approve(kodaV3.address, amount, {from: owner})
 
     // add the tokens to the desired edition
-    await kodaV3.addERC20ToEdition(
-      sender,
-      editionId,
-      erc20.address,
-      amount,
+    await mintEditionAndComposeERC20s([erc20], [amount], kodaV3, owner, sender)
+  }
+
+  const mintEditionAndComposeERC20s = async (erc20s, amounts, kodaV3, owner, sender) => {
+    for(let i = 0; i < erc20s.length; i++) {
+      const erc20 = erc20s[i]
+      await erc20.approve(kodaV3.address, amounts[i], {from: owner})
+    }
+
+    await kodaV3.mintBatchEditionAndComposeERC20s(
+      this.editionSize,
+      owner,
+      'random',
+      erc20s.map(erc20 => erc20.address),
+      amounts,
       {from: sender}
     )
   }
@@ -260,18 +270,18 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
   describe('Editions', () => {
     beforeEach(async () => {
       this.editionSize = new BN('10')
-      await this.token.mintBatchEdition(this.editionSize, owner, 'random', {from: contract})
+      //await this.token.mintBatchEdition(this.editionSize, owner, 'random', {from: contract})
     })
 
     describe('Wrapping ERC20s', () => {
       describe('A single ERC20 within an edition', () => {
         beforeEach(async () => {
-          await addERC20BalanceToEdition(
+          await mintEditionAndComposeERC20(
             this.erc20Token1,
             ONE_THOUSAND_TOKENS,
             this.token,
-            await this.token.getEditionIdOfToken(firstEditionTokenId),
-            owner
+            owner,
+            contract
           )
         })
 
@@ -366,6 +376,110 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
             await this.token.editionTokenERC20TransferAmounts(await this.token.getEditionIdOfToken(firstEditionTokenId), this.erc20Token1.address, firstEditionTokenId)
           ).to.be.bignumber.equal(xferAmount)
         })
+
+        it('Can add a new ERC20 to a given set of edition tokens', async () => {
+          const editionId = await this.token.getEditionIdOfToken(firstEditionTokenId)
+
+          await this.erc20Token2.approve(this.token.address, ONE_THOUSAND_TOKENS, {from: owner})
+
+          const editionTokenIDs = Array(parseInt(this.editionSize.toString())).fill().map((_, i) => editionId.addn(i))
+          await this.token.getERC20s(
+            owner,
+            editionTokenIDs, // all tokens in edition
+            this.erc20Token2.address,
+            ONE_THOUSAND_TOKENS
+          )
+
+          for(let i = 0; i < editionTokenIDs.length; i++) {
+            const tokenId = editionTokenIDs[i]
+            expect(
+              await this.token.ERC20Balances(tokenId, this.erc20Token2.address)
+            ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS.div(this.editionSize))
+
+            // expect(
+            //   await this.token.editionTokenERC20Balances(tokenId, this.erc20Token1.address)
+            // ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
+
+            // first and second token of edition should be enough to give us confidence
+            expect(
+              await this.token.balanceOfERC20(tokenId, this.erc20Token2.address)
+            ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS.div(this.editionSize))
+
+            expect(
+              await this.token.totalERC20Contracts(tokenId)
+            ).to.be.bignumber.equal('2')
+
+            expect(
+              await this.token.erc20ContractByIndex(tokenId, '0')
+            ).to.be.equal(this.erc20Token2.address)
+
+            expect(
+              await this.token.erc20ContractByIndex(tokenId, '1')
+            ).to.be.equal(this.erc20Token1.address)
+          }
+
+          expect(
+            await this.erc20Token1.balanceOf(this.token.address)
+          ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
+
+          expect(
+            await this.erc20Token2.balanceOf(this.token.address)
+          ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
+        })
+      })
+    })
+
+    describe('_composeERC20IntoEdition() validation', () => {
+      it('Reverts when value is zero', async () => {
+        await expectRevert(
+          mintEditionAndComposeERC20(
+            this.erc20Token1,
+            '0',
+            this.token,
+            owner,
+            contract
+          ),
+          "_composeERC20IntoEdition: Value cannot be zero"
+        )
+      })
+
+      it('Reverts when erc20 is not whitelisted', async () => {
+        await expectRevert(
+          mintEditionAndComposeERC20(
+            this.erc20Token5,
+            ONE_THOUSAND_TOKENS,
+            this.token,
+            owner,
+            contract
+          ),
+          "_composeERC20IntoEdition: Specified contract not whitelisted"
+        )
+      })
+
+      it('Reverts when trying to wrap the same ERC20 twice instead of specifying larger value', async () => {
+        await expectRevert(
+          mintEditionAndComposeERC20s(
+            [this.erc20Token1, this.erc20Token1],
+            [ONE_THOUSAND_TOKENS, ONE_THOUSAND_TOKENS],
+            this.token,
+            owner,
+            contract
+          ),
+          "_composeERC20IntoEdition: Edition already contains ERC20"
+        )
+      })
+
+      it('Reverts when exceeding the max ERC20 limit', async () => {
+        await expectRevert(
+          mintEditionAndComposeERC20s(
+            [this.erc20Token1, this.erc20Token2, this.erc20Token3, this.erc20Token4],
+            Array(4).fill(ONE_THOUSAND_TOKENS),
+            this.token,
+            owner,
+            contract
+          ),
+          "_composeERC20IntoEdition: ERC20 limit exceeded"
+        )
       })
     })
   })
@@ -516,10 +630,44 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     })
   })
 
+  describe('getERC20s() validation', () => {
+    it('Reverts when token ID array is empty', async () => {
+      await expectRevert(
+        this.token.getERC20s(
+          owner,
+          [],
+          this.erc20Token2.address,
+          ONE_THOUSAND_TOKENS
+        ),
+        "Empty array"
+      )
+    })
+
+    it('Reverts when value is zero', async () => {
+      await expectRevert(
+        this.token.getERC20s(
+          owner,
+          [new BN('2')],
+          this.erc20Token2.address,
+          '0'
+        ),
+        "Total value cannot be zero"
+      )
+    })
+  })
+
   describe('transferERC20() validation', () => {
     beforeEach(async () => {
       // mint some KODA
       await this.token.mintToken(owner, 'random', {from: contract});
+
+      await addERC20BalanceToNFT(
+        this.erc20Token1,
+        ONE_THOUSAND_TOKENS,
+        this.token,
+        firstEditionTokenId,
+        owner
+      )
     })
 
     it('Reverts if amount is zero', async () => {
@@ -533,6 +681,27 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
       await expectRevert(
         this.token.transferERC20(firstEditionTokenId, random, this.erc20Token5.address, ONE_THOUSAND_TOKENS),
         "_prepareERC20LikeTransfer: No such ERC20 wrapped in token"
+      )
+    })
+
+    it('Reverts if trying to send tokens to the zero address', async () => {
+      await expectRevert(
+        this.token.transferERC20(firstEditionTokenId, constants.ZERO_ADDRESS, this.erc20Token1.address, ONE_THOUSAND_TOKENS),
+        "_prepareERC20LikeTransfer: To cannot be zero address"
+      )
+    })
+
+    it('Reverts when not the token owner', async () => {
+      await expectRevert(
+        this.token.transferERC20(firstEditionTokenId, random, this.erc20Token1.address, ONE_THOUSAND_TOKENS, {from: random}),
+        "_prepareERC20LikeTransfer: Not owner"
+      )
+    })
+
+    it('Reverts when transferring more than token balance', async () => {
+      await expectRevert(
+        this.token.transferERC20(firstEditionTokenId, random, this.erc20Token1.address, ONE_THOUSAND_TOKENS.muln(5), {from: owner}),
+        "_prepareERC20LikeTransfer: Transfer amount exceeds balance"
       )
     })
   })
