@@ -6,13 +6,12 @@ const {expect} = require('chai');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
-const {parseBalanceMap} = require('../utils/parse-balance-map')
+const {parseBalanceMap} = require('../utils/parse-balance-map');
 
-const {buildArtistMerkleInput} = require('../utils/merkle-tools')
+const {buildArtistMerkleInput} = require('../utils/merkle-tools');
 
 contract('KOAccessControls merkle proof tests', function (accounts) {
-  const [deployer, artist1, artist2, artist3, unverifiedArtist] = accounts;
-
+  const [deployer, artist1, artist2, artist3] = accounts;
 
   beforeEach(async () => {
     // setup access controls
