@@ -136,8 +136,8 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
   context('with minted tokens', () => {
 
     beforeEach(async () => {
-      await this.token.mintToken(owner, baseURI, {from: contract});
-      await this.token.mintToken(owner, baseURI, {from: contract});
+      await this.token.mintBatchEdition(1, owner, baseURI, {from: contract});
+      await this.token.mintBatchEdition(1, owner, baseURI, {from: contract});
       this.toWhom = other; // default to other for toWhom in context-dependent tests
     });
 
@@ -687,13 +687,13 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
     // FIXME we dont need this check as we expect the layer above to protect against these things
     it.skip('reverts with a null destination address', async () => {
       await expectRevert(
-        this.token.mintToken(ZERO_ADDRESS, baseURI, {from: contract}), 'ERC721: mint to the zero address',
+        this.token.mintBatchEdition(1, ZERO_ADDRESS, baseURI, {from: contract}), 'ERC721: mint to the zero address',
       );
     });
 
     context('with minted token', async () => {
       beforeEach(async () => {
-        ({logs: this.logs} = await this.token.mintToken(owner, baseURI, {from: contract}));
+        ({logs: this.logs} = await this.token.mintBatchEdition(1, owner, baseURI, {from: contract}));
       });
 
       it('emits a Transfer event', () => {
@@ -719,7 +719,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
 
     describe('token URI', () => {
       beforeEach(async () => {
-        await this.token.mintToken(owner, baseURI, {from: contract});
+        await this.token.mintBatchEdition(1, owner, baseURI, {from: contract});
       });
 
       it('return empty string by default', async () => {

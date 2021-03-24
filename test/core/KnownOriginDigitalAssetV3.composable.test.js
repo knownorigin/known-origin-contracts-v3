@@ -107,7 +107,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
   describe('Tokens only', () => {
     beforeEach(async () => {
       // mint some KODA
-      await this.token.mintToken(owner, 'random', {from: contract});
+      await this.token.mintBatchEdition(1, owner, 'random', {from: contract});
     })
 
     describe('Wrapping ERC20s', () => {
@@ -497,7 +497,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
   describe('updateMaxERC20sPerNFT()', () => {
     beforeEach(async () => {
       // mint some KODA
-      await this.token.mintToken(owner, 'random', {from: contract});
+      await this.token.mintBatchEdition(1, owner, 'random', {from: contract});
     })
 
     it('Can update the max NFTs per NFT and exceed the old limit', async () => {
@@ -560,7 +560,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
   describe('getERC20() validation', () => {
     beforeEach(async () => {
       // mint some KODA
-      await this.token.mintToken(owner, 'random', {from: contract});
+      await this.token.mintBatchEdition(1, owner, 'random', {from: contract});
     })
 
     it('Reverts when value is zero', async () => {
@@ -659,7 +659,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
   describe('transferERC20() validation', () => {
     beforeEach(async () => {
       // mint some KODA
-      await this.token.mintToken(owner, 'random', {from: contract});
+      await this.token.mintBatchEdition(1, owner, 'random', {from: contract});
 
       await addERC20BalanceToNFT(
         this.erc20Token1,

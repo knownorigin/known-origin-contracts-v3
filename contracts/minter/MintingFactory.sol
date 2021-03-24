@@ -22,6 +22,11 @@ contract MintingFactory is Context {
     // TODO decide on freeze period concept
     // TODO decide on merkle tree vs whitelist
 
+    modifier canMintAgain(){
+        require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
+        _;
+    }
+
     // frozen out for..
     uint256 public freezeWindow = 1 days;
 
@@ -45,19 +50,21 @@ contract MintingFactory is Context {
         marketplace = _marketplace;
     }
 
-    function mintToken(SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
+    function mintToken(SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri)
+    canMintAgain
+    external {
         require(accessControls.hasMinterRole(_msgSender()), "Caller must have minter role");
-        require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
 
         // Make tokens & edition
-        uint256 editionId = koda.mintToken(_msgSender(), _uri);
+        uint256 editionId = koda.mintBatchEdition(1, _msgSender(), _uri);
 
         setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
     }
 
-    function mintBatchEdition(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
+    function mintBatchEdition(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri)
+    canMintAgain
+    external {
         require(accessControls.hasMinterRole(_msgSender()), "Caller must have minter role");
-        require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
 
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
@@ -66,18 +73,19 @@ contract MintingFactory is Context {
     }
 
     function mintBatchEditionAndComposeERC20s(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts)
+    canMintAgain
     external {
         require(accessControls.hasMinterRole(_msgSender()), "Caller must have minter role");
-        require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
 
         uint256 editionId = koda.mintBatchEditionAndComposeERC20s(_editionSize, _msgSender(), _uri, _erc20s, _amounts);
 
         setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
     }
 
-    function mintConsecutiveBatchEdition(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
+    function mintConsecutiveBatchEdition(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri)
+    canMintAgain
+    external {
         require(accessControls.hasMinterRole(_msgSender()), "Caller must have minter role");
-        require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
 
         // Make tokens & edition
         uint256 editionId = koda.mintConsecutiveBatchEdition(_editionSize, _msgSender(), _uri);

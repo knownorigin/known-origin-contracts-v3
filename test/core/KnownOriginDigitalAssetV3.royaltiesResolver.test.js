@@ -60,7 +60,7 @@ contract('KnownOriginDigitalAssetV3 Royalties resolver', function (accounts) {
   });
 
   beforeEach(async () => {
-    await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+    await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
   });
 
   describe('without a overridden royalty', async () => {
