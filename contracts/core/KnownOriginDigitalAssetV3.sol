@@ -121,6 +121,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
         _registerInterface(0x4b7f2c2d);
     }
 
+    // TODO remove method and call batch with 1
     function mintToken(address _to, string calldata _uri)
     public
     override
