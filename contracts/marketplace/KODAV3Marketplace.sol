@@ -118,6 +118,8 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
     // FIXME admin functions for fixing issues/draining tokens & ETH
 
+    // FIXME expose method with recipient so other contracts can call this
+
     // Primary "buy now" sale flow
 
     // list edition with "buy now" price and start date
