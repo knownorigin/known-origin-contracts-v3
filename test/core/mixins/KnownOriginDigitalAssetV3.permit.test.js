@@ -127,7 +127,7 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     // Failing to provider the right owner of the token
     await expectRevert(
       this.token.permit(contract, spender, firstEditionTokenId, deadline, v, r, s, {from: random}),
-      "KODA: Invalid owner"
+      "Invalid owner"
     );
 
     // check spender is now approved
@@ -191,7 +191,7 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     // Failing to provider the right owner of the token
     await expectRevert(
       this.token.permit(owner, spender, tokenId, deadline, v, r, s, {from: random}),
-      "KODA: Deadline expired"
+      "Deadline expired"
     );
 
     // check spender is now approved
@@ -222,7 +222,7 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     // Failing to provider the right owner of the token
     await expectRevert(
       this.token.permit(owner, spender, tokenId, deadline, v, r, s, {from: random}),
-      "KODA: INVALID_SIGNATURE"
+      "INVALID_SIGNATURE"
     );
 
     // check spender is now approved

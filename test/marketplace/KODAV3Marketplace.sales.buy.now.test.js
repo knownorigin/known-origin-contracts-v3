@@ -193,7 +193,7 @@ contract('KODAV3Marketplace', function (accounts) {
       it('reverts if not edition create', async () => {
         await expectRevert(
           this.marketplace.delistEdition(firstEditionTokenId, {from: collectorA}),
-          'KODA: Caller not creator or contract'
+          'Caller not creator or contract'
         );
       });
 
@@ -245,7 +245,7 @@ contract('KODAV3Marketplace', function (accounts) {
       it('reverts if not contract role', async () => {
         await expectRevert(
           this.marketplace.listEdition(minter, secondEditionTokenId, _0_1_ETH, await time.latest(), {from: collectorA}),
-          'KODA: Caller not contract'
+          'Caller not contract'
         );
       });
 
@@ -276,7 +276,7 @@ contract('KODAV3Marketplace', function (accounts) {
         it('reverts if not edition owner', async () => {
           await expectRevert(
             this.marketplace.setEditionPriceListing(firstEditionTokenId, _0_2_ETH, {from: collectorA}),
-            'KODA: Caller not creator or contract'
+            'Caller not creator or contract'
           );
         });
 
@@ -352,7 +352,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
         await expectRevert.unspecified(
           this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: _0_1_ETH}),
-          'KODA: No tokens left on the primary market'
+          'No tokens left on the primary market'
         );
       });
 
@@ -372,7 +372,7 @@ contract('KODAV3Marketplace', function (accounts) {
         const start = await time.latest();
         await expectRevert(
           this.marketplace.convertFromBuyNowToOffers(secondEditionTokenId, start, {from: minter}),
-          'KODA: Caller not creator or contract'
+          'Caller not creator or contract'
         );
       });
 
@@ -416,7 +416,7 @@ contract('KODAV3Marketplace', function (accounts) {
         const start = await time.latest();
         await expectRevert(
           this.marketplace.convertFromBuyNowToOffers(secondEditionTokenId, start, {from: collectorA}),
-          'KODA: Caller not creator or contract'
+          'Caller not creator or contract'
         );
       });
 

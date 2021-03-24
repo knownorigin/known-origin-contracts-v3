@@ -82,7 +82,7 @@ contract('MinterFactory', function (accounts) {
       // ensure that the artist cannot mint again within the freeze window
       await expectRevert(
         this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist}),
-        "KODA: Caller unable to create yet"
+        "Caller unable to create yet"
       )
     });
 
@@ -132,7 +132,7 @@ contract('MinterFactory', function (accounts) {
       // ensure that the artist cannot mint again within the freeze window
       await expectRevert(
         this.factory.mintBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist}),
-        "KODA: Caller unable to create yet"
+        "Caller unable to create yet"
       )
     });
 
@@ -185,7 +185,7 @@ contract('MinterFactory', function (accounts) {
       // ensure that the artist cannot mint again within the freeze window
       await expectRevert(
         this.factory.mintConsecutiveBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist}),
-        "KODA: Caller unable to create yet"
+        "Caller unable to create yet"
       )
     });
 

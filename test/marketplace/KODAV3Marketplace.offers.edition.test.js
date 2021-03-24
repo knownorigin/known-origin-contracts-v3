@@ -78,7 +78,7 @@ contract('KODAV3Marketplace', function (accounts) {
         const start = now.add(duration);
         await expectRevert(
             this.marketplace.enableEditionOffers(firstEditionTokenId, start, {from: collectorA}),
-            "KODA: Caller not creator or contract"
+            "Caller not creator or contract"
         );
 
       });

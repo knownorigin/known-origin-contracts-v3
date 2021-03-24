@@ -479,7 +479,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if no contract role', async () => {
       await expectRevert(
         this.token.mintToken(owner, TOKEN_URI, {from: collabDao}),
-        'KODA: Caller must have contract role'
+        'Caller must have contract role'
       );
     });
   });
@@ -511,14 +511,14 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if no contract role', async () => {
       await expectRevert(
         this.token.mintConsecutiveBatchEdition(10, owner, TOKEN_URI, {from: collabDao}),
-        'KODA: Caller must have contract role'
+        'Caller must have contract role'
       );
     });
 
     it('revert if edtion size to big', async () => {
       await expectRevert(
         this.token.mintConsecutiveBatchEdition(this.MAX_EDITION_SIZE.add(ONE), owner, TOKEN_URI, {from: contract}),
-        'KODA: Invalid edition size'
+        'Invalid edition size'
       );
     });
   });
@@ -550,14 +550,14 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if no contract role', async () => {
       await expectRevert(
         this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: collabDao}),
-        'KODA: Caller must have contract role'
+        'Caller must have contract role'
       );
     });
 
     it('revert if edtion size to big', async () => {
       await expectRevert(
         this.token.mintBatchEdition(this.MAX_EDITION_SIZE.add(ONE), owner, TOKEN_URI, {from: contract}),
-        'KODA: Invalid edition size'
+        'Invalid edition size'
       );
     });
   });
@@ -804,7 +804,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('reverts if no edition ID found', async () => {
       await expectRevert(
         this.token.getNextAvailablePrimarySaleToken.call(nonExistentTokenId),
-        'KODA: No tokens left on the primary market'
+        'No tokens left on the primary market'
       );
     });
 
@@ -828,7 +828,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId),
-        'KODA: No tokens left on the primary market'
+        'No tokens left on the primary market'
       );
     });
 
@@ -901,7 +901,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if not admin', async () => {
       await expectRevert(
         this.token.reportEditionId(STARTING_EDITION, true, {from: collabDao}),
-        'KODA: Caller must have admin role'
+        'Caller must have admin role'
       );
     });
   });
@@ -918,7 +918,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if not admin', async () => {
       await expectRevert(
         this.token.reportArtistAccount(minter, true, {from: collabDao}),
-        'KODA: Caller must have admin role'
+        'Caller must have admin role'
       );
     });
   });
@@ -951,7 +951,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
       await expectRevert(
         this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: collabDao}),
-        'KODA: unable to set when not creator'
+        'unable to set when not creator'
       );
     });
 
@@ -965,7 +965,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
       await expectRevert(
         this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello again', {from: owner}),
-        'KODA: can only be set once'
+        'can only be set once'
       );
     });
   });
@@ -1174,7 +1174,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('reverts if not admin', async () => {
       await expectRevert(
         this.token.withdrawStuckTokens(this.token.address, '1000', minter, {from: collectorA}),
-        'KODA: Caller must have contract or admin role'
+        'Caller must have contract or admin role'
       );
     });
   });
@@ -1194,7 +1194,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('reverts if not admin', async () => {
       await expectRevert(
         this.token.updateSecondaryRoyalty('10000', {from: collectorA}),
-        'KODA: Caller must have admin role'
+        'Caller must have admin role'
       );
     });
   });
@@ -1208,7 +1208,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('fails if the token does not exist', async () => {
       await expectRevert(
         this.token.hasRoyalties('99999'),
-        'KODA: Token does not exist',
+        'Token does not exist',
       );
     });
 

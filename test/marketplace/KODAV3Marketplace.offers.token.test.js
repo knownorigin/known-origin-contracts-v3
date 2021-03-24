@@ -682,7 +682,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         // collector B attempts to reject collector A's bid
         await expectRevert(
           this.marketplace.adminRejectTokenBid(token, {from: collectorB}),
-          'KODA: Caller not admin'
+          'Caller not admin'
         );
 
       });

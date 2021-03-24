@@ -26,8 +26,8 @@ abstract contract NFTPermit is INFTPermit {
     function permit(address owner, address spender, uint256 tokenId, uint deadline, uint8 v, bytes32 r, bytes32 s)
     override
     external {
-        require(deadline != 0 && deadline >= block.timestamp, "KODA: Deadline expired");
-        require(IERC721Ownable(address(this)).ownerOf(tokenId) == owner, "KODA: Invalid owner");
+        require(deadline != 0 && deadline >= block.timestamp, "Deadline expired");
+        require(IERC721Ownable(address(this)).ownerOf(tokenId) == owner, "Invalid owner");
 
         // Create digest to check signatures
         bytes32 digest = keccak256(
@@ -40,7 +40,7 @@ abstract contract NFTPermit is INFTPermit {
 
         // Has the original signer signed it
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, "KODA: INVALID_SIGNATURE");
+        require(recoveredAddress != address(0) && recoveredAddress == owner, "INVALID_SIGNATURE");
 
         // set approval for signature if passed
         _approval(owner, spender, tokenId);

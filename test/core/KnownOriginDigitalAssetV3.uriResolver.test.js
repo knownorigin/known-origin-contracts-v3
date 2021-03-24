@@ -60,14 +60,14 @@ contract('KnownOriginDigitalAssetV3 Token URI resolver', function (accounts) {
   it('editionURI() reverts for unknown edition ID', async () => {
     await expectRevert(
       this.token.editionURI(firstEditionTokenId),
-      'KODA: Edition does not exist'
+      'Edition does not exist'
     );
   });
 
   it('tokenURI() reverts for unknown edition ID', async () => {
     await expectRevert(
       this.token.tokenURI(firstEditionTokenId),
-      'KODA: Token does not exist'
+      'Token does not exist'
     );
   });
 

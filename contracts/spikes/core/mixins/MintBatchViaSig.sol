@@ -18,8 +18,8 @@ abstract contract MintBatchViaSig {
     function mintBatchEditionViaSig(uint96 _editionSize, address _to, string calldata _uri, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
     public returns
     (uint256 _editionId) {
-        require(deadline != 0 && deadline >= block.timestamp, "KODA: Deadline expired");
-        require(_hasMinterRole(_to), "KODA: Minter not approved");
+        require(deadline != 0 && deadline >= block.timestamp, "Deadline expired");
+        require(_hasMinterRole(_to), "Minter not approved");
 
         uint256 currentNonce = mintingNonces[_to];
 
@@ -33,7 +33,7 @@ abstract contract MintBatchViaSig {
 
         // Has the original signer signed it
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == _to, "KODA: INVALID_SIGNATURE");
+        require(recoveredAddress != address(0) && recoveredAddress == _to, "INVALID_SIGNATURE");
 
         mintingNonces[_to]++;
 

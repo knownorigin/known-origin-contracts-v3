@@ -729,7 +729,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
       it('reverts when queried for non existent token id', async () => {
         await expectRevert(
           this.token.tokenURI(nonExistentTokenId),
-          'KODA: Token does not exist',
+          'Token does not exist',
         );
       });
     });

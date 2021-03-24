@@ -19,6 +19,9 @@ contract MintingFactory is Context {
 
     IKODAV3PrimarySaleMarketplace public marketplace;
 
+    // TODO decide on freeze period concept
+    // TODO decide on merkle tree vs whitelist
+
     // frozen out for..
     uint256 public freezeWindow = 1 days;
 
@@ -43,8 +46,8 @@ contract MintingFactory is Context {
     }
 
     function mintToken(SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
-        require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
-        require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
+        require(accessControls.hasMinterRole(_msgSender()), "Caller must have minter role");
+        require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
 
         // Make tokens & edition
         uint256 editionId = koda.mintToken(_msgSender(), _uri);
@@ -53,8 +56,8 @@ contract MintingFactory is Context {
     }
 
     function mintBatchEdition(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
-        require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
-        require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
+        require(accessControls.hasMinterRole(_msgSender()), "Caller must have minter role");
+        require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
 
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
@@ -64,8 +67,8 @@ contract MintingFactory is Context {
 
     function mintBatchEditionAndComposeERC20s(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts)
     external {
-        require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
-        require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
+        require(accessControls.hasMinterRole(_msgSender()), "Caller must have minter role");
+        require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
 
         uint256 editionId = koda.mintBatchEditionAndComposeERC20s(_editionSize, _msgSender(), _uri, _erc20s, _amounts);
 
@@ -73,8 +76,8 @@ contract MintingFactory is Context {
     }
 
     function mintConsecutiveBatchEdition(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri) public {
-        require(accessControls.hasMinterRole(_msgSender()), "KODA: Caller must have minter role");
-        require(_canCreateNewEdition(_msgSender()), "KODA: Caller unable to create yet");
+        require(accessControls.hasMinterRole(_msgSender()), "Caller must have minter role");
+        require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
 
         // Make tokens & edition
         uint256 editionId = koda.mintConsecutiveBatchEdition(_editionSize, _msgSender(), _uri);
@@ -117,13 +120,13 @@ contract MintingFactory is Context {
     }
 
     function setFrequencyOverride(address _account, bool _override) external {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
         frequencyOverride[_account] = _override;
         emit AdminFrequencyOverrideChanged(_account, _override);
     }
 
     function setFreezeWindow(uint256 _freezeWindow) public {
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
         freezeWindow = _freezeWindow;
         emit AdminFreezeWindowChanged(_freezeWindow);
     }

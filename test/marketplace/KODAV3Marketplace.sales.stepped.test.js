@@ -83,7 +83,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
           await expectRevert(
               this.marketplace.listSteppedEditionAuction(minter, token, _1_ETH, _0_1_ETH, start, {from: collectorA}),
-              "KODA: Caller not creator or contract"
+              "Caller not creator or contract"
           )
 
         });
@@ -304,7 +304,7 @@ contract('KODAV3Marketplace', function (accounts) {
                   from: collectorD,
                   value: token4Price
                 }),
-                "KODA: No tokens left on the primary market"
+                "No tokens left on the primary market"
             )
 
           });

@@ -36,12 +36,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
     event AdminTokenUriResolverSet(address indexed _tokenUriResolver);
 
     modifier onlyContract(){
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller must have contract role");
+        require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
         _;
     }
 
     modifier onlyAdmin(){
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller must have admin role");
+        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
         _;
     }
 
@@ -153,7 +153,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
     }
 
     function _mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri) internal returns (uint256) {
-        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
+        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid edition size");
 
         uint256 start = generateNextEditionNumber();
 
@@ -179,7 +179,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
     override
     onlyContract
     returns (uint256 _editionId) {
-        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "KODA: Invalid edition size");
+        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid edition size");
 
         uint256 start = generateNextEditionNumber();
 
@@ -211,7 +211,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
 
     function editionURI(uint256 _editionId) public view returns (string memory) {
         EditionDetails storage edition = editionDetails[_editionId];
-        require(edition.editionSize != 0, "KODA: Edition does not exist");
+        require(edition.editionSize != 0, "Edition does not exist");
 
         if (tokenUriResolverActive() && tokenUriResolver.isDefined(_editionId)) {
             return tokenUriResolver.editionURI(_editionId);
@@ -222,7 +222,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
     function tokenURI(uint256 _tokenId) public view returns (string memory) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
-        require(edition.editionSize != 0, "KODA: Token does not exist");
+        require(edition.editionSize != 0, "Token does not exist");
 
         if (tokenUriResolverActive() && tokenUriResolver.isDefined(editionId)) {
             return tokenUriResolver.editionURI(editionId);
@@ -351,7 +351,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
     }
 
     function hasRoyalties(uint256 _tokenId) external override view returns (bool) {
-        require(exists(_tokenId), "KODA: Token does not exist");
+        require(exists(_tokenId), "Token does not exist");
         if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionFromTokenId(_tokenId))) {
             return true;
         }
@@ -391,7 +391,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
                 return tokenId;
             }
         }
-        revert("KODA: No tokens left on the primary market");
+        revert("No tokens left on the primary market");
     }
 
     function hadPrimarySaleOfToken(uint256 _tokenId) public override view returns (bool) {
@@ -655,7 +655,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
     /// @dev Allows for the ability to extract stuck ERC20 tokens
     /// @dev Only callable from admin
     function withdrawStuckTokens(address _tokenAddress, uint256 _amount, address _withdrawalAccount) public {
-        require(accessControls.hasContractOrAdminRole(_msgSender()), "KODA: Caller must have contract or admin role");
+        require(accessControls.hasContractOrAdminRole(_msgSender()), "Caller must have contract or admin role");
         IERC20(_tokenAddress).approve(address(this), _amount);
         IERC20(_tokenAddress).transferFrom(address(this), _withdrawalAccount, _amount);
     }
@@ -668,11 +668,11 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
 
     // Optional metadata storage slot which allows the creator to set an additional metadata blob on the token
     function lockInAdditionalMetaData(uint256 _editionId, string calldata metadata) external {
-        require(_msgSender() == getCreatorOfEdition(_editionId), "KODA: unable to set when not creator");
+        require(_msgSender() == getCreatorOfEdition(_editionId), "unable to set when not creator");
 
         // TODO enforce only once? ... check/confirm thoughts on this
 
-        require(bytes(additionalEditionMetaData[_editionId]).length == 0, "KODA: can only be set once");
+        require(bytes(additionalEditionMetaData[_editionId]).length == 0, "can only be set once");
         additionalEditionMetaData[_editionId] = metadata;
         emit AdditionalMetaDataSet(_editionId);
     }

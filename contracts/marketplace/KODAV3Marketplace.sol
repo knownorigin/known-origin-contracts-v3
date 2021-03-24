@@ -21,20 +21,20 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
 
     modifier onlyContract(){
-        require(accessControls.hasContractRole(_msgSender()), "KODA: Caller not contract");
+        require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
         _;
     }
 
     modifier onlyContractOrCreator(uint256 _editionId){
         require(
             accessControls.hasContractRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
-            "KODA: Caller not creator or contract"
+            "Caller not creator or contract"
         );
         _;
     }
 
     modifier onlyAdmin(){
-        require(accessControls.hasAdminRole(_msgSender()), "KODA: Caller not admin");
+        require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
         _;
     }
 
