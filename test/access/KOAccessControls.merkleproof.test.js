@@ -6,105 +6,80 @@ const {expect} = require('chai');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
-contract('KOAccessControls merkle proof tests', function (accounts) {
-  const [deployer] = accounts;
+const {parseBalanceMap} = require('../utils/parse-balance-map')
 
-  // TODO convert this so the test actually builds the proof
-  const merkleProof = {
-    "merkleRoot": "0x0f0a8bfd5e14529c08426d9f0eea8fd737a1e35cee054ce67107b11724c26e25",
-    "tokenTotal": "0x03",
-    "claims": {
-      "0xB9CcDD7Bedb7157798e10Ff06C7F10e0F37C6BdD": {
-        "index": 0,
-        "amount": "0x01",
-        "proof": [
-          "0x2388fd19f2887f60b302376d971d01dbb667f720fb9bfed2ed4cc2a4ab644a02"
-        ]
-      },
-      "0xF3c6F5F265F503f53EAD8aae90FC257A5aa49AC1": {
-        "index": 1,
-        "amount": "0x01",
-        "proof": [
-          "0x5b47e330746be3185213a9741f3bcd1d82b2b1fbbcd833e3271880428d0e7b9b",
-          "0xc8e8fc78d7229a113a4a84b1a268c0c91d4b2d818e42759e41e73afb6e9c129b"
-        ]
-      },
-      "0xf94DbB18cc2a7852C9CEd052393d517408E8C20C": {
-        "index": 2,
-        "amount": "0x01",
-        "proof": [
-          "0x7b88d0c0c20b9a75266f972355391f9e1826d6963b12e7069b627bb7f2df9fa1",
-          "0xc8e8fc78d7229a113a4a84b1a268c0c91d4b2d818e42759e41e73afb6e9c129b"
-        ]
-      }
-    }
-  };
+const {buildArtistMerkleInput} = require('../utils/merkle-tools')
+
+contract('KOAccessControls merkle proof tests', function (accounts) {
+  const [deployer, artist1, artist2, artist3, unverifiedArtist] = accounts;
+
 
   beforeEach(async () => {
     // setup access controls
     this.legacyAccessControls = await SelfServiceAccessControls.new();
     this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: deployer});
 
-    // grab the roles
-    this.MINTER_ROLE = await this.accessControls.MINTER_ROLE();
-    this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
+    this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
+
+    console.log(this.merkleProof);
 
     // set the root hash
-    await this.accessControls.updateArtistMerkleRoot(merkleProof.merkleRoot, {from: deployer});
+    await this.accessControls.updateArtistMerkleRoot(this.merkleProof.merkleRoot, {from: deployer});
+
   });
 
-  describe('isVerifiedArtist() - success', async () => {
+  describe.only('isVerifiedArtist() - success', async () => {
     it('should assert address whitelisted', async () => {
       expect(await this.accessControls.isVerifiedArtist.call(
-        0,
-        "0xB9CcDD7Bedb7157798e10Ff06C7F10e0F37C6BdD",
-        merkleProof.claims['0xB9CcDD7Bedb7157798e10Ff06C7F10e0F37C6BdD'].proof)
+        this.merkleProof.claims[artist1].index,
+        artist1,
+        this.merkleProof.claims[artist1].proof)
       ).to.be.equal(true);
 
       expect(await this.accessControls.isVerifiedArtist.call(
-        1,
-        "0xF3c6F5F265F503f53EAD8aae90FC257A5aa49AC1",
-        merkleProof.claims['0xF3c6F5F265F503f53EAD8aae90FC257A5aa49AC1'].proof)
+        this.merkleProof.claims[artist2].index,
+        artist2,
+        this.merkleProof.claims[artist2].proof)
       ).to.be.equal(true);
 
       expect(await this.accessControls.isVerifiedArtist.call(
-        2,
-        "0xf94DbB18cc2a7852C9CEd052393d517408E8C20C",
-        merkleProof.claims['0xf94DbB18cc2a7852C9CEd052393d517408E8C20C'].proof)
+        this.merkleProof.claims[artist3].index,
+        artist3,
+        this.merkleProof.claims[artist3].proof)
       ).to.be.equal(true);
     });
   });
 
-  describe('isVerifiedArtist() - failures', async () => {
+  describe.only('isVerifiedArtist() - failures', async () => {
     it('should fail artist verification', async () => {
       expect(await this.accessControls.isVerifiedArtist.call(
         0,
         deployer,
-        merkleProof.claims['0xf94DbB18cc2a7852C9CEd052393d517408E8C20C'].proof)
+        this.merkleProof.claims[artist1].proof)
       ).to.be.equal(false);
     });
 
     it('should fail artist verification when wrong index supplied', async () => {
       expect(await this.accessControls.isVerifiedArtist.call(
         1, // wrong index
-        "0xf94DbB18cc2a7852C9CEd052393d517408E8C20C",
-        merkleProof.claims['0xf94DbB18cc2a7852C9CEd052393d517408E8C20C'].proof)
+        artist3,
+        this.merkleProof.claims[artist3].proof)
       ).to.be.equal(false);
     });
 
     it('should fail artist verification when wrong proof supplied', async () => {
       expect(await this.accessControls.isVerifiedArtist.call(
-        1,
-        "0xF3c6F5F265F503f53EAD8aae90FC257A5aa49AC1",
-        merkleProof.claims['0xf94DbB18cc2a7852C9CEd052393d517408E8C20C'].proof)
+        this.merkleProof.claims[artist1].index,
+        artist1,
+        merkleProof.claims[artist2].proof)
       ).to.be.equal(false);
     });
 
     it('should fail artist verification when wrong account supplied', async () => {
       expect(await this.accessControls.isVerifiedArtist.call(
-        0,
-        "0xf94DbB18cc2a7852C9CEd052393d517408E8C20C",
-        merkleProof.claims['0xB9CcDD7Bedb7157798e10Ff06C7F10e0F37C6BdD'].proof)
+        this.merkleProof.claims[artist3].index,
+        artist1,
+        merkleProof.claims[artist3].proof)
       ).to.be.equal(false);
     });
 
@@ -112,7 +87,7 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
       expect(await this.accessControls.isVerifiedArtist.call(
         0,
         ZERO_ADDRESS,
-        merkleProof.claims['0xB9CcDD7Bedb7157798e10Ff06C7F10e0F37C6BdD'].proof)
+        this.merkleProof.claims[artist1].proof)
       ).to.be.equal(false);
     });
   });
