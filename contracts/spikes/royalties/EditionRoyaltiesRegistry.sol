@@ -2,19 +2,18 @@
 
 pragma solidity 0.8.0;
 
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-import "../spikes/collaborators/IFundsHandler.sol";
-import "../spikes/collaborators/simple/FundsReceiver.sol";
+import "../collaborators/IFundsHandler.sol";
+import "../collaborators/simple/FundsReceiver.sol";
 
-import "../access/KOAccessControls.sol";
+import "../../access/KOAccessControls.sol";
 
-import "../core/IERC2981.sol";
-import "../core/IKODAV3.sol";
-import "../core/Konstants.sol";
-
-import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "../../core/IERC2981.sol";
+import "../../core/IKODAV3.sol";
+import "../../core/Konstants.sol";
 
 contract EditionRoyaltiesRegistry is ERC165, IERC2981, Konstants, Context {
 

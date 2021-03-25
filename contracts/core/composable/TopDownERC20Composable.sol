@@ -15,12 +15,15 @@ interface ERC998ERC20TopDown {
     event TransferERC20(uint256 indexed _tokenId, address indexed _to, address indexed _erc20Contract, uint256 _value);
 
     function balanceOfERC20(uint256 _tokenId, address _erc20Contract) external view returns (uint256);
+
     function transferERC20(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) external;
+
     function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) external;
 }
 
 interface ERC998ERC20TopDownEnumerable {
     function totalERC20Contracts(uint256 _tokenId) external view returns (uint256);
+
     function erc20ContractByIndex(uint256 _tokenId, uint256 _index) external view returns (address);
 }
 
@@ -72,11 +75,12 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function getERC20s(address _from, uint256[] calldata _tokenIds, address _erc20Contract, uint256 _totalValue) external {
-        require(_tokenIds.length > 0, "Empty array");
+        uint256 totalTokens = _tokenIds.length;
+        require(totalTokens > 0, "Empty array");
         require(_totalValue > 0, "Total value cannot be zero");
 
-        uint256 valuePerToken = _totalValue / _tokenIds.length;
-        for(uint i = 0; i < _tokenIds.length; i++) {
+        uint256 valuePerToken = _totalValue / totalTokens;
+        for (uint i = 0; i < totalTokens; i++) {
             getERC20(_from, _tokenIds[i], _erc20Contract, valuePerToken);
         }
     }
@@ -214,7 +218,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
         if (editionContainsERC20) {
             uint256 allTokensInEditionERC20Balance;
-            for(uint i = 0; i < koda.getSizeOfEdition(editionId); i++) {
+            for (uint i = 0; i < koda.getSizeOfEdition(editionId); i++) {
                 uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][editionId + i];
                 uint256 tokenBal = tokenInitialBalance - spentTokens;
                 allTokensInEditionERC20Balance = allTokensInEditionERC20Balance + tokenBal;

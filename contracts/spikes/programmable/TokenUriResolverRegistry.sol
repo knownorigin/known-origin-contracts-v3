@@ -3,9 +3,9 @@
 pragma solidity 0.8.0;
 
 import "@openzeppelin/contracts/utils/Context.sol";
-import "../access/KOAccessControls.sol";
-import "../core/IKODAV3.sol";
-import "./ITokenUriResolver.sol";
+import "../../access/KOAccessControls.sol";
+import "../../core/IKODAV3.sol";
+import "../../programmable/ITokenUriResolver.sol";
 
 contract TokenUriResolverRegistry is ITokenUriResolver, Context {
 
