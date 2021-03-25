@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.7.6;
+pragma solidity 0.8.0;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
-import {MerkleProof} from "@openzeppelin/contracts/cryptography/MerkleProof.sol";
+import {Context} from "@openzeppelin/contracts/utils/Context.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 import {IKOAccessControlsLookup} from "./IKOAccessControlsLookup.sol";
 import {ISelfServiceAccessControls} from "./legacy/ISelfServiceAccessControls.sol";

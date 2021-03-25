@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-// FIXME bump to 0.8 and drop safemath?
-pragma solidity 0.7.6;
+pragma solidity 0.8.0;
 
-import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
-import {ERC165} from "@openzeppelin/contracts/introspection/ERC165.sol";
+import {ERC165Storage} from "@openzeppelin/contracts/utils/introspection/ERC165Storage.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -21,8 +19,7 @@ import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165, IKODAV3Minter, IKODAV3 {
-    using SafeMath for uint256;
+contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165Storage, IKODAV3Minter, IKODAV3 {
 
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
 
@@ -148,13 +145,13 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
 
         // assign balance
-        balances[_to] = balances[_to].add(_editionSize);
+        balances[_to] = balances[_to] + _editionSize;
 
         // edition of x
         _defineEditionConfig(start, _editionSize, _to, _uri);
 
         // Loop emit all transfer events
-        uint256 end = start.add(_editionSize);
+        uint256 end = start + _editionSize;
         for (uint i = start; i < end; i++) {
             emit Transfer(address(0), _to, i);
         }
@@ -174,13 +171,13 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
 
         // assign balance
-        balances[_to] = balances[_to].add(_editionSize);
+        balances[_to] = balances[_to] + _editionSize;
 
         // Start ID always equals edition ID
         _defineEditionConfig(start, _editionSize, _to, _uri);
 
         // emit EIP-2309 consecutive transfer event
-        emit ConsecutiveTransfer(start, start.add(_editionSize), address(0), _to);
+        emit ConsecutiveTransfer(start, start + _editionSize, address(0), _to);
 
         return start;
     }
@@ -491,8 +488,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
         owners[_tokenId] = _to;
 
         // Modify balances
-        balances[_from] = balances[_from].sub(1);
-        balances[_to] = balances[_to].add(1);
+        balances[_from] = balances[_from] - 1;
+        balances[_to] = balances[_to] + 1;
     }
 
     /// @notice Find the owner of an NFT

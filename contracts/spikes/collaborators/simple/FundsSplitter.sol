@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.6;
+pragma solidity 0.8.0;
 
 import "../IFundsHandler.sol";
 
@@ -35,7 +35,6 @@ contract FundsSplitter is IFundsHandler {
         // accept funds
         uint256 balance = msg.value;
         uint256 singleUnitOfValue = balance / SCALE;
-        // FIXME use safe math?
 
         // split according to total
         for (uint256 i = 0; i < recipients.length; i++) {

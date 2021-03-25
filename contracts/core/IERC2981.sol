@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.6;
+pragma solidity 0.8.0;
 
-import {IERC165} from "@openzeppelin/contracts/introspection/IERC165.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 // This is purely an extension for the KO platform
 interface IERC2981HasRoyaltiesExtension {

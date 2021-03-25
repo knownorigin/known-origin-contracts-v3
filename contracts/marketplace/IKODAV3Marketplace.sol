@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.7.6;
+pragma solidity 0.8.0;
 
 interface IEditionBuyNowMarketplace {
     event EditionListed(uint256 indexed _editionId, uint256 _price, uint256 _startDate);

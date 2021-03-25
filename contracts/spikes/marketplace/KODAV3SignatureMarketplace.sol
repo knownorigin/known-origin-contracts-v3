@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.6;
+pragma solidity 0.8.0;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/GSN/Context.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IKOAccessControlsLookup} from "../../access/IKOAccessControlsLookup.sol";
@@ -14,7 +13,6 @@ import {IKODAV3} from "../../core/IKODAV3.sol";
 import "hardhat/console.sol";
 
 contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
-    using SafeMath for uint256;
 
     // Contract name
     string public constant name = "KODAV3SignatureMarketplace";
@@ -146,7 +144,7 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
     }
 
     function invalidateListingNonce(uint256 _editionId) public {
-        listingNonces[_msgSender()][_editionId] = listingNonces[_msgSender()][_editionId].add(1);
+        listingNonces[_msgSender()][_editionId] = listingNonces[_msgSender()][_editionId] + 1;
     }
 
     function getListingDigest(
@@ -199,8 +197,8 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
         // TODO could we save gas here by maintaining a counter for KO platform funds and having a drain method?
 
         bool _isEthSale = _paymentToken == address(0);
-        uint256 koCommission = _paymentAmount.div(modulo).mul(platformPrimarySaleCommission);
-        uint256 receiverCommission = _paymentAmount.sub(koCommission);
+        uint256 koCommission = (_paymentAmount / modulo) * platformPrimarySaleCommission;
+        uint256 receiverCommission = _paymentAmount - koCommission;
         if (_isEthSale) {
             (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
             require(koCommissionSuccess, "Edition commission payment failed");
@@ -214,7 +212,7 @@ contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
         }
     }
 
-    function getChainId() public pure returns (uint256) {
+    function getChainId() public view returns (uint256) {
         uint256 chainId;
         assembly {chainId := chainid()}
         return chainId;

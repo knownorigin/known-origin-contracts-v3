@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.0 <0.8.0;
+// FIXME diff this and the OZ to work out whats different
+pragma solidity >=0.6.0 <=0.8.0;
 
 /**
  * @dev Library for managing
