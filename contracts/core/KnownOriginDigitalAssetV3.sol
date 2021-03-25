@@ -18,8 +18,6 @@ import {Konstants} from "./Konstants.sol";
 import {ITokenUriResolver} from "../programmable/ITokenUriResolver.sol";
 import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 
-// FIXME Use safe-math for all calcs?
-
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */

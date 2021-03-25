@@ -5,8 +5,8 @@ pragma solidity 0.7.6;
 import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-import "../collaborators/IFundsHandler.sol";
-import "../collaborators/simple/FundsReceiver.sol";
+import "../spikes/collaborators/IFundsHandler.sol";
+import "../spikes/collaborators/simple/FundsReceiver.sol";
 
 import "../access/KOAccessControls.sol";
 
