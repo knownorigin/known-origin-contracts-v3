@@ -83,7 +83,6 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     // platform funds collector
     address public platformAccount;
 
-    // TODO confirm default decimal precision (EIP-2981 compatibility required)
     // Secondary sale commission
     uint256 public secondarySaleRoyalty = 12_50000; // 12.5%
 
@@ -464,26 +463,16 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         // get next token to sell along with the royalties recipient and the original creator
         (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
 
+        // TODO for stepped sales, should they be sold in reverse order ie. 10...1 and not 1...10?
+
         // split money
         handleEditionSaleFunds(receiver, _paymentAmount);
 
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, _buyer, tokenId);
 
-        // FIXME we could in theory remove this - write a test to prove its not needed and we can do withdrawals
-        //      - and use the current approach of KO where a bidder must pull back any funds once its sold out on primary
-        //      - would probs shave a good bit of GAS (profile the options)
-        //      - could be replaced with a open method when in that state, monies are returned to bidder (future proof building tools to cover this)
-
-        // if we are about to sellout - send any open offers back to the bidder
-        if (tokenId == koda.maxTokenIdOfEdition(_editionId)) {
-
-            // send money back to top bidder if existing offer found
-            Offer storage offer = editionOffers[_editionId];
-            if (offer.offer > 0) {
-                _refundBidder(offer.bidder, offer.offer);
-            }
-        }
+        // TODO add a test to prove that once an edition sells out, if there are open offers on they cannot be action and only withdrawn/rejected
+        // N:B. open offers are left once sold out for the bidder to withdraw or the artist to reject
 
         return tokenId;
     }
@@ -692,21 +681,26 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     //////////////////////////////
 
     function facilitateSecondarySale(uint256 _tokenId, uint256 _paymentAmount, address _seller, address _buyer) internal {
-        address originalCreator = koda.getCreatorOfToken(_tokenId);
+        (address royaltyRecipient,) = koda.royaltyInfo(_tokenId);
 
         // split money
-        handleSecondarySaleFunds(_seller, originalCreator, _paymentAmount);
+        uint256 creatorRoyalties = handleSecondarySaleFunds(_seller, royaltyRecipient, _paymentAmount);
 
         // N:B. open offers are left for the bidder to withdraw or the new token owner to reject/accept
 
         // send token to buyer
         koda.safeTransferFrom(_seller, _buyer, _tokenId);
+
+        // fire royalties callback event
+        koda.receivedRoyalties(royaltyRecipient, _buyer, _tokenId, address(0), creatorRoyalties);
     }
 
-    function handleSecondarySaleFunds(address _receiver, address _originalCreator, uint256 _paymentAmount) internal {
+    function handleSecondarySaleFunds(address _seller, address _royaltyRecipient, uint256 _paymentAmount)
+    internal
+    returns (uint256 creatorRoyalties){
         // pay royalties
-        uint256 creatorRoyalties = _paymentAmount.div(modulo).mul(secondarySaleRoyalty);
-        (bool creatorSuccess,) = _originalCreator.call{value : creatorRoyalties}("");
+        creatorRoyalties = _paymentAmount.div(modulo).mul(secondarySaleRoyalty);
+        (bool creatorSuccess,) = _royaltyRecipient.call{value : creatorRoyalties}("");
         require(creatorSuccess, "Token payment failed");
 
         // pay platform fee
@@ -715,7 +709,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         require(koCommissionSuccess, "Token commission payment failed");
 
         // pay seller
-        (bool success,) = _receiver.call{value : _paymentAmount.sub(creatorRoyalties).sub(koCommission)}("");
+        (bool success,) = _seller.call{value : _paymentAmount.sub(creatorRoyalties).sub(koCommission)}("");
         require(success, "Token payment failed");
     }
 

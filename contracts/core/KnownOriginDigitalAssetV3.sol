@@ -93,7 +93,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
     // A onchain reference to accounts which have been lost/hacked etc
     mapping(address => bool) public reportedArtistAccounts;
 
-    // TODO confirm default decimal precision (EIP-2981 compatibility required)
     // Secondary sale commission
     uint256 public secondarySaleRoyalty = 12_50000; // 12.5%
 

@@ -58,6 +58,7 @@ contract('KODAV3Marketplace', function (accounts) {
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.marketplace.address, {from: owner});
 
     this.minBidAmount = await this.marketplace.minBidAmount();
+    this.secondarySaleRoyalty = await this.marketplace.secondarySaleRoyalty();
   });
 
   describe('two primary sales via \'buy now\' purchase and re-sold on secondary', () => {
@@ -136,7 +137,14 @@ contract('KODAV3Marketplace', function (accounts) {
       await this.marketplace.listToken(token1, _0_1_ETH, await time.latest(), {from: collectorA});
 
       // bought buy collector 1
-      await this.marketplace.buyToken(token1, {from: collectorB, value: _0_1_ETH});
+      const recipient = await this.marketplace.buyToken(token1, {from: collectorB, value: _0_1_ETH});
+      await expectEvent.inTransaction(recipient.tx, KnownOriginDigitalAssetV3, 'ReceivedRoyalties', {
+        _royaltyRecipient: minter,
+        _buyer: collectorB,
+        _tokenId: token1,
+        _tokenPaid: ZERO_ADDRESS,
+        _amount: _0_1_ETH.div(new BN('10000000')).mul(this.secondarySaleRoyalty) // 12.5% royalties
+      });
 
       // collector B owns both
       expect(await this.token.ownerOf(token1)).to.be.equal(collectorB);
