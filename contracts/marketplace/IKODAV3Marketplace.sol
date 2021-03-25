@@ -14,6 +14,8 @@ interface IEditionBuyNowMarketplace {
     function buyEditionToken(uint256 _editionId) external payable;
 
     function buyEditionTokenFor(uint256 _editionId, address _recipient) external payable;
+
+    function setEditionPriceListing(uint256 _editionId, uint128 _listingPrice) external;
 }
 
 interface IEditionOffersMarketplace {

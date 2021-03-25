@@ -5,13 +5,13 @@ pragma solidity 0.7.6;
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 import {IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySaleMarketplace} from "./IKODAV3Marketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
-contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySaleMarketplace, ReentrancyGuard, Context {
+contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySaleMarketplace, Pausable, ReentrancyGuard {
     using SafeMath for uint256;
 
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
@@ -114,8 +114,6 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     //  - approvals go astray/removed - approvals may need to be mapped in subgraph
     //  - when an edition sells out - implicit failure due to creator not owning anymore - we dont explicitly check remaining due to GAS
 
-    // FIXME do we need a global emergency stop "pause"
-
     // FIXME admin functions for fixing issues/draining tokens & ETH
 
     // Primary "buy now" sale flow
@@ -123,8 +121,9 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     // list edition with "buy now" price and start date
     function listEdition(address _creator, uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
     public
-    onlyContract
-    override {
+    override
+    whenNotPaused
+    onlyContract {
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         // Store listing data
@@ -136,8 +135,9 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     // delist the "buy now" price - putting the edition in an "accepting offers" state
     function delistEdition(uint256 _editionId)
     public
-    onlyContractOrCreator(_editionId)
-    override {
+    override
+    whenNotPaused
+    onlyContractOrCreator(_editionId) {
         // Clear listing
         delete editionListings[_editionId];
 
@@ -147,8 +147,10 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
     // update the "buy now" price
     function setEditionPriceListing(uint256 _editionId, uint128 _listingPrice)
-    onlyContractOrCreator(_editionId)
-    public {
+    public
+    override
+    whenNotPaused
+    onlyContractOrCreator(_editionId) {
         // Set price
         editionListings[_editionId].price = _listingPrice;
 
@@ -158,17 +160,21 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
     // Buy an token from the edition on the primary market
     function buyEditionToken(uint256 _editionId)
-    nonReentrant
     public
-    override payable {
+    override
+    payable
+    whenNotPaused
+    nonReentrant {
         _purchaseEdition(_editionId, _msgSender());
     }
 
     // Buy an token from the edition on the primary market, ability to define the recipient
     function buyEditionTokenFor(uint256 _editionId, address _recipient)
-    nonReentrant
     public
-    override payable {
+    override
+    payable
+    whenNotPaused
+    nonReentrant {
         _purchaseEdition(_editionId, _recipient);
     }
 
@@ -185,8 +191,9 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
     // convert from a "buy now" listing and converting to "accepting offers" with an optional start date
     function convertFromBuyNowToOffers(uint256 _editionId, uint128 _startDate)
-    onlyContractOrCreator(_editionId)
-    public {
+    public
+    whenNotPaused
+    onlyContractOrCreator(_editionId) {
         require(editionStep[_editionId].basePrice == 0, "Cannot convert from a step");
         require(editionListings[_editionId].seller != address(0), "No listing found");
         require(editionOffers[_editionId].offer == 0, "Already have offers set");
@@ -230,9 +237,10 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     // Primary "offers" sale flow
 
     function enableEditionOffers(uint256 _editionId, uint128 _startDate)
-    onlyContractOrCreator(_editionId)
+    external
     override
-    external {
+    whenNotPaused
+    onlyContractOrCreator(_editionId) {
 
         // clear any buy now price which could be set
         delete editionListings[_editionId];
@@ -244,7 +252,12 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         emit EditionAcceptingOffer(_editionId, _startDate);
     }
 
-    function placeEditionBid(uint256 _editionId) nonReentrant public override payable {
+    function placeEditionBid(uint256 _editionId)
+    public
+    override
+    payable
+    whenNotPaused
+    nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(msg.value >= offer.offer.add(minBidAmount), "Bid not high enough");
 
@@ -271,7 +284,11 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         emit EditionBidPlaced(_editionId, _msgSender(), msg.value);
     }
 
-    function withdrawEditionBid(uint256 _editionId) public override nonReentrant {
+    function withdrawEditionBid(uint256 _editionId)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.offer > 0, "No open bid");
         require(offer.bidder == _msgSender(), "Not the top bidder");
@@ -287,7 +304,11 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         delete editionOffers[_editionId];
     }
 
-    function rejectEditionBid(uint256 _editionId) public override nonReentrant {
+    function rejectEditionBid(uint256 _editionId)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
         require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Caller not the creator");
@@ -302,7 +323,11 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         delete editionOffers[_editionId];
     }
 
-    function acceptEditionBid(uint256 _editionId, uint256 _offerPrice) public override nonReentrant {
+    function acceptEditionBid(uint256 _editionId, uint256 _offerPrice)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
         require(offer.offer == _offerPrice, "Offer price has changed");
@@ -339,6 +364,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate)
     public
     override
+    whenNotPaused
     onlyContractOrCreator(_editionId) {
         require(_basePrice >= minBidAmount, "Base price not enough");
         require(editionStep[_editionId].seller == address(0), "Unable to setup listing again");
@@ -356,7 +382,12 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         emit EditionSteppedSaleListed(_editionId, _basePrice, _stepPrice, _startDate);
     }
 
-    function buyNextStep(uint256 _editionId) public override nonReentrant payable {
+    function buyNextStep(uint256 _editionId)
+    public
+    override
+    payable
+    whenNotPaused
+    nonReentrant {
         Stepped storage steppedAuction = editionStep[_editionId];
         require(steppedAuction.seller != address(0), "Edition not listed for stepped auction");
         require(steppedAuction.startDate <= block.timestamp, "Not started yet");
@@ -382,7 +413,11 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     }
 
     // creates an exit from a step if required but forces a buy now price
-    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice) public override nonReentrant {
+    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice)
+    public
+    override
+    nonReentrant
+    whenNotPaused {
         Stepped storage steppedAuction = editionStep[_editionId];
         require(_listingPrice >= minBidAmount, "List price not enough");
         require(steppedAuction.seller == _msgSender(), "Only seller can convert");
@@ -475,7 +510,10 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     // Secondary sale "buy now" flow //
     ///////////////////////////////////
 
-    function listToken(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) public override {
+    function listToken(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate)
+    public
+    override
+    whenNotPaused {
         // Check ownership before listing
         require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
 
@@ -491,7 +529,10 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         emit TokenListed(_tokenId, _msgSender(), _listingPrice);
     }
 
-    function delistToken(uint256 _tokenId) public override {
+    function delistToken(uint256 _tokenId)
+    public
+    override
+    whenNotPaused {
         // check listing found
         require(tokenListings[_tokenId].seller != address(0), "No listing found");
 
@@ -504,11 +545,21 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         emit TokenDeListed(_tokenId);
     }
 
-    function buyToken(uint256 _tokenId) public payable override nonReentrant {
+    function buyToken(uint256 _tokenId)
+    public
+    payable
+    override
+    whenNotPaused
+    nonReentrant {
         _buyNow(_tokenId, _msgSender());
     }
 
-    function buyTokenFor(uint256 _tokenId, address _recipient) public payable override nonReentrant {
+    function buyTokenFor(uint256 _tokenId, address _recipient)
+    public
+    payable
+    override
+    whenNotPaused
+    nonReentrant {
         _buyNow(_tokenId, _recipient);
     }
 
@@ -534,7 +585,12 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
     // Secondary sale "offer" flow
 
-    function placeTokenBid(uint256 _tokenId) public payable override nonReentrant {
+    function placeTokenBid(uint256 _tokenId)
+    public
+    payable
+    override
+    whenNotPaused
+    nonReentrant {
         // Check for highest offer
         Offer storage offer = tokenOffers[_tokenId];
         require(msg.value >= offer.offer.add(minBidAmount), "Bid not high enough");
@@ -554,7 +610,11 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         emit TokenBidPlaced(_tokenId, koda.ownerOf(_tokenId), _msgSender(), msg.value);
     }
 
-    function withdrawTokenBid(uint256 _tokenId) public override nonReentrant {
+    function withdrawTokenBid(uint256 _tokenId)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
         Offer storage offer = tokenOffers[_tokenId];
         require(offer.bidder != address(0), "No open bid");
 
@@ -573,7 +633,11 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         emit TokenBidWithdrawn(_tokenId, _msgSender());
     }
 
-    function rejectTokenBid(uint256 _tokenId) public override nonReentrant {
+    function rejectTokenBid(uint256 _tokenId)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
         Offer memory offer = tokenOffers[_tokenId];
         require(offer.bidder != address(0), "No open bid");
 
@@ -589,7 +653,11 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         emit TokenBidRejected(_tokenId, currentOwner, offer.bidder, offer.offer);
     }
 
-    function acceptTokenBid(uint256 _tokenId, uint256 _offerPrice) public override nonReentrant {
+    function acceptTokenBid(uint256 _tokenId, uint256 _offerPrice)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
         Offer memory offer = tokenOffers[_tokenId];
         require(offer.bidder != address(0), "No open bid");
         require(offer.offer == _offerPrice, "Offer price has changed");
@@ -704,5 +772,13 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     function updateMinBidAmount(uint256 _minBidAmount) public onlyAdmin {
         minBidAmount = _minBidAmount;
         emit AdminUpdateMinBidAmount(_minBidAmount);
+    }
+
+    function pause() public onlyAdmin {
+        super._pause();
+    }
+
+    function unpause() public onlyAdmin {
+        super._unpause();
     }
 }
