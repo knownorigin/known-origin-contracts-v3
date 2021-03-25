@@ -118,8 +118,6 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
     // FIXME admin functions for fixing issues/draining tokens & ETH
 
-    // FIXME expose method with recipient so other contracts can call this
-
     // Primary "buy now" sale flow
 
     // list edition with "buy now" price and start date
@@ -163,14 +161,26 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     nonReentrant
     public
     override payable {
+        _purchaseEdition(_editionId, _msgSender());
+    }
+
+    // Buy an token from the edition on the primary market, ability to define the recipient
+    function buyEditionTokenFor(uint256 _editionId, address _recipient)
+    nonReentrant
+    public
+    override payable {
+        _purchaseEdition(_editionId, _recipient);
+    }
+
+    function _purchaseEdition(uint256 _editionId, address _recipient) internal {
         Listing storage listing = editionListings[_editionId];
         require(address(0) != listing.seller, "No listing found");
         require(msg.value >= listing.price, "List price not satisfied");
         require(block.timestamp >= listing.startDate, "List not available yet");
 
-        uint256 tokenId = facilitateNextPrimarySale(_editionId, msg.value, _msgSender());
+        uint256 tokenId = facilitateNextPrimarySale(_editionId, msg.value, _recipient);
 
-        emit EditionPurchased(_editionId, tokenId, _msgSender(), msg.value);
+        emit EditionPurchased(_editionId, tokenId, _recipient, msg.value);
     }
 
     // convert from a "buy now" listing and converting to "accepting offers" with an optional start date
@@ -323,6 +333,8 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     }
 
     // Primary sale "stepped pricing" flow
+
+    // FIXME when selling in a step sale, reverse lookup the token to sell the highest ID first?
 
     function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate)
     public
@@ -493,6 +505,14 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     }
 
     function buyToken(uint256 _tokenId) public payable override nonReentrant {
+        _buyNow(_tokenId, _msgSender());
+    }
+
+    function buyTokenFor(uint256 _tokenId, address _recipient) public payable override nonReentrant {
+        _buyNow(_tokenId, _recipient);
+    }
+
+    function _buyNow(uint256 _tokenId, address _recipient) internal {
         Listing storage listing = tokenListings[_tokenId];
 
         require(address(0) != listing.seller, "No listing found");
@@ -504,12 +524,12 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         require(listing.seller == currentOwner, "Listing not valid, token owner has changed");
 
         // trade the token
-        facilitateSecondarySale(_tokenId, msg.value, currentOwner, _msgSender());
+        facilitateSecondarySale(_tokenId, msg.value, currentOwner, _recipient);
 
         // remove the listing
         delete tokenListings[_tokenId];
 
-        emit TokenPurchased(_tokenId, _msgSender(), currentOwner, msg.value);
+        emit TokenPurchased(_tokenId, _recipient, currentOwner, msg.value);
     }
 
     // Secondary sale "offer" flow

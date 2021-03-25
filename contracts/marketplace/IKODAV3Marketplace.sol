@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.7.6;
 
-// TODO populate with all required methods for the marketplace
-
 interface IEditionBuyNowMarketplace {
-
     event EditionListed(uint256 indexed _editionId, uint256 _price, uint256 _startDate);
     event EditionPriceChanged(uint256 indexed _editionId, uint256 _price);
     event EditionDeListed(uint256 indexed _editionId);
@@ -16,10 +13,10 @@ interface IEditionBuyNowMarketplace {
 
     function buyEditionToken(uint256 _editionId) external payable;
 
+    function buyEditionTokenFor(uint256 _editionId, address _recipient) external payable;
 }
 
 interface IEditionOffersMarketplace {
-
     event EditionAcceptingOffer(uint256 indexed _editionId, uint128 _startDate);
     event EditionBidPlaced(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
     event EditionBidWithdrawn(uint256 indexed _editionId, address indexed _bidder);
@@ -38,7 +35,6 @@ interface IEditionOffersMarketplace {
 }
 
 interface IEditionSteppedMarketplace {
-
     event EditionSteppedSaleListed(uint256 indexed _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate);
     event EditionSteppedSaleBuy(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price, uint16 _currentStep);
 
@@ -47,18 +43,13 @@ interface IEditionSteppedMarketplace {
     function buyNextStep(uint256 _editionId) external payable;
 
     function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice) external;
-
 }
-
 
 interface IKODAV3PrimarySaleMarketplace is IEditionBuyNowMarketplace, IEditionSteppedMarketplace, IEditionOffersMarketplace {
     // combo
 }
 
-
-interface IKODAV3SecondarySaleMarketplace is IEditionBuyNowMarketplace, IEditionSteppedMarketplace, IEditionOffersMarketplace {
-
-    // token buy now
+interface ITokenBuyNowMarketplace {
     event TokenListed(uint256 indexed _tokenId, address indexed _seller, uint256 _price);
     event TokenDeListed(uint256 indexed _tokenId);
     event TokenPurchased(uint256 indexed _tokenId, address indexed _buyer, address indexed _seller, uint256 _price);
@@ -70,8 +61,9 @@ interface IKODAV3SecondarySaleMarketplace is IEditionBuyNowMarketplace, IEdition
     function withdrawTokenBid(uint256 _tokenId) external;
 
     function placeTokenBid(uint256 _tokenId) external payable;
+}
 
-    // token offers
+interface ITokenOffersMarketplace {
     event TokenBidPlaced(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
     event TokenBidAccepted(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
     event TokenBidRejected(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
@@ -82,4 +74,9 @@ interface IKODAV3SecondarySaleMarketplace is IEditionBuyNowMarketplace, IEdition
     function delistToken(uint256 _tokenId) external;
 
     function buyToken(uint256 _tokenId) external payable;
+
+    function buyTokenFor(uint256 _tokenId, address _recipient) external payable;}
+
+interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffersMarketplace {
+    // combo
 }
