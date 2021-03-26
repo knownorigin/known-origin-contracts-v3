@@ -347,6 +347,45 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS.muln(2))
         })
 
+        it('Can increase the balance at the token level and withdraw from both balances', async () => {
+          expect(await this.token.totalERC20Contracts(firstEditionTokenId)).to.be.bignumber.equal('1')
+
+          await addERC20BalanceToNFT(
+            this.erc20Token1,
+            ONE_THOUSAND_TOKENS,
+            this.token,
+            firstEditionTokenId,
+            owner
+          )
+
+          expect(await this.token.totalERC20Contracts(firstEditionTokenId)).to.be.bignumber.equal('1')
+
+          // xfer amount is full edition balance and a bit of the token balance
+          const editionBalance = ONE_THOUSAND_TOKENS.div(this.editionSize)
+          const xferAmount = editionBalance.add(ONE_THOUSAND_TOKENS)
+          await this.token.transferERC20(
+            firstEditionTokenId,
+            random,
+            this.erc20Token1.address,
+            xferAmount,
+            {from: owner}
+          )
+
+          expect(await this.token.totalERC20Contracts(firstEditionTokenId)).to.be.bignumber.equal('1')
+
+          // random should have the tokens
+          const balanceOfRandomForErc20Token1 = await this.erc20Token1.balanceOf(random)
+          expect(balanceOfRandomForErc20Token1).to.be.bignumber.equal(xferAmount)
+
+          expect(
+            await this.token.ERC20Balances(firstEditionTokenId, this.erc20Token1.address)
+          ).to.be.bignumber.equal('0')
+
+          expect(
+            await this.token.editionTokenERC20TransferAmounts(await this.token.getEditionIdOfToken(firstEditionTokenId), this.erc20Token1.address, firstEditionTokenId)
+          ).to.be.bignumber.equal(editionBalance)
+        })
+
         it('Can transfer wrapped tokens out', async () => {
           expect(await this.erc20Token1.balanceOf(random)).to.be.bignumber.equal('0')
 
@@ -425,6 +464,24 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           expect(
             await this.erc20Token2.balanceOf(this.token.address)
           ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
+        })
+
+        it('When all tokens have spent their edition balance, the total contracts reduces', async () => {
+          expect(await this.token.totalERC20Contracts(firstEditionTokenId)).to.be.bignumber.eq('1')
+
+          const xferAmount = ONE_THOUSAND_TOKENS.div(this.editionSize)
+
+          for(let i = 0; i < 10; i++) {
+            await this.token.transferERC20(
+              firstEditionTokenId.addn(i),
+              random,
+              this.erc20Token1.address,
+              xferAmount,
+              {from: owner}
+            )
+          }
+
+          expect(await this.token.totalERC20Contracts(firstEditionTokenId)).to.be.bignumber.eq('0')
         })
       })
     })

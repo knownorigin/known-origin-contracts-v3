@@ -61,8 +61,8 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     /// @dev Only callable from admin
     function withdrawStuckTokens(address _tokenAddress, uint256 _amount, address _withdrawalAccount) public {
         require(accessControls.hasContractOrAdminRole(_msgSender()), "Caller must have contract or admin role");
-        IERC20(_tokenAddress).approve(address(this), _amount);
-        IERC20(_tokenAddress).transferFrom(address(this), _withdrawalAccount, _amount);
+        //IERC20(_tokenAddress).approve(address(this), _amount);
+        IERC20(_tokenAddress).transfer(_withdrawalAccount, _amount);
     }
 
 }
