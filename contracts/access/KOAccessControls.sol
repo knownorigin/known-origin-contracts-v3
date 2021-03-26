@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.0;
+pragma solidity 0.8.3;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
@@ -16,6 +16,7 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
 
     ISelfServiceAccessControls public legacyMintingAccess;
 
+    // TODO do we need to also store the IPFS hash as well
     bytes32 public artistAccessMerkleRoot;
 
     constructor(ISelfServiceAccessControls _legacyMintingAccess) {

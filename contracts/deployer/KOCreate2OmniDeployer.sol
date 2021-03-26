@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.0;
+pragma solidity 0.8.3;
 
 // KnownOrigin's CREATE2 Contract Deployer - can be used in a omni-chain environment which is EVM based
 // Based on https://andrecronje.medium.com/multichain-dapp-guide-standards-and-best-practices-8fabe2672c60
