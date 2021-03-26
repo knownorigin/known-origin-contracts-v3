@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.6;
+pragma solidity 0.8.3;
 
-import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
+import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
 import {IKODAV3Minter} from "../core/IKODAV3Minter.sol";
 import {IKODAV3PrimarySaleMarketplace} from "../marketplace/IKODAV3Marketplace.sol";

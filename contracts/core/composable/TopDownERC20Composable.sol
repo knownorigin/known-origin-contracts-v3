@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.6;
+pragma solidity 0.8.3;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {EnumerableSet} from "./EnumerableSet.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
-import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {IKODAV3} from "../IKODAV3.sol";
 
 interface ERC998ERC20TopDown {
@@ -16,17 +15,19 @@ interface ERC998ERC20TopDown {
     event TransferERC20(uint256 indexed _tokenId, address indexed _to, address indexed _erc20Contract, uint256 _value);
 
     function balanceOfERC20(uint256 _tokenId, address _erc20Contract) external view returns (uint256);
+
     function transferERC20(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) external;
+
     function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) external;
 }
 
 interface ERC998ERC20TopDownEnumerable {
     function totalERC20Contracts(uint256 _tokenId) external view returns (uint256);
+
     function erc20ContractByIndex(uint256 _tokenId, uint256 _index) external view returns (address);
 }
 
 abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDownEnumerable, ReentrancyGuard, Context {
-    using SafeMath for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     event ContractWhitelisted(address indexed contractAddress);
@@ -58,11 +59,11 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
 
         uint256 editionBalance = editionTokenERC20Balances[editionId][_erc20Contract];
-        uint256 tokenEditionBalance = editionBalance.div(koda.getSizeOfEdition(editionId));
+        uint256 tokenEditionBalance = editionBalance / koda.getSizeOfEdition(editionId);
         uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId];
-        tokenEditionBalance = tokenEditionBalance.sub(spentTokens);
+        tokenEditionBalance = tokenEditionBalance - spentTokens;
 
-        return tokenEditionBalance.add(ERC20Balances[_tokenId][_erc20Contract]);
+        return tokenEditionBalance + ERC20Balances[_tokenId][_erc20Contract];
     }
 
     function transferERC20(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) external override nonReentrant {
@@ -74,11 +75,12 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function getERC20s(address _from, uint256[] calldata _tokenIds, address _erc20Contract, uint256 _totalValue) external {
-        require(_tokenIds.length > 0, "Empty array");
+        uint256 totalTokens = _tokenIds.length;
+        require(totalTokens > 0, "Empty array");
         require(_totalValue > 0, "Total value cannot be zero");
 
-        uint256 valuePerToken = _totalValue.div(_tokenIds.length);
-        for(uint i = 0; i < _tokenIds.length; i++) {
+        uint256 valuePerToken = _totalValue / totalTokens;
+        for (uint i = 0; i < totalTokens; i++) {
             getERC20(_from, _tokenIds[i], _erc20Contract, valuePerToken);
         }
     }
@@ -112,7 +114,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
             ERC20sEmbeddedInNft[_tokenId].add(_erc20Contract);
         }
 
-        ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract].add(_value);
+        ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract] + _value;
 
         IERC20 token = IERC20(_erc20Contract);
         require(token.allowance(_from, address(this)) >= _value, "getERC20: Amount exceeds allowance");
@@ -132,7 +134,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         require(ERC20sEmbeddedInEdition[_editionId].length() < maxERC20sPerNFT, "_composeERC20IntoEdition: ERC20 limit exceeded");
 
         ERC20sEmbeddedInEdition[_editionId].add(_erc20Contract);
-        editionTokenERC20Balances[_editionId][_erc20Contract] = editionTokenERC20Balances[_editionId][_erc20Contract].add(_value);
+        editionTokenERC20Balances[_editionId][_erc20Contract] = editionTokenERC20Balances[_editionId][_erc20Contract] + _value;
 
         IERC20(_erc20Contract).transferFrom(_from, address(this), _value);
 
@@ -142,7 +144,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     function totalERC20Contracts(uint256 _tokenId) override public view returns (uint256) {
         IKODAV3 koda = IKODAV3(address(this));
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
-        return ERC20sEmbeddedInNft[_tokenId].length().add(ERC20sEmbeddedInEdition[editionId].length());
+        return ERC20sEmbeddedInNft[_tokenId].length() + ERC20sEmbeddedInEdition[editionId].length();
     }
 
     function erc20ContractByIndex(uint256 _tokenId, uint256 _index) override external view returns (address) {
@@ -150,7 +152,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         if (_index >= numOfERC20sInNFT) {
             IKODAV3 koda = IKODAV3(address(this));
             uint256 editionId = koda.getEditionIdOfToken(_tokenId);
-            return ERC20sEmbeddedInEdition[editionId].at(_index.sub(numOfERC20sInNFT));
+            return ERC20sEmbeddedInEdition[editionId].at(_index - numOfERC20sInNFT);
         }
 
         return ERC20sEmbeddedInNft[_tokenId].at(_index);
@@ -192,22 +194,22 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
         require(balanceOfERC20(_tokenId, _erc20Contract) >= _value, "_prepareERC20LikeTransfer: Transfer amount exceeds balance");
 
-        uint256 tokenInitialBalance = editionTokenERC20Balances[editionId][_erc20Contract].div(koda.getSizeOfEdition(editionId));
+        uint256 tokenInitialBalance = editionTokenERC20Balances[editionId][_erc20Contract] / koda.getSizeOfEdition(editionId);
         uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId];
-        uint256 editionTokenBalance = tokenInitialBalance.sub(spentTokens);
+        uint256 editionTokenBalance = tokenInitialBalance - spentTokens;
 
         if (editionTokenBalance >= _value) {
-            editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId] = spentTokens.add(_value);
+            editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId] = spentTokens + _value;
         } else if (ERC20Balances[_tokenId][_erc20Contract] >= _value) {
-            ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract].sub(_value);
+            ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract] - _value;
         } else {
             // take from both balances
             if (editionTokenBalance > 0) {
-                editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId] = spentTokens.add(editionTokenBalance);
+                editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId] = spentTokens + editionTokenBalance;
             }
 
-            uint256 amountOfTokensToSpendFromTokenBalance = _value.sub(editionTokenBalance);
-            ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract].sub(amountOfTokensToSpendFromTokenBalance);
+            uint256 amountOfTokensToSpendFromTokenBalance = _value - editionTokenBalance;
+            ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract] - amountOfTokensToSpendFromTokenBalance;
         }
 
         if (nftContainsERC20 && ERC20Balances[_tokenId][_erc20Contract] == 0) {
@@ -216,10 +218,10 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
         if (editionContainsERC20) {
             uint256 allTokensInEditionERC20Balance;
-            for(uint i = 0; i < koda.getSizeOfEdition(editionId); i++) {
-                uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][editionId.add(i)];
-                uint256 tokenBal = tokenInitialBalance.sub(spentTokens);
-                allTokensInEditionERC20Balance = allTokensInEditionERC20Balance.add(tokenBal);
+            for (uint i = 0; i < koda.getSizeOfEdition(editionId); i++) {
+                uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][editionId + i];
+                uint256 tokenBal = tokenInitialBalance - spentTokens;
+                allTokensInEditionERC20Balance = allTokensInEditionERC20Balance + tokenBal;
             }
 
             if (allTokensInEditionERC20Balance == 0) {

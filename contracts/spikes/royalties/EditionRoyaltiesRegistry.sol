@@ -1,20 +1,19 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.6;
+pragma solidity 0.8.3;
 
-import "@openzeppelin/contracts/GSN/Context.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-import "../spikes/collaborators/IFundsHandler.sol";
-import "../spikes/collaborators/simple/FundsReceiver.sol";
+import "../collaborators/IFundsHandler.sol";
+import "../collaborators/simple/FundsReceiver.sol";
 
-import "../access/KOAccessControls.sol";
+import "../../access/KOAccessControls.sol";
 
-import "../core/IERC2981.sol";
-import "../core/IKODAV3.sol";
-import "../core/Konstants.sol";
-
-import {ERC165} from "@openzeppelin/contracts/introspection/ERC165.sol";
+import "../../core/IERC2981.sol";
+import "../../core/IKODAV3.sol";
+import "../../core/Konstants.sol";
 
 contract EditionRoyaltiesRegistry is ERC165, IERC2981, Konstants, Context {
 

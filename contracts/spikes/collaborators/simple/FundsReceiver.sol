@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.6;
+pragma solidity 0.8.3;
 
 import "../IFundsHandler.sol";
 import "../IFundsDrainable.sol";
@@ -45,7 +45,6 @@ contract FundsReceiver is IFundsHandler, IFundsDrainable {
         // accept funds
         uint256 balance = address(this).balance;
         uint256 singleUnitOfValue = balance / 100000;
-        // FIXME use safe-math
 
         // split according to total
         for (uint256 i = 0; i < recipients.length; i++) {

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.6;
+pragma solidity 0.8.3;
 
-import "@openzeppelin/contracts/GSN/Context.sol";
-import "../access/KOAccessControls.sol";
-import "../core/IKODAV3.sol";
-import "./ITokenUriResolver.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
+import "../../access/KOAccessControls.sol";
+import "../../core/IKODAV3.sol";
+import "../../programmable/ITokenUriResolver.sol";
 
 contract TokenUriResolverRegistry is ITokenUriResolver, Context {
 

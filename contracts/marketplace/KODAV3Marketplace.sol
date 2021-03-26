@@ -1,18 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.6;
+pragma solidity 0.8.3;
 
-import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
 import {IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySaleMarketplace} from "./IKODAV3Marketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
 contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySaleMarketplace, Pausable, ReentrancyGuard {
-    using SafeMath for uint256;
 
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
     event AdminUpdatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission);
@@ -258,7 +256,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     whenNotPaused
     nonReentrant {
         Offer storage offer = editionOffers[_editionId];
-        require(msg.value >= offer.offer.add(minBidAmount), "Bid not high enough");
+        require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
 
         // No contracts can bid to prevent money lockups on reverts
         require(!Address.isContract(_msgSender()), "Cannot offer as a contract");
@@ -404,7 +402,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
         // send back excess if supplied - will allow UX flow of setting max price to pay
         if (msg.value > expectedPrice) {
-            (bool success,) = _msgSender().call{value : msg.value.sub(expectedPrice)}("");
+            (bool success,) = _msgSender().call{value : msg.value - expectedPrice}("");
             require(success, "failed to send overspend back");
         }
 
@@ -453,8 +451,8 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
     function _getNextEditionSteppedPrice(uint256 _editionId) internal view returns (uint256 price) {
         Stepped storage steppedAuction = editionStep[_editionId];
-        uint256 stepAmount = uint256(steppedAuction.stepPrice).mul(uint256(steppedAuction.currentStep));
-        price = uint256(steppedAuction.basePrice).add(stepAmount);
+        uint256 stepAmount = uint256(steppedAuction.stepPrice) * uint256(steppedAuction.currentStep);
+        price = uint256(steppedAuction.basePrice) + stepAmount;
     }
 
     // primary sale helpers
@@ -478,11 +476,11 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     }
 
     function handleEditionSaleFunds(address _receiver, uint256 _paymentAmount) internal {
-        uint256 koCommission = _paymentAmount.div(modulo).mul(platformPrimarySaleCommission);
+        uint256 koCommission = (_paymentAmount / modulo) * platformPrimarySaleCommission;
         (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
         require(koCommissionSuccess, "Edition commission payment failed");
 
-        (bool success,) = _receiver.call{value : _paymentAmount.sub(koCommission)}("");
+        (bool success,) = _receiver.call{value : _paymentAmount - koCommission}("");
         require(success, "Edition payment failed");
     }
 
@@ -582,7 +580,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     nonReentrant {
         // Check for highest offer
         Offer storage offer = tokenOffers[_tokenId];
-        require(msg.value >= offer.offer.add(minBidAmount), "Bid not high enough");
+        require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
 
         // TODO create testing contract for this
         // No contracts can place a bid to prevent money lockups on refunds
@@ -699,17 +697,17 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     internal
     returns (uint256 creatorRoyalties){
         // pay royalties
-        creatorRoyalties = _paymentAmount.div(modulo).mul(secondarySaleRoyalty);
+        creatorRoyalties = (_paymentAmount / modulo) * secondarySaleRoyalty;
         (bool creatorSuccess,) = _royaltyRecipient.call{value : creatorRoyalties}("");
         require(creatorSuccess, "Token payment failed");
 
         // pay platform fee
-        uint256 koCommission = _paymentAmount.div(modulo).mul(platformSecondarySaleCommission);
+        uint256 koCommission = (_paymentAmount / modulo) * platformSecondarySaleCommission;
         (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
         require(koCommissionSuccess, "Token commission payment failed");
 
         // pay seller
-        (bool success,) = _seller.call{value : _paymentAmount.sub(creatorRoyalties).sub(koCommission)}("");
+        (bool success,) = _seller.call{value : _paymentAmount - creatorRoyalties - koCommission}("");
         require(success, "Token payment failed");
     }
 
