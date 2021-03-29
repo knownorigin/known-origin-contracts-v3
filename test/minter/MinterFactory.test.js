@@ -1,10 +1,9 @@
-const {BN, constants, expectEvent, expectRevert, balance} = require('@openzeppelin/test-helpers');
+const {BN, constants, expectEvent, expectRevert, balance, ether} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
 const _ = require('lodash');
 
 const web3 = require('web3');
-const {ether} = require('@openzeppelin/test-helpers');
 
 const {expect} = require('chai');
 
@@ -13,8 +12,13 @@ const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 const MinterFactory = artifacts.require('MockMintingFactory');
+const MockERC20 = artifacts.require('MockERC20');
 
 const {validateEditionAndToken} = require('../test-helpers');
+
+const {parseBalanceMap} = require('../utils/parse-balance-map');
+
+const {buildArtistMerkleInput} = require('../utils/merkle-tools');
 
 contract('MinterFactory', function (accounts) {
   const [_, deployer, koCommission, artist, collectorA, collectorB, collectorC, collectorD] = accounts;
@@ -37,11 +41,12 @@ contract('MinterFactory', function (accounts) {
     this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: deployer});
 
     // grab the roles
-    this.MINTER_ROLE = await this.accessControls.MINTER_ROLE();
     this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
 
     // Set up access controls with artist roles
-    await this.accessControls.grantRole(this.MINTER_ROLE, artist, {from: deployer});
+    this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist));
+
+    await this.accessControls.updateArtistMerkleRoot(this.merkleProof.merkleRoot, {from: deployer});
 
     // Create token V3
     this.token = await KnownOriginDigitalAssetV3.new(
@@ -50,6 +55,12 @@ contract('MinterFactory', function (accounts) {
       STARTING_EDITION,
       {from: deployer}
     );
+
+    // composable
+    this.erc20Token1 = await MockERC20.new({from: deployer})
+    await this.token.whitelistERC20(this.erc20Token1.address, {from: deployer});
+
+    await this.erc20Token1.transfer(artist, ether('1000'), {from: deployer})
 
     // Set contract roles
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: deployer});
@@ -72,7 +83,17 @@ contract('MinterFactory', function (accounts) {
 
     beforeEach(async () => {
       this.startDate = Date.now();
-      const receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
+      const receipt = await this.factory.mintToken(
+        SaleType.BUY_NOW,
+        this.startDate,
+        ETH_ONE,
+        0,
+        TOKEN_URI,
+        this.merkleProof.claims[artist].index,
+        this.merkleProof.claims[artist].proof,
+        {from: artist}
+      );
+
       await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
         from: ZERO_ADDRESS,
         to: artist,
@@ -81,7 +102,7 @@ contract('MinterFactory', function (accounts) {
 
       // ensure that the artist cannot mint again within the freeze window
       await expectRevert(
-        this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist}),
+        this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, this.merkleProof.claims[artist].index, this.merkleProof.claims[artist].proof, {from: artist}),
         "Caller unable to create yet"
       )
     });
@@ -107,7 +128,17 @@ contract('MinterFactory', function (accounts) {
       await this.factory.setNow(frozenTil.addn(5))
 
       this.startDate = Date.now();
-      const receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
+      const receipt = await this.factory.mintToken(
+        SaleType.BUY_NOW,
+        this.startDate,
+        ETH_ONE,
+        0,
+        TOKEN_URI,
+        this.merkleProof.claims[artist].index,
+        this.merkleProof.claims[artist].proof,
+        {from: artist}
+      );
+
       await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
         from: ZERO_ADDRESS,
         to: artist,
@@ -122,7 +153,18 @@ contract('MinterFactory', function (accounts) {
 
     beforeEach(async () => {
       this.startDate = Date.now();
-      const receipt = await this.factory.mintBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
+      const receipt = await this.factory.mintBatchEdition(
+        SaleType.BUY_NOW,
+        editionSize,
+        this.startDate,
+        ETH_ONE,
+        0,
+        TOKEN_URI,
+        this.merkleProof.claims[artist].index,
+        this.merkleProof.claims[artist].proof,
+        {from: artist}
+      );
+
       await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
         from: ZERO_ADDRESS,
         to: artist,
@@ -131,7 +173,17 @@ contract('MinterFactory', function (accounts) {
 
       // ensure that the artist cannot mint again within the freeze window
       await expectRevert(
-        this.factory.mintBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist}),
+        this.factory.mintBatchEdition(
+          SaleType.BUY_NOW,
+          editionSize,
+          this.startDate,
+          ETH_ONE,
+          0,
+          TOKEN_URI,
+          this.merkleProof.claims[artist].index,
+          this.merkleProof.claims[artist].proof,
+          {from: artist}
+        ),
         "Caller unable to create yet"
       )
     });
@@ -157,7 +209,18 @@ contract('MinterFactory', function (accounts) {
       await this.factory.setNow(frozenTil.addn(5))
 
       this.startDate = Date.now();
-      const receipt = await this.factory.mintBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
+      const receipt = await this.factory.mintBatchEdition(
+        SaleType.BUY_NOW,
+        editionSize,
+        this.startDate,
+        ETH_ONE,
+        0,
+        TOKEN_URI,
+        this.merkleProof.claims[artist].index,
+        this.merkleProof.claims[artist].proof,
+        {from: artist}
+      );
+
       await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
         from: ZERO_ADDRESS,
         to: artist,
@@ -172,7 +235,18 @@ contract('MinterFactory', function (accounts) {
 
     beforeEach(async () => {
       this.startDate = Date.now();
-      const receipt = await this.factory.mintConsecutiveBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
+      const receipt = await this.factory.mintConsecutiveBatchEdition(
+        SaleType.BUY_NOW,
+        editionSize,
+        this.startDate,
+        ETH_ONE,
+        0,
+        TOKEN_URI,
+        this.merkleProof.claims[artist].index,
+        this.merkleProof.claims[artist].proof,
+        {from: artist}
+      );
+
       const start = firstEditionTokenId.toNumber();
       const end = start + parseInt(editionSize);
       await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'ConsecutiveTransfer', {
@@ -184,7 +258,17 @@ contract('MinterFactory', function (accounts) {
 
       // ensure that the artist cannot mint again within the freeze window
       await expectRevert(
-        this.factory.mintConsecutiveBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist}),
+        this.factory.mintConsecutiveBatchEdition(
+          SaleType.BUY_NOW,
+          editionSize,
+          this.startDate,
+          ETH_ONE,
+          0,
+          TOKEN_URI,
+          this.merkleProof.claims[artist].index,
+          this.merkleProof.claims[artist].proof,
+          {from: artist}
+        ),
         "Caller unable to create yet"
       )
     });
@@ -210,7 +294,17 @@ contract('MinterFactory', function (accounts) {
       await this.factory.setNow(frozenTil.addn(5))
 
       this.startDate = Date.now();
-      const receipt = await this.factory.mintConsecutiveBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
+      const receipt = await this.factory.mintConsecutiveBatchEdition(
+        SaleType.BUY_NOW,
+        editionSize,
+        this.startDate,
+        ETH_ONE,
+        0,
+        TOKEN_URI,
+        this.merkleProof.claims[artist].index,
+        this.merkleProof.claims[artist].proof,
+        {from: artist}
+      );
 
       const start = firstEditionTokenId.addn(1000).toNumber();
       const end = start + parseInt(editionSize);
@@ -222,5 +316,99 @@ contract('MinterFactory', function (accounts) {
       });
     })
   });
+
+  describe('mintBatchEditionAndComposeERC20s()', () => {
+    const editionSize = new BN('10');
+
+    beforeEach(async () => {
+      this.startDate = Date.now();
+
+      await this.erc20Token1.approve(this.token.address, ether('1000'), {from: artist})
+
+      const receipt = await this.factory.mintBatchEditionAndComposeERC20s(
+        SaleType.BUY_NOW,
+        [
+          this.merkleProof.claims[artist].index,
+          editionSize,
+          this.startDate,
+          ETH_ONE,
+          0
+        ],
+        TOKEN_URI,
+        [this.erc20Token1.address],
+        [ether('1000')],
+        this.merkleProof.claims[artist].proof,
+        {from: artist}
+      );
+
+      // await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
+      //   from: ZERO_ADDRESS,
+      //   to: artist,
+      //   tokenId: firstEditionTokenId
+      // });
+
+      // ensure that the artist cannot mint again within the freeze window
+      await expectRevert(
+        this.factory.mintBatchEditionAndComposeERC20s(
+          SaleType.BUY_NOW,
+          [
+            this.merkleProof.claims[artist].index,
+            editionSize,
+            this.startDate,
+            ETH_ONE,
+            0
+          ],
+          TOKEN_URI,
+          [this.erc20Token1.address],
+          [ether('1000')],
+          this.merkleProof.claims[artist].proof,
+          {from: artist}
+        ),
+        "Caller unable to create yet"
+      )
+    });
+
+    it('edition created', async () => {
+      const editionDetails = await this.token.getEditionDetails(firstEditionTokenId);
+      expect(editionDetails._originalCreator).to.equal(artist, 'Failed edition details creator validation');
+      expect(editionDetails._owner).to.equal(artist, 'Failed edition details owner validation');
+      expect(editionDetails._editionId).to.bignumber.equal(firstEditionTokenId, 'Failed edition details edition validation');
+      expect(editionDetails._size).to.bignumber.equal(editionSize, 'Failed edition details size validation');
+      expect(editionDetails._uri).to.equal(TOKEN_URI, 'Failed edition details uri validation');
+    });
+
+    it('composed correctly', async () => {
+      const ONE_THOUSAND_TOKENS = ether('1000')
+
+      expect(
+        await this.token.ERC20Balances(firstEditionTokenId, this.erc20Token1.address)
+      ).to.be.bignumber.equal('0')
+
+      expect(
+        await this.token.editionTokenERC20Balances(await this.token.getEditionIdOfToken(firstEditionTokenId), this.erc20Token1.address)
+      ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
+
+      // first and second token of edition should be enough to give us confidence
+      expect(
+        await this.token.balanceOfERC20(firstEditionTokenId, this.erc20Token1.address)
+      ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS.div(editionSize))
+
+      expect(
+        await this.token.balanceOfERC20(firstEditionTokenId.addn(1), this.erc20Token1.address)
+      ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS.div(editionSize))
+
+      expect(
+        await this.token.totalERC20Contracts(firstEditionTokenId)
+      ).to.be.bignumber.equal('1')
+
+      expect(
+        await this.token.erc20ContractByIndex(firstEditionTokenId, '0')
+      ).to.be.equal(this.erc20Token1.address)
+
+      expect(
+        await this.erc20Token1.balanceOf(this.token.address)
+      ).to.be.bignumber.equal(ONE_THOUSAND_TOKENS)
+    })
+  })
 
 });

@@ -28,14 +28,10 @@ contract('KODAV3Marketplace', function (accounts) {
 
     // grab the roles
     this.DEFAULT_ADMIN_ROLE = await this.accessControls.DEFAULT_ADMIN_ROLE();
-    this.MINTER_ROLE = await this.accessControls.MINTER_ROLE();
     this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
 
     // Set up access controls with minter roles
     await this.accessControls.grantRole(this.DEFAULT_ADMIN_ROLE, admin, {from: owner});
-    await this.accessControls.grantRole(this.MINTER_ROLE, owner, {from: owner});
-    await this.accessControls.grantRole(this.MINTER_ROLE, minter, {from: owner});
-
     // Create token V3
     this.token = await KnownOriginDigitalAssetV3.new(
       this.accessControls.address,

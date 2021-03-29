@@ -27,7 +27,7 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
 
   });
 
-  describe.only('isVerifiedArtist() - success', async () => {
+  describe('isVerifiedArtist() - success', async () => {
     it('should assert address whitelisted', async () => {
       expect(await this.accessControls.isVerifiedArtist.call(
         this.merkleProof.claims[artist1].index,
@@ -49,7 +49,7 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
     });
   });
 
-  describe.only('isVerifiedArtist() - failures', async () => {
+  describe('isVerifiedArtist() - failures', async () => {
     it('should fail artist verification', async () => {
       expect(await this.accessControls.isVerifiedArtist.call(
         0,
