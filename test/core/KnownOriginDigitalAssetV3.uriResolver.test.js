@@ -75,8 +75,8 @@ contract('KnownOriginDigitalAssetV3 Token URI resolver', function (accounts) {
 
     beforeEach(async () => {
       // mint 2 tokens
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
 
       expect(await this.token.tokenUriResolverActive()).to.be.equal(false);
 

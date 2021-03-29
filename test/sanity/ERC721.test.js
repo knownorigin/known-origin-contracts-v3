@@ -75,9 +75,9 @@ contract('ERC721 baseline tests', function (accounts) {
       expect(await this.token.symbol()).to.be.equal("KODA");
     });
 
-    describe('mintToken(to, uri) token URI', () => {
+    describe('mintBatchEdition(1, to, uri) token URI', () => {
       beforeEach(async () => {
-        await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+        await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
       });
 
       it('it is not empty by default', async () => {
@@ -124,10 +124,10 @@ contract('ERC721 baseline tests', function (accounts) {
     });
   });
 
-  describe('mintToken(to, uri)', () => {
+  describe('mintBatchEdition(1, to, uri)', () => {
     context('with minted token', async () => {
       beforeEach(async () => {
-        ({logs: this.logs} = await this.token.mintToken(owner, TOKEN_URI, {from: contract}));
+        ({logs: this.logs} = await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract}));
       });
 
       it('emits a Transfer event', () => {
@@ -221,9 +221,9 @@ contract('ERC721 baseline tests', function (accounts) {
   context('with minted tokens from mintToken(to, uri)', () => {
     beforeEach(async () => {
       // this mints to the protocol where owner is address zero
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
 
       // confirm owner and balance
       expect(await this.token.balanceOf(owner)).to.be.bignumber.equal('3');

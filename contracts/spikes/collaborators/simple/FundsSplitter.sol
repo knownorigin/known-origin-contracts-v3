@@ -1,28 +1,18 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.6;
+pragma solidity 0.8.3;
 
 import "../IFundsHandler.sol";
-import "../IFundsDrainable.sol";
 
 /**
- * Allows funds to be split using a pull pattern, holding a balance until drained
+ * splits all funds as soon as the contract receives it
  */
-
-// FIXME use a single contract as a registry for splits rather than one per collab split
-contract FundsReceiver is IFundsHandler, IFundsDrainable {
-
-    bool private _notEntered = true;
-
-    /** @dev Prevents a contract from calling itself, directly or indirectly. */
-    modifier nonReentrant() {
-        require(_notEntered, "ReentrancyGuard: reentrant call");
-        _notEntered = false;
-        _;
-        _notEntered = true;
-    }
+contract FundsSplitter is IFundsHandler {
 
     bool private locked;
+
+    uint256 constant SCALE = 100000;
+
     address[] public recipients;
     uint256[] public splits;
 
@@ -37,15 +27,14 @@ contract FundsReceiver is IFundsHandler, IFundsDrainable {
         splits = _splits;
     }
 
-    // accept all funds
-    receive() external payable {}
+    // TODO test GAS limit problems ... ? call vs transfer 21000 limits?
 
-    function drain() nonReentrant public override {
+    // accept all funds
+    receive() external payable {
 
         // accept funds
-        uint256 balance = address(this).balance;
-        uint256 singleUnitOfValue = balance / 100000;
-        // FIXME use safe-math
+        uint256 balance = msg.value;
+        uint256 singleUnitOfValue = balance / SCALE;
 
         // split according to total
         for (uint256 i = 0; i < recipients.length; i++) {
@@ -53,14 +42,15 @@ contract FundsReceiver is IFundsHandler, IFundsDrainable {
             // Work out split
             uint256 share = singleUnitOfValue * splits[i];
 
-            // Assumed all recipients are EOA and not contracts atm
-            // Fire split to recipient
+            // TODO assumed all recipients are EOA and not contracts ... ?
+            // AMG: would it be a problem if a contract? Doubt it?
 
-            // TODO how to handle failures ... call and validate?
-            //      - if fails to accept the money, ideally we remove them from the list ...
+            // Fire split to recipient
             payable(recipients[i]).transfer(share);
         }
     }
+
+    // Enumerable by something else
 
     function totalRecipients() public override view returns (uint256) {
         return recipients.length;

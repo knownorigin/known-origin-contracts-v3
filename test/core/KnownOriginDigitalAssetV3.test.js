@@ -60,102 +60,6 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     this.secondarySaleRoyalty = await this.token.secondarySaleRoyalty();
   });
 
-  describe('mintToken() - ownerOf() validation', async () => {
-
-    // creator sends random token from within edition - out of sequence
-    beforeEach(async () => {
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
-    });
-
-    it('owner is correctly assigned to all tokens when minted from a batch', async () => {
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
-    });
-
-    it('token minted - first token transfer, ownership updated accordingly', async () => {
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
-      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
-    });
-
-    it('token minted - first token transferred multiple times, ownership updated accordingly', async () => {
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
-
-      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
-
-      await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA});
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorB);
-
-      await this.token.transferFrom(collectorB, collectorC, firstEditionTokenId, {from: collectorB});
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorC);
-    });
-
-    it('token minted - traded and sent back to the creator', async () => {
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
-
-      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
-
-      await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA});
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorB);
-
-      // back to owner
-      await this.token.transferFrom(collectorB, owner, firstEditionTokenId, {from: collectorB});
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
-    });
-
-    it('token minted - creator sends to themself the first token', async () => {
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
-
-      await this.token.transferFrom(owner, owner, firstEditionTokenId, {from: owner});
-
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
-    });
-
-    it('token minted - creator cannot send themself a random token from the edition sequence', async () => {
-      const tokenId = firstEditionTokenId.add(new BN('4'));
-      await expectRevert(
-        this.token.transferFrom(owner, owner, tokenId, {from: owner}),
-        'ERC721_ZERO_OWNER'
-      );
-    });
-
-    it('token minted - cannot send to zero address', async () => {
-      await expectRevert(
-        this.token.transferFrom(owner, ZERO_ADDRESS, firstEditionTokenId, {from: owner}),
-        'ERC721_ZERO_TO_ADDRESS'
-      );
-    });
-
-    it('token minted - cannot send a token which does not exist', async () => {
-      await expectRevert(
-        this.token.transferFrom(owner, collectorA, thirdEditionTokenId, {from: owner}),
-        'ERC721_ZERO_OWNER'
-      );
-    });
-
-    it('token minted - creator cannot send a token once its change owner', async () => {
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
-
-      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
-      expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
-
-      await expectRevert(
-        this.token.transferFrom(owner, collectorB, firstEditionTokenId, {from: owner}),
-        'ERC721_OWNER_MISMATCH'
-      );
-    });
-
-    it('token minted - transfer token within edition step range but is not a valid token', async () => {
-      const tokenId = firstEditionTokenId.add(new BN('10')); // only 10 tokens in this edition
-
-      await expectRevert(
-        this.token.transferFrom(owner, collectorA, tokenId, {from: owner}),
-        'ERC721_ZERO_OWNER'
-      );
-    });
-  });
-
   describe('mintBatchEdition() - ownerOf() validation', async () => {
 
     const editionSize = 10;
@@ -460,30 +364,6 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
   });
 
-  describe('mintToken()', async () => {
-    it('editionExists()', async () => {
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
-      expect(await this.token.editionExists(firstEditionTokenId)).to.be.equal(true);
-      expect(await this.token.exists(firstEditionTokenId)).to.be.equal(true);
-    });
-
-    it('token does exists()', async () => {
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
-      expect(await this.token.exists(firstEditionTokenId)).to.be.equal(true);
-    });
-
-    it('token does not exists()', async () => {
-      expect(await this.token.exists(secondEditionTokenId)).to.be.equal(false);
-    });
-
-    it('revert if no contract role', async () => {
-      await expectRevert(
-        this.token.mintToken(owner, TOKEN_URI, {from: collabDao}),
-        'Caller must have contract role'
-      );
-    });
-  });
-
   describe('mintConsecutiveBatchEdition()', async () => {
     it('editionExists()', async () => {
       expect(await this.token.editionExists(firstEditionTokenId)).to.be.equal(false);
@@ -590,7 +470,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
 
       it('royaltyInfo()', async () => {
-        this.receipt = await this.tokenWithRoyaltyProxy.mintToken(collectorA, TOKEN_URI, {from: contract});
+        this.receipt = await this.tokenWithRoyaltyProxy.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
         expectEvent.inLogs(this.receipt.logs, 'Transfer', {
           from: ZERO_ADDRESS,
           to: collectorA,
@@ -601,7 +481,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
         expect(res.receiver).to.be.equal(collabDao); // from royaltiesRegistryProxy
         expect(res.amount).to.be.bignumber.equal('1000');
 
-        await this.tokenWithRoyaltyProxy.mintToken(collectorA, TOKEN_URI, {from: contract});
+        await this.tokenWithRoyaltyProxy.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
 
         res = await this.tokenWithRoyaltyProxy.royaltyInfo.call(secondEditionTokenId);
         expect(res.receiver).to.be.equal(collectorB);
@@ -609,7 +489,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
 
       it('royaltyAndCreatorInfo()', async () => {
-        this.receipt = await this.tokenWithRoyaltyProxy.mintToken(collectorA, TOKEN_URI, {from: contract});
+        this.receipt = await this.tokenWithRoyaltyProxy.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
         expectEvent.inLogs(this.receipt.logs, 'Transfer', {
           from: ZERO_ADDRESS,
           to: collectorA,
@@ -627,7 +507,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     describe('without proxy', async () => {
 
       it('royaltyInfo()', async () => {
-        this.receipt = await this.token.mintToken(collectorA, TOKEN_URI, {from: contract});
+        this.receipt = await this.token.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
         expectEvent.inLogs(this.receipt.logs, 'Transfer', {
           from: ZERO_ADDRESS,
           to: collectorA,
@@ -640,7 +520,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
 
       it('royaltyAndCreatorInfo()', async () => {
-        this.receipt = await this.token.mintToken(collectorA, TOKEN_URI, {from: contract});
+        this.receipt = await this.token.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
         expectEvent.inLogs(this.receipt.logs, 'Transfer', {
           from: ZERO_ADDRESS,
           to: collectorA,
@@ -684,7 +564,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
 
       it('facilitateNextPrimarySale()', async () => {
-        this.receipt = await this.tokenWithRoyaltyProxy.mintToken(collectorA, TOKEN_URI, {from: contract});
+        this.receipt = await this.tokenWithRoyaltyProxy.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
         expectEvent.inLogs(this.receipt.logs, 'Transfer', {
           from: ZERO_ADDRESS,
           to: collectorA,
@@ -701,7 +581,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     describe('without proxy', async () => {
 
       it('facilitateNextPrimarySale()', async () => {
-        this.receipt = await this.token.mintToken(collectorA, TOKEN_URI, {from: contract});
+        this.receipt = await this.token.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
         expectEvent.inLogs(this.receipt.logs, 'Transfer', {
           from: ZERO_ADDRESS,
           to: collectorA,
@@ -740,7 +620,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
   describe('getNextAvailablePrimarySaleToken()', async () => {
 
     it('single mint', async () => {
-      this.receipt = await this.token.mintToken(collectorA, TOKEN_URI, {from: contract});
+      this.receipt = await this.token.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
       expectEvent.inLogs(this.receipt.logs, 'Transfer', {
         from: ZERO_ADDRESS,
         to: collectorA,
@@ -881,7 +761,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
   describe('hadPrimarySaleOfToken()', async () => {
     it('should assert hadPrimarySaleOfToken()', async () => {
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
       expect(await this.token.hadPrimarySaleOfToken(firstEditionTokenId)).to.be.equal(false);
 
       await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
@@ -925,25 +805,25 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
   describe('lockInAdditionalMetaData()', async () => {
     it('should lockInAdditionalMetaData()', async () => {
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
       expect(await this.token.additionalEditionMetaData(firstEditionTokenId)).to.be.equal('hello');
     });
 
     it('should editionAdditionalMetaData()', async () => {
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
       expect(await this.token.editionAdditionalMetaData(firstEditionTokenId)).to.be.equal('hello');
     });
 
     it('should tokenAdditionalMetaData()', async () => {
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
       expect(await this.token.tokenAdditionalMetaData(firstEditionTokenId)).to.be.equal('hello');
     });
 
     it('revert if not creator', async () => {
-      const {logs} = await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      const {logs} = await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
       expectEvent.inLogs(logs, 'Transfer', {
         from: ZERO_ADDRESS,
         to: owner,
@@ -956,7 +836,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
 
     it('revert if set twice', async () => {
-      const {logs} = await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      const {logs} = await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
       expectEvent.inLogs(logs, 'Transfer', {
         from: ZERO_ADDRESS,
         to: owner,
@@ -1202,7 +1082,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
   describe('hasRoyalties()', async () => {
 
     beforeEach(async () => {
-      await this.token.mintToken(owner, TOKEN_URI, {from: contract});
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
     });
 
     it('fails if the token does not exist', async () => {

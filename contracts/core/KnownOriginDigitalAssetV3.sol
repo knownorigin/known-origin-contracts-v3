@@ -1,49 +1,26 @@
 // SPDX-License-Identifier: MIT
 
-// FIXME bump to 0.8 and drop safemath?
-pragma solidity 0.7.6;
+pragma solidity 0.8.3;
 
-import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
-import {ERC165} from "@openzeppelin/contracts/introspection/ERC165.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {ERC165Storage} from "@openzeppelin/contracts/utils/introspection/ERC165Storage.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IERC2981} from "./IERC2981.sol";
-import {IKODAV3} from "./IKODAV3.sol";
 import {IKODAV3Minter} from "./IKODAV3Minter.sol";
-import {Konstants} from "./Konstants.sol";
 import {ITokenUriResolver} from "../programmable/ITokenUriResolver.sol";
 import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
-
-// FIXME Use safe-math for all calcs?
+import {BaseKoda} from "./BaseKoda.sol";
 
 /*
  * A base 721 compliant contract which has a focus on being light weight
  */
-contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165, IKODAV3Minter, IKODAV3 {
-    using SafeMath for uint256;
+contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165Storage, IKODAV3Minter {
 
-    bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
-
-    event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
-    event AdminEditionReported(uint256 indexed _editionId, bool indexed _reported);
-    event AdminArtistAccountReported(address indexed _account, bool indexed _reported);
     event AdditionalMetaDataSet(uint256 indexed _editionId);
     event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
     event AdminTokenUriResolverSet(address indexed _tokenUriResolver);
-
-    modifier onlyContract(){
-        require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
-        _;
-    }
-
-    modifier onlyAdmin(){
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
-        _;
-    }
 
     // Token name
     string public name = "KnownOriginDigitalAsset";
@@ -64,8 +41,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
     uint256 public editionPointer;
 
     struct EditionDetails {
-        address creator;
-        uint96 editionSize;
+        address creator; // primary edition/token creator
+        uint96 editionSize; // onchain edition size
         string uri; // the referenced metadata
     }
 
@@ -87,24 +64,11 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
     // Optional one time use storage slot for additional edition metadata
     mapping(uint256 => string) public additionalEditionMetaData;
 
-    // A onchain reference to editions which have been reported for some infringement purposes to KO
-    mapping(uint256 => bool) public reportedEditionIds;
-
-    // A onchain reference to accounts which have been lost/hacked etc
-    mapping(address => bool) public reportedArtistAccounts;
-
-    // TODO confirm default decimal precision (EIP-2981 compatibility required)
-    // Secondary sale commission
-    uint256 public secondarySaleRoyalty = 12_50000; // 12.5%
-
-    IKOAccessControlsLookup public accessControls;
-
     constructor(
         IKOAccessControlsLookup _accessControls,
         IERC2981 _royaltiesRegistryProxy,
         uint256 _editionPointer
-    ) {
-        accessControls = _accessControls;
+    ) BaseKoda(_accessControls) {
 
         editionPointer = _editionPointer;
 
@@ -121,15 +85,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
         _registerInterface(0x4b7f2c2d);
     }
 
-    // TODO remove method and call batch with 1
-    function mintToken(address _to, string calldata _uri)
-    public
-    override
-    onlyContract
-    returns (uint256 _tokenId) {
-        return _mintBatchEdition(1, _to, _uri);
-    }
-
     // Mints batches of tokens emitting multiple Transfer events
     function mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri)
     public
@@ -140,15 +95,18 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
     }
 
     function mintBatchEditionAndComposeERC20s(uint96 _editionSize, address _to, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts)
-    external onlyContract override returns (uint256 _editionId) {
-        require(_erc20s.length == _amounts.length, "Array length mismatch");
-        require(_erc20s.length > 0, "Empty array");
+    external
+    override
+    onlyContract
+    returns (uint256 _editionId) {
+        uint256 totalErc20s = _erc20s.length;
+        require(totalErc20s == _amounts.length, "Array length mismatch");
+        require(totalErc20s > 0, "Empty array");
+
         _editionId = _mintBatchEdition(_editionSize, _to, _uri);
 
-        for(uint i = 0; i < _erc20s.length; i++) {
-            address erc20 = _erc20s[i];
-            uint256 amount = _amounts[i];
-            _composeERC20IntoEdition(_to, _editionId, erc20, amount);
+        for (uint i = 0; i < totalErc20s; i++) {
+            _composeERC20IntoEdition(_to, _editionId, _erc20s[i], _amounts[i]);
         }
     }
 
@@ -160,13 +118,13 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
 
         // assign balance
-        balances[_to] = balances[_to].add(_editionSize);
+        balances[_to] = balances[_to] + _editionSize;
 
         // edition of x
         _defineEditionConfig(start, _editionSize, _to, _uri);
 
         // Loop emit all transfer events
-        uint256 end = start.add(_editionSize);
+        uint256 end = start + _editionSize;
         for (uint i = start; i < end; i++) {
             emit Transfer(address(0), _to, i);
         }
@@ -186,13 +144,13 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
         // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
 
         // assign balance
-        balances[_to] = balances[_to].add(_editionSize);
+        balances[_to] = balances[_to] + _editionSize;
 
         // Start ID always equals edition ID
         _defineEditionConfig(start, _editionSize, _to, _uri);
 
         // emit EIP-2309 consecutive transfer event
-        emit ConsecutiveTransfer(start, start.add(_editionSize), address(0), _to);
+        emit ConsecutiveTransfer(start, start + _editionSize, address(0), _to);
 
         return start;
     }
@@ -223,6 +181,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
         require(edition.editionSize != 0, "Token does not exist");
+
+        // TODO decide on if this should use edition or token ID to find the resolver
+        //      - token = more options but more complexity
 
         if (tokenUriResolverActive() && tokenUriResolver.isDefined(editionId)) {
             return tokenUriResolver.editionURI(editionId);
@@ -358,6 +319,11 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
         return secondarySaleRoyalty > 0;
     }
 
+    function royaltyRegistryActive() public view returns (bool) {
+        return address(royaltiesRegistryProxy) != address(0);
+    }
+
+    // ERC2981 royalties callback event hook
     function receivedRoyalties(address _royaltyRecipient, address _buyer, uint256 _tokenId, address _tokenPaid, uint256 _amount)
     external
     override {
@@ -396,10 +362,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
 
     function hadPrimarySaleOfToken(uint256 _tokenId) public override view returns (bool) {
         return owners[_tokenId] != address(0);
-    }
-
-    function royaltyRegistryActive() public view returns (bool) {
-        return address(royaltiesRegistryProxy) != address(0);
     }
 
     //////////////
@@ -503,8 +465,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
         owners[_tokenId] = _to;
 
         // Modify balances
-        balances[_from] = balances[_from].sub(1);
-        balances[_to] = balances[_to].add(1);
+        balances[_from] = balances[_from] - 1;
+        balances[_to] = balances[_to] + 1;
     }
 
     /// @notice Find the owner of an NFT
@@ -615,11 +577,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
     // Admin functions //
     /////////////////////
 
-    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) public onlyAdmin {
-        secondarySaleRoyalty = _secondarySaleRoyalty;
-        emit AdminUpdateSecondaryRoyalty(_secondarySaleRoyalty);
-    }
-
     function whitelistERC20(address _address) override onlyAdmin public {
         _whitelistERC20(_address);
     }
@@ -632,16 +589,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
         _updateMaxERC20sPerNFT(_max);
     }
 
-    function reportEditionId(uint256 _editionId, bool _reported) onlyAdmin public {
-        reportedEditionIds[_editionId] = _reported;
-        emit AdminEditionReported(_editionId, _reported);
-    }
-
-    function reportArtistAccount(address _account, bool _reported) onlyAdmin public {
-        reportedArtistAccounts[_account] = _reported;
-        emit AdminArtistAccountReported(_account, _reported);
-    }
-
     function setRoyaltiesRegistryProxy(IERC2981 _royaltiesRegistryProxy) onlyAdmin public {
         royaltiesRegistryProxy = _royaltiesRegistryProxy;
         emit AdminRoyaltiesRegistryProxySet(address(_royaltiesRegistryProxy));
@@ -650,14 +597,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, Konstants, ERC165,
     function setTokenUriResolver(ITokenUriResolver _tokenUriResolver) onlyAdmin public {
         tokenUriResolver = _tokenUriResolver;
         emit AdminTokenUriResolverSet(address(_tokenUriResolver));
-    }
-
-    /// @dev Allows for the ability to extract stuck ERC20 tokens
-    /// @dev Only callable from admin
-    function withdrawStuckTokens(address _tokenAddress, uint256 _amount, address _withdrawalAccount) public {
-        require(accessControls.hasContractOrAdminRole(_msgSender()), "Caller must have contract or admin role");
-        IERC20(_tokenAddress).approve(address(this), _amount);
-        IERC20(_tokenAddress).transferFrom(address(this), _withdrawalAccount, _amount);
     }
 
     // TODO add method stuck ERC721 retrieval ... ? I vote no as we can then use this address as the burn address?

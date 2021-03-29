@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.6;
+pragma solidity 0.8.3;
 
-// FIXME decide on push vs pull
-import "../../collaborators/simple/FundsSplitter.sol";
-import "../../collaborators/simple/FundsReceiver.sol";
-import "../../collaborators/IFundsHandler.sol";
+import "../collaborators/simple/FundsSplitter.sol";
+import "../collaborators/simple/FundsReceiver.sol";
+import "../collaborators/IFundsHandler.sol";
 
 import "./ITokenRoyaltiesRegistry.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ERC165} from "@openzeppelin/contracts/introspection/ERC165.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 contract TokenRoyaltiesRegistry is ERC165, ITokenRoyaltiesRegistry, Ownable {
 
