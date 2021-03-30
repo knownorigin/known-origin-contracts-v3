@@ -10,8 +10,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IKOAccessControlsLookup} from "../../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../../core/IKODAV3.sol";
 
-import "hardhat/console.sol";
-
 contract KODAV3SignatureMarketplace is ReentrancyGuard, Context {
 
     // Contract name

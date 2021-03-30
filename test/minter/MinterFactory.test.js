@@ -1,9 +1,8 @@
-const {BN, constants, expectEvent, expectRevert, balance} = require('@openzeppelin/test-helpers');
+const {BN, constants, expectEvent, expectRevert, time} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
 const _ = require('lodash');
 
-const web3 = require('web3');
 const {ether} = require('@openzeppelin/test-helpers');
 
 const {expect} = require('chai');
@@ -14,14 +13,14 @@ const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 const MinterFactory = artifacts.require('MockMintingFactory');
 
-const {validateEditionAndToken} = require('../test-helpers');
-
 contract('MinterFactory', function (accounts) {
-  const [_, deployer, koCommission, artist, collectorA, collectorB, collectorC, collectorD] = accounts;
+  const [superAdmin, admin, deployer, koCommission, artist] = accounts;
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
   const STARTING_EDITION = '10000';
+  const ONE = new BN('1');
+  const _30_DAYS_IN_SECONDS = 60 * 60 * 24 * 30;
 
   const ETH_ONE = ether('1');
 
@@ -37,6 +36,7 @@ contract('MinterFactory', function (accounts) {
     this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: deployer});
 
     // grab the roles
+    this.DEFAULT_ADMIN_ROLE = await this.accessControls.DEFAULT_ADMIN_ROLE();
     this.MINTER_ROLE = await this.accessControls.MINTER_ROLE();
     this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
 
@@ -65,7 +65,33 @@ contract('MinterFactory', function (accounts) {
       this.marketplace.address,
       {from: deployer}
     );
+    await this.accessControls.grantRole(this.DEFAULT_ADMIN_ROLE, admin, {from: deployer});
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.factory.address, {from: deployer});
+
+    this.MAX_EDITION_SIZE = await this.token.MAX_EDITION_SIZE();
+    this.mintingPeriod = await this.factory.mintingPeriod();
+    this.maxMintsInPeriod = await this.factory.maxMintsInPeriod();
+  });
+
+  describe('configs are setup accordingly', async () => {
+
+    it('mintingPeriod()', async () => {
+      expect(await this.factory.mintingPeriod()).to.be.bignumber.equal(this.mintingPeriod);
+    });
+
+    it('maxMintsInPeriod', async () => {
+      expect(await this.factory.maxMintsInPeriod()).to.be.bignumber.equal(this.maxMintsInPeriod);
+    });
+
+    it('canCreateNewEdition', async () => {
+      expect(await this.factory.canCreateNewEdition(artist)).to.be.equal(true);
+    });
+
+    it('empty mintingPeriodConfig() by default', async () => {
+      const {mints, firstMintInPeriod} = await this.factory.currentMintConfig(artist);
+      expect(mints).to.be.bignumber.equal('0');
+      expect(firstMintInPeriod).to.be.bignumber.equal('0');
+    });
   });
 
   describe('mintToken() - Buy Now', () => {
@@ -78,12 +104,6 @@ contract('MinterFactory', function (accounts) {
         to: artist,
         tokenId: firstEditionTokenId
       });
-
-      // ensure that the artist cannot mint again within the freeze window
-      await expectRevert(
-        this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist}),
-        "Caller unable to create yet"
-      )
     });
 
     it('edition created', async () => {
@@ -101,19 +121,6 @@ contract('MinterFactory', function (accounts) {
       expect(_startDate).to.bignumber.equal(this.startDate.toString(), 'Failed edition details size validation');
       expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
     });
-
-    it('After freeze window can mint again', async () => {
-      const frozenTil = await this.factory.frozenTil(artist)
-      await this.factory.setNow(frozenTil.addn(5))
-
-      this.startDate = Date.now();
-      const receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
-      await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
-        from: ZERO_ADDRESS,
-        to: artist,
-        tokenId: firstEditionTokenId.addn(1000)
-      });
-    })
   });
 
   describe('mintBatchEdition() - Buy Now - edition size 10', () => {
@@ -128,12 +135,6 @@ contract('MinterFactory', function (accounts) {
         to: artist,
         tokenId: firstEditionTokenId
       });
-
-      // ensure that the artist cannot mint again within the freeze window
-      await expectRevert(
-        this.factory.mintBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist}),
-        "Caller unable to create yet"
-      )
     });
 
     it('edition created', async () => {
@@ -151,19 +152,6 @@ contract('MinterFactory', function (accounts) {
       expect(_startDate).to.bignumber.equal(this.startDate.toString(), 'Failed edition details size validation');
       expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
     });
-
-    it('After freeze window can mint again', async () => {
-      const frozenTil = await this.factory.frozenTil(artist)
-      await this.factory.setNow(frozenTil.addn(5))
-
-      this.startDate = Date.now();
-      const receipt = await this.factory.mintBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
-      await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
-        from: ZERO_ADDRESS,
-        to: artist,
-        tokenId: firstEditionTokenId.addn(1000)
-      });
-    })
   });
 
   describe('mintConsecutiveBatchEdition() - Buy Now - edition size 10', () => {
@@ -181,12 +169,6 @@ contract('MinterFactory', function (accounts) {
         fromTokenId: start.toString(),
         toTokenId: end.toString()
       });
-
-      // ensure that the artist cannot mint again within the freeze window
-      await expectRevert(
-        this.factory.mintConsecutiveBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist}),
-        "Caller unable to create yet"
-      )
     });
 
     it('edition created', async () => {
@@ -204,23 +186,149 @@ contract('MinterFactory', function (accounts) {
       expect(_startDate).to.bignumber.equal(this.startDate.toString(), 'Failed edition details size validation');
       expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
     });
-
-    it('After freeze window can mint again', async () => {
-      const frozenTil = await this.factory.frozenTil(artist)
-      await this.factory.setNow(frozenTil.addn(5))
-
-      this.startDate = Date.now();
-      const receipt = await this.factory.mintConsecutiveBatchEdition(SaleType.BUY_NOW, editionSize, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
-
-      const start = firstEditionTokenId.addn(1000).toNumber();
-      const end = start + parseInt(editionSize);
-      await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'ConsecutiveTransfer', {
-        fromAddress: ZERO_ADDRESS,
-        toAddress: artist,
-        fromTokenId: start.toString(),
-        toTokenId: end.toString()
-      });
-    })
   });
 
+  describe('minting rules in a 30 day period', () => {
+
+    it('can mint up to maxMintsInPeriod within a period, but fails afterwards', async () => {
+      this.startDate = Date.now();
+      await this.factory.setNow(this.startDate);
+
+      let editionId = firstEditionTokenId;
+      const range = _.range(0, _.toNumber(this.maxMintsInPeriod));
+
+      // exhaust all tokens
+      for (const id of range) {
+        const receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
+        await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
+          from: ZERO_ADDRESS,
+          to: artist,
+          tokenId: editionId
+        });
+
+        // bump ID
+        editionId = new BN(editionId).add(this.MAX_EDITION_SIZE);
+      }
+
+      // check 15 mints are recorded
+      const {mints, firstMintInPeriod} = await this.factory.currentMintConfig(artist);
+      expect(mints).to.be.bignumber.equal('15');
+      expect(firstMintInPeriod).to.be.bignumber.equal(this.startDate.toString());
+
+      // check cannot mint another one
+      expect(await this.factory.canCreateNewEdition(artist)).to.be.equal(false);
+
+      // confirm next mint will revert
+      await expectRevert(
+        this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist}),
+        'Caller unable to create yet'
+      );
+
+      // move time along to the next period and then try again
+      this.startDate = Date.now() + _30_DAYS_IN_SECONDS + 1;
+      await this.factory.setNow(this.startDate);
+
+      // can mint again
+      let receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
+      await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: artist,
+        tokenId: editionId
+      });
+
+      // resets counter
+      let config = await this.factory.currentMintConfig(artist);
+      expect(config.mints).to.be.bignumber.equal('1');
+      expect(config.firstMintInPeriod).to.be.bignumber.equal(this.startDate.toString());
+
+      // check can mint another one
+      expect(await this.factory.canCreateNewEdition(artist)).to.be.equal(true);
+
+      // can mint again
+      receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
+      await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: artist,
+        tokenId: new BN(editionId).add(this.MAX_EDITION_SIZE)
+      });
+
+      // counter moves up by 1
+      config = await this.factory.currentMintConfig(artist);
+      expect(config.mints).to.be.bignumber.equal('2');
+      expect(config.firstMintInPeriod).to.be.bignumber.equal(this.startDate.toString());
+
+      // check can mint another one
+      expect(await this.factory.canCreateNewEdition(artist)).to.be.equal(true);
+    });
+
+  });
+
+  describe('setMintingPeriod()', async () => {
+    it('can change the config', async () => {
+      expect(await this.factory.mintingPeriod()).to.be.bignumber.equal(_30_DAYS_IN_SECONDS.toString());
+      const receipt = await this.factory.setMintingPeriod('10', {from: admin});
+      expectEvent.inLogs(receipt.logs, 'AdminMintingPeriodChanged', {
+        _mintingPeriod: '10'
+      });
+      expect(await this.factory.mintingPeriod()).to.be.bignumber.equal('10');
+    });
+  });
+
+  describe('setMaxMintsInPeriod()', async () => {
+    it('can change the config', async () => {
+      expect(await this.factory.maxMintsInPeriod()).to.be.bignumber.equal('15');
+      const receipt = await this.factory.setMaxMintsInPeriod('1', {from: admin});
+      expectEvent.inLogs(receipt.logs, 'AdminMaxMintsInPeriodChanged', {
+        _maxMintsInPeriod: '1'
+      });
+      expect(await this.factory.maxMintsInPeriod()).to.be.bignumber.equal('1');
+    });
+  });
+
+  describe('Frequency Override', async () => {
+
+    beforeEach(async () => {
+      // set override
+      await this.factory.setFrequencyOverride(artist, true, {from: admin});
+    });
+
+    it('once frequency override is set, can mint more than max limit', async () => {
+      this.startDate = Date.now();
+      await this.factory.setNow(this.startDate);
+
+      let editionId = firstEditionTokenId;
+
+      // mint 50 editions
+      for (const id of _.range(0, 50)) {
+        const receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist});
+        await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
+          from: ZERO_ADDRESS,
+          to: artist,
+          tokenId: editionId
+        });
+
+        // bump ID
+        editionId = new BN(editionId).add(this.MAX_EDITION_SIZE);
+      }
+
+      // check 15 mints are recorded
+      const {mints, firstMintInPeriod} = await this.factory.currentMintConfig(artist);
+      expect(mints).to.be.bignumber.equal('50');
+      expect(firstMintInPeriod).to.be.bignumber.equal(this.startDate.toString());
+
+      // check cannot mint another one
+      expect(await this.factory.canCreateNewEdition(artist)).to.be.equal(true);
+
+      // turn off frequency override
+      await this.factory.setFrequencyOverride(artist, false, {from: admin});
+
+      // confirm next mint will revert
+      await expectRevert(
+        this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, {from: artist}),
+        'Caller unable to create yet'
+      );
+    });
+
+
+  });
 });

@@ -215,6 +215,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
         if (editionContainsERC20) {
             uint256 allTokensInEditionERC20Balance;
+            // TODO duplicate variable lookup for each loop and high up - koda.getSizeOfEdition(editionId)
             for (uint i = 0; i < koda.getSizeOfEdition(editionId); i++) {
                 uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][editionId + i];
                 uint256 tokenBal = tokenInitialBalance - spentTokens;

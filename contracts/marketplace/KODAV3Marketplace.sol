@@ -99,6 +99,8 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
     IKOAccessControlsLookup public accessControls;
 
+    // TODO artist commission override feature (speak to andy)
+
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount) {
         koda = _koda;
         accessControls = _accessControls;
@@ -181,7 +183,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         require(msg.value >= listing.price, "List price not satisfied");
         require(block.timestamp >= listing.startDate, "List not available yet");
 
-        uint256 tokenId = facilitateNextPrimarySale(_editionId, msg.value, _recipient);
+        uint256 tokenId = facilitateNextPrimarySale(_editionId, msg.value, _recipient, false);
 
         emit EditionPurchased(_editionId, tokenId, _recipient, msg.value);
     }
@@ -331,7 +333,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
 
         // get a new token from the edition to transfer ownership
-        uint256 tokenId = facilitateNextPrimarySale(_editionId, offer.offer, offer.bidder);
+        uint256 tokenId = facilitateNextPrimarySale(_editionId, offer.offer, offer.bidder, false);
 
         // emit event
         emit EditionBidAccepted(_editionId, tokenId, offer.bidder, offer.offer);
@@ -355,9 +357,6 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     }
 
     // Primary sale "stepped pricing" flow
-
-    // FIXME when selling in a step sale, reverse lookup the token to sell the highest ID first?
-
     function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate)
     public
     override
@@ -392,7 +391,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         uint256 expectedPrice = _getNextEditionSteppedPrice(_editionId);
         require(msg.value >= expectedPrice, "Expected price not met");
 
-        uint256 tokenId = facilitateNextPrimarySale(_editionId, expectedPrice, _msgSender());
+        uint256 tokenId = facilitateNextPrimarySale(_editionId, expectedPrice, _msgSender(), true);
 
         // Bump the current step
         uint16 step = steppedAuction.currentStep;
@@ -457,11 +456,12 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
     // primary sale helpers
 
-    function facilitateNextPrimarySale(uint256 _editionId, uint256 _paymentAmount, address _buyer) internal returns (uint256) {
+    function facilitateNextPrimarySale(uint256 _editionId, uint256 _paymentAmount, address _buyer, bool _reverse) internal returns (uint256) {
+        // for stepped sales, should they be sold in reverse order ie. 10...1 and not 1...10?
         // get next token to sell along with the royalties recipient and the original creator
-        (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
-
-        // TODO for stepped sales, should they be sold in reverse order ie. 10...1 and not 1...10?
+        (address receiver, address creator, uint256 tokenId) = _reverse
+            ? koda.facilitateReveresPrimarySale(_editionId)
+            : koda.facilitateNextPrimarySale(_editionId);
 
         // split money
         handleEditionSaleFunds(receiver, _paymentAmount);

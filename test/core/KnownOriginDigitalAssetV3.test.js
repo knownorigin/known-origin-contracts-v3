@@ -653,6 +653,12 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE).add(ONE)); // from royaltiesRegistryProxy
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId.add(ONE).add(ONE), {from: collectorA});
+
+      // exceeds tokens and reverts
+      await expectRevert(
+        this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId),
+        'No tokens left on the primary market'
+      );
     });
 
     it('batch consecutive mint', async () => {
@@ -740,6 +746,151 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       await this.token.transferFrom(collectorB, collectorA, firstEditionTokenId, {from: collectorB}); // send back
 
       let tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE)); // 2nd token
+    });
+
+    it('reverts when selling via primary then burning to zero address', async () => {
+      this.receipt = await this.token.mintBatchEdition(3, collectorA, TOKEN_URI, {from: contract});
+      await expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: collectorA,
+        tokenId: firstEditionTokenId
+      });
+
+      // covering this here to prove you can not reset the zero address and go back to a token already with a primary sale
+      await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA}); // sell one
+      await expectRevert(this.token.transferFrom(collectorB, ZERO_ADDRESS, firstEditionTokenId, {from: collectorB}),
+        'ERC721_ZERO_TO_ADDRESS'
+      ); // send back
+    });
+  });
+
+  describe('getReverseAvailablePrimarySaleToken()', async () => {
+
+    it('single mint', async () => {
+      this.receipt = await this.token.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
+      expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: collectorA,
+        tokenId: firstEditionTokenId
+      });
+
+      let tokenId = await this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId);
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId); // from royaltiesRegistryProxy
+    });
+
+    it('batch mint', async () => {
+      this.receipt = await this.token.mintBatchEdition(3, collectorA, TOKEN_URI, {from: contract});
+      expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: collectorA,
+        tokenId: firstEditionTokenId
+      });
+
+      let tokenId = await this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId);
+      expect(tokenId).to.be.bignumber.equal(new BN(firstEditionTokenId).add(ONE).add(ONE)); // highest
+      await this.token.transferFrom(collectorA, collectorB, tokenId, {from: collectorA});
+
+      tokenId = await this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId);
+      expect(tokenId).to.be.bignumber.equal(new BN(firstEditionTokenId).add(ONE));  // middle
+      await this.token.transferFrom(collectorA, collectorB, tokenId, {from: collectorA});
+
+      tokenId = await this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId);
+      expect(tokenId).to.be.bignumber.equal(new BN(firstEditionTokenId)); // low
+      await this.token.transferFrom(collectorA, collectorB, tokenId, {from: collectorA});
+
+      // exceeds tokens and reverts
+      await expectRevert(
+        this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId),
+        'No tokens left on the primary market'
+      );
+    });
+
+    it('batch consecutive mint', async () => {
+      this.receipt = await this.token.mintConsecutiveBatchEdition(3, collectorA, TOKEN_URI, {from: contract});
+      //    event ConsecutiveTransfer(uint256 indexed fromTokenId, uint256 toTokenId, address indexed fromAddress, address indexed toAddress);
+      expectEvent.inLogs(this.receipt.logs, 'ConsecutiveTransfer', {
+        fromTokenId: firstEditionTokenId,
+        toTokenId: firstEditionTokenId.add(new BN(3)),
+        fromAddress: ZERO_ADDRESS,
+        toAddress: collectorA
+      });
+
+      let tokenId = await this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId);
+      expect(tokenId).to.be.bignumber.equal(new BN(firstEditionTokenId).add(ONE).add(ONE)); // highest
+      await this.token.transferFrom(collectorA, collectorB, tokenId, {from: collectorA});
+
+      tokenId = await this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId);
+      expect(tokenId).to.be.bignumber.equal(new BN(firstEditionTokenId).add(ONE));  // middle
+      await this.token.transferFrom(collectorA, collectorB, tokenId, {from: collectorA});
+
+      tokenId = await this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId);
+      expect(tokenId).to.be.bignumber.equal(new BN(firstEditionTokenId)); // low
+      await this.token.transferFrom(collectorA, collectorB, tokenId, {from: collectorA});
+
+      // exceeds tokens and reverts
+      await expectRevert(
+        this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId),
+        'No tokens left on the primary market'
+      );
+    });
+
+    it('reverts if no edition ID found', async () => {
+      await expectRevert(
+        this.token.getReverseAvailablePrimarySaleToken.call(nonExistentTokenId),
+        'No tokens left on the primary market'
+      );
+    });
+
+    it('reverts when exhausted', async () => {
+      this.receipt = await this.token.mintBatchEdition(2, collectorA, TOKEN_URI, {from: contract});
+      await expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: collectorA,
+        tokenId: firstEditionTokenId
+      });
+
+      let tokenId = await this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId);
+      expect(tokenId).to.be.bignumber.equal(new BN(firstEditionTokenId).add(ONE)); // highest
+      await this.token.transferFrom(collectorA, collectorB, tokenId, {from: collectorA});
+
+      tokenId = await this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId);
+      expect(tokenId).to.be.bignumber.equal(new BN(firstEditionTokenId));  // lowest
+      await this.token.transferFrom(collectorA, collectorB, tokenId, {from: collectorA});
+
+      await expectRevert(
+        this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId),
+        'No tokens left on the primary market'
+      );
+    });
+
+    it('get from middle (if gifting from end)', async () => {
+      this.receipt = await this.token.mintBatchEdition(3, collectorA, TOKEN_URI, {from: contract});
+      await expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: collectorA,
+        tokenId: firstEditionTokenId
+      });
+
+      await this.token.transferFrom(collectorA, collectorB, new BN(firstEditionTokenId).add(ONE).add(ONE), {from: collectorA}); // gift last one
+      await this.token.transferFrom(collectorA, collectorB, new BN(firstEditionTokenId).add(ONE), {from: collectorA}); // gift 2nd
+
+      let tokenId = await this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId);
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId); // 1st token found
+    });
+
+    it('sell via primary then get sent the token back', async () => {
+      this.receipt = await this.token.mintBatchEdition(3, collectorA, TOKEN_URI, {from: contract});
+      await expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: collectorA,
+        tokenId: firstEditionTokenId
+      });
+
+      await this.token.transferFrom(collectorA, collectorB, new BN(firstEditionTokenId).add(ONE).add(ONE), {from: collectorA}); // sell one
+      await this.token.transferFrom(collectorB, collectorA, new BN(firstEditionTokenId).add(ONE).add(ONE), {from: collectorB}); // send back
+
+      let tokenId = await this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId);
       expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE)); // 2nd token
     });
 

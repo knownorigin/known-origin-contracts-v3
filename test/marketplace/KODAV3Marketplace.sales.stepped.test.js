@@ -317,7 +317,7 @@ contract('KODAV3Marketplace', function (accounts) {
             const receipt = await this.marketplace.buyNextStep(edition, {from: collectorA, value: _1_ETH});
             expectEvent(receipt, 'EditionSteppedSaleBuy', {
               _editionId: edition,
-              _tokenId: edition,
+              _tokenId: new BN(edition).add(ONE).add(ONE), // highest token ID
               _buyer: collectorA,
               _price: _1_ETH,
               _currentStep: ZERO
@@ -343,9 +343,9 @@ contract('KODAV3Marketplace', function (accounts) {
           it('token price incremented appropriately with each step', async () => {
 
             const edition = firstEditionTokenId;
-            const token1 = edition;
-            const token2 = token1.add(ONE);
-            const token3 = token2.add(ONE);
+            const token1 = new BN(edition).add(ONE).add(ONE);
+            const token2 = token1.sub(ONE);
+            const token3 = token2.sub(ONE);
 
             const stepPrice = _0_1_ETH;
             const token1Price = _1_ETH;
@@ -394,9 +394,9 @@ contract('KODAV3Marketplace', function (accounts) {
           it('buyers can purchase stepped edition tokens up to listed limit', async () => {
 
             const edition = firstEditionTokenId;
-            const token1 = edition;
-            const token2 = token1.add(ONE);
-            const token3 = token2.add(ONE);
+            const token1 = new BN(edition).add(ONE).add(ONE);
+            const token2 = token1.sub(ONE);
+            const token3 = token2.sub(ONE);
 
             const stepPrice = _0_1_ETH;
             const token1Price = _1_ETH;
