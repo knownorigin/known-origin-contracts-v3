@@ -187,10 +187,10 @@ contract MintingFactory is Context {
     }
 
     function currentMintConfig(address _account) public view returns (uint128 mints, uint128 firstMintInPeriod) {
-        MintingPeriod memory mintingPeriod = mintingPeriodConfig[_account];
+        MintingPeriod memory config = mintingPeriodConfig[_account];
         return (
-        mintingPeriod.mints,
-        mintingPeriod.firstMintInPeriod
+        config.mints,
+        config.firstMintInPeriod
         );
     }
 

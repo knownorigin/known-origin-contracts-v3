@@ -1,4 +1,4 @@
-const {constants} = require('@openzeppelin/test-helpers');
+const {constants, expectEvent} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
 const {expect} = require('chai');
@@ -86,6 +86,26 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
         ZERO_ADDRESS,
         this.merkleProof.claims[artist1].proof)
       ).to.be.equal(false);
+    });
+  });
+
+  describe('emits event when updateArtistMerkleRoot() called', async () => {
+    it('emits event', async () => {
+      const receipt = await this.accessControls.updateArtistMerkleRoot('0x012345', {from: deployer});
+      expectEvent.inLogs(receipt.logs, 'AdminUpdateArtistAccessMerkleRoot', {
+        _artistAccessMerkleRoot: '0x0123450000000000000000000000000000000000000000000000000000000000'
+      });
+      expect(await this.accessControls.artistAccessMerkleRoot()).to.be.equal('0x0123450000000000000000000000000000000000000000000000000000000000');
+    });
+  });
+
+  describe('emits event when updateArtistMerkleRootIpfsHash() called', async () => {
+    it('emits event', async () => {
+      const receipt = await this.accessControls.updateArtistMerkleRootIpfsHash('my-new-string', {from: deployer});
+      expectEvent.inLogs(receipt.logs, 'AdminUpdateArtistAccessMerkleRootIpfsHash', {
+        _artistAccessMerkleRootIpfsHash: 'my-new-string'
+      });
+      expect(await this.accessControls.artistAccessMerkleRootIpfsHash()).to.be.equal('my-new-string');
     });
   });
 

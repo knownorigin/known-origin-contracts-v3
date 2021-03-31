@@ -11,12 +11,18 @@ import {ISelfServiceAccessControls} from "./legacy/ISelfServiceAccessControls.so
 
 contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
 
+    event AdminUpdateArtistAccessMerkleRoot(bytes32 _artistAccessMerkleRoot);
+    event AdminUpdateArtistAccessMerkleRootIpfsHash(string _artistAccessMerkleRootIpfsHash);
+
     bytes32 public constant CONTRACT_ROLE = keccak256("CONTRACT_ROLE");
 
     ISelfServiceAccessControls public legacyMintingAccess;
 
-    // TODO do we need to also store the IPFS hash as well
+    // A publicly available root merkle proof
     bytes32 public artistAccessMerkleRoot;
+
+    // A publicly hosted ipfs payload holding the merkle proofs
+    string public artistAccessMerkleRootIpfsHash;
 
     constructor(ISelfServiceAccessControls _legacyMintingAccess) {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -80,6 +86,12 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
     function updateArtistMerkleRoot(bytes32 _artistAccessMerkleRoot) public {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "Sender must be an admin");
         artistAccessMerkleRoot = _artistAccessMerkleRoot;
+        emit AdminUpdateArtistAccessMerkleRoot(_artistAccessMerkleRoot);
     }
 
+    function updateArtistMerkleRootIpfsHash(string calldata _artistAccessMerkleRootIpfsHash) public {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "Sender must be an admin");
+        artistAccessMerkleRootIpfsHash = _artistAccessMerkleRootIpfsHash;
+        emit AdminUpdateArtistAccessMerkleRootIpfsHash(_artistAccessMerkleRootIpfsHash);
+    }
 }

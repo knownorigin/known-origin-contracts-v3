@@ -18,7 +18,8 @@ import {BaseKoda} from "./BaseKoda.sol";
  */
 contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165Storage, IKODAV3Minter {
 
-    event AdditionalMetaDataSet(uint256 indexed _editionId);
+    event AdditionalEditionMetaDataSet(uint256 indexed _editionId);
+    event AdditionalEditionUnlockableSet(uint256 indexed _editionId);
     event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
     event AdminTokenUriResolverSet(address indexed _tokenUriResolver);
 
@@ -64,7 +65,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     // Optional one time use storage slot for additional edition metadata
     mapping(uint256 => string) public additionalEditionMetaData;
 
-    // TODO Unlockable slot to main nft ?
+    // Optional one time use storage slot for additional unlockable content
+    mapping(uint256 => string) public additionalEditionUnlockableSlot;
 
     constructor(
         IKOAccessControlsLookup _accessControls,
@@ -183,9 +185,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
         require(edition.editionSize != 0, "Token does not exist");
-
-        // TODO decide on if this should use edition or token ID to find the resolver
-        //      - token = more options but more complexity
 
         if (tokenUriResolverActive() && tokenUriResolver.isDefined(editionId)) {
             return tokenUriResolver.editionURI(editionId);
@@ -549,8 +548,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         emit Approval(owner, _approved, _tokenId);
     }
 
-    // TODO validate approval flow for both sold out and partially available editions and their tokens
-
     /// @notice Enable or disable approval for a third party ("operator") to manage
     ///         all of `msg.sender`"s assets
     /// @dev Emits the ApprovalForAll event. The contract MUST allow
@@ -636,21 +633,23 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         emit AdminTokenUriResolverSet(address(_tokenUriResolver));
     }
 
-    // TODO add method stuck ERC721 retrieval ... ? I vote no as we can then use this address as the burn address?
-
     ///////////////////////
     // Creator functions //
     ///////////////////////
 
-    // Optional metadata storage slot which allows the creator to set an additional metadata blob on the token
-    function lockInAdditionalMetaData(uint256 _editionId, string calldata metadata) external {
+    // Optional metadata storage slot which allows the creator to set an additional metadata blob on the edition
+    function lockInAdditionalMetaData(uint256 _editionId, string calldata _metadata) external {
         require(_msgSender() == getCreatorOfEdition(_editionId), "unable to set when not creator");
-
-        // TODO enforce only once? ... check/confirm thoughts on this
-
         require(bytes(additionalEditionMetaData[_editionId]).length == 0, "can only be set once");
-        additionalEditionMetaData[_editionId] = metadata;
-        emit AdditionalMetaDataSet(_editionId);
+        additionalEditionMetaData[_editionId] = _metadata;
+        emit AdditionalEditionMetaDataSet(_editionId);
+    }
+
+    // Optional storage slot which allows the creator to set an additional unlockable blob on the edition
+    function lockInUnlockableContent(uint256 _editionId, string calldata _content) external {
+        require(_msgSender() == getCreatorOfEdition(_editionId), "unable to set when not creator");
+        additionalEditionUnlockableSlot[_editionId] = _content;
+        emit AdditionalEditionUnlockableSet(_editionId);
     }
 
 }
