@@ -36,12 +36,7 @@ contract('KODA CHI Token Tests', function (accounts) {
     this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
 
     // grab the roles
-    this.MINTER_ROLE = await this.accessControls.MINTER_ROLE();
     this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
-
-    // Set up access controls with minter roles
-    await this.accessControls.grantRole(this.MINTER_ROLE, owner, {from: owner});
-    await this.accessControls.grantRole(this.MINTER_ROLE, minter, {from: owner});
 
     this.chiToken = await ChiToken.new();
 

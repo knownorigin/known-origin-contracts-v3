@@ -27,11 +27,9 @@ contract('Contract deployer', function (accounts) {
     this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: deployer});
 
     // grab the roles
-    this.MINTER_ROLE = await this.accessControls.MINTER_ROLE();
     this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
 
     // Set up access controls with artist roles
-    await this.accessControls.grantRole(this.MINTER_ROLE, artist, {from: deployer});
     await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: deployer});
 
     this.omniDeployer = await KOCreate2OmniDeployer.new();
@@ -47,7 +45,7 @@ contract('Contract deployer', function (accounts) {
     const salt = new BN('123');
 
 
-    console.log('hexDataLength', ethers.utils.hexDataLength(completeByteCode));
+    // console.log('hexDataLength', ethers.utils.hexDataLength(completeByteCode));
     // console.log('contractByteCode', contractByteCode);
     // console.log('constructorTypes', constructorTypes);
     // console.log('constructorArgs', constructorArgs);

@@ -20,8 +20,6 @@ contract MintingFactory is Context {
 
     IKODAV3PrimarySaleMarketplace public marketplace;
 
-    // TODO decide on merkle tree vs whitelist
-
     modifier canMintAgain(){
         require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
         _;
@@ -58,10 +56,16 @@ contract MintingFactory is Context {
         marketplace = _marketplace;
     }
 
-    function mintToken(SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri)
-    canMintAgain
-    external {
-        require(accessControls.hasMinterRole(_msgSender()), "Caller must have minter role");
+    function mintToken(
+        SaleType _saleType,
+        uint128 _startDate,
+        uint128 _basePrice,
+        uint128 _stepPrice,
+        string calldata _uri,
+        uint256 _merkleIndex,
+        bytes32[] calldata _merkleProof
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(1, _msgSender(), _uri);
@@ -69,10 +73,17 @@ contract MintingFactory is Context {
         setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
     }
 
-    function mintBatchEdition(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri)
-    canMintAgain
-    external {
-        require(accessControls.hasMinterRole(_msgSender()), "Caller must have minter role");
+    function mintBatchEdition(
+        SaleType _saleType,
+        uint96 _editionSize,
+        uint128 _startDate,
+        uint128 _basePrice,
+        uint128 _stepPrice,
+        string calldata _uri,
+        uint256 _merkleIndex,
+        bytes32[] calldata _merkleProof
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
@@ -80,20 +91,32 @@ contract MintingFactory is Context {
         setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
     }
 
-    function mintBatchEditionAndComposeERC20s(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts)
-    canMintAgain
-    external {
-        require(accessControls.hasMinterRole(_msgSender()), "Caller must have minter role");
+    function mintBatchEditionAndComposeERC20s(
+        SaleType _saleType,
+        uint128[] calldata _config,
+        string calldata _uri,
+        address[] calldata _erc20s,
+        uint256[] calldata _amounts,
+        bytes32[] calldata _merkleProof
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtist(_config[0], _msgSender(), _merkleProof), "Caller must have minter role");
 
-        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(_editionSize, _msgSender(), _uri, _erc20s, _amounts);
+        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint96(_config[1]), _msgSender(), _uri, _erc20s, _amounts);
 
-        setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        setupSalesMechanic(editionId, _saleType, _config[2], _config[3], _config[4]);
     }
 
-    function mintConsecutiveBatchEdition(SaleType _saleType, uint96 _editionSize, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice, string calldata _uri)
-    canMintAgain
-    external {
-        require(accessControls.hasMinterRole(_msgSender()), "Caller must have minter role");
+    function mintConsecutiveBatchEdition(
+        SaleType _saleType,
+        uint96 _editionSize,
+        uint128 _startDate,
+        uint128 _basePrice,
+        uint128 _stepPrice,
+        string calldata _uri,
+        uint256 _merkleIndex,
+        bytes32[] calldata _merkleProof
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
         // Make tokens & edition
         uint256 editionId = koda.mintConsecutiveBatchEdition(_editionSize, _msgSender(), _uri);
@@ -164,10 +187,10 @@ contract MintingFactory is Context {
     }
 
     function currentMintConfig(address _account) public view returns (uint128 mints, uint128 firstMintInPeriod) {
-        MintingPeriod memory mintingPeriod = mintingPeriodConfig[_account];
+        MintingPeriod memory config = mintingPeriodConfig[_account];
         return (
-        mintingPeriod.mints,
-        mintingPeriod.firstMintInPeriod
+        config.mints,
+        config.firstMintInPeriod
         );
     }
 
