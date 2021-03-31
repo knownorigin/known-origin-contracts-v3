@@ -45,7 +45,7 @@ contract('Contract deployer', function (accounts) {
     const salt = new BN('123');
 
 
-    console.log('hexDataLength', ethers.utils.hexDataLength(completeByteCode));
+    // console.log('hexDataLength', ethers.utils.hexDataLength(completeByteCode));
     // console.log('contractByteCode', contractByteCode);
     // console.log('constructorTypes', constructorTypes);
     // console.log('constructorArgs', constructorArgs);

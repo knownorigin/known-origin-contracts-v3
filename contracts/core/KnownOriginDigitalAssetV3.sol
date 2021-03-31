@@ -64,6 +64,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     // Optional one time use storage slot for additional edition metadata
     mapping(uint256 => string) public additionalEditionMetaData;
 
+    // TODO Unlockable slot to main nft ?
+
     constructor(
         IKOAccessControlsLookup _accessControls,
         IERC2981 _royaltiesRegistryProxy,
@@ -232,6 +234,10 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return _getCreatorOfEdition(_editionFromTokenId(_tokenId));
     }
 
+    function tokenCreator(uint256 _tokenId) public override view returns (address _originalCreator) {
+        return _getCreatorOfEdition(_editionFromTokenId(_tokenId));
+    }
+
     function _getCreatorOfEdition(uint256 _editionId) internal view returns (address _originalCreator) {
         // drop the other size bits
         return editionDetails[_editionId].creator;
@@ -351,6 +357,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     function getNextAvailablePrimarySaleToken(uint256 _editionId) public override view returns (uint256 _tokenId) {
         uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
+
+        // low to high
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
             // if no owner set - assume primary if not moved
             if (owners[tokenId] == address(0)) {
@@ -358,6 +366,35 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
             }
         }
         revert("No tokens left on the primary market");
+    }
+
+    function getReverseAvailablePrimarySaleToken(uint256 _editionId) public override view returns (uint256 _tokenId) {
+        uint256 highestTokenId = _editionId + editionDetails[_editionId].editionSize - 1;
+
+        // high to low
+        while (highestTokenId >= _editionId) {
+            // if no owner set - assume primary if not moved
+            if (owners[highestTokenId] == address(0)) {
+                return highestTokenId;
+            }
+            highestTokenId--;
+        }
+        revert("No tokens left on the primary market");
+    }
+
+    function facilitateReveresPrimarySale(uint256 _editionId)
+    public
+    override
+    returns (address receiver, address creator, uint256 tokenId) {
+        uint256 _tokenId = getReverseAvailablePrimarySaleToken(_editionId);
+        address _creator = _getCreatorOfEdition(_editionId);
+
+        if (royaltyRegistryActive()) {
+            (address _receiver,) = royaltiesRegistryProxy.royaltyInfo(_editionId);
+            return (_receiver, _creator, _tokenId);
+        }
+
+        return (_creator, _creator, _tokenId);
     }
 
     function hadPrimarySaleOfToken(uint256 _tokenId) public override view returns (bool) {

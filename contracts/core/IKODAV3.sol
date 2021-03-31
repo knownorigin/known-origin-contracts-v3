@@ -19,6 +19,8 @@ IERC2981  // Royalties
 
     function getCreatorOfToken(uint256 _tokenId) external view returns (address _originalCreator);
 
+    function tokenCreator(uint256 _tokenId) external view returns (address _originalCreator);
+
     function getSizeOfEdition(uint256 _editionId) external view returns (uint256 _size);
 
     function getEditionSizeOfToken(uint256 _tokenId) external view returns (uint256 _size);
@@ -27,10 +29,17 @@ IERC2981  // Royalties
 
     function maxTokenIdOfEdition(uint256 _editionId) external view returns (uint256 _tokenId);
 
+    // Helper method for getting the next primary sale token from an edition starting low to high token IDs
     function getNextAvailablePrimarySaleToken(uint256 _editionId) external returns (uint256 _tokenId);
 
-    // Utility method to get all data needed for the next primary sale
+    // Helper method for getting the next primary sale token from an edition starting high to low token IDs
+    function getReverseAvailablePrimarySaleToken(uint256 _editionId) external view returns (uint256 _tokenId);
+
+    // Utility method to get all data needed for the next primary sale, low token ID to high
     function facilitateNextPrimarySale(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _tokenId);
+
+    // Utility method to get all data needed for the next primary sale, high token ID to low
+    function facilitateReveresPrimarySale(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _tokenId);
 
     // Expanded royalty method for the edition, not token
     function royaltyAndCreatorInfo(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _amount);

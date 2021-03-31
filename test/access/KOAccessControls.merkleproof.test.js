@@ -20,8 +20,6 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
 
     this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
 
-    console.log(this.merkleProof);
-
     // set the root hash
     await this.accessControls.updateArtistMerkleRoot(this.merkleProof.merkleRoot, {from: deployer});
 
