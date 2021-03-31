@@ -61,11 +61,12 @@ contract FundsReceiver is IFundsHandler, IFundsDrainable {
         }
     }
 
-    function totalRecipients() public override view returns (uint256) {
+    function totalRecipients() public override virtual view returns (uint256) {
         return recipients.length;
     }
 
-    function royaltyAtIndex(uint256 index) public override view returns (address, uint256) {
-        return (recipients[index], splits[index]);
+    function royaltyAtIndex(uint256 _index) public override view returns (address recipient, uint256 split) {
+        recipient = recipients[_index];
+        split = splits[_index];
     }
 }
