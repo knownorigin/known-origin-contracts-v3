@@ -5,30 +5,23 @@ require('solidity-coverage');
 require('hardhat-gas-reporter');
 require('@nomiclabs/hardhat-solhint');
 require('hardhat-contract-sizer')
+require("@nomiclabs/hardhat-etherscan");
 
 const INFURA_PROJECT_ID = process.env.INFURA_PROJECT_ID;
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const KO_DEPLOYER_PRIVATE_KEY = process.env.KO_DEPLOYER_PRIVATE_KEY;
 
 let nonDevelopmentNetworks = {}
 
 // If we have a private key, we can setup non dev networks
-if (PRIVATE_KEY) {
+if (KO_DEPLOYER_PRIVATE_KEY) {
   nonDevelopmentNetworks = {
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`0x${PRIVATE_KEY}`]
-    },
-    ropsten: {
-      url: `https://ropsten.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`0x${PRIVATE_KEY}`]
+      accounts: [`0x${KO_DEPLOYER_PRIVATE_KEY}`]
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`0x${PRIVATE_KEY}`]
-    },
-    kovan: {
-      url: `https://kovan.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`0x${PRIVATE_KEY}`]
+      accounts: [`0x${KO_DEPLOYER_PRIVATE_KEY}`]
     },
   }
 }
@@ -57,4 +50,7 @@ module.exports = {
       url: 'http://localhost:8555',
     }
   },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_KEY
+  }
 };
