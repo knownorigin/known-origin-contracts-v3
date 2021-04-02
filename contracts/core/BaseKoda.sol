@@ -27,6 +27,7 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
         _;
     }
 
+    // TODO add admin setter (with event)
     IKOAccessControlsLookup public accessControls;
 
     // A onchain reference to editions which have been reported for some infringement purposes to KO

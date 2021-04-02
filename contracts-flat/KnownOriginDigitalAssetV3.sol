@@ -1,0 +1,2113 @@
+// File: @openzeppelin/contracts/utils/introspection/IERC165.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev Interface of the ERC165 standard, as defined in the
+ * https://eips.ethereum.org/EIPS/eip-165[EIP].
+ *
+ * Implementers can declare support of contract interfaces, which can then be
+ * queried by others ({ERC165Checker}).
+ *
+ * For an implementation, see {ERC165}.
+ */
+interface IERC165 {
+    /**
+     * @dev Returns true if this contract implements the interface defined by
+     * `interfaceId`. See the corresponding
+     * https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[EIP section]
+     * to learn more about how these ids are created.
+     *
+     * This function call must use less than 30 000 gas.
+     */
+    function supportsInterface(bytes4 interfaceId) external view returns (bool);
+}
+
+// File: @openzeppelin/contracts/utils/introspection/ERC165.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+
+/**
+ * @dev Implementation of the {IERC165} interface.
+ *
+ * Contracts that want to implement ERC165 should inherit from this contract and override {supportsInterface} to check
+ * for the additional interface id that will be supported. For example:
+ *
+ * ```solidity
+ * function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+ *     return interfaceId == type(MyInterface).interfaceId || super.supportsInterface(interfaceId);
+ * }
+ * ```
+ *
+ * Alternatively, {ERC165Storage} provides an easier to use but more expensive implementation.
+ */
+abstract contract ERC165 is IERC165 {
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IERC165).interfaceId;
+    }
+}
+
+// File: @openzeppelin/contracts/utils/introspection/ERC165Storage.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+
+/**
+ * @dev Storage based implementation of the {IERC165} interface.
+ *
+ * Contracts may inherit from this and call {_registerInterface} to declare
+ * their support of an interface.
+ */
+abstract contract ERC165Storage is ERC165 {
+    /**
+     * @dev Mapping of interface ids to whether or not it's supported.
+     */
+    mapping(bytes4 => bool) private _supportedInterfaces;
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return super.supportsInterface(interfaceId) || _supportedInterfaces[interfaceId];
+    }
+
+    /**
+     * @dev Registers the contract as an implementer of the interface defined by
+     * `interfaceId`. Support of the actual ERC165 interface is automatic and
+     * registering its interface id is not required.
+     *
+     * See {IERC165-supportsInterface}.
+     *
+     * Requirements:
+     *
+     * - `interfaceId` cannot be the ERC165 invalid interface (`0xffffffff`).
+     */
+    function _registerInterface(bytes4 interfaceId) internal virtual {
+        require(interfaceId != 0xffffffff, "ERC165: invalid interface id");
+        _supportedInterfaces[interfaceId] = true;
+    }
+}
+
+// File: @openzeppelin/contracts/token/ERC721/IERC721Receiver.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+/**
+ * @title ERC721 token receiver interface
+ * @dev Interface for any contract that wants to support safeTransfers
+ * from ERC721 asset contracts.
+ */
+interface IERC721Receiver {
+    /**
+     * @dev Whenever an {IERC721} `tokenId` token is transferred to this contract via {IERC721-safeTransferFrom}
+     * by `operator` from `from`, this function is called.
+     *
+     * It must return its Solidity selector to confirm the token transfer.
+     * If any other value is returned or the interface is not implemented by the recipient, the transfer will be reverted.
+     *
+     * The selector can be obtained in Solidity with `IERC721.onERC721Received.selector`.
+     */
+    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) external returns (bytes4);
+}
+
+// File: @openzeppelin/contracts/utils/Address.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev Collection of functions related to the address type
+ */
+library Address {
+    /**
+     * @dev Returns true if `account` is a contract.
+     *
+     * [IMPORTANT]
+     * ====
+     * It is unsafe to assume that an address for which this function returns
+     * false is an externally-owned account (EOA) and not a contract.
+     *
+     * Among others, `isContract` will return false for the following
+     * types of addresses:
+     *
+     *  - an externally-owned account
+     *  - a contract in construction
+     *  - an address where a contract will be created
+     *  - an address where a contract lived, but was destroyed
+     * ====
+     */
+    function isContract(address account) internal view returns (bool) {
+        // This method relies on extcodesize, which returns 0 for contracts in
+        // construction, since the code is only stored at the end of the
+        // constructor execution.
+
+        uint256 size;
+        // solhint-disable-next-line no-inline-assembly
+        assembly { size := extcodesize(account) }
+        return size > 0;
+    }
+
+    /**
+     * @dev Replacement for Solidity's `transfer`: sends `amount` wei to
+     * `recipient`, forwarding all available gas and reverting on errors.
+     *
+     * https://eips.ethereum.org/EIPS/eip-1884[EIP1884] increases the gas cost
+     * of certain opcodes, possibly making contracts go over the 2300 gas limit
+     * imposed by `transfer`, making them unable to receive funds via
+     * `transfer`. {sendValue} removes this limitation.
+     *
+     * https://diligence.consensys.net/posts/2019/09/stop-using-soliditys-transfer-now/[Learn more].
+     *
+     * IMPORTANT: because control is transferred to `recipient`, care must be
+     * taken to not create reentrancy vulnerabilities. Consider using
+     * {ReentrancyGuard} or the
+     * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
+     */
+    function sendValue(address payable recipient, uint256 amount) internal {
+        require(address(this).balance >= amount, "Address: insufficient balance");
+
+        // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
+        (bool success, ) = recipient.call{ value: amount }("");
+        require(success, "Address: unable to send value, recipient may have reverted");
+    }
+
+    /**
+     * @dev Performs a Solidity function call using a low level `call`. A
+     * plain`call` is an unsafe replacement for a function call: use this
+     * function instead.
+     *
+     * If `target` reverts with a revert reason, it is bubbled up by this
+     * function (like regular Solidity function calls).
+     *
+     * Returns the raw returned data. To convert to the expected return value,
+     * use https://solidity.readthedocs.io/en/latest/units-and-global-variables.html?highlight=abi.decode#abi-encoding-and-decoding-functions[`abi.decode`].
+     *
+     * Requirements:
+     *
+     * - `target` must be a contract.
+     * - calling `target` with `data` must not revert.
+     *
+     * _Available since v3.1._
+     */
+    function functionCall(address target, bytes memory data) internal returns (bytes memory) {
+      return functionCall(target, data, "Address: low-level call failed");
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`], but with
+     * `errorMessage` as a fallback revert reason when `target` reverts.
+     *
+     * _Available since v3.1._
+     */
+    function functionCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
+        return functionCallWithValue(target, data, 0, errorMessage);
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
+     * but also transferring `value` wei to `target`.
+     *
+     * Requirements:
+     *
+     * - the calling contract must have an ETH balance of at least `value`.
+     * - the called Solidity function must be `payable`.
+     *
+     * _Available since v3.1._
+     */
+    function functionCallWithValue(address target, bytes memory data, uint256 value) internal returns (bytes memory) {
+        return functionCallWithValue(target, data, value, "Address: low-level call with value failed");
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCallWithValue-address-bytes-uint256-}[`functionCallWithValue`], but
+     * with `errorMessage` as a fallback revert reason when `target` reverts.
+     *
+     * _Available since v3.1._
+     */
+    function functionCallWithValue(address target, bytes memory data, uint256 value, string memory errorMessage) internal returns (bytes memory) {
+        require(address(this).balance >= value, "Address: insufficient balance for call");
+        require(isContract(target), "Address: call to non-contract");
+
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, bytes memory returndata) = target.call{ value: value }(data);
+        return _verifyCallResult(success, returndata, errorMessage);
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
+     * but performing a static call.
+     *
+     * _Available since v3.3._
+     */
+    function functionStaticCall(address target, bytes memory data) internal view returns (bytes memory) {
+        return functionStaticCall(target, data, "Address: low-level static call failed");
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-string-}[`functionCall`],
+     * but performing a static call.
+     *
+     * _Available since v3.3._
+     */
+    function functionStaticCall(address target, bytes memory data, string memory errorMessage) internal view returns (bytes memory) {
+        require(isContract(target), "Address: static call to non-contract");
+
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, bytes memory returndata) = target.staticcall(data);
+        return _verifyCallResult(success, returndata, errorMessage);
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
+     * but performing a delegate call.
+     *
+     * _Available since v3.4._
+     */
+    function functionDelegateCall(address target, bytes memory data) internal returns (bytes memory) {
+        return functionDelegateCall(target, data, "Address: low-level delegate call failed");
+    }
+
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-string-}[`functionCall`],
+     * but performing a delegate call.
+     *
+     * _Available since v3.4._
+     */
+    function functionDelegateCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
+        require(isContract(target), "Address: delegate call to non-contract");
+
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, bytes memory returndata) = target.delegatecall(data);
+        return _verifyCallResult(success, returndata, errorMessage);
+    }
+
+    function _verifyCallResult(bool success, bytes memory returndata, string memory errorMessage) private pure returns(bytes memory) {
+        if (success) {
+            return returndata;
+        } else {
+            // Look for revert reason and bubble it up if present
+            if (returndata.length > 0) {
+                // The easiest way to bubble the revert reason is using memory via assembly
+
+                // solhint-disable-next-line no-inline-assembly
+                assembly {
+                    let returndata_size := mload(returndata)
+                    revert(add(32, returndata), returndata_size)
+                }
+            } else {
+                revert(errorMessage);
+            }
+        }
+    }
+}
+
+// File: contracts/access/IKOAccessControlsLookup.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.3;
+
+interface IKOAccessControlsLookup {
+    function hasAdminRole(address _address) external view returns (bool);
+
+    function isVerifiedArtist(uint256 index, address account, bytes32[] calldata merkleProof) external view returns (bool);
+
+    function hasLegacyMinterRole(address _address) external view returns (bool);
+
+    function hasContractRole(address _address) external view returns (bool);
+
+    function hasContractOrAdminRole(address _address) external view returns (bool);
+}
+
+// File: contracts/core/IERC2981.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.3;
+
+
+// This is purely an extension for the KO platform
+interface IERC2981HasRoyaltiesExtension {
+    function hasRoyalties(uint256 _tokenId) external view returns (bool);
+}
+
+/**
+ * ERC2981 standards interface for royalties
+ */
+interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
+    /*
+     * ERC165 bytes to add to interface array - set in parent contract implementing this standard
+     *
+     * bytes4(keccak256('royaltyInfo(uint256)')) == 0xcef6d368
+     * bytes4(keccak256('receivedRoyalties(address,address,uint256,address,uint256)')) == 0x8589ff45
+     * bytes4(0xcef6d368) ^ bytes4(0x8589ff45) == 0x4b7f2c2d
+     * bytes4 private constant _INTERFACE_ID_ERC721ROYALTIES = 0x4b7f2c2d;
+     * _registerInterface(_INTERFACE_ID_ERC721ROYALTIES);
+     */
+    /**
+
+    /**
+        @notice This event is emitted when royalties are transferred.
+        @dev The marketplace would emit this event from their contracts.
+        @param _royaltyRecipient - The address of who is entitled to the royalties
+        @param _buyer - The address buying the NFT on a secondary sale
+        @param _tokenId - the token buying purchased/traded
+        @param _tokenPaid - The address of the token (ERC20) used to pay the fee. Set to 0x0 if native asset (ETH).
+        @param _amount - The amount being paid to the creator using the correct decimals from tokenPaid (i.e. if 6 decimals, 1000000 for 1 token paid)
+    */
+    event ReceivedRoyalties(
+        address indexed _royaltyRecipient,
+        address indexed _buyer,
+        uint256 indexed _tokenId,
+        address _tokenPaid,
+        uint256 _amount
+    );
+
+    /**
+     * @notice Called to return both the creator's address and the royalty percentage -
+     *         this would be the main function called by marketplaces unless they specifically
+     *         need to adjust the royaltyAmount
+     * @notice Percentage is calculated as a fixed point with a scaling factor of 100000,
+     *         such that 100% would be the value 10000000, as 10000000/100000 = 100.
+     *         1% would be the value 100000, as 100000/100000 = 1
+     */
+    function royaltyInfo(uint256 _tokenId) external returns (address receiver, uint256 amount);
+
+    /**
+     * @notice Called when royalty is transferred to the receiver. We wrap emitting
+     *         the event as we want the NFT contract itself to contain the event.
+     * @param _royaltyRecipient - The address of who is entitled to the royalties
+     * @param _buyer - The address buying the NFT on a secondary sale
+     * @param _tokenId - the token buying purchased/traded
+     * @param _tokenPaid - The address of the token (ERC20) used to pay the fee. Set to 0x0 if native asset (ETH).
+     * @param _amount - The amount being paid to the creator using the correct decimals from tokenPaid (i.e. if 6 decimals, 1000000 for 1 token paid)
+     */
+    function receivedRoyalties(address _royaltyRecipient, address _buyer, uint256 _tokenId, address _tokenPaid, uint256 _amount) external;
+}
+
+// File: contracts/core/IKODAV3Minter.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.3;
+
+interface IKODAV3Minter {
+
+    function mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri) external returns (uint256 _editionId);
+
+    function mintBatchEditionAndComposeERC20s(uint96 _editionSize, address _to, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts) external returns (uint256 _editionId);
+
+    function mintConsecutiveBatchEdition(uint96 _editionSize, address _to, string calldata _uri) external returns (uint256 _editionId);
+}
+
+// File: contracts/programmable/ITokenUriResolver.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.3;
+
+
+interface ITokenUriResolver {
+
+    // TODO do we need a token URI and edition URI resolve?
+    //    function tokenURI(uint256 _editionId) external view returns (string memory);
+
+    function editionURI(uint256 _editionId) external view returns (string memory);
+
+    function isDefined(uint256 _editionId) external view returns (bool);
+}
+
+// File: @openzeppelin/contracts/token/ERC20/IERC20.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev Interface of the ERC20 standard as defined in the EIP.
+ */
+interface IERC20 {
+    /**
+     * @dev Returns the amount of tokens in existence.
+     */
+    function totalSupply() external view returns (uint256);
+
+    /**
+     * @dev Returns the amount of tokens owned by `account`.
+     */
+    function balanceOf(address account) external view returns (uint256);
+
+    /**
+     * @dev Moves `amount` tokens from the caller's account to `recipient`.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transfer(address recipient, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Returns the remaining number of tokens that `spender` will be
+     * allowed to spend on behalf of `owner` through {transferFrom}. This is
+     * zero by default.
+     *
+     * This value changes when {approve} or {transferFrom} are called.
+     */
+    function allowance(address owner, address spender) external view returns (uint256);
+
+    /**
+     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * IMPORTANT: Beware that changing an allowance with this method brings the risk
+     * that someone may use both the old and the new allowance by unfortunate
+     * transaction ordering. One possible solution to mitigate this race
+     * condition is to first reduce the spender's allowance to 0 and set the
+     * desired value afterwards:
+     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+     *
+     * Emits an {Approval} event.
+     */
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Moves `amount` tokens from `sender` to `recipient` using the
+     * allowance mechanism. `amount` is then deducted from the caller's
+     * allowance.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Emitted when `value` tokens are moved from one account (`from`) to
+     * another (`to`).
+     *
+     * Note that `value` may be zero.
+     */
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    /**
+     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+     * a call to {approve}. `value` is the new allowance.
+     */
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+}
+
+// File: @openzeppelin/contracts/token/ERC721/IERC721.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+
+/**
+ * @dev Required interface of an ERC721 compliant contract.
+ */
+interface IERC721 is IERC165 {
+    /**
+     * @dev Emitted when `tokenId` token is transferred from `from` to `to`.
+     */
+    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
+
+    /**
+     * @dev Emitted when `owner` enables `approved` to manage the `tokenId` token.
+     */
+    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
+
+    /**
+     * @dev Emitted when `owner` enables or disables (`approved`) `operator` to manage all of its assets.
+     */
+    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
+
+    /**
+     * @dev Returns the number of tokens in ``owner``'s account.
+     */
+    function balanceOf(address owner) external view returns (uint256 balance);
+
+    /**
+     * @dev Returns the owner of the `tokenId` token.
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist.
+     */
+    function ownerOf(uint256 tokenId) external view returns (address owner);
+
+    /**
+     * @dev Safely transfers `tokenId` token from `from` to `to`, checking first that contract recipients
+     * are aware of the ERC721 protocol to prevent tokens from being forever locked.
+     *
+     * Requirements:
+     *
+     * - `from` cannot be the zero address.
+     * - `to` cannot be the zero address.
+     * - `tokenId` token must exist and be owned by `from`.
+     * - If the caller is not `from`, it must be have been allowed to move this token by either {approve} or {setApprovalForAll}.
+     * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
+     *
+     * Emits a {Transfer} event.
+     */
+    function safeTransferFrom(address from, address to, uint256 tokenId) external;
+
+    /**
+     * @dev Transfers `tokenId` token from `from` to `to`.
+     *
+     * WARNING: Usage of this method is discouraged, use {safeTransferFrom} whenever possible.
+     *
+     * Requirements:
+     *
+     * - `from` cannot be the zero address.
+     * - `to` cannot be the zero address.
+     * - `tokenId` token must be owned by `from`.
+     * - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transferFrom(address from, address to, uint256 tokenId) external;
+
+    /**
+     * @dev Gives permission to `to` to transfer `tokenId` token to another account.
+     * The approval is cleared when the token is transferred.
+     *
+     * Only a single account can be approved at a time, so approving the zero address clears previous approvals.
+     *
+     * Requirements:
+     *
+     * - The caller must own the token or be an approved operator.
+     * - `tokenId` must exist.
+     *
+     * Emits an {Approval} event.
+     */
+    function approve(address to, uint256 tokenId) external;
+
+    /**
+     * @dev Returns the account approved for `tokenId` token.
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist.
+     */
+    function getApproved(uint256 tokenId) external view returns (address operator);
+
+    /**
+     * @dev Approve or remove `operator` as an operator for the caller.
+     * Operators can call {transferFrom} or {safeTransferFrom} for any token owned by the caller.
+     *
+     * Requirements:
+     *
+     * - The `operator` cannot be the caller.
+     *
+     * Emits an {ApprovalForAll} event.
+     */
+    function setApprovalForAll(address operator, bool _approved) external;
+
+    /**
+     * @dev Returns if the `operator` is allowed to manage all of the assets of `owner`.
+     *
+     * See {setApprovalForAll}
+     */
+    function isApprovedForAll(address owner, address operator) external view returns (bool);
+
+    /**
+      * @dev Safely transfers `tokenId` token from `from` to `to`.
+      *
+      * Requirements:
+      *
+      * - `from` cannot be the zero address.
+      * - `to` cannot be the zero address.
+      * - `tokenId` token must exist and be owned by `from`.
+      * - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}.
+      * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
+      *
+      * Emits a {Transfer} event.
+      */
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external;
+}
+
+// File: @openzeppelin/contracts/utils/structs/EnumerableSet.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev Library for managing
+ * https://en.wikipedia.org/wiki/Set_(abstract_data_type)[sets] of primitive
+ * types.
+ *
+ * Sets have the following properties:
+ *
+ * - Elements are added, removed, and checked for existence in constant time
+ * (O(1)).
+ * - Elements are enumerated in O(n). No guarantees are made on the ordering.
+ *
+ * ```
+ * contract Example {
+ *     // Add the library methods
+ *     using EnumerableSet for EnumerableSet.AddressSet;
+ *
+ *     // Declare a set state variable
+ *     EnumerableSet.AddressSet private mySet;
+ * }
+ * ```
+ *
+ * As of v3.3.0, sets of type `bytes32` (`Bytes32Set`), `address` (`AddressSet`)
+ * and `uint256` (`UintSet`) are supported.
+ */
+library EnumerableSet {
+    // To implement this library for multiple types with as little code
+    // repetition as possible, we write it in terms of a generic Set type with
+    // bytes32 values.
+    // The Set implementation uses private functions, and user-facing
+    // implementations (such as AddressSet) are just wrappers around the
+    // underlying Set.
+    // This means that we can only create new EnumerableSets for types that fit
+    // in bytes32.
+
+    struct Set {
+        // Storage of set values
+        bytes32[] _values;
+
+        // Position of the value in the `values` array, plus 1 because index 0
+        // means a value is not in the set.
+        mapping (bytes32 => uint256) _indexes;
+    }
+
+    /**
+     * @dev Add a value to a set. O(1).
+     *
+     * Returns true if the value was added to the set, that is if it was not
+     * already present.
+     */
+    function _add(Set storage set, bytes32 value) private returns (bool) {
+        if (!_contains(set, value)) {
+            set._values.push(value);
+            // The value is stored at length-1, but we add 1 to all indexes
+            // and use 0 as a sentinel value
+            set._indexes[value] = set._values.length;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * @dev Removes a value from a set. O(1).
+     *
+     * Returns true if the value was removed from the set, that is if it was
+     * present.
+     */
+    function _remove(Set storage set, bytes32 value) private returns (bool) {
+        // We read and store the value's index to prevent multiple reads from the same storage slot
+        uint256 valueIndex = set._indexes[value];
+
+        if (valueIndex != 0) { // Equivalent to contains(set, value)
+            // To delete an element from the _values array in O(1), we swap the element to delete with the last one in
+            // the array, and then remove the last element (sometimes called as 'swap and pop').
+            // This modifies the order of the array, as noted in {at}.
+
+            uint256 toDeleteIndex = valueIndex - 1;
+            uint256 lastIndex = set._values.length - 1;
+
+            // When the value to delete is the last one, the swap operation is unnecessary. However, since this occurs
+            // so rarely, we still do the swap anyway to avoid the gas cost of adding an 'if' statement.
+
+            bytes32 lastvalue = set._values[lastIndex];
+
+            // Move the last value to the index where the value to delete is
+            set._values[toDeleteIndex] = lastvalue;
+            // Update the index for the moved value
+            set._indexes[lastvalue] = toDeleteIndex + 1; // All indexes are 1-based
+
+            // Delete the slot where the moved value was stored
+            set._values.pop();
+
+            // Delete the index for the deleted slot
+            delete set._indexes[value];
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * @dev Returns true if the value is in the set. O(1).
+     */
+    function _contains(Set storage set, bytes32 value) private view returns (bool) {
+        return set._indexes[value] != 0;
+    }
+
+    /**
+     * @dev Returns the number of values on the set. O(1).
+     */
+    function _length(Set storage set) private view returns (uint256) {
+        return set._values.length;
+    }
+
+   /**
+    * @dev Returns the value stored at position `index` in the set. O(1).
+    *
+    * Note that there are no guarantees on the ordering of values inside the
+    * array, and it may change when more values are added or removed.
+    *
+    * Requirements:
+    *
+    * - `index` must be strictly less than {length}.
+    */
+    function _at(Set storage set, uint256 index) private view returns (bytes32) {
+        require(set._values.length > index, "EnumerableSet: index out of bounds");
+        return set._values[index];
+    }
+
+    // Bytes32Set
+
+    struct Bytes32Set {
+        Set _inner;
+    }
+
+    /**
+     * @dev Add a value to a set. O(1).
+     *
+     * Returns true if the value was added to the set, that is if it was not
+     * already present.
+     */
+    function add(Bytes32Set storage set, bytes32 value) internal returns (bool) {
+        return _add(set._inner, value);
+    }
+
+    /**
+     * @dev Removes a value from a set. O(1).
+     *
+     * Returns true if the value was removed from the set, that is if it was
+     * present.
+     */
+    function remove(Bytes32Set storage set, bytes32 value) internal returns (bool) {
+        return _remove(set._inner, value);
+    }
+
+    /**
+     * @dev Returns true if the value is in the set. O(1).
+     */
+    function contains(Bytes32Set storage set, bytes32 value) internal view returns (bool) {
+        return _contains(set._inner, value);
+    }
+
+    /**
+     * @dev Returns the number of values in the set. O(1).
+     */
+    function length(Bytes32Set storage set) internal view returns (uint256) {
+        return _length(set._inner);
+    }
+
+   /**
+    * @dev Returns the value stored at position `index` in the set. O(1).
+    *
+    * Note that there are no guarantees on the ordering of values inside the
+    * array, and it may change when more values are added or removed.
+    *
+    * Requirements:
+    *
+    * - `index` must be strictly less than {length}.
+    */
+    function at(Bytes32Set storage set, uint256 index) internal view returns (bytes32) {
+        return _at(set._inner, index);
+    }
+
+    // AddressSet
+
+    struct AddressSet {
+        Set _inner;
+    }
+
+    /**
+     * @dev Add a value to a set. O(1).
+     *
+     * Returns true if the value was added to the set, that is if it was not
+     * already present.
+     */
+    function add(AddressSet storage set, address value) internal returns (bool) {
+        return _add(set._inner, bytes32(uint256(uint160(value))));
+    }
+
+    /**
+     * @dev Removes a value from a set. O(1).
+     *
+     * Returns true if the value was removed from the set, that is if it was
+     * present.
+     */
+    function remove(AddressSet storage set, address value) internal returns (bool) {
+        return _remove(set._inner, bytes32(uint256(uint160(value))));
+    }
+
+    /**
+     * @dev Returns true if the value is in the set. O(1).
+     */
+    function contains(AddressSet storage set, address value) internal view returns (bool) {
+        return _contains(set._inner, bytes32(uint256(uint160(value))));
+    }
+
+    /**
+     * @dev Returns the number of values in the set. O(1).
+     */
+    function length(AddressSet storage set) internal view returns (uint256) {
+        return _length(set._inner);
+    }
+
+   /**
+    * @dev Returns the value stored at position `index` in the set. O(1).
+    *
+    * Note that there are no guarantees on the ordering of values inside the
+    * array, and it may change when more values are added or removed.
+    *
+    * Requirements:
+    *
+    * - `index` must be strictly less than {length}.
+    */
+    function at(AddressSet storage set, uint256 index) internal view returns (address) {
+        return address(uint160(uint256(_at(set._inner, index))));
+    }
+
+
+    // UintSet
+
+    struct UintSet {
+        Set _inner;
+    }
+
+    /**
+     * @dev Add a value to a set. O(1).
+     *
+     * Returns true if the value was added to the set, that is if it was not
+     * already present.
+     */
+    function add(UintSet storage set, uint256 value) internal returns (bool) {
+        return _add(set._inner, bytes32(value));
+    }
+
+    /**
+     * @dev Removes a value from a set. O(1).
+     *
+     * Returns true if the value was removed from the set, that is if it was
+     * present.
+     */
+    function remove(UintSet storage set, uint256 value) internal returns (bool) {
+        return _remove(set._inner, bytes32(value));
+    }
+
+    /**
+     * @dev Returns true if the value is in the set. O(1).
+     */
+    function contains(UintSet storage set, uint256 value) internal view returns (bool) {
+        return _contains(set._inner, bytes32(value));
+    }
+
+    /**
+     * @dev Returns the number of values on the set. O(1).
+     */
+    function length(UintSet storage set) internal view returns (uint256) {
+        return _length(set._inner);
+    }
+
+   /**
+    * @dev Returns the value stored at position `index` in the set. O(1).
+    *
+    * Note that there are no guarantees on the ordering of values inside the
+    * array, and it may change when more values are added or removed.
+    *
+    * Requirements:
+    *
+    * - `index` must be strictly less than {length}.
+    */
+    function at(UintSet storage set, uint256 index) internal view returns (uint256) {
+        return uint256(_at(set._inner, index));
+    }
+}
+
+// File: @openzeppelin/contracts/security/ReentrancyGuard.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev Contract module that helps prevent reentrant calls to a function.
+ *
+ * Inheriting from `ReentrancyGuard` will make the {nonReentrant} modifier
+ * available, which can be applied to functions to make sure there are no nested
+ * (reentrant) calls to them.
+ *
+ * Note that because there is a single `nonReentrant` guard, functions marked as
+ * `nonReentrant` may not call one another. This can be worked around by making
+ * those functions `private`, and then adding `external` `nonReentrant` entry
+ * points to them.
+ *
+ * TIP: If you would like to learn more about reentrancy and alternative ways
+ * to protect against it, check out our blog post
+ * https://blog.openzeppelin.com/reentrancy-after-istanbul/[Reentrancy After Istanbul].
+ */
+abstract contract ReentrancyGuard {
+    // Booleans are more expensive than uint256 or any type that takes up a full
+    // word because each write operation emits an extra SLOAD to first read the
+    // slot's contents, replace the bits taken up by the boolean, and then write
+    // back. This is the compiler's defense against contract upgrades and
+    // pointer aliasing, and it cannot be disabled.
+
+    // The values being non-zero value makes deployment a bit more expensive,
+    // but in exchange the refund on every call to nonReentrant will be lower in
+    // amount. Since refunds are capped to a percentage of the total
+    // transaction's gas, it is best to keep them low in cases like this one, to
+    // increase the likelihood of the full refund coming into effect.
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+
+    uint256 private _status;
+
+    constructor () {
+        _status = _NOT_ENTERED;
+    }
+
+    /**
+     * @dev Prevents a contract from calling itself, directly or indirectly.
+     * Calling a `nonReentrant` function from another `nonReentrant`
+     * function is not supported. It is possible to prevent this from happening
+     * by making the `nonReentrant` function external, and make it call a
+     * `private` function that does the actual work.
+     */
+    modifier nonReentrant() {
+        // On the first call to nonReentrant, _notEntered will be true
+        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+
+        // Any calls to nonReentrant after this point will fail
+        _status = _ENTERED;
+
+        _;
+
+        // By storing the original value once again, a refund is triggered (see
+        // https://eips.ethereum.org/EIPS/eip-2200)
+        _status = _NOT_ENTERED;
+    }
+}
+
+// File: @openzeppelin/contracts/utils/Context.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+/*
+ * @dev Provides information about the current execution context, including the
+ * sender of the transaction and its data. While these are generally available
+ * via msg.sender and msg.data, they should not be accessed in such a direct
+ * manner, since when dealing with meta-transactions the account sending and
+ * paying for execution may not be the actual sender (as far as an application
+ * is concerned).
+ *
+ * This contract is only required for intermediate, library-like contracts.
+ */
+abstract contract Context {
+    function _msgSender() internal view virtual returns (address) {
+        return msg.sender;
+    }
+
+    function _msgData() internal view virtual returns (bytes calldata) {
+        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
+        return msg.data;
+    }
+}
+
+// File: contracts/core/IERC2309.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.3;
+
+/**
+  @title ERC-2309: ERC-721 Batch Mint Extension
+  @dev https://github.com/ethereum/EIPs/issues/2309
+ */
+interface IERC2309 {
+    /**
+      @notice This event is emitted when ownership of a batch of tokens changes by any mechanism.
+      This includes minting, transferring, and burning.
+
+      @dev The address executing the transaction MUST own all the tokens within the range of
+      fromTokenId and toTokenId, or MUST be an approved operator to act on the owners behalf.
+      The fromTokenId and toTokenId MUST be a sequential range of tokens IDs.
+      When minting/creating tokens, the `fromAddress` argument MUST be set to `0x0` (i.e. zero address).
+      When burning/destroying tokens, the `toAddress` argument MUST be set to `0x0` (i.e. zero address).
+
+      @param fromTokenId The token ID that begins the batch of tokens being transferred
+      @param toTokenId The token ID that ends the batch of tokens being transferred
+      @param fromAddress The address transferring ownership of the specified range of tokens
+      @param toAddress The address receiving ownership of the specified range of tokens.
+    */
+    event ConsecutiveTransfer(uint256 indexed fromTokenId, uint256 toTokenId, address indexed fromAddress, address indexed toAddress);
+}
+
+// File: contracts/core/IKODAV3.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.3;
+
+
+
+
+
+interface IKODAV3 is
+IERC165, // Contract introspection
+IERC721, // NFTs
+IERC2309, // Consecutive batch mint
+IERC2981  // Royalties
+{
+    // edition utils
+
+    function getCreatorOfEdition(uint256 _editionId) external view returns (address _originalCreator);
+
+    function getCreatorOfToken(uint256 _tokenId) external view returns (address _originalCreator);
+
+    function tokenCreator(uint256 _tokenId) external view returns (address _originalCreator);
+
+    function getSizeOfEdition(uint256 _editionId) external view returns (uint256 _size);
+
+    function getEditionSizeOfToken(uint256 _tokenId) external view returns (uint256 _size);
+
+    function editionExists(uint256 _editionId) external view returns (bool);
+
+    function maxTokenIdOfEdition(uint256 _editionId) external view returns (uint256 _tokenId);
+
+    // Helper method for getting the next primary sale token from an edition starting low to high token IDs
+    function getNextAvailablePrimarySaleToken(uint256 _editionId) external returns (uint256 _tokenId);
+
+    // Helper method for getting the next primary sale token from an edition starting high to low token IDs
+    function getReverseAvailablePrimarySaleToken(uint256 _editionId) external view returns (uint256 _tokenId);
+
+    // Utility method to get all data needed for the next primary sale, low token ID to high
+    function facilitateNextPrimarySale(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _tokenId);
+
+    // Utility method to get all data needed for the next primary sale, high token ID to low
+    function facilitateReveresPrimarySale(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _tokenId);
+
+    // Expanded royalty method for the edition, not token
+    function royaltyAndCreatorInfo(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _amount);
+
+    // token utils
+
+    function exists(uint256 _tokenId) external view returns (bool);
+
+    function getEditionIdOfToken(uint256 _tokenId) external pure returns (uint256 _editionId);
+
+    function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri);
+
+    function hadPrimarySaleOfToken(uint256 _tokenId) external view returns (bool);
+}
+
+// File: contracts/core/composable/TopDownERC20Composable.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.3;
+
+
+
+
+
+
+
+interface ERC998ERC20TopDown {
+    event ReceivedERC20(address indexed _from, uint256 indexed _tokenId, address indexed _erc20Contract, uint256 _value);
+    event ReceivedERC20ForEdition(address indexed _from, uint256 indexed _editionId, address indexed _erc20Contract, uint256 _value);
+    event TransferERC20(uint256 indexed _tokenId, address indexed _to, address indexed _erc20Contract, uint256 _value);
+
+    function balanceOfERC20(uint256 _tokenId, address _erc20Contract) external view returns (uint256);
+
+    function transferERC20(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) external;
+
+    function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) external;
+}
+
+interface ERC998ERC20TopDownEnumerable {
+    function totalERC20Contracts(uint256 _tokenId) external view returns (uint256);
+
+    function erc20ContractByIndex(uint256 _tokenId, uint256 _index) external view returns (address);
+}
+
+abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDownEnumerable, ReentrancyGuard, Context {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
+    event ContractWhitelisted(address indexed contractAddress);
+    event WhitelistRemoved(address indexed contractAddress);
+    event MaxERC20sPerNFTUpdated(uint256 old, uint256 newValue);
+
+    uint256 public maxERC20sPerNFT = 3;
+
+    // Edition ID -> ERC20 contract -> Balance of ERC20 for every token in Edition
+    mapping(uint256 => mapping(address => uint256)) public editionTokenERC20Balances;
+
+    // Edition ID -> ERC20 contract -> Token ID -> Balance Transferred out of token
+    mapping(uint256 => mapping(address => mapping(uint256 => uint256))) public editionTokenERC20TransferAmounts;
+
+    // Edition ID -> Linked ERC20 contract addresses
+    mapping(uint256 => EnumerableSet.AddressSet) ERC20sEmbeddedInEdition;
+
+    // Token ID -> Linked ERC20 contract addresses
+    mapping(uint256 => EnumerableSet.AddressSet) ERC20sEmbeddedInNft;
+
+    // Token ID -> ERC20 contract -> balance of ERC20 owned by token
+    mapping(uint256 => mapping(address => uint256)) public ERC20Balances;
+
+    // ERC20 contract -> whether it is allowed to be wrapped within any token
+    mapping(address => bool) public whitelistedContracts;
+
+    function balanceOfERC20(uint256 _tokenId, address _erc20Contract) public override view returns (uint256) {
+        IKODAV3 koda = IKODAV3(address(this));
+        uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+
+        uint256 editionBalance = editionTokenERC20Balances[editionId][_erc20Contract];
+        uint256 tokenEditionBalance = editionBalance / koda.getSizeOfEdition(editionId);
+        uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId];
+        tokenEditionBalance = tokenEditionBalance - spentTokens;
+
+        return tokenEditionBalance + ERC20Balances[_tokenId][_erc20Contract];
+    }
+
+    function transferERC20(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) external override nonReentrant {
+        _prepareERC20LikeTransfer(_tokenId, _to, _erc20Contract, _value);
+
+        IERC20(_erc20Contract).transfer(_to, _value);
+
+        emit TransferERC20(_tokenId, _to, _erc20Contract, _value);
+    }
+
+    function getERC20s(address _from, uint256[] calldata _tokenIds, address _erc20Contract, uint256 _totalValue) external {
+        uint256 totalTokens = _tokenIds.length;
+        require(totalTokens > 0, "Empty array");
+        require(_totalValue > 0, "Total value cannot be zero");
+
+        uint256 valuePerToken = _totalValue / totalTokens;
+        for (uint i = 0; i < totalTokens; i++) {
+            getERC20(_from, _tokenIds[i], _erc20Contract, valuePerToken);
+        }
+    }
+
+    function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) public override nonReentrant {
+        require(_value > 0, "getERC20: Value cannot be zero");
+
+        address spender = _msgSender();
+        IERC721 self = IERC721(address(this));
+
+        address owner = self.ownerOf(_tokenId);
+        require(
+            owner == spender
+            || self.isApprovedForAll(owner, spender)
+            || self.getApproved(_tokenId) == spender,
+            "getERC20: Only token owner"
+        );
+        require(_from == _msgSender(), "getERC20: ERC20 owner must be the token owner");
+        require(whitelistedContracts[_erc20Contract], "getERC20: Specified contract not whitelisted");
+
+        IKODAV3 koda = IKODAV3(address(this));
+        uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+        bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[editionId].contains(_erc20Contract);
+        bool nftAlreadyContainsERC20 = ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract);
+        require(
+            nftAlreadyContainsERC20 || editionAlreadyContainsERC20 || totalERC20Contracts(_tokenId) < maxERC20sPerNFT,
+            "getERC20: Token limit for number of unique ERC20s reached"
+        );
+
+        if (!editionAlreadyContainsERC20 && !nftAlreadyContainsERC20) {
+            ERC20sEmbeddedInNft[_tokenId].add(_erc20Contract);
+        }
+
+        ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract] + _value;
+
+        IERC20 token = IERC20(_erc20Contract);
+        require(token.allowance(_from, address(this)) >= _value, "getERC20: Amount exceeds allowance");
+
+        token.transferFrom(_from, address(this), _value);
+
+        emit ReceivedERC20(_from, _tokenId, _erc20Contract, _value);
+    }
+
+    function _composeERC20IntoEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) internal nonReentrant {
+        require(_value > 0, "_composeERC20IntoEdition: Value cannot be zero");
+
+        require(whitelistedContracts[_erc20Contract], "_composeERC20IntoEdition: Specified contract not whitelisted");
+
+        bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract);
+        require(!editionAlreadyContainsERC20, "_composeERC20IntoEdition: Edition already contains ERC20");
+        require(ERC20sEmbeddedInEdition[_editionId].length() < maxERC20sPerNFT, "_composeERC20IntoEdition: ERC20 limit exceeded");
+
+        ERC20sEmbeddedInEdition[_editionId].add(_erc20Contract);
+        editionTokenERC20Balances[_editionId][_erc20Contract] = editionTokenERC20Balances[_editionId][_erc20Contract] + _value;
+
+        IERC20(_erc20Contract).transferFrom(_from, address(this), _value);
+
+        emit ReceivedERC20ForEdition(_from, _editionId, _erc20Contract, _value);
+    }
+
+    function totalERC20Contracts(uint256 _tokenId) override public view returns (uint256) {
+        IKODAV3 koda = IKODAV3(address(this));
+        uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+        return ERC20sEmbeddedInNft[_tokenId].length() + ERC20sEmbeddedInEdition[editionId].length();
+    }
+
+    function erc20ContractByIndex(uint256 _tokenId, uint256 _index) override external view returns (address) {
+        uint256 numOfERC20sInNFT = ERC20sEmbeddedInNft[_tokenId].length();
+        if (_index >= numOfERC20sInNFT) {
+            IKODAV3 koda = IKODAV3(address(this));
+            uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+            return ERC20sEmbeddedInEdition[editionId].at(_index - numOfERC20sInNFT);
+        }
+
+        return ERC20sEmbeddedInNft[_tokenId].at(_index);
+    }
+
+    /// --- Admin ----
+    // To be overriden by implementing class
+
+    function whitelistERC20(address _address) virtual public;
+
+    function removeWhitelistForERC20(address _address) virtual public;
+
+    function updateMaxERC20sPerNFT(uint256 _max) virtual public;
+
+    /// --- Internal ----
+
+    function _prepareERC20LikeTransfer(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) private {
+        {
+            require(_value > 0, "_prepareERC20LikeTransfer: Value cannot be zero");
+            require(_to != address(0), "_prepareERC20LikeTransfer: To cannot be zero address");
+
+            IERC721 self = IERC721(address(this));
+
+            address owner = self.ownerOf(_tokenId);
+            require(
+                owner == _msgSender()
+                || self.isApprovedForAll(owner, _msgSender())
+                || self.getApproved(_tokenId) == _msgSender(),
+                "_prepareERC20LikeTransfer: Not owner"
+            );
+        }
+
+        bool nftContainsERC20 = ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract);
+
+        IKODAV3 koda = IKODAV3(address(this));
+        uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+        bool editionContainsERC20 = ERC20sEmbeddedInEdition[editionId].contains(_erc20Contract);
+        require(nftContainsERC20 || editionContainsERC20, "_prepareERC20LikeTransfer: No such ERC20 wrapped in token");
+
+        require(balanceOfERC20(_tokenId, _erc20Contract) >= _value, "_prepareERC20LikeTransfer: Transfer amount exceeds balance");
+
+        uint256 editionSize = koda.getSizeOfEdition(editionId);
+        uint256 tokenInitialBalance = editionTokenERC20Balances[editionId][_erc20Contract] / editionSize;
+        uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId];
+        uint256 editionTokenBalance = tokenInitialBalance - spentTokens;
+
+        if (editionTokenBalance >= _value) {
+            editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId] = spentTokens + _value;
+        } else if (ERC20Balances[_tokenId][_erc20Contract] >= _value) {
+            ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract] - _value;
+        } else {
+            // take from both balances
+            editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId] = spentTokens + editionTokenBalance;
+            uint256 amountOfTokensToSpendFromTokenBalance = _value - editionTokenBalance;
+            ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract] - amountOfTokensToSpendFromTokenBalance;
+        }
+
+        if (nftContainsERC20 && ERC20Balances[_tokenId][_erc20Contract] == 0) {
+            ERC20sEmbeddedInNft[_tokenId].remove(_erc20Contract);
+        }
+
+        if (editionContainsERC20) {
+            uint256 allTokensInEditionERC20Balance;
+            for (uint i = 0; i < editionSize; i++) {
+                uint256 tokenBal = tokenInitialBalance - editionTokenERC20TransferAmounts[editionId][_erc20Contract][editionId + i];
+                allTokensInEditionERC20Balance = allTokensInEditionERC20Balance + tokenBal;
+            }
+
+            if (allTokensInEditionERC20Balance == 0) {
+                ERC20sEmbeddedInEdition[editionId].remove(_erc20Contract);
+            }
+        }
+    }
+
+    function _whitelistERC20(address _erc20) internal {
+        whitelistedContracts[_erc20] = true;
+        emit ContractWhitelisted(_erc20);
+    }
+
+    // note: this will not brick NFTs that have this token. Just stops people adding new balances
+    function _removeWhitelistERC20(address _erc20) internal {
+        whitelistedContracts[_erc20] = false;
+        emit WhitelistRemoved(_erc20);
+    }
+
+    function _updateMaxERC20sPerNFT(uint256 _max) internal {
+        emit MaxERC20sPerNFTUpdated(maxERC20sPerNFT, _max);
+        maxERC20sPerNFT = _max;
+    }
+}
+
+// File: contracts/core/Konstants.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.3;
+
+contract Konstants {
+
+    // Every edition always goes up in batches of 1000
+    uint256 public constant MAX_EDITION_SIZE = 1000;
+
+    // Max Edition ID KO can handle with this contract
+    uint96 public constant MAX_EDITION_ID = ~uint96(0);
+
+    // magic method that defines the maximum range for an edition - this is fixed forever - tokens are minted in range
+    function _editionFromTokenId(uint256 _tokenId) internal pure returns (uint256) {
+        return (_tokenId / MAX_EDITION_SIZE) * MAX_EDITION_SIZE;
+    }
+}
+
+// File: contracts/core/BaseKoda.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.3;
+
+
+
+
+
+
+abstract contract BaseKoda is Konstants, Context, IKODAV3 {
+
+    bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
+
+    event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
+    event AdminEditionReported(uint256 indexed _editionId, bool indexed _reported);
+    event AdminArtistAccountReported(address indexed _account, bool indexed _reported);
+
+    modifier onlyContract(){
+        require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
+        _;
+    }
+
+    modifier onlyAdmin(){
+        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+        _;
+    }
+
+    IKOAccessControlsLookup public accessControls;
+
+    // A onchain reference to editions which have been reported for some infringement purposes to KO
+    mapping(uint256 => bool) public reportedEditionIds;
+
+    // A onchain reference to accounts which have been lost/hacked etc
+    mapping(address => bool) public reportedArtistAccounts;
+
+    // Secondary sale commission
+    uint256 public secondarySaleRoyalty = 12_50000; // 12.5%
+
+    constructor(IKOAccessControlsLookup _accessControls) {
+        accessControls = _accessControls;
+    }
+
+    function reportEditionId(uint256 _editionId, bool _reported) onlyAdmin public {
+        reportedEditionIds[_editionId] = _reported;
+        emit AdminEditionReported(_editionId, _reported);
+    }
+
+    function reportArtistAccount(address _account, bool _reported) onlyAdmin public {
+        reportedArtistAccounts[_account] = _reported;
+        emit AdminArtistAccountReported(_account, _reported);
+    }
+
+    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) public onlyAdmin {
+        secondarySaleRoyalty = _secondarySaleRoyalty;
+        emit AdminUpdateSecondaryRoyalty(_secondarySaleRoyalty);
+    }
+
+    /// @dev Allows for the ability to extract stuck ERC20 tokens
+    /// @dev Only callable from admin
+    function withdrawStuckTokens(address _tokenAddress, uint256 _amount, address _withdrawalAccount) public {
+        require(accessControls.hasContractOrAdminRole(_msgSender()), "Caller must have contract or admin role");
+        //IERC20(_tokenAddress).approve(address(this), _amount);
+        IERC20(_tokenAddress).transfer(_withdrawalAccount, _amount);
+    }
+
+}
+
+// File: contracts/core/KnownOriginDigitalAssetV3.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.3;
+
+
+
+
+
+
+
+
+
+
+/*
+ * A base 721 compliant contract which has a focus on being light weight
+ */
+contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165Storage, IKODAV3Minter {
+
+    event AdditionalEditionMetaDataSet(uint256 indexed _editionId);
+    event AdditionalEditionUnlockableSet(uint256 indexed _editionId);
+    event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
+    event AdminTokenUriResolverSet(address indexed _tokenUriResolver);
+
+    // Token name
+    string public name = "KnownOriginDigitalAsset";
+
+    // Token symbol
+    string public symbol = "KODA";
+
+    // KODA version
+    string public version = "3";
+
+    // Royalties registry
+    IERC2981 public royaltiesRegistryProxy;
+
+    // Token URI resolver
+    ITokenUriResolver public tokenUriResolver;
+
+    // Edition number pointer
+    uint256 public editionPointer;
+
+    struct EditionDetails {
+        address creator; // primary edition/token creator
+        uint96 editionSize; // onchain edition size
+        string uri; // the referenced metadata
+    }
+
+    // tokens are minted in batches - the first token ID used is representative of the edition ID (for now)
+    mapping(uint256 => EditionDetails) editionDetails;
+
+    // Mapping of tokenId => owner - only set on first transfer (after mint) such as a primary sale and/or gift
+    mapping(uint256 => address) internal owners;
+
+    // Mapping of owner => number of tokens owned
+    mapping(address => uint256) internal balances;
+
+    // Mapping of tokenId => approved address
+    mapping(uint256 => address) internal approvals;
+
+    // Mapping of owner => operator => approved
+    mapping(address => mapping(address => bool)) internal operatorApprovals;
+
+    // Optional one time use storage slot for additional edition metadata
+    mapping(uint256 => string) public additionalEditionMetaData;
+
+    // Optional one time use storage slot for additional unlockable content
+    mapping(uint256 => string) public additionalEditionUnlockableSlot;
+
+    constructor(
+        IKOAccessControlsLookup _accessControls,
+        IERC2981 _royaltiesRegistryProxy,
+        uint256 _editionPointer
+    ) BaseKoda(_accessControls) {
+
+        editionPointer = _editionPointer;
+
+        // optional registry address - can be constructed as zero address
+        royaltiesRegistryProxy = _royaltiesRegistryProxy;
+
+        // INTERFACE_ID_ERC721
+        _registerInterface(0x80ac58cd);
+
+        // INTERFACE_ID_ERC721_METADATA
+        _registerInterface(0x5b5e139f);
+
+        // INTERFACE_ID_ERC721ROYALTIES
+        _registerInterface(0x4b7f2c2d);
+    }
+
+    // Mints batches of tokens emitting multiple Transfer events
+    function mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri)
+    public
+    override
+    onlyContract
+    returns (uint256 _editionId) {
+        return _mintBatchEdition(_editionSize, _to, _uri);
+    }
+
+    function mintBatchEditionAndComposeERC20s(uint96 _editionSize, address _to, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts)
+    external
+    override
+    onlyContract
+    returns (uint256 _editionId) {
+        uint256 totalErc20s = _erc20s.length;
+        require(totalErc20s == _amounts.length, "Array length mismatch");
+        require(totalErc20s > 0, "Empty array");
+
+        _editionId = _mintBatchEdition(_editionSize, _to, _uri);
+
+        for (uint i = 0; i < totalErc20s; i++) {
+            _composeERC20IntoEdition(_to, _editionId, _erc20s[i], _amounts[i]);
+        }
+    }
+
+    function _mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri) internal returns (uint256) {
+        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid edition size");
+
+        uint256 start = generateNextEditionNumber();
+
+        // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
+
+        // assign balance
+        balances[_to] = balances[_to] + _editionSize;
+
+        // edition of x
+        _defineEditionConfig(start, _editionSize, _to, _uri);
+
+        // Loop emit all transfer events
+        uint256 end = start + _editionSize;
+        for (uint i = start; i < end; i++) {
+            emit Transfer(address(0), _to, i);
+        }
+        return start;
+    }
+
+    // Mints batches of tokens but emits a single ConsecutiveTransfer event EIP-2309
+    function mintConsecutiveBatchEdition(uint96 _editionSize, address _to, string calldata _uri)
+    public
+    override
+    onlyContract
+    returns (uint256 _editionId) {
+        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid edition size");
+
+        uint256 start = generateNextEditionNumber();
+
+        // N.B: Dont store owner, see ownerOf method to special case checking to avoid storage costs on creation
+
+        // assign balance
+        balances[_to] = balances[_to] + _editionSize;
+
+        // Start ID always equals edition ID
+        _defineEditionConfig(start, _editionSize, _to, _uri);
+
+        // emit EIP-2309 consecutive transfer event
+        emit ConsecutiveTransfer(start, start + _editionSize, address(0), _to);
+
+        return start;
+    }
+
+    function _defineEditionConfig(uint256 _editionId, uint96 _editionSize, address _to, string calldata _uri) internal {
+        require(_editionSize <= MAX_EDITION_ID, "Unable to make any more editions");
+
+        // Store edition blob to be the next token pointer
+        editionDetails[_editionId] = EditionDetails(_to, _editionSize, _uri);
+    }
+
+    function generateNextEditionNumber() internal returns (uint256) {
+        editionPointer = editionPointer + MAX_EDITION_SIZE;
+        return editionPointer;
+    }
+
+    function editionURI(uint256 _editionId) public view returns (string memory) {
+        EditionDetails storage edition = editionDetails[_editionId];
+        require(edition.editionSize != 0, "Edition does not exist");
+
+        if (tokenUriResolverActive() && tokenUriResolver.isDefined(_editionId)) {
+            return tokenUriResolver.editionURI(_editionId);
+        }
+        return edition.uri;
+    }
+
+    function tokenURI(uint256 _tokenId) public view returns (string memory) {
+        uint256 editionId = _editionFromTokenId(_tokenId);
+        EditionDetails storage edition = editionDetails[editionId];
+        require(edition.editionSize != 0, "Token does not exist");
+
+        if (tokenUriResolverActive() && tokenUriResolver.isDefined(editionId)) {
+            return tokenUriResolver.editionURI(editionId);
+        }
+        return edition.uri;
+    }
+
+    function tokenUriResolverActive() public view returns (bool) {
+        return address(tokenUriResolver) != address(0);
+    }
+
+    function editionAdditionalMetaData(uint256 _editionId) public view returns (string memory) {
+        return additionalEditionMetaData[_editionId];
+    }
+
+    function tokenAdditionalMetaData(uint256 _tokenId) public view returns (string memory) {
+        uint256 editionId = _editionFromTokenId(_tokenId);
+        return additionalEditionMetaData[editionId];
+    }
+
+    function getEditionDetails(uint256 _tokenId)
+    public
+    override
+    view
+    returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri) {
+        uint256 editionId = _editionFromTokenId(_tokenId);
+        EditionDetails storage edition = editionDetails[editionId];
+        return (
+        edition.creator, // originCreator
+        _ownerOf(_tokenId, editionId), // owner
+        editionId,
+        edition.editionSize, // size
+        edition.uri
+        );
+    }
+
+    ///////////////////
+    // Creator query //
+    ///////////////////
+
+    function getCreatorOfEdition(uint256 _editionId) public override view returns (address _originalCreator) {
+        return _getCreatorOfEdition(_editionId);
+    }
+
+    function getCreatorOfToken(uint256 _tokenId) public override view returns (address _originalCreator) {
+        return _getCreatorOfEdition(_editionFromTokenId(_tokenId));
+    }
+
+    function tokenCreator(uint256 _tokenId) public override view returns (address _originalCreator) {
+        return _getCreatorOfEdition(_editionFromTokenId(_tokenId));
+    }
+
+    function _getCreatorOfEdition(uint256 _editionId) internal view returns (address _originalCreator) {
+        // drop the other size bits
+        return editionDetails[_editionId].creator;
+    }
+
+    ////////////////
+    // Size query //
+    ////////////////
+
+    function getSizeOfEdition(uint256 _editionId) public override view returns (uint256 _size) {
+        return editionDetails[_editionId].editionSize;
+    }
+
+    function getEditionSizeOfToken(uint256 _tokenId) public override view returns (uint256 _size) {
+        return editionDetails[_editionFromTokenId(_tokenId)].editionSize;
+    }
+
+    /////////////////////
+    // Existence query //
+    /////////////////////
+
+    function editionExists(uint256 _editionId) public override view returns (bool) {
+        return editionDetails[_editionId].editionSize > 0;
+    }
+
+    function exists(uint256 _tokenId) public override view returns (bool) {
+        address owner = _ownerOf(_tokenId, _editionFromTokenId(_tokenId));
+        return owner != address(0);
+    }
+
+    function maxTokenIdOfEdition(uint256 _editionId) public override view returns (uint256 _tokenId) {
+        return editionDetails[_editionId].editionSize + _editionId;
+    }
+
+    ////////////////
+    // Edition ID //
+    ////////////////
+
+    function getEditionIdOfToken(uint256 _tokenId) public override pure returns (uint256 _editionId) {
+        return _editionFromTokenId(_tokenId);
+    }
+
+    //////////////
+    // ERC-2981 //
+    //////////////
+
+    // Abstract away token royalty registry, proxy through to the implementation
+    function royaltyInfo(uint256 _tokenId)
+    external
+    override
+    returns (address receiver, uint256 amount) {
+        uint256 editionId = _editionFromTokenId(_tokenId);
+
+        // If we have a registry and its defined, use it
+        if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(editionId)) {
+
+            // Note: any registry must be edition aware so to only store one entry for all within the edition
+            return royaltiesRegistryProxy.royaltyInfo(editionId);
+        }
+
+        return (_getCreatorOfEdition(editionId), secondarySaleRoyalty);
+    }
+
+    // Expanded method at edition level and expanding on the funds receiver and the creator
+    function royaltyAndCreatorInfo(uint256 _editionId)
+    external
+    override
+    returns (address receiver, address creator, uint256 amount) {
+        address originalCreator = _getCreatorOfEdition(_editionId);
+
+        if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)) {
+            // Note: any registry must be edition aware so to only store one entry for all within the edition
+            (address _receiver, uint256 _amount) = royaltiesRegistryProxy.royaltyInfo(_editionId);
+            return (_receiver, originalCreator, _amount);
+        }
+
+        return (originalCreator, originalCreator, secondarySaleRoyalty);
+    }
+
+    function hasRoyalties(uint256 _tokenId) external override view returns (bool) {
+        require(exists(_tokenId), "Token does not exist");
+        if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionFromTokenId(_tokenId))) {
+            return true;
+        }
+        return secondarySaleRoyalty > 0;
+    }
+
+    function royaltyRegistryActive() public view returns (bool) {
+        return address(royaltiesRegistryProxy) != address(0);
+    }
+
+    // ERC2981 royalties callback event hook
+    function receivedRoyalties(address _royaltyRecipient, address _buyer, uint256 _tokenId, address _tokenPaid, uint256 _amount)
+    external
+    override {
+        emit ReceivedRoyalties(_royaltyRecipient, _buyer, _tokenId, _tokenPaid, _amount);
+    }
+
+    ////////////////////////////////////
+    // Primary Sale Utilities methods //
+    ////////////////////////////////////
+
+    function facilitateNextPrimarySale(uint256 _editionId)
+    public
+    override
+    returns (address receiver, address creator, uint256 tokenId) {
+        uint256 _tokenId = getNextAvailablePrimarySaleToken(_editionId);
+        address _creator = _getCreatorOfEdition(_editionId);
+
+        if (royaltyRegistryActive()) {
+            (address _receiver,) = royaltiesRegistryProxy.royaltyInfo(_editionId);
+            return (_receiver, _creator, _tokenId);
+        }
+
+        return (_creator, _creator, _tokenId);
+    }
+
+    function getNextAvailablePrimarySaleToken(uint256 _editionId) public override view returns (uint256 _tokenId) {
+        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
+
+        // low to high
+        for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
+            // if no owner set - assume primary if not moved
+            if (owners[tokenId] == address(0)) {
+                return tokenId;
+            }
+        }
+        revert("No tokens left on the primary market");
+    }
+
+    function getReverseAvailablePrimarySaleToken(uint256 _editionId) public override view returns (uint256 _tokenId) {
+        uint256 highestTokenId = _editionId + editionDetails[_editionId].editionSize - 1;
+
+        // high to low
+        while (highestTokenId >= _editionId) {
+            // if no owner set - assume primary if not moved
+            if (owners[highestTokenId] == address(0)) {
+                return highestTokenId;
+            }
+            highestTokenId--;
+        }
+        revert("No tokens left on the primary market");
+    }
+
+    function facilitateReveresPrimarySale(uint256 _editionId)
+    public
+    override
+    returns (address receiver, address creator, uint256 tokenId) {
+        uint256 _tokenId = getReverseAvailablePrimarySaleToken(_editionId);
+        address _creator = _getCreatorOfEdition(_editionId);
+
+        if (royaltyRegistryActive()) {
+            (address _receiver,) = royaltiesRegistryProxy.royaltyInfo(_editionId);
+            return (_receiver, _creator, _tokenId);
+        }
+
+        return (_creator, _creator, _tokenId);
+    }
+
+    function hadPrimarySaleOfToken(uint256 _tokenId) public override view returns (bool) {
+        return owners[_tokenId] != address(0);
+    }
+
+    //////////////
+    // Defaults //
+    //////////////
+
+    /// @notice Transfers the ownership of an NFT from one address to another address
+    /// @dev Throws unless `msg.sender` is the current owner, an authorized
+    ///      operator, or the approved address for this NFT. Throws if `_from` is
+    ///      not the current owner. Throws if `_to` is the zero address. Throws if
+    ///      `_tokenId` is not a valid NFT. When transfer is complete, this function
+    ///      checks if `_to` is a smart contract (code size > 0). If so, it calls
+    ///      `onERC721Received` on `_to` and throws if the return value is not
+    ///      `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+    /// @param _from The current owner of the NFT
+    /// @param _to The new owner
+    /// @param _tokenId The NFT to transfer
+    /// @param _data Additional data with no specified format, sent in call to `_to`
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) override external {
+        _safeTransferFrom(_from, _to, _tokenId, _data);
+
+        // move the token
+        emit Transfer(_from, _to, _tokenId);
+    }
+
+    /// @notice Transfers the ownership of an NFT from one address to another address
+    /// @dev This works identically to the other function with an extra data parameter,
+    ///      except this function just sets data to "".
+    /// @param _from The current owner of the NFT
+    /// @param _to The new owner
+    /// @param _tokenId The NFT to transfer
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) override external {
+        _safeTransferFrom(_from, _to, _tokenId, bytes(""));
+
+        // move the token
+        emit Transfer(_from, _to, _tokenId);
+    }
+
+    function _safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) private {
+        _transferFrom(_from, _to, _tokenId);
+
+        uint256 receiverCodeSize;
+        assembly {
+            receiverCodeSize := extcodesize(_to)
+        }
+        if (receiverCodeSize > 0) {
+            bytes4 selector = IERC721Receiver(_to).onERC721Received(
+                _msgSender(),
+                _from,
+                _tokenId,
+                _data
+            );
+            require(
+                selector == ERC721_RECEIVED,
+                "ERC721_INVALID_SELECTOR"
+            );
+        }
+    }
+
+    /// @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+    ///         TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+    ///         THEY MAY BE PERMANENTLY LOST
+    /// @dev Throws unless `_msgSender()` is the current owner, an authorized
+    ///      operator, or the approved address for this NFT. Throws if `_from` is
+    ///      not the current owner. Throws if `_to` is the zero address. Throws if
+    ///      `_tokenId` is not a valid NFT.
+    /// @param _from The current owner of the NFT
+    /// @param _to The new owner
+    /// @param _tokenId The NFT to transfer
+    function transferFrom(address _from, address _to, uint256 _tokenId) override external {
+        _transferFrom(_from, _to, _tokenId);
+
+        // move the token
+        emit Transfer(_from, _to, _tokenId);
+    }
+
+    function _transferFrom(address _from, address _to, uint256 _tokenId) private {
+        // enforce not being able to send to zero as we have explicit rules what a minted but unbound owner is
+        require(_to != address(0), "ERC721_ZERO_TO_ADDRESS");
+
+        // Ensure the owner is the sender
+        address owner = _ownerOf(_tokenId, _editionFromTokenId(_tokenId));
+        require(owner != address(0), "ERC721_ZERO_OWNER");
+        require(_from == owner, "ERC721_OWNER_MISMATCH");
+
+        address spender = _msgSender();
+        address approvedAddress = getApproved(_tokenId);
+        require(
+            spender == owner // sending to myself
+            || isApprovedForAll(owner, spender)  // is approved to send any behalf of owner
+            || approvedAddress == spender, // is approved to move this token ID
+            "ERC721_INVALID_SPENDER"
+        );
+
+        // Ensure approval for token ID is cleared
+        if (approvedAddress != address(0)) {
+            approvals[_tokenId] = address(0);
+        }
+
+        // set new owner - this will now override any specific other mappings for the base edition config
+        owners[_tokenId] = _to;
+
+        // Modify balances
+        balances[_from] = balances[_from] - 1;
+        balances[_to] = balances[_to] + 1;
+    }
+
+    /// @notice Find the owner of an NFT
+    /// @dev NFTs assigned to zero address are considered invalid, and queries about them do throw.
+    /// @param _tokenId The identifier for an NFT
+    /// @return The address of the owner of the NFT
+    function ownerOf(uint256 _tokenId) override public view returns (address) {
+        uint256 editionId = _editionFromTokenId(_tokenId);
+        address owner = _ownerOf(_tokenId, editionId);
+        require(owner != address(0), "ERC721_ZERO_OWNER");
+        return owner;
+    }
+
+    // magic internal method for working out current owner - this returns
+    function _ownerOf(uint256 _tokenId, uint256 _editionId) internal view returns (address) {
+
+        // If an owner assigned
+        address owner = owners[_tokenId];
+        if (owner != address(0)) {
+            return owner;
+        }
+
+        // fall back to edition creator
+        address possibleCreator = _getCreatorOfEdition(_editionId);
+        if (possibleCreator != address(0) && (editionDetails[_editionId].editionSize + _editionId - 1) >= _tokenId) {
+            return possibleCreator;
+        }
+
+        return address(0);
+    }
+
+    /// @notice Change or reaffirm the approved address for an NFT
+    /// @dev The zero address indicates there is no approved address.
+    ///      Throws unless `msg.sender` is the current NFT owner, or an authorized
+    ///      operator of the current owner.
+    /// @param _approved The new approved NFT controller
+    /// @param _tokenId The NFT to approve
+    function approve(address _approved, uint256 _tokenId) override external {
+        address owner = ownerOf(_tokenId);
+        require(_approved != owner, "ERC721_APPROVED_IS_OWNER");
+        require(_msgSender() == owner || isApprovedForAll(owner, _msgSender()), "ERC721_INVALID_SENDER");
+        approvals[_tokenId] = _approved;
+        emit Approval(owner, _approved, _tokenId);
+    }
+
+    /// @notice Enable or disable approval for a third party ("operator") to manage
+    ///         all of `msg.sender`"s assets
+    /// @dev Emits the ApprovalForAll event. The contract MUST allow
+    ///      multiple operators per owner.
+    /// @param _operator Address to add to the set of authorized operators
+    /// @param _approved True if the operator is approved, false to revoke approval
+    function setApprovalForAll(address _operator, bool _approved) override external {
+        operatorApprovals[_msgSender()][_operator] = _approved;
+        emit ApprovalForAll(
+            _msgSender(),
+            _operator,
+            _approved
+        );
+    }
+
+    /// @notice Count all NFTs assigned to an owner
+    /// @dev NFTs assigned to the zero address are considered invalid, and this
+    ///      function throws for queries about the zero address.
+    /// @param _owner An address for whom to query the balance
+    /// @return The number of NFTs owned by `_owner`, possibly zero
+    function balanceOf(address _owner) override external view returns (uint256) {
+        require(_owner != address(0), "ERC721_ZERO_OWNER");
+        return balances[_owner];
+    }
+
+    /// @notice Get the approved address for a single NFT
+    /// @dev Throws if `_tokenId` is not a valid NFT.
+    /// @param _tokenId The NFT to find the approved address for
+    /// @return The approved address for this NFT, or the zero address if there is none
+    function getApproved(uint256 _tokenId) override public view returns (address){
+        return approvals[_tokenId];
+    }
+
+    /// @notice Query if an address is an authorized operator for another address
+    /// @param _owner The address that owns the NFTs
+    /// @param _operator The address that acts on behalf of the owner
+    /// @return True if `_operator` is an approved operator for `_owner`, false otherwise
+    function isApprovedForAll(address _owner, address _operator) override public view returns (bool){
+        return operatorApprovals[_owner][_operator];
+    }
+
+    /// @notice An extension to the default ERC721 behaviour, derived from ERC-875.
+    /// @dev Allowing for batch transfers from the provided address, will fail if from does not own all the tokens
+    function batchTransferFrom(address _from, address _to, uint256[] calldata _tokenIds) public {
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            _safeTransferFrom(_from, _to, _tokenIds[i], bytes(""));
+            emit Transfer(_from, _to, _tokenIds[i]);
+        }
+    }
+
+    /// @notice An extension to the default ERC721 behaviour, derived from ERC-875 but using the ConsecutiveTransfer event
+    /// @dev Allowing for batch transfers from the provided address, will fail if from does not own all the tokens
+    function consecutiveBatchTransferFrom(address _from, address _to, uint256 _fromTokenId, uint256 _toTokenId) public {
+        for (uint256 i = _fromTokenId; i <= _toTokenId; i++) {
+            _safeTransferFrom(_from, _to, i, bytes(""));
+        }
+        emit ConsecutiveTransfer(_fromTokenId, _toTokenId, _from, _to);
+    }
+
+    /////////////////////
+    // Admin functions //
+    /////////////////////
+
+    function whitelistERC20(address _address) override onlyAdmin public {
+        _whitelistERC20(_address);
+    }
+
+    function removeWhitelistForERC20(address _address) override onlyAdmin public {
+        _removeWhitelistERC20(_address);
+    }
+
+    function updateMaxERC20sPerNFT(uint256 _max) override onlyAdmin public {
+        _updateMaxERC20sPerNFT(_max);
+    }
+
+    function setRoyaltiesRegistryProxy(IERC2981 _royaltiesRegistryProxy) onlyAdmin public {
+        royaltiesRegistryProxy = _royaltiesRegistryProxy;
+        emit AdminRoyaltiesRegistryProxySet(address(_royaltiesRegistryProxy));
+    }
+
+    function setTokenUriResolver(ITokenUriResolver _tokenUriResolver) onlyAdmin public {
+        tokenUriResolver = _tokenUriResolver;
+        emit AdminTokenUriResolverSet(address(_tokenUriResolver));
+    }
+
+    ///////////////////////
+    // Creator functions //
+    ///////////////////////
+
+    // Optional metadata storage slot which allows the creator to set an additional metadata blob on the edition
+    function lockInAdditionalMetaData(uint256 _editionId, string calldata _metadata) external {
+        require(_msgSender() == getCreatorOfEdition(_editionId), "unable to set when not creator");
+        require(bytes(additionalEditionMetaData[_editionId]).length == 0, "can only be set once");
+        additionalEditionMetaData[_editionId] = _metadata;
+        emit AdditionalEditionMetaDataSet(_editionId);
+    }
+
+    // Optional storage slot which allows the creator to set an additional unlockable blob on the edition
+    function lockInUnlockableContent(uint256 _editionId, string calldata _content) external {
+        require(_msgSender() == getCreatorOfEdition(_editionId), "unable to set when not creator");
+        additionalEditionUnlockableSlot[_editionId] = _content;
+        emit AdditionalEditionUnlockableSet(_editionId);
+    }
+
+}

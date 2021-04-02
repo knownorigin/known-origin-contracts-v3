@@ -78,6 +78,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     // KODA token
     IKODAV3 public koda;
 
+    // TODO add admin setter (with event)
     // platform funds collector
     address public platformAccount;
 
@@ -94,9 +95,11 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     // Minimum bid/list amount
     uint256 public minBidAmount = 0.01 ether;
 
+    // TODO add admin setter (with event)
     // Bid lockup period
     uint256 public bidLockupPeriod = 6 hours;
 
+    // TODO add admin setter (with event)
     IKOAccessControlsLookup public accessControls;
 
     // TODO artist commission override feature (speak to andy)
