@@ -28,7 +28,7 @@ contract RoyaltyRegistry {
         emit BeaconAdded(_name, _beacon);
     }
 
-    function deployProxy(uint256 _editionId, string memory _beaconName, address[] calldata _recipients, uint256[] calldata _splits)
+    function setupRoyalty(uint256 _editionId, string memory _beaconName, address[] calldata _recipients, uint256[] calldata _splits)
     public
     payable
     returns (address proxy){
