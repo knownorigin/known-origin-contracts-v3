@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.3;
 
-import "../collaborators/simple/FundsSplitter.sol";
+import "../handlers/FundsSplitter.sol";
 
 contract RoyaltyImplV2 is FundsSplitter {
 

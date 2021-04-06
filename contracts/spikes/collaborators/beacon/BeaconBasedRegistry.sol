@@ -5,10 +5,10 @@ pragma solidity 0.8.3;
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "../collaborators/IFundsHandler.sol";
+import "../IFundsHandler.sol";
 
 
-contract RoyaltyRegistry {
+contract BeaconBasedRegistry {
 
     // FIXME is this a constant for all creator royalties?
     uint256 constant ROYALTY_AMOUNT = 250000; // 2.5% as represented in eip-2981

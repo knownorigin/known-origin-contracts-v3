@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.3;
 
-import "../collaborators/simple/FundsReceiver.sol";
+import "../handlers/FundsReceiver.sol";
 
 
 contract RoyaltyImplV1R2 is FundsReceiver {

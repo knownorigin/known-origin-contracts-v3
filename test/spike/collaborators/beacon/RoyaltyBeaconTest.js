@@ -3,13 +3,13 @@ const {expect} = require('chai');
 const hre = require("hardhat");
 const ethers = hre.ethers;
 const BeaconProxy     = artifacts.require("@openzeppelin/contracts/proxy/beacon/BeaconProxy");
-const RoyaltyRegistry = artifacts.require("RoyaltyRegistry");
+const RoyaltyRegistry = artifacts.require("BeaconBasedRegistry");
 const RoyaltyBeacon   = artifacts.require("RoyaltyBeacon");
 const RoyaltyImplV1R1 = artifacts.require('RoyaltyImplV1R1'); // Funds Receiver Implementation, Revision 1 (has bug)
 const RoyaltyImplV1R2 = artifacts.require('RoyaltyImplV1R2'); // Funds Receiver Implementation, Revision 2 (fixed)
 const RoyaltyImplV2   = artifacts.require('RoyaltyImplV2');   // Funds Splitter Implementation, Revision 1
 
-contract('Royalty Funds Handler Architecture', function (accounts) {
+contract('Beacon-based Royalty Funds Handler Architecture', function (accounts) {
 
     const [owner, artist1, artist2, artist3 ] = accounts;
     const ZERO = new BN(0);
