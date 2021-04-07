@@ -2,8 +2,8 @@
 
 pragma solidity 0.8.3;
 
-import "../collaborators/simple/FundsSplitter.sol";
-import "../collaborators/simple/FundsReceiver.sol";
+import "../collaborators/handlers/FundsSplitter.sol";
+import "../collaborators/handlers/FundsReceiver.sol";
 import "../collaborators/IFundsHandler.sol";
 
 import "./ITokenRoyaltiesRegistry.sol";
