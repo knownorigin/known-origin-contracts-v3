@@ -1,0 +1,383 @@
+const {BN, constants, expectEvent, expectRevert} = require('@openzeppelin/test-helpers');
+const {ZERO_ADDRESS} = constants;
+const {expect} = require('chai');
+const hre = require("hardhat");
+const ethers = hre.ethers;
+const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
+const KOAccessControls = artifacts.require('KOAccessControls');
+const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
+const RoyaltyRegistry = artifacts.require("CollabRoyaltiesRegistry");
+const RoyaltyImplV1 = artifacts.require('CollabFundsReceiver');
+
+contract('Collaborator Royalty Funds Handler Architecture', function (accounts) {
+
+    const [owner, admin, deployer, contract, artist1, artist2, artist3] = accounts;
+    const ZERO = new BN(0);
+    const TWO = new BN(2);
+    const THREE = new BN(3);
+    const HALF = new BN(50000);
+    const QUARTER = new BN(25000);
+    const EDITION_ID = new BN(12000);
+    const EDITION_ID_2 = new BN(13000);
+    const ROYALTY_AMOUNT = new BN(125000);
+    const RECIPIENTS_3 = [artist1, artist2, artist3];
+    const RECIPIENTS_2 = [artist1, artist2];
+    const SPLITS_3 = [HALF, QUARTER, QUARTER];
+    const SPLITS_2 = [HALF, HALF];
+    const FUNDS_HANDLER_V1 = "v1";
+    const STARTING_EDITION = '10000';
+
+    let royaltyImplV1, royaltyProxy, royaltyProxy2,
+        royaltyRegistry, accessControls, deployerAcct,
+        koda, DEFAULT_ADMIN_ROLE, CONTRACT_ROLE;
+
+    beforeEach(async () => {
+
+        const legacyAccessControls = await SelfServiceAccessControls.new();
+
+        // setup access controls
+        accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
+
+        // grab the roles
+        DEFAULT_ADMIN_ROLE = await accessControls.DEFAULT_ADMIN_ROLE();
+        CONTRACT_ROLE = await accessControls.CONTRACT_ROLE();
+
+        // Create token V3
+        koda = await KnownOriginDigitalAssetV3.new(
+            accessControls.address,
+            ZERO_ADDRESS, // no royalties address
+            STARTING_EDITION,
+            {from: deployer}
+        );
+
+        // Set up access controls
+        await accessControls.grantRole(DEFAULT_ADMIN_ROLE, admin, {from: owner});
+        await accessControls.grantRole(CONTRACT_ROLE, contract, {from: owner});
+
+        // Create royalty registry
+        royaltyRegistry = await RoyaltyRegistry.new(accessControls.address, koda.address);
+
+        // ----------------------
+        // Create implementations
+        // ----------------------
+
+        // Royalty Funds Handler V1: Receiver
+        royaltyImplV1 = await RoyaltyImplV1.new(
+            {from: owner}
+        );
+
+    });
+
+    describe('Implementation', () => {
+
+        context('RoyaltyImplV1: Funds Receiver Implementation', async () => {
+
+            it('can be deployed', async () => {
+
+                // Royalty Funds Handler V1: Receiver
+                await RoyaltyImplV1.new(
+                    {from: owner}
+                );
+
+            })
+
+            context('init()', async () => {
+
+                it('can be initialized', async () => {
+
+                    // Royalty Funds Handler V1: Splitter
+                    royaltyImplV1 = await RoyaltyImplV1.new(
+                        {from: owner}
+                    );
+
+                    await royaltyImplV1.init(RECIPIENTS_3, SPLITS_3);
+
+                })
+
+            })
+
+            context('once initialized', async () => {
+
+                beforeEach(async () => {
+
+                    await royaltyImplV1.init(RECIPIENTS_3, SPLITS_3);
+
+                })
+
+                context('totalRecipients()', async () => {
+
+                    it('returns the correct number of recipients', async () => {
+                        expect(await royaltyImplV1.totalRecipients()).to.bignumber.equal(THREE);
+                    })
+
+                })
+
+                context('royaltyAtIndex()', async () => {
+
+                    it('returns address and split values for given recipient index', async () => {
+
+                        for (let i = 0; i < RECIPIENTS_3.length; i++) {
+                            const royalty = await royaltyImplV1.royaltyAtIndex(i);
+                            expect(royalty.recipient).to.bignumber.equal(RECIPIENTS_3[i]);
+                            expect(royalty.split).to.bignumber.equal(SPLITS_3[i]);
+
+                        }
+
+                    })
+
+                })
+
+            })
+
+        });
+
+    });
+
+    describe('CollabRoyaltiesRegistry', () => {
+
+        context('addHandler()', async () => {
+
+            it('emits HandlerAdded event on success', async () => {
+
+                const receipt = await royaltyRegistry.addHandler(FUNDS_HANDLER_V1, royaltyImplV1.address);
+                expectEvent(receipt, 'HandlerAdded', {name: FUNDS_HANDLER_V1, handler: royaltyImplV1.address})
+
+            });
+
+        });
+
+        context('once V1 handler added', async () => {
+
+            beforeEach(async () => {
+
+                await royaltyRegistry.addHandler(FUNDS_HANDLER_V1, royaltyImplV1.address);
+
+            });
+
+            context('setupRoyalty() with V1', async () => {
+
+                it('emits RoyaltySetup event on success', async () => {
+                    const receipt = await royaltyRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+                    expectEvent(receipt, 'RoyaltySetup', {
+                        editionId: EDITION_ID,
+                        handlerName: FUNDS_HANDLER_V1,
+                        recipients: RECIPIENTS_3,
+                        //splits: SPLITS_3
+                        // FIXME: throws "expected event argument 'splits' to have value 50000,25000,25000 but got 50000,25000,25000"
+                    })
+                });
+
+                context('royaltyInfo() with initial edition id', async () => {
+
+                    it('given edition id, returns proxy address and royalty amount', async () => {
+
+                        // Get the proxy address with a static call
+                        const proxyAddr = await royaltyRegistry.setupRoyalty.call(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+
+                        // Actually deploy the Proxy
+                        await royaltyRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+
+                        // Check the royalty info for the edition id
+                        const info = await royaltyRegistry.royaltyInfo(EDITION_ID);
+                        expect(info.receiver).to.equal(proxyAddr);
+                        expect(info.amount.eq(ROYALTY_AMOUNT)).to.be.true;
+
+                    })
+
+                })
+
+            })
+
+            context('reuseRoyaltySetup() with V1', async () => {
+
+                it('appropriate proxy is reused', async () => {
+
+                    // Get the proxy address for first edition with a static call
+                    const proxy1Addr = await royaltyRegistry.setupRoyalty.call(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+
+                    // Actually deploy the proxy
+                    await royaltyRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+
+                    // Ensure the same proxy will be reused
+                    expect(await royaltyRegistry.reuseRoyaltySetup.call(EDITION_ID_2, EDITION_ID, {from: contract})).to.bignumber.eq(proxy1Addr);
+                });
+
+                it('emits RoyaltySetupReused event on success', async () => {
+
+                    // Get the proxy address for first edition with a static call
+                    const proxy1Addr = await royaltyRegistry.setupRoyalty.call(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+
+                    // Deploy the Proxy for the first edition
+                    await royaltyRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+
+                    // Make sure the proper event was emitted
+                    const receipt = await royaltyRegistry.reuseRoyaltySetup(EDITION_ID_2, EDITION_ID, {from: contract});
+                    expectEvent(receipt, 'RoyaltySetupReused', {
+                        editionId: EDITION_ID_2,
+                        handler: proxy1Addr
+                    })
+                });
+
+                context('royaltyInfo() with second edition id', async () => {
+
+                    it('given edition id, returns proxy address and royalty amount', async () => {
+
+                        // Get the proxy address with a static call
+                        const proxyAddr = await royaltyRegistry.setupRoyalty.call(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+
+                        // Actually deploy the Proxy
+                        await royaltyRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+
+                        // Reuse proxy
+                        await royaltyRegistry.reuseRoyaltySetup(EDITION_ID_2, EDITION_ID, {from: contract});
+
+                        // Check the royalty info for the edition id
+                        const info = await royaltyRegistry.royaltyInfo(EDITION_ID_2);
+                        expect(info.receiver).to.equal(proxyAddr);
+                        expect(info.amount.eq(ROYALTY_AMOUNT)).to.be.true;
+
+                    })
+
+                })
+
+            })
+
+        })
+
+    });
+
+    describe('Funds Handler Proxy', () => {
+
+        beforeEach(async () => {
+
+            // ------------------------
+            // Add handlers to registry
+            // ------------------------
+            await royaltyRegistry.addHandler(FUNDS_HANDLER_V1, royaltyImplV1.address);
+
+        });
+
+        context('once deployed and initialized by registry', async () => {
+
+            context('with V1 implementation', async () => {
+
+                beforeEach(async () => {
+
+                    // Get the proxy address with a static call
+                    const proxyAddr = await royaltyRegistry.setupRoyalty.call(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+
+                    // Actually deploy the Proxy
+                    await royaltyRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+
+                    // Get an ethers contract representation
+                    const [deployerAcct] = await ethers.getSigners();
+                    royaltyProxy = new ethers.Contract(
+                        proxyAddr,
+                        royaltyImplV1.abi,
+                        deployerAcct
+                    );
+
+                });
+
+                context('totalRecipients()', async () => {
+
+                        it('returns the correct number of recipients', async () => {
+                            const totalRecipients = await royaltyProxy.totalRecipients();
+                            expect(totalRecipients.toString()).to.bignumber.equal(THREE);
+                        })
+
+                        it('implementation does *not* know the number of recipients', async () => {
+                            const totalRecipients = await royaltyImplV1.totalRecipients();
+                            expect(totalRecipients.toString()).to.bignumber.equal(ZERO);
+                        })
+
+                    });
+
+                context('royaltyAtIndex()', async () => {
+
+                    it('returns address and split values for given recipient index', async () => {
+
+                        for (let i = 0; i < RECIPIENTS_3.length; i++) {
+                            const royalty = await royaltyProxy.royaltyAtIndex(i);
+                            expect(royalty.recipient.toString()).to.bignumber.equal(RECIPIENTS_3[i]);
+                            expect(royalty.split.toString()).to.bignumber.equal(SPLITS_3[i]);
+                        }
+
+                    })
+
+                });
+
+            })
+
+            context('with multiple proxies', async () => {
+
+                beforeEach(async () => {
+
+                    // Get the proxy address with a static call
+                    const proxyAddr1 = await royaltyRegistry.setupRoyalty.call(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+
+                    // Actually deploy the Proxy
+                    await royaltyRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+
+                    // Get an ethers contract representation
+                    [deployerAcct] = await ethers.getSigners();
+                    royaltyProxy = new ethers.Contract(
+                        proxyAddr1,
+                        royaltyImplV1.abi,
+                        deployerAcct
+                    );
+
+                    // Get the proxy address with a static call
+                    const proxyAddr2 = await royaltyRegistry.setupRoyalty.call(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_2, SPLITS_2, {from: contract});
+
+                    // Actually deploy the Proxy
+                    await royaltyRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_2, SPLITS_2, {from: contract});
+
+                    // Get an ethers contract representation
+                    [deployerAcct] = await ethers.getSigners();
+                    royaltyProxy2 = new ethers.Contract(
+                        proxyAddr2,
+                        royaltyImplV1.abi,
+                        deployerAcct
+                    );
+
+                });
+
+                context('totalRecipients()', async () => {
+
+                    it('for each proxy, returns the correct number of recipients', async () => {
+                        const totalRecipients = await royaltyProxy.totalRecipients();
+                        const totalRecipients2 = await royaltyProxy2.totalRecipients();
+                        expect(totalRecipients.toString()).to.bignumber.equal(THREE);
+                        expect(totalRecipients2.toString()).to.bignumber.equal(TWO);
+                    })
+
+                });
+
+                context('royaltyAtIndex()', async () => {
+
+                    it('for each proxy, returns address and split values for given recipient index', async () => {
+
+                        for (let i = 0; i < RECIPIENTS_3.length; i++) {
+                            const royalty = await royaltyProxy.royaltyAtIndex(i);
+                            expect(royalty.recipient,toString()).to.bignumber.equal(RECIPIENTS_3[i]);
+                            expect(royalty.split.toString()).to.bignumber.equal(SPLITS_3[i]);
+                        }
+
+                        for (let i = 0; i < RECIPIENTS_2.length; i++) {
+                            const royalty = await royaltyProxy2.royaltyAtIndex(i);
+                            expect(royalty.recipient,toString()).to.bignumber.equal(RECIPIENTS_2[i]);
+                            expect(royalty.split.toString()).to.bignumber.equal(SPLITS_2[i]);
+                        }
+
+                    })
+
+                });
+
+            })
+
+        })
+
+    });
+
+});
