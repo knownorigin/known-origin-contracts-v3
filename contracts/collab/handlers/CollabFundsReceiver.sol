@@ -13,13 +13,17 @@ contract CollabFundsReceiver is CollabFundsHandlerBase, ICollabFundsDrainable {
     // split current contract balance among recipients
     function drain() nonReentrant public override {
 
-        // Determine share for each recipient
-        uint256 balance = address(this).balance;
-        uint256 singleUnitOfValue = balance / FIXED_PCT;
+        uint256[] memory amounts;
+
+        // Calculate and send share for each recipient
+        uint256 total = address(this).balance;
+        uint256 singleUnitOfValue = total / FIXED_PCT;
         for (uint256 i = 0; i < recipients.length; i++) {
-            uint256 share = singleUnitOfValue * splits[i];
-            payable(recipients[i]).transfer(share);
+            amounts[i] = singleUnitOfValue * splits[i];
+            payable(recipients[i]).transfer(amounts[i]);
         }
+
+        emit FundsDrained(total, recipients, amounts);
     }
 
 }

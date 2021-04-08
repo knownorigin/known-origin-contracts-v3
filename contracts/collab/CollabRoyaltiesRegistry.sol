@@ -5,17 +5,18 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
+import {IERC2981HasRoyaltiesExtension} from "../core/IERC2981.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {ICollabFundsHandler} from "./handlers/ICollabFundsHandler.sol";
 
-contract CollabRoyaltiesRegistry is Pausable {
+contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
 
     // State
     IKODAV3 public koda;
     IKOAccessControlsLookup public accessControls;
     mapping(string => address) internal handlers;
     mapping(uint256 => address) internal proxies;
-    uint256 public royalty_amount = 125000; // 12.5% as represented in eip-2981
+    uint256 public royaltyAmount = 125000; // 12.5% as represented in eip-2981
 
     // Events
     event HandlerAdded(string name, address handler);
@@ -46,10 +47,28 @@ contract CollabRoyaltiesRegistry is Pausable {
     }
 
     // Admin setter for changing the royalty amount
-    function setRoyaltyAmount(uint256 amount)
+    function setRoyaltyAmount(uint256 _amount)
     external
     onlyAdmin() {
-        royalty_amount = amount;
+        royaltyAmount = _amount;
+    }
+
+    // Is the given token part of an edition that has a collab royalties contract setup?
+    function hasRoyalties(uint256 _tokenId)
+    external
+    override
+    view
+    returns (bool) {
+
+        // Get the associated edition id for the given token id
+        uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+
+        // Get the proxy registered to the previous edition id
+        address proxy = proxies[editionId];
+
+        // Ensure there actually was a registration
+        return proxy != address(0);
+
     }
 
     // Add a named funds handler
@@ -77,7 +96,7 @@ contract CollabRoyaltiesRegistry is Pausable {
         proxy = proxies[_previousEditionId];
 
         // Ensure there actually was a registration
-        require(ICollabFundsHandler(proxy).totalRecipients() > 1, "No funds handler registered for previous edition id");
+        require(proxy != address(0), "No funds handler registered for previous edition id");
 
         // Register the same proxy for the new edition id
         proxies[_editionId] = proxy;
@@ -122,12 +141,13 @@ contract CollabRoyaltiesRegistry is Pausable {
     }
 
     // Gets the funds handler proxy address and royalty amount for given edition id
-    function royaltyInfo(uint256 editionId)
+    function royaltyInfo(uint256 _editionId)
     external
     view
     returns (address receiver, uint256 amount) {
-        receiver = proxies[editionId];
-        amount = royalty_amount;
+        receiver = proxies[_editionId];
+        require(receiver != address(0));
+        amount = royaltyAmount;
     }
 
 }
