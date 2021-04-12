@@ -1,4 +1,4 @@
-const {BN, constants, expectEvent, expectRevert} = require('@openzeppelin/test-helpers');
+const {BN, constants, expectEvent, expectRevert, balance} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 const {expect} = require('chai');
 const hre = require("hardhat");
@@ -8,10 +8,11 @@ const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 const RoyaltyRegistry = artifacts.require("CollabRoyaltiesRegistry");
 const RoyaltyImplV1 = artifacts.require('CollabFundsReceiver');
+const MockERC20 = artifacts.require('MockERC20');
 
 contract('Collaborator Royalty Funds Handler Architecture', function (accounts) {
 
-    const [owner, admin, deployer, contract, artist1, artist2, artist3] = accounts;
+    const [owner, artist1, artist2, artist3, admin, deployer, contract] = accounts;
     const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
     const ZERO = new BN(0);
     const TWO = new BN(2);
@@ -27,12 +28,17 @@ contract('Collaborator Royalty Funds Handler Architecture', function (accounts) 
     const RECIPIENTS_2 = [artist1, artist2];
     const SPLITS_3 = [HALF, QUARTER, QUARTER];
     const SPLITS_2 = [HALF, HALF];
+    const SEND_AMOUNT = "200";
+    const ETH_AMOUNT = ethers.utils.parseEther(SEND_AMOUNT);
+    const ERC20_AMOUNT = new BN("200000000000000000000"); // 200 * 10 ** 18
+    const SCALE_FACTOR = "100000";
     const FUNDS_HANDLER_V1 = "v1";
     const STARTING_EDITION = '12000';
 
     let royaltyImplV1, royaltyProxy, royaltyProxy2,
         royaltyRegistry, accessControls, deployerAcct,
-        token, proxyAddr, DEFAULT_ADMIN_ROLE, CONTRACT_ROLE;
+        token, erc20Token, proxyAddr, recipientTrackers, recipientBalances,
+        contractTracker, DEFAULT_ADMIN_ROLE, CONTRACT_ROLE;
 
     beforeEach(async () => {
 
@@ -97,7 +103,7 @@ contract('Collaborator Royalty Funds Handler Architecture', function (accounts) 
 
                 })
 
-            })
+            });
 
             context('once initialized', async () => {
 
@@ -105,7 +111,7 @@ contract('Collaborator Royalty Funds Handler Architecture', function (accounts) 
 
                     await royaltyImplV1.init(RECIPIENTS_3, SPLITS_3);
 
-                })
+                });
 
                 context('totalRecipients()', async () => {
 
@@ -113,7 +119,7 @@ contract('Collaborator Royalty Funds Handler Architecture', function (accounts) 
                         expect(await royaltyImplV1.totalRecipients()).to.bignumber.equal(THREE);
                     })
 
-                })
+                });
 
                 context('royaltyAtIndex()', async () => {
 
@@ -127,6 +133,69 @@ contract('Collaborator Royalty Funds Handler Architecture', function (accounts) 
                         }
 
                     })
+
+                });
+
+                context('ICollabFundsDrainable functions', async () => {
+
+                    beforeEach(async () => {
+
+                        // Also send ETH to the contract
+                        const [ownerSigner] = await ethers.getSigners();
+                        await ownerSigner.sendTransaction({
+                            to: royaltyImplV1.address,
+                            value: ethers.utils.parseEther(SEND_AMOUNT)
+                        });
+
+                        // Initialize Trackers
+                        contractTracker = await balance.tracker(royaltyImplV1.address);
+                        recipientTrackers = [];
+                        recipientBalances = [];
+                        for (let i = 0; i < RECIPIENTS_3.length; i++) {
+                            recipientTrackers[i] = await balance.tracker(RECIPIENTS_3[i]);
+                            recipientBalances[i] = await recipientTrackers[i].get();
+                        }
+
+                        // Mint and transfer some ERC20 funds to contract
+                        erc20Token = await MockERC20.new({from: owner});
+                        await erc20Token.transfer(royaltyImplV1.address, ERC20_AMOUNT);
+
+                    });
+
+                    context('drain()', async () => {
+
+                        it('ETH balance of contract drained, recipient balances increased appropriately', async () => {
+
+                            await royaltyImplV1.drain();
+                            const contractEndBalance = await contractTracker.get();
+                            expect(contractEndBalance).to.be.bignumber.equal("0");
+
+                            // N.B.: All these fugly toString()s required because BigNumber vs BN
+                            for (let i = 0; i < recipientTrackers.length; i++) {
+                                const singleUnitOfValue = ETH_AMOUNT.div(SCALE_FACTOR);
+                                const share = singleUnitOfValue.mul(SPLITS_3[i].toString());
+                                const expectedBalance = share.add(recipientBalances[i].toString());
+                                const recipientEndBalance = await recipientTrackers[i].get();
+                                expect(recipientEndBalance.toString()).to.be.equal(expectedBalance.toString());
+                            }
+
+                        });
+
+                        it('ERC20 balance of contract drained, recipient balances increased appropriately', async () => {
+                            await royaltyImplV1.drainERC20(erc20Token.address);
+                            const endTokenBalance = await erc20Token.balanceOf(royaltyImplV1.address);
+                            expect(endTokenBalance).to.be.bignumber.equal("0");
+
+                            for (let i = 0; i < RECIPIENTS_3.length; i++) {
+                                const singleUnitOfValue = ERC20_AMOUNT.div(new BN(SCALE_FACTOR));
+                                const share = singleUnitOfValue.mul(SPLITS_3[i]);
+                                const recipientEndBalance = await erc20Token.balanceOf(RECIPIENTS_3[i]);
+                                expect(recipientEndBalance.toString()).to.be.equal(share.toString());
+                            }
+
+                        });
+
+                    });
 
                 })
 
@@ -206,7 +275,7 @@ contract('Collaborator Royalty Funds Handler Architecture', function (accounts) 
 
                         })
 
-                    })
+                    });
 
                     context('royaltyInfo() with initial edition id', async () => {
 
@@ -219,7 +288,7 @@ contract('Collaborator Royalty Funds Handler Architecture', function (accounts) 
 
                         })
 
-                    })
+                    });
 
                     context('reuseRoyaltySetup()', async () => {
 
@@ -256,11 +325,11 @@ contract('Collaborator Royalty Funds Handler Architecture', function (accounts) 
 
                         })
 
-                    })
+                    });
 
                 });
 
-            })
+            });
 
         });
 
@@ -327,7 +396,7 @@ contract('Collaborator Royalty Funds Handler Architecture', function (accounts) 
 
                 });
 
-            })
+            });
 
             context('with multiple proxies', async () => {
 
@@ -394,7 +463,7 @@ contract('Collaborator Royalty Funds Handler Architecture', function (accounts) 
 
                 });
 
-            })
+            });
 
         });
 
