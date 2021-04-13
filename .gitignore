@@ -9,3 +9,4 @@ artifacts
 coverage.json
 coverage
 .idea/
+.env
