@@ -293,11 +293,15 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         // If we have a registry and its defined, use it
         if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(editionId)) {
 
-            // Note: any registry must be edition aware so to only store one entry for all within the edition
-            return royaltiesRegistryProxy.royaltyInfo(editionId);
+            (receiver, amount) = royaltiesRegistryProxy.royaltyInfo(editionId);
+
+        } else {
+
+            receiver = _getCreatorOfEdition(editionId);
+            amount = secondarySaleRoyalty;
+
         }
 
-        return (_getCreatorOfEdition(editionId), secondarySaleRoyalty);
     }
 
     // Expanded method at edition level and expanding on the funds receiver and the creator

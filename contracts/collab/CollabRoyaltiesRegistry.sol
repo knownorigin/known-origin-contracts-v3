@@ -41,8 +41,15 @@ contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
     }
 
     // Constructor
-    constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda) {
+    constructor(IKOAccessControlsLookup _accessControls) {
         accessControls = _accessControls;
+    }
+
+    // Set the IKODAV3 dependency.
+    // Can't be passed to constructor, circular since KODA requires this on its constructor
+    function setKoda(IKODAV3 _koda)
+    external
+    onlyAdmin {
         koda = _koda;
     }
 
@@ -146,7 +153,7 @@ contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
     view
     returns (address receiver, uint256 amount) {
         receiver = proxies[_editionId];
-        require(receiver != address(0));
+        require(receiver != address(0), "Edition not setup");
         amount = royaltyAmount;
     }
 
