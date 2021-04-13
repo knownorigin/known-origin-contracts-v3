@@ -56,7 +56,8 @@ contract FundsSplitter is IFundsHandler {
         return recipients.length;
     }
 
-    function royaltyAtIndex(uint256 index) public override view returns (address, uint256) {
-        return (recipients[index], splits[index]);
+    function royaltyAtIndex(uint256 _index) public override view returns (address recipient, uint256 split) {
+        recipient = recipients[_index];
+        split = splits[_index];
     }
 }

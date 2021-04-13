@@ -8,5 +8,5 @@ interface IFundsHandler {
 
     function totalRecipients() external view returns (uint256);
 
-    function royaltyAtIndex(uint256 index) external view returns (address, uint256);
+    function royaltyAtIndex(uint256 index) external view returns (address _recipient, uint256 _split);
 }

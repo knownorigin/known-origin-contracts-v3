@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "../collaborators/IFundsHandler.sol";
-import "../collaborators/simple/FundsReceiver.sol";
+import "../collaborators/handlers/FundsReceiver.sol";
 
 import "../../access/KOAccessControls.sol";
 
