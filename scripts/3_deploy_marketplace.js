@@ -40,8 +40,8 @@ async function main() {
 
   const KODAV3Marketplace = await ethers.getContractFactory('KODAV3Marketplace');
   const marketplace = await KODAV3Marketplace.deploy(
-    kodaV3Deployment.address,
     accessControlsDeployment.address,
+    kodaV3Deployment.address,
     commissionAccount
   );
   await marketplace.deployed();
