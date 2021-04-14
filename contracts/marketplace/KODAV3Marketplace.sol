@@ -693,6 +693,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         koda.safeTransferFrom(_seller, _buyer, _tokenId);
 
         // fire royalties callback event
+        // FIXME remove this if dropped from ERC-2981
         koda.receivedRoyalties(royaltyRecipient, _buyer, _tokenId, address(0), creatorRoyalties);
     }
 

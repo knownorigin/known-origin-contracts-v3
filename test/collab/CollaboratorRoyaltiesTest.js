@@ -1,9 +1,9 @@
-const {BN, constants, expectEvent, expectRevert, balance} = require('@openzeppelin/test-helpers');
-const {ZERO_ADDRESS} = constants;
+const {BN, constants, expectEvent, expectRevert, balance, ether, time} = require('@openzeppelin/test-helpers');
 const {expect} = require('chai');
 const hre = require("hardhat");
 const ethers = hre.ethers;
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
+const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 const RoyaltiesRegistry = artifacts.require("CollabRoyaltiesRegistry");
@@ -12,8 +12,9 @@ const MockERC20 = artifacts.require('MockERC20');
 
 contract('Collaborator Royalty Funds Handling Architecture', function (accounts) {
 
-    const [owner, artist1, artist2, artist3, admin, deployer, contract] = accounts;
+    const [owner, artist1, artist2, artist3, collectorA, collectorB, koCommission, admin, deployer, contract] = accounts;
     const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
+    const _0_5_ETH = ether('0.5');
     const ZERO = new BN(0);
     const TWO = new BN(2);
     const THREE = new BN(3);
@@ -36,7 +37,7 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
     const FUNDS_HANDLER_V1 = "v1";
 
     let royaltyImplV1, royaltyProxy, royaltyProxy2,
-        royaltiesRegistry, accessControls, deployerAcct,
+        royaltiesRegistry, accessControls, deployerAcct, marketplace,
         token, erc20Token, proxyAddr, recipientTrackers, recipientBalances,
         contractTracker, DEFAULT_ADMIN_ROLE, CONTRACT_ROLE;
 
@@ -69,14 +70,8 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
         await accessControls.grantRole(DEFAULT_ADMIN_ROLE, admin, {from: owner});
         await accessControls.grantRole(CONTRACT_ROLE, contract, {from: owner});
 
-        // ----------------------
-        // Create implementations
-        // ----------------------
-
-        // Royalty Funds Handler V1: Receiver
-        royaltyImplV1 = await RoyaltyImplV1.new(
-            {from: owner}
-        );
+        // Funds Handler Implementation V1: Receiver
+        royaltyImplV1 = await RoyaltyImplV1.new({from: owner});
 
     });
 
@@ -249,90 +244,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
                     })
                 });
 
-                context('once a royalty has been set up', async () => {
-
-                    beforeEach(async () => {
-
-                        // Get the proxy address with a static call
-                        proxyAddr = await royaltiesRegistry.setupRoyalty.call(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
-
-                        // Actually deploy the Proxy
-                        await royaltiesRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
-
-                    });
-
-                    context('hasRoyalties()', async () => {
-
-                        it('false if token id not in edition', async () => {
-
-                            // Check the royalty info for the edition id
-                            const hasRoyalties = await royaltiesRegistry.hasRoyalties(TOKEN_ID_2);
-                            expect(hasRoyalties).to.be.false;
-
-                        })
-
-                        it('true if token id in edition', async () => {
-
-                            // Check the royalty info for the edition id
-                            const hasRoyalties = await royaltiesRegistry.hasRoyalties(TOKEN_ID);
-                            expect(hasRoyalties).to.be.true;
-
-                        })
-
-                    });
-
-                    context('royaltyInfo() with initial edition id', async () => {
-
-                        it('returns proxy address and royalty amount', async () => {
-
-                            // Check the royalty info for the edition id
-                            const info = await royaltiesRegistry.royaltyInfo(EDITION_ID);
-                            expect(info.receiver).to.equal(proxyAddr);
-                            expect(info.amount.eq(ROYALTY_AMOUNT)).to.be.true;
-
-                        })
-
-                    });
-
-                    context('reuseRoyaltySetup()', async () => {
-
-                        it('emits RoyaltySetupReused event on success', async () => {
-
-                            // Make sure the proper event was emitted
-                            const receipt = await royaltiesRegistry.reuseRoyaltySetup(EDITION_ID_2, EDITION_ID, {from: contract});
-                            expectEvent(receipt, 'RoyaltySetupReused', {
-                                editionId: EDITION_ID_2,
-                                handler: proxyAddr
-                            })
-                        });
-
-                        it('appropriate proxy is reused', async () => {
-
-                            // Ensure the same proxy will be reused
-                            expect(await royaltiesRegistry.reuseRoyaltySetup.call(EDITION_ID_2, EDITION_ID, {from: contract})).to.bignumber.eq(proxyAddr);
-
-                        });
-
-                        context('royaltyInfo() with second edition id', async () => {
-
-                            it('returns proxy address and royalty amount', async () => {
-
-                                // Reuse proxy
-                                await royaltiesRegistry.reuseRoyaltySetup(EDITION_ID_2, EDITION_ID, {from: contract});
-
-                                // Check the royalty info for the edition id
-                                const info = await royaltiesRegistry.royaltyInfo(EDITION_ID_2);
-                                expect(info.receiver).to.equal(proxyAddr);
-                                expect(info.amount.eq(ROYALTY_AMOUNT)).to.be.true;
-
-                            })
-
-                        })
-
-                    });
-
-                });
-
             });
 
             context('once a royalty has been set up', async () => {
@@ -417,22 +328,11 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
                 });
 
-                context('when accessed from NFT', async () => {
-
-                    beforeEach(async () => {
-
-
-                    });
+                context('when registry is accessed from NFT', async () => {
 
                     it('NFT\'s royaltyRegistryActive() returns true', async () => {
 
                         expect(await token.royaltyRegistryActive()).to.be.true;
-
-                    });
-
-                    it('NFT\'s royaltiesRegistry() returns registry address', async () => {
-
-                        expect(await token.royaltiesRegistry()).to.be.equal(royaltiesRegistry.address);
 
                     });
 
@@ -447,8 +347,8 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
                         expect(info.receiver).to.equal(proxyAddr);
                         expect(info.amount.eq(ROYALTY_AMOUNT)).to.be.true;
 
-                        // Check the royalties registry via the NFT FIXME Why so fail?
-                        info = await token.royaltyInfo(EDITION_ID);
+                        // Check the royalties registry via the NFT
+                        info = await token.royaltyInfo.call(TOKEN_ID);
                         expect(info.receiver).to.equal(proxyAddr);
                         expect(info.amount.eq(ROYALTY_AMOUNT)).to.be.true;
 
@@ -459,7 +359,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
             });
 
         });
-
 
     });
 
@@ -498,17 +397,17 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
                 context('totalRecipients()', async () => {
 
-                        it('returns the correct number of recipients', async () => {
-                            const totalRecipients = await royaltyProxy.totalRecipients();
-                            expect(totalRecipients.toString()).to.bignumber.equal(THREE);
-                        })
+                    it('returns the correct number of recipients', async () => {
+                        const totalRecipients = await royaltyProxy.totalRecipients();
+                        expect(totalRecipients.toString()).to.bignumber.equal(THREE);
+                    })
 
-                        it('implementation does *not* know the number of recipients', async () => {
-                            const totalRecipients = await royaltyImplV1.totalRecipients();
-                            expect(totalRecipients.toString()).to.bignumber.equal(ZERO);
-                        })
+                    it('implementation does *not* know the number of recipients', async () => {
+                        const totalRecipients = await royaltyImplV1.totalRecipients();
+                        expect(totalRecipients.toString()).to.bignumber.equal(ZERO);
+                    })
 
-                    });
+                });
 
                 context('royaltyAtIndex()', async () => {
 
@@ -594,6 +493,51 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
             });
 
         });
+
+    });
+
+    describe('Marketplace Secondary Sales', () => {
+
+        beforeEach(async () => {
+
+            // Create marketplace and enable in whitelist
+            marketplace = await KODAV3Marketplace.new(accessControls.address, token.address, koCommission, {from: owner});
+            await accessControls.grantRole(CONTRACT_ROLE, marketplace.address, {from: owner});
+
+            // Add funds handler to registry
+            await royaltiesRegistry.addHandler(FUNDS_HANDLER_V1, royaltyImplV1.address);
+
+            // Ensure marketplace is approved
+            await token.setApprovalForAll(marketplace.address, true, {from: artist1});
+
+            // Create an Edition
+            await token.mintBatchEdition(3, artist1, TOKEN_URI, {from: contract});
+
+            // Setup royalty
+            await royaltiesRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+
+            // List edition
+            //await marketplace.listEdition(artist1, EDITION_ID, _0_5_ETH, await time.latest(), {from: contract});
+
+            // Do primary sale of a token to CollectorA
+            //await marketplace.buyEditionToken(EDITION_ID, {from: collectorA, value: _0_5_ETH});
+
+            // Do primary sale of a token to CollectorA
+            await marketplace.placeTokenBid(EDITION_ID, {from: collectorA, value: _0_5_ETH});
+            await marketplace.acceptTokenBid(EDITION_ID, _0_5_ETH, {from: artist1});
+
+        });
+
+        it('sends royalties to funds handler accepted token bid', async () => {
+
+            // CollectorB offers 0.5 ETH for token
+            await marketplace.placeTokenBid(EDITION_ID, {from: collectorB, value: _0_5_ETH});
+
+            // CollectorA accepts bid
+            await marketplace.acceptTokenBid(EDITION_ID, _0_5_ETH, {from: collectorA});
+
+        });
+
 
     });
 
