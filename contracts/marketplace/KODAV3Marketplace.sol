@@ -10,6 +10,8 @@ import {IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySaleMarketplace} from "./
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
+import "hardhat/console.sol";
+
 contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySaleMarketplace, Pausable, ReentrancyGuard {
 
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);

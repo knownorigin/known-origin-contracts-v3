@@ -13,15 +13,19 @@ contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
 
     // State
     IKODAV3 public koda;
+
+    // TODO add admin getter for access controls
     IKOAccessControlsLookup public accessControls;
+
+    // TODO expose getters for these as well as index and length for enumeration
     mapping(string => address) internal handlers;
     mapping(uint256 => address) internal proxies;
-    uint256 public royaltyAmount = 125000; // 12.5% as represented in eip-2981
+    uint256 public royaltyAmount = 12_50000; // 12.5% as represented in eip-2981
 
     // Events
     event HandlerAdded(string name, address handler);
-    event RoyaltySetup(uint256 editionId, string handlerName, address handler, address[] recipients, uint256[] splits);
-    event RoyaltySetupReused(uint256 editionId, address handler);
+    event RoyaltySetup(uint256 indexed editionId, string handlerName, address handler, address[] recipients, uint256[] splits);
+    event RoyaltySetupReused(uint256 indexed editionId, address indexed handler);
 
     // Modifiers
     modifier onlyContract() {
@@ -67,6 +71,7 @@ contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
     view
     returns (bool) {
 
+        // TODO wonder if we can use our special _editionOfTokenId() method to work this out without the contract call
         // Get the associated edition id for the given token id
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
 
@@ -120,6 +125,8 @@ contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
     onlyContractOrCreator(_editionId)
     returns (address proxy) {
 
+        // TODO guard to make sure something doesnt override the set handler for an edition
+
         // One is the loneliest number
         require(_recipients.length > 1, "Collab must have more than one funds recipient");
 
@@ -135,7 +142,7 @@ contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
         proxy = Clones.clone(handler);
 
         // Initialize proxy
-        ICollabFundsHandler(proxy).init(_recipients,_splits);
+        ICollabFundsHandler(proxy).init(_recipients, _splits);
 
         // Verify that it was initialized properly
         require(ICollabFundsHandler(proxy).totalRecipients() == _recipients.length);
@@ -155,6 +162,10 @@ contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
         receiver = proxies[_editionId];
         require(receiver != address(0), "Edition not setup");
         amount = royaltyAmount;
+    }
+
+    function getProxy(uint256 _editionId) public view returns (address) {
+        return proxies[_editionId];
     }
 
 }
