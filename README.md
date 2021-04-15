@@ -20,8 +20,8 @@
 
 ### Marketplace
 
-* `Rinkeby` - `0xd5c481e13ba6dc47fb37863289d44a561bd823ec` (verified)
+* `Rinkeby` - `0x0Eb65B4c3d3dE340e1b15384f8F211784247a37A` (verified)
 
 ### Minting Factory
 
-* `Rinkeby` - `0xabb3738f04dc2ec20f4ae4462c3d069d02ae045b` (verified)
+* `Rinkeby` - `0xe28e054d596576841682e8c993E415B3ccB2EBeB` (verified)
