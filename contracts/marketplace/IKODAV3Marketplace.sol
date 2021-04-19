@@ -47,7 +47,17 @@ interface IEditionSteppedMarketplace {
     function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice) external;
 }
 
-interface IKODAV3PrimarySaleMarketplace is IEditionBuyNowMarketplace, IEditionSteppedMarketplace, IEditionOffersMarketplace {
+interface ITokenWithReservedBidsMarketplace {
+    event TokenListedForReserveBidding(uint256 indexed _tokenId, uint256 _reservePrice, uint128 _startDate);
+    event BidPlacedOnTokenWithReserve(uint256 indexed _tokenId, address indexed _bidder, uint256 _amount);
+    event TokenWithReserveBiddingAuctionResulted(uint256 indexed _tokenId, uint256 _finalPrice, address indexed _winner);
+
+    function placeBidOnTokenWithReserve(uint256 _tokenId) external payable;
+    function listTokenForReserveBidding(uint256 _tokenId, uint256 _reservePrice, uint128 _startDate) external;
+    function resultTokenWithReserveBiddingAuction(uint256 _tokenId) external;
+}
+
+interface IKODAV3PrimarySaleMarketplace is IEditionBuyNowMarketplace, IEditionSteppedMarketplace, IEditionOffersMarketplace, ITokenWithReservedBidsMarketplace {
     // combo
 }
 

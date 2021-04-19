@@ -469,16 +469,16 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         price = uint256(steppedAuction.basePrice) + stepAmount;
     }
 
-    function placeTokenWithReserveBid(uint256 _tokenId)
+    function placeBidOnTokenWithReserve(uint256 _tokenId)
     public
-        // todo override
+    override
     payable
     whenNotPaused
     nonReentrant {
         Reserve24HourBidding storage tokenWithReserveBid = tokenWithReserveBids[_tokenId];
         require(tokenWithReserveBid.reservePrice > 0, "Token not set up for reserve bidding");
-        require(msg.value >= tokenWithReserveBid.reservePrice, "Token reserve not met");
         require(block.timestamp >= tokenWithReserveBid.startDate, "Token not accepting bids yet");
+        require(msg.value >= tokenWithReserveBid.bid.add(minBidAmount), "You have not exceeded previous bid by min bid amount");
 
         // if a bid has been placed, then we will have a bidding end timestamp and we need to ensure no one
         // can bid beyond this
@@ -501,11 +501,13 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         }
 
         tokenWithReserveBid.bid = msg.value;
+
+        emit BidPlacedOnTokenWithReserve(_tokenId, _msgSender(), msg.value);
     }
 
     function listTokenForReserveBidding(uint256 _tokenId, uint256 _reservePrice, uint128 _startDate)
     public
-        // todo override
+    override
     whenNotPaused
     nonReentrant {
         require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
@@ -520,10 +522,42 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
             bid: 0
         });
 
-        // todo emit event
+        emit TokenListedForReserveBidding(_tokenId, _reservePrice, _startDate);
     }
 
-    // todo result reserve bidding after end
+    function resultTokenWithReserveBiddingAuction(uint256 _tokenId)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        Reserve24HourBidding storage tokenWithReserveBid = tokenWithReserveBids[_tokenId];
+
+        require(tokenWithReserveBid.reservePrice > 0, "No active auction");
+        require(tokenWithReserveBid.bid > 0, "No bids received");
+        require(tokenWithReserveBid.bid >= tokenWithReserveBid.reservePrice, "Reserve not met");
+        require(block.timestamp > tokenWithReserveBid.biddingEnd, "Bidding has not yet ended");
+        require(tokenWithReserveBid.bidder == _msgSender() || koda.ownerOf(_tokenId) == _msgSender());
+
+        // todo send token to winner
+
+        // todo - edition sale funds? rename or ok to use this method?
+        handleEditionSaleFunds(tokenWithReserveBid.seller, tokenWithReserveBid.bid);
+
+        delete tokenWithReserveBids[_tokenId];
+    }
+
+    function convertTokenWithReserveAuctionToBuyItNow(uint256 _tokenId)
+    public
+    // todo override
+    whenNotPaused
+    nonReentrant {
+        Reserve24HourBidding storage tokenWithReserveBid = tokenWithReserveBids[_tokenId];
+
+        require(tokenWithReserveBid.reservePrice > 0, "No active auction");
+        require(tokenWithReserveBid.bid < tokenWithReserveBid.reservePrice, "Can only convert before reserve met");
+
+        // todo rest of logic
+    }
 
     // primary sale helpers
 
@@ -531,7 +565,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         // for stepped sales, should they be sold in reverse order ie. 10...1 and not 1...10?
         // get next token to sell along with the royalties recipient and the original creator
         (address receiver, address creator, uint256 tokenId) = _reverse
-            ? koda.facilitateReveresPrimarySale(_editionId)
+            ? koda.facilitateReveresPrimarySale(_editionId) // todo - is function name a known typo?
             : koda.facilitateNextPrimarySale(_editionId);
 
         // split money
