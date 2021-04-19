@@ -57,6 +57,15 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         uint16 currentStep;
     }
 
+    struct Reserve24HourBidding {
+        address seller;
+        address bidder;
+        uint256 reservePrice;
+        uint256 bid;
+        uint128 startDate;
+        uint128 biddingEnd;
+    }
+
     // Edition ID to Offer mapping
     mapping(uint256 => Offer) public editionOffers;
 
@@ -74,6 +83,9 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
     // Token ID to Listing
     mapping(uint256 => Listing) public tokenListings;
+
+    // Token with reserve bids
+    mapping(uint256 => Reserve24HourBidding) public tokenWithReserveBids;
 
     // KODA token
     IKODAV3 public koda;
@@ -456,6 +468,62 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         uint256 stepAmount = uint256(steppedAuction.stepPrice) * uint256(steppedAuction.currentStep);
         price = uint256(steppedAuction.basePrice) + stepAmount;
     }
+
+    function placeTokenWithReserveBid(uint256 _tokenId)
+    public
+        // todo override
+    payable
+    whenNotPaused
+    nonReentrant {
+        Reserve24HourBidding storage tokenWithReserveBid = tokenWithReserveBids[_tokenId];
+        require(tokenWithReserveBid.reservePrice > 0, "Token not set up for reserve bidding");
+        require(msg.value >= tokenWithReserveBid.reservePrice, "Token reserve not met");
+        require(block.timestamp >= tokenWithReserveBid.startDate, "Token not accepting bids yet");
+
+        // if a bid has been placed, then we will have a bidding end timestamp and we need to ensure no one
+        // can bid beyond this
+        if (tokenWithReserveBid.biddingEnd > 0) {
+            require(block.timestamp <= tokenWithReserveBid.biddingEnd, "Token is no longer accepting bids");
+        }
+
+        tokenWithReserveBid.bidder = _msgSender();
+
+        // if this is the first bid, then bidding ends in 24 hours
+        // if it is not the first bid then if near the end, then extend the bidding end
+        if (tokenWithReserveBid.bid == 0) {
+            tokenWithReserveBid.biddingEnd = uint128(block.timestamp) + uint128(24 hours);
+        } else {
+            uint128 secondsUntilBiddingEnd = tokenWithReserveBid.biddingEnd - uint128(block.timestamp);
+            if (secondsUntilBiddingEnd <= uint128(15 minutes)) {
+                // todo configurable bidding end extension param
+                tokenWithReserveBid.biddingEnd = tokenWithReserveBid.biddingEnd + uint128(15 minutes);
+            }
+        }
+
+        tokenWithReserveBid.bid = msg.value;
+    }
+
+    function listTokenForReserveBidding(uint256 _tokenId, uint256 _reservePrice, uint128 _startDate)
+    public
+        // todo override
+    whenNotPaused
+    nonReentrant {
+        require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
+        require(_reservePrice >= minBidAmount, "Reserve price not enough");
+
+        tokenWithReserveBids[_tokenId] = Reserve24HourBidding({
+            seller: _msgSender(),
+            bidder: address(0),
+            reservePrice: _reservePrice,
+            startDate: _startDate,
+            biddingEnd: 0,
+            bid: 0
+        });
+
+        // todo emit event
+    }
+
+    // todo result reserve bidding after end
 
     // primary sale helpers
 
