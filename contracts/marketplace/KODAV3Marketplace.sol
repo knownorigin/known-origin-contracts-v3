@@ -57,11 +57,11 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         uint16 currentStep;
     }
 
-    struct Reserve24HourBidding {
+    struct ReserveAuction {
         address seller;
         address bidder;
-        uint256 reservePrice;
-        uint256 bid;
+        uint256 reservePrice; // todo u128
+        uint256 bid; // todo u128
         uint128 startDate;
         uint128 biddingEnd;
     }
@@ -85,7 +85,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     mapping(uint256 => Listing) public tokenListings;
 
     // Token with reserve bids
-    mapping(uint256 => Reserve24HourBidding) public tokenWithReserveBids;
+    mapping(uint256 => ReserveAuction) public tokenWithReserveBids;
 
     // KODA token
     IKODAV3 public koda;
@@ -469,16 +469,17 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         price = uint256(steppedAuction.basePrice) + stepAmount;
     }
 
+    // todo edition level
     function placeBidOnTokenWithReserve(uint256 _tokenId)
     public
     override
     payable
     whenNotPaused
     nonReentrant {
-        Reserve24HourBidding storage tokenWithReserveBid = tokenWithReserveBids[_tokenId];
+        ReserveAuction storage tokenWithReserveBid = tokenWithReserveBids[_tokenId];
         require(tokenWithReserveBid.reservePrice > 0, "Token not set up for reserve bidding");
         require(block.timestamp >= tokenWithReserveBid.startDate, "Token not accepting bids yet");
-        require(msg.value >= tokenWithReserveBid.bid.add(minBidAmount), "You have not exceeded previous bid by min bid amount");
+        require(msg.value >= tokenWithReserveBid.bid + minBidAmount, "You have not exceeded previous bid by min bid amount");
 
         // if a bid has been placed, then we will have a bidding end timestamp and we need to ensure no one
         // can bid beyond this
@@ -491,6 +492,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         // if this is the first bid, then bidding ends in 24 hours
         // if it is not the first bid then if near the end, then extend the bidding end
         if (tokenWithReserveBid.bid == 0) {
+            // todo make admin configurable and only set once reserve met
             tokenWithReserveBid.biddingEnd = uint128(block.timestamp) + uint128(24 hours);
         } else {
             uint128 secondsUntilBiddingEnd = tokenWithReserveBid.biddingEnd - uint128(block.timestamp);
@@ -502,9 +504,15 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
         tokenWithReserveBid.bid = msg.value;
 
+        // todo refund previous bidder
+
         emit BidPlacedOnTokenWithReserve(_tokenId, _msgSender(), msg.value);
     }
 
+    // todo listTokenForReserveAuction
+    // todo edition level
+    // todo primary and secondary sales percentages
+    // todo check edition size
     function listTokenForReserveBidding(uint256 _tokenId, uint256 _reservePrice, uint128 _startDate)
     public
     override
@@ -512,8 +520,10 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     nonReentrant {
         require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
         require(_reservePrice >= minBidAmount, "Reserve price not enough");
+        require(tokenWithReserveBids[_tokenId].reservePrice == 0, "Auction in flight");
 
-        tokenWithReserveBids[_tokenId] = Reserve24HourBidding({
+        // todo change mapping name
+        tokenWithReserveBids[_tokenId] = ReserveAuction({
             seller: _msgSender(),
             bidder: address(0),
             reservePrice: _reservePrice,
@@ -525,12 +535,13 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         emit TokenListedForReserveBidding(_tokenId, _reservePrice, _startDate);
     }
 
+    // todo edition level
     function resultTokenWithReserveBiddingAuction(uint256 _tokenId)
     public
     override
     whenNotPaused
     nonReentrant {
-        Reserve24HourBidding storage tokenWithReserveBid = tokenWithReserveBids[_tokenId];
+        ReserveAuction storage tokenWithReserveBid = tokenWithReserveBids[_tokenId];
 
         require(tokenWithReserveBid.reservePrice > 0, "No active auction");
         require(tokenWithReserveBid.bid > 0, "No bids received");
@@ -538,7 +549,8 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         require(block.timestamp > tokenWithReserveBid.biddingEnd, "Bidding has not yet ended");
         require(tokenWithReserveBid.bidder == _msgSender() || koda.ownerOf(_tokenId) == _msgSender());
 
-        // todo send token to winner
+        // send token to winner
+        koda.safeTransferFrom(tokenWithReserveBid.seller, tokenWithReserveBid.bidder, _tokenId);
 
         // todo - edition sale funds? rename or ok to use this method?
         handleEditionSaleFunds(tokenWithReserveBid.seller, tokenWithReserveBid.bid);
@@ -546,17 +558,38 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         delete tokenWithReserveBids[_tokenId];
     }
 
-    function convertTokenWithReserveAuctionToBuyItNow(uint256 _tokenId)
+    // todo withdraw bid if reserve not met
+
+    // todo reduce reserve if reserve not met
+
+    function convertTokenWithReserveAuctionToBuyItNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate)
     public
     // todo override
     whenNotPaused
     nonReentrant {
-        Reserve24HourBidding storage tokenWithReserveBid = tokenWithReserveBids[_tokenId];
+        ReserveAuction storage tokenWithReserveBid = tokenWithReserveBids[_tokenId];
 
         require(tokenWithReserveBid.reservePrice > 0, "No active auction");
         require(tokenWithReserveBid.bid < tokenWithReserveBid.reservePrice, "Can only convert before reserve met");
+        require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
 
-        // todo rest of logic
+        // refund any bids
+        if (tokenWithReserveBid.bid > 0) {
+            _refundBidder(tokenWithReserveBid.bidder, tokenWithReserveBid.bid);
+        }
+
+        delete tokenWithReserveBids[_tokenId];
+
+        // No contracts can list to prevent money lockups on transfer
+        require(!Address.isContract(_msgSender()), "Cannot list as a contract");
+
+        // Check price over min bid
+        require(_listingPrice >= minBidAmount, "Listing price not enough");
+
+        tokenListings[_tokenId] = Listing(_listingPrice, _startDate, _msgSender());
+
+        // todo work out approach
+        emit TokenListed(_tokenId, _msgSender(), _listingPrice);
     }
 
     // primary sale helpers
@@ -879,3 +912,4 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         super._unpause();
     }
 }
+
