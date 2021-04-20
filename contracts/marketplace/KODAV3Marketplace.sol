@@ -17,6 +17,8 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     event AdminUpdateSecondarySaleCommission(uint256 _platformSecondarySaleCommission);
     event AdminUpdateModulo(uint256 _modulo);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
+    event AdminUpdateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow);
+    event AdminUpdateReserveAuctionLengthOnceReserveMet(uint128 _reserveAuctionLengthOnceReserveMet);
 
     modifier onlyContract(){
         require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
@@ -111,10 +113,8 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     // Bid lockup period
     uint256 public bidLockupPeriod = 6 hours;
 
-    // todo add admin setter (with event)
     uint128 reserveAuctionBidExtensionWindow = 15 minutes;
 
-    // todo add admin setter (with event)
     uint128 reserveAuctionLengthOnceReserveMet = 24 hours;
 
     // TODO add admin setter (with event)
@@ -643,8 +643,17 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
         editionListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
 
-        // todo for conversion methods, do we need events for indicating conversions
         emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
+    }
+
+    function updateReserveAuctionBidExtensionWindow(uint256 _reserveAuctionBidExtensionWindow) onlyAdmin public {
+        reserveAuctionBidExtensionWindow = _reserveAuctionBidExtensionWindow;
+        emit AdminUpdateReserveAuctionBidExtensionWindow(_reserveAuctionBidExtensionWindow);
+    }
+
+    function updateReserveAuctionLengthOnceReserveMet(uint256 _reserveAuctionLengthOnceReserveMet) onlyAdmin public {
+        reserveAuctionLengthOnceReserveMet = _reserveAuctionLengthOnceReserveMet;
+        emit AdminUpdateReserveAuctionLengthOnceReserveMet(_reserveAuctionLengthOnceReserveMet);
     }
 
     // primary sale helpers
