@@ -524,7 +524,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         require(editionWithReserveAuctions[_editionId].reservePrice == 0, "Auction already in flight");
         require(koda.ownerOf(_editionId) == _msgSender(), "Not token owner");
         require(koda.getSizeOfEdition(_editionId) == 1, "Only 1 of 1 editions are supported");
-        require(_reservePrice >= minBidAmount, "Reserve price not enough");
+        require(_reservePrice >= minBidAmount, "Reserve price must be at least min bid");
 
         editionWithReserveAuctions[_editionId] = ReserveAuction({
             seller: _msgSender(),
@@ -581,14 +581,25 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         emit BidWithdrawnFromReserveAuction(_editionId, editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
     }
 
-    // todo reduce reserve if reserve not met
-    function reduceReservePriceForReserveAuction(uint256 _editionId, uint256 _reservePrice)
+    // can only do this if the reserve has not been met
+    function updateReservePriceForReserveAuction(uint256 _editionId, uint128 _reservePrice)
     public
-    // todo override
+    override
     whenNotPaused
     nonReentrant {
+        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
 
+        require(editionWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
+        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller");
+        require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Reserve price reached");
+        require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
+
+        editionWithReserveAuction.reservePrice = _reservePrice;
+
+        emit ReservePriceUpdated(_editionId, _reservePrice);
     }
+
+    // todo cancel reserve auction? i.e. if you didn't want to convert to buy it now
 
     function convertTokenWithReserveAuctionToBuyItNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate)
     public
