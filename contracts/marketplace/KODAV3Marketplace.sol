@@ -111,6 +111,12 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     // Bid lockup period
     uint256 public bidLockupPeriod = 6 hours;
 
+    // todo add admin setter (with event)
+    uint128 reserveAuctionBidExtensionWindow = 15 minutes;
+
+    // todo add admin setter (with event)
+    uint128 reserveAuctionLengthOnceReserveMet = 24 hours;
+
     // TODO add admin setter (with event)
     IKOAccessControlsLookup public accessControls;
 
@@ -479,32 +485,33 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         ReserveAuction storage tokenWithReserveBid = tokenWithReserveBids[_tokenId];
         require(tokenWithReserveBid.reservePrice > 0, "Token not set up for reserve bidding");
         require(block.timestamp >= tokenWithReserveBid.startDate, "Token not accepting bids yet");
+        require(!Address.isContract(_msgSender()), "Cannot bid as a contract");
         require(msg.value >= tokenWithReserveBid.bid + minBidAmount, "You have not exceeded previous bid by min bid amount");
 
         // if a bid has been placed, then we will have a bidding end timestamp and we need to ensure no one
         // can bid beyond this
         if (tokenWithReserveBid.biddingEnd > 0) {
-            require(block.timestamp <= tokenWithReserveBid.biddingEnd, "Token is no longer accepting bids");
+            require(block.timestamp < tokenWithReserveBid.biddingEnd, "Token is no longer accepting bids");
         }
 
-        tokenWithReserveBid.bidder = _msgSender();
-
-        // if this is the first bid, then bidding ends in 24 hours
-        // if it is not the first bid then if near the end, then extend the bidding end
-        if (tokenWithReserveBid.bid == 0) {
-            // todo make admin configurable and only set once reserve met
-            tokenWithReserveBid.biddingEnd = uint128(block.timestamp) + uint128(24 hours);
-        } else {
+        // If the reserve has been met, then bidding will end in 24 hours
+        // if we are near the end, we have bids, then extend the bidding end
+        if (tokenWithReserveBid.bid + msg.value >= tokenWithReserveBid.reservePrice && tokenWithReserveBid.biddingEnd == 0) {
+            tokenWithReserveBid.biddingEnd = uint128(block.timestamp) + reserveAuctionLengthOnceReserveMet;
+        } else if (tokenWithReserveBid.biddingEnd > 0) {
             uint128 secondsUntilBiddingEnd = tokenWithReserveBid.biddingEnd - uint128(block.timestamp);
-            if (secondsUntilBiddingEnd <= uint128(15 minutes)) {
-                // todo configurable bidding end extension param
-                tokenWithReserveBid.biddingEnd = tokenWithReserveBid.biddingEnd + uint128(15 minutes);
+            if (secondsUntilBiddingEnd <= reserveAuctionBidExtensionWindow) {
+                tokenWithReserveBid.biddingEnd = tokenWithReserveBid.biddingEnd + reserveAuctionBidExtensionWindow;
             }
         }
 
-        tokenWithReserveBid.bid = msg.value;
+        // if someone else has previously bid, there is a bid we need to refund
+        if (tokenWithReserveBid.bid > 0) {
+            _refundBidder(tokenWithReserveBid.bidder, tokenWithReserveBid.bid);
+        }
 
-        // todo refund previous bidder
+        tokenWithReserveBid.bid = msg.value;
+        tokenWithReserveBid.bidder = _msgSender();
 
         emit BidPlacedOnTokenWithReserve(_tokenId, _msgSender(), msg.value);
     }
