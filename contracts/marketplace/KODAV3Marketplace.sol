@@ -515,19 +515,17 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         emit BidPlacedOnReserveAuction(_editionId, _msgSender(), msg.value);
     }
 
-    // todo primary and secondary sales percentages
-    function listEditionForReserveAuction(uint256 _editionId, uint128 _reservePrice, uint128 _startDate)
+    function listEditionForReserveAuction(address _creator, uint256 _editionId, uint128 _reservePrice, uint128 _startDate)
     public
     override
     whenNotPaused
-    nonReentrant {
+    onlyContract {
         require(editionWithReserveAuctions[_editionId].reservePrice == 0, "Auction already in flight");
-        require(koda.ownerOf(_editionId) == _msgSender(), "Not token owner");
         require(koda.getSizeOfEdition(_editionId) == 1, "Only 1 of 1 editions are supported");
         require(_reservePrice >= minBidAmount, "Reserve price must be at least min bid");
 
         editionWithReserveAuctions[_editionId] = ReserveAuction({
-            seller: _msgSender(),
+            seller: _creator,
             bidder: address(0),
             reservePrice: _reservePrice,
             startDate: _startDate,
@@ -555,7 +553,8 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         );
 
         // send token to winner
-        // todo - check if edition ID matches token ID and think about what happens when the seller transfers the token
+        // todo - check if edition ID matches token ID and think about what happens when the seller transfers the token before resulting
+        // todo we could allow buyer to withdraw if we know seller
         koda.safeTransferFrom(editionWithReserveAuction.seller, editionWithReserveAuction.bidder, _editionId);
 
         handleEditionSaleFunds(editionWithReserveAuction.seller, editionWithReserveAuction.bid);
@@ -618,8 +617,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
         editionOffersStartDate[_editionId] = _startDate;
 
-        // Emit event
-        emit EditionAcceptingOffer(_editionId, _startDate);
+        emit ReserveAuctionConvertedToOffers(_editionId, _startDate);
     }
 
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
@@ -640,16 +638,13 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
 
         delete editionWithReserveAuctions[_editionId];
 
-        // No contracts can list to prevent money lockups on transfer
-        require(!Address.isContract(_msgSender()), "Cannot list as a contract");
-
         // Check price over min bid
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         editionListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
 
         // todo for conversion methods, do we need events for indicating conversions
-        emit EditionListed(_editionId, _listingPrice, _startDate);
+        emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
     }
 
     // primary sale helpers

@@ -53,9 +53,11 @@ interface IReservedAuctionMarketplace {
     event ReserveAuctionResulted(uint256 indexed _editionId, uint256 _finalPrice, address indexed _winner);
     event BidWithdrawnFromReserveAuction(uint256 _editionId, address indexed _bidder, uint128 _bid);
     event ReservePriceUpdated(uint256 indexed _editionId, uint256 _reservePrice);
+    event ReserveAuctionConvertedToOffers(uint256 indexed _editionId, uint128 _startDate);
+    event ReserveAuctionConvertedToBuyItNow(uint256 indexed _editionId, uint128 _listingPrice, uint128 _startDate);
 
     function placeBidOnReserveAuction(uint256 _editionId) external payable;
-    function listEditionForReserveAuction(uint256 _editionId, uint128 _reservePrice, uint128 _startDate) external;
+    function listEditionForReserveAuction(address _creator, uint256 _editionId, uint128 _reservePrice, uint128 _startDate) external;
     function resultReserveAuction(uint256 _editionId) external;
     function withdrawBidFromReserveAuction(uint256 _editionId) external;
     function updateReservePriceForReserveAuction(uint256 _editionId, uint128 _reservePrice) external;
