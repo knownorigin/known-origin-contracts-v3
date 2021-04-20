@@ -84,8 +84,8 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     // Token ID to Listing
     mapping(uint256 => Listing) public tokenListings;
 
-    // Token with reserve bids
-    mapping(uint256 => ReserveAuction) public tokenWithReserveBids;
+    // 1 of 1 editions with reserve auctions
+    mapping(uint256 => ReserveAuction) public editionWithReserveAuctions;
 
     // KODA token
     IKODAV3 public koda;
@@ -475,62 +475,58 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         price = uint256(steppedAuction.basePrice) + stepAmount;
     }
 
-    // todo edition level
-    function placeBidOnTokenWithReserve(uint256 _tokenId)
+    function placeBidOnReserveAuction(uint256 _editionId)
     public
     override
     payable
     whenNotPaused
     nonReentrant {
-        ReserveAuction storage tokenWithReserveBid = tokenWithReserveBids[_tokenId];
-        require(tokenWithReserveBid.reservePrice > 0, "Token not set up for reserve bidding");
-        require(block.timestamp >= tokenWithReserveBid.startDate, "Token not accepting bids yet");
+        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
+        require(editionWithReserveAuction.reservePrice > 0, "Token not set up for reserve bidding");
+        require(block.timestamp >= editionWithReserveAuction.startDate, "Token not accepting bids yet");
         require(!Address.isContract(_msgSender()), "Cannot bid as a contract");
-        require(msg.value >= tokenWithReserveBid.bid + minBidAmount, "You have not exceeded previous bid by min bid amount");
+        require(msg.value >= editionWithReserveAuction.bid + minBidAmount, "You have not exceeded previous bid by min bid amount");
 
         // if a bid has been placed, then we will have a bidding end timestamp and we need to ensure no one
         // can bid beyond this
-        if (tokenWithReserveBid.biddingEnd > 0) {
-            require(block.timestamp < tokenWithReserveBid.biddingEnd, "Token is no longer accepting bids");
+        if (editionWithReserveAuction.biddingEnd > 0) {
+            require(block.timestamp < editionWithReserveAuction.biddingEnd, "Token is no longer accepting bids");
         }
 
         // If the reserve has been met, then bidding will end in 24 hours
         // if we are near the end, we have bids, then extend the bidding end
-        if (tokenWithReserveBid.bid + msg.value >= tokenWithReserveBid.reservePrice && tokenWithReserveBid.biddingEnd == 0) {
-            tokenWithReserveBid.biddingEnd = uint128(block.timestamp) + reserveAuctionLengthOnceReserveMet;
-        } else if (tokenWithReserveBid.biddingEnd > 0) {
-            uint128 secondsUntilBiddingEnd = tokenWithReserveBid.biddingEnd - uint128(block.timestamp);
+        if (editionWithReserveAuction.bid + msg.value >= editionWithReserveAuction.reservePrice && editionWithReserveAuction.biddingEnd == 0) {
+            editionWithReserveAuction.biddingEnd = uint128(block.timestamp) + reserveAuctionLengthOnceReserveMet;
+        } else if (editionWithReserveAuction.biddingEnd > 0) {
+            uint128 secondsUntilBiddingEnd = editionWithReserveAuction.biddingEnd - uint128(block.timestamp);
             if (secondsUntilBiddingEnd <= reserveAuctionBidExtensionWindow) {
-                tokenWithReserveBid.biddingEnd = tokenWithReserveBid.biddingEnd + reserveAuctionBidExtensionWindow;
+                editionWithReserveAuction.biddingEnd = editionWithReserveAuction.biddingEnd + reserveAuctionBidExtensionWindow;
             }
         }
 
         // if someone else has previously bid, there is a bid we need to refund
-        if (tokenWithReserveBid.bid > 0) {
-            _refundBidder(tokenWithReserveBid.bidder, tokenWithReserveBid.bid);
+        if (editionWithReserveAuction.bid > 0) {
+            _refundBidder(editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
         }
 
-        tokenWithReserveBid.bid = uint128(msg.value);
-        tokenWithReserveBid.bidder = _msgSender();
+        editionWithReserveAuction.bid = uint128(msg.value);
+        editionWithReserveAuction.bidder = _msgSender();
 
-        emit BidPlacedOnTokenWithReserve(_tokenId, _msgSender(), msg.value);
+        emit BidPlacedOnReserveAuction(_editionId, _msgSender(), msg.value);
     }
 
-    // todo listTokenForReserveAuction
-    // todo edition level
     // todo primary and secondary sales percentages
-    // todo check edition size
-    function listTokenForReserveBidding(uint256 _tokenId, uint128 _reservePrice, uint128 _startDate)
+    function listEditionForReserveAuction(uint256 _editionId, uint128 _reservePrice, uint128 _startDate)
     public
     override
     whenNotPaused
     nonReentrant {
-        require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
+        require(editionWithReserveAuctions[_editionId].reservePrice == 0, "Auction already in flight");
+        require(koda.ownerOf(_editionId) == _msgSender(), "Not token owner");
+        require(koda.getSizeOfEdition(_editionId) == 1, "Only 1 of 1 editions are supported");
         require(_reservePrice >= minBidAmount, "Reserve price not enough");
-        require(tokenWithReserveBids[_tokenId].reservePrice == 0, "Auction in flight");
 
-        // todo change mapping name
-        tokenWithReserveBids[_tokenId] = ReserveAuction({
+        editionWithReserveAuctions[_editionId] = ReserveAuction({
             seller: _msgSender(),
             bidder: address(0),
             reservePrice: _reservePrice,
@@ -539,30 +535,30 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
             bid: 0
         });
 
-        emit TokenListedForReserveBidding(_tokenId, _reservePrice, _startDate);
+        emit EditionListedForReserveAuction(_editionId, _reservePrice, _startDate);
     }
 
-    // todo edition level
-    function resultTokenWithReserveBiddingAuction(uint256 _tokenId)
+    function resultReserveAuction(uint256 _editionId)
     public
     override
     whenNotPaused
     nonReentrant {
-        ReserveAuction storage tokenWithReserveBid = tokenWithReserveBids[_tokenId];
+        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
 
-        require(tokenWithReserveBid.reservePrice > 0, "No active auction");
-        require(tokenWithReserveBid.bid > 0, "No bids received");
-        require(tokenWithReserveBid.bid >= tokenWithReserveBid.reservePrice, "Reserve not met");
-        require(block.timestamp > tokenWithReserveBid.biddingEnd, "Bidding has not yet ended");
-        require(tokenWithReserveBid.bidder == _msgSender() || koda.ownerOf(_tokenId) == _msgSender());
+        require(editionWithReserveAuction.reservePrice > 0, "No active auction");
+        require(editionWithReserveAuction.bid > 0, "No bids received");
+        require(editionWithReserveAuction.bid >= editionWithReserveAuction.reservePrice, "Reserve not met");
+        require(block.timestamp > editionWithReserveAuction.biddingEnd, "Bidding has not yet ended");
+        require(editionWithReserveAuction.bidder == _msgSender() || koda.ownerOf(_editionId) == _msgSender());
 
         // send token to winner
-        koda.safeTransferFrom(tokenWithReserveBid.seller, tokenWithReserveBid.bidder, _tokenId);
+        koda.safeTransferFrom(editionWithReserveAuction.seller, editionWithReserveAuction.bidder, _editionId);
 
-        // todo - edition sale funds? rename or ok to use this method?
-        handleEditionSaleFunds(tokenWithReserveBid.seller, tokenWithReserveBid.bid);
+        handleEditionSaleFunds(editionWithReserveAuction.seller, editionWithReserveAuction.bid);
 
-        delete tokenWithReserveBids[_tokenId];
+        delete editionWithReserveAuctions[_editionId];
+
+        emit ReserveAuctionResulted(_editionId, editionWithReserveAuction.bid, editionWithReserveAuction.bidder);
     }
 
     // todo withdraw bid if reserve not met
@@ -588,18 +584,18 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     // todo override
     whenNotPaused
     nonReentrant {
-        ReserveAuction storage tokenWithReserveBid = tokenWithReserveBids[_tokenId];
+        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_tokenId];
 
-        require(tokenWithReserveBid.reservePrice > 0, "No active auction");
-        require(tokenWithReserveBid.bid < tokenWithReserveBid.reservePrice, "Can only convert before reserve met");
+        require(editionWithReserveAuction.reservePrice > 0, "No active auction");
+        require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Can only convert before reserve met");
         require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
 
         // refund any bids
-        if (tokenWithReserveBid.bid > 0) {
-            _refundBidder(tokenWithReserveBid.bidder, tokenWithReserveBid.bid);
+        if (editionWithReserveAuction.bid > 0) {
+            _refundBidder(editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
         }
 
-        delete tokenWithReserveBids[_tokenId];
+        delete editionWithReserveAuctions[_tokenId];
 
         // No contracts can list to prevent money lockups on transfer
         require(!Address.isContract(_msgSender()), "Cannot list as a contract");

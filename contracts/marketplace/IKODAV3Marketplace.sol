@@ -47,17 +47,17 @@ interface IEditionSteppedMarketplace {
     function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice) external;
 }
 
-interface ITokenWithReservedBidsMarketplace {
-    event TokenListedForReserveBidding(uint256 indexed _tokenId, uint256 _reservePrice, uint128 _startDate);
-    event BidPlacedOnTokenWithReserve(uint256 indexed _tokenId, address indexed _bidder, uint256 _amount);
-    event TokenWithReserveBiddingAuctionResulted(uint256 indexed _tokenId, uint256 _finalPrice, address indexed _winner);
+interface IReservedAuctionMarketplace {
+    event EditionListedForReserveAuction(uint256 indexed _editionId, uint256 _reservePrice, uint128 _startDate);
+    event BidPlacedOnReserveAuction(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
+    event ReserveAuctionResulted(uint256 indexed _editionId, uint256 _finalPrice, address indexed _winner);
 
-    function placeBidOnTokenWithReserve(uint256 _tokenId) external payable;
-    function listTokenForReserveBidding(uint256 _tokenId, uint128 _reservePrice, uint128 _startDate) external;
-    function resultTokenWithReserveBiddingAuction(uint256 _tokenId) external;
+    function placeBidOnReserveAuction(uint256 _editionId) external payable;
+    function listEditionForReserveAuction(uint256 _editionId, uint128 _reservePrice, uint128 _startDate) external;
+    function resultReserveAuction(uint256 _editionId) external;
 }
 
-interface IKODAV3PrimarySaleMarketplace is IEditionBuyNowMarketplace, IEditionSteppedMarketplace, IEditionOffersMarketplace, ITokenWithReservedBidsMarketplace {
+interface IKODAV3PrimarySaleMarketplace is IEditionBuyNowMarketplace, IEditionSteppedMarketplace, IEditionOffersMarketplace, IReservedAuctionMarketplace {
     // combo
 }
 
