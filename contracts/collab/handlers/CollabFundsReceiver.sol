@@ -3,7 +3,7 @@
 pragma solidity 0.8.3;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import "./CollabFundsHandlerBase.sol";
 import "./ICollabFundsDrainable.sol";
 
@@ -13,7 +13,10 @@ import "./ICollabFundsDrainable.sol";
 contract CollabFundsReceiver is CollabFundsHandlerBase, ICollabFundsDrainable {
 
     // split current contract balance among recipients
-    function drain() nonReentrant public override {
+    function drain() public override {
+
+        // Don't allow a contract to call
+        require(!Address.isContract(msg.sender), "Caller may not be a contract");
 
         // Check that there are funds to drain
         uint256 balance = address(this).balance;
@@ -31,7 +34,10 @@ contract CollabFundsReceiver is CollabFundsHandlerBase, ICollabFundsDrainable {
         emit FundsDrained(balance, recipients, shares);
     }
 
-    function drainERC20(IERC20 token) nonReentrant public override {
+    function drainERC20(IERC20 token) public override {
+
+        // Don't allow a contract to call
+        require(!Address.isContract(msg.sender), "Caller may not be a contract");
 
         // Check that there are funds to drain
         uint256 balance = token.balanceOf(address(this));

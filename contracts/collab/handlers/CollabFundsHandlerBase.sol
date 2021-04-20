@@ -15,14 +15,6 @@ abstract contract CollabFundsHandlerBase is ICollabFundsHandler {
     address[] public recipients;
     uint256[] public splits;
 
-    // Modifiers
-    modifier nonReentrant() {
-        require(_notEntered, "ReentrancyGuard: reentrant call");
-        _notEntered = false;
-        _;
-        _notEntered = true;
-    }
-
     /**
      * @notice Using a minimal proxy contract pattern initialises the contract and sets delegation
      * @dev initialises the FundsReceiver (see https://eips.ethereum.org/EIPS/eip-1167)

@@ -5,33 +5,30 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
+import {Konstants} from "../core/Konstants.sol";
 import {IERC2981HasRoyaltiesExtension} from "../core/IERC2981.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {ICollabFundsHandler} from "./handlers/ICollabFundsHandler.sol";
 
-contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
+contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExtension {
 
-    // State
     IKODAV3 public koda;
-
-    // TODO add admin getter for access controls
     IKOAccessControlsLookup public accessControls;
-
-    // TODO expose getters for these as well as index and length for enumeration
-    mapping(string => address) internal handlers;
-    mapping(uint256 => address) internal proxies;
+    mapping(string => address) public handlers;
+    mapping(uint256 => address) public proxies;
+    uint256 public proxyCount = 0;
+    uint256 public handlerCount = 0;
     uint256 public royaltyAmount = 12_50000; // 12.5% as represented in eip-2981
 
     // Events
+    event KODASet(address koda);
+    event AccessControlsSet(address accessControls);
+    event RoyaltyAmountSet(uint256 royaltyAmount);
     event HandlerAdded(string name, address handler);
     event RoyaltySetup(uint256 indexed editionId, string handlerName, address handler, address[] recipients, uint256[] splits);
     event RoyaltySetupReused(uint256 indexed editionId, address indexed handler);
 
     // Modifiers
-    modifier onlyContract() {
-        require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
-        _;
-    }
     modifier onlyContractOrCreator(uint256 _editionId) {
         require(
             accessControls.hasContractRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
@@ -55,13 +52,24 @@ contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
     external
     onlyAdmin {
         koda = _koda;
+        emit KODASet(address(koda));
+    }
+
+    // Set the IKOAccessControlsLookup dependency.
+    function setAccessControls(IKOAccessControlsLookup _accessControls)
+    external
+    onlyAdmin {
+        accessControls = _accessControls;
+        emit AccessControlsSet(address(accessControls));
     }
 
     // Admin setter for changing the royalty amount
     function setRoyaltyAmount(uint256 _amount)
     external
     onlyAdmin() {
+        require(_amount > 1, "Amount to low");
         royaltyAmount = _amount;
+        emit RoyaltyAmountSet(royaltyAmount);
     }
 
     // Is the given token part of an edition that has a collab royalties contract setup?
@@ -71,9 +79,8 @@ contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
     view
     returns (bool) {
 
-        // TODO wonder if we can use our special _editionOfTokenId() method to work this out without the contract call
         // Get the associated edition id for the given token id
-        uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+        uint256 editionId = _editionFromTokenId(_tokenId);
 
         // Get the proxy registered to the previous edition id
         address proxy = proxies[editionId];
@@ -88,8 +95,14 @@ contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
     external
     onlyAdmin() {
 
+        // Revert if handler exists with given name
+        require(handlers[_name] == address(0), "Handler name already registered");
+
         // Store the beacon address by name
         handlers[_name] = _handler;
+
+        // Increment handler count
+        handlerCount++;
 
         // Emit event
         emit HandlerAdded(_name, _handler);
@@ -125,10 +138,14 @@ contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
     onlyContractOrCreator(_editionId)
     returns (address proxy) {
 
-        // TODO guard to make sure something doesnt override the set handler for an edition
+        // Disallow multiple setups per edition id
+        require(proxies[_editionId] == address(0), "Edition already setup");
 
-        // One is the loneliest number
+        // Require more than 1 recipient
         require(_recipients.length > 1, "Collab must have more than one funds recipient");
+
+        // Recipient and splits array lengths must match
+        require(_recipients.length == _splits.length, "Recipients and splits lengths must match");
 
         // Ensure each collaborator is not a contract
         for (uint256 i = 0; i < _recipients.length; i++) {
@@ -150,6 +167,9 @@ contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
         // Store address of proxy by edition id
         proxies[_editionId] = proxy;
 
+        // Increment proxy count
+        proxyCount++;
+
         // Emit event
         emit RoyaltySetup(_editionId, _handlerName, proxy, _recipients, _splits);
     }
@@ -164,8 +184,10 @@ contract CollabRoyaltiesRegistry is Pausable, IERC2981HasRoyaltiesExtension {
         amount = royaltyAmount;
     }
 
-    function getProxy(uint256 _editionId) public view returns (address) {
-        return proxies[_editionId];
+    // Get the proxy for a given edition's funds handler
+    function getProxy(uint256 _editionId) public view returns (address proxy) {
+        proxy = proxies[_editionId];
+        require(proxy != address(0), "Edition not setup");
     }
 
 }
