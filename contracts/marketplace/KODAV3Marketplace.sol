@@ -60,8 +60,8 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     struct ReserveAuction {
         address seller;
         address bidder;
-        uint256 reservePrice; // todo u128
-        uint256 bid; // todo u128
+        uint128 reservePrice;
+        uint128 bid;
         uint128 startDate;
         uint128 biddingEnd;
     }
@@ -510,7 +510,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
             _refundBidder(tokenWithReserveBid.bidder, tokenWithReserveBid.bid);
         }
 
-        tokenWithReserveBid.bid = msg.value;
+        tokenWithReserveBid.bid = uint128(msg.value);
         tokenWithReserveBid.bidder = _msgSender();
 
         emit BidPlacedOnTokenWithReserve(_tokenId, _msgSender(), msg.value);
@@ -520,7 +520,7 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     // todo edition level
     // todo primary and secondary sales percentages
     // todo check edition size
-    function listTokenForReserveBidding(uint256 _tokenId, uint256 _reservePrice, uint128 _startDate)
+    function listTokenForReserveBidding(uint256 _tokenId, uint128 _reservePrice, uint128 _startDate)
     public
     override
     whenNotPaused
@@ -566,8 +566,22 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
     }
 
     // todo withdraw bid if reserve not met
+    function withdrawBidFromReserveAuction(uint256 _editionId)
+    public
+    // todo override
+    whenNotPaused
+    nonReentrant {
+
+    }
 
     // todo reduce reserve if reserve not met
+    function reduceReservePriceForReserveAuction(uint256 _editionId, uint256 _reservePrice)
+    public
+    // todo override
+    whenNotPaused
+    nonReentrant {
+
+    }
 
     function convertTokenWithReserveAuctionToBuyItNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate)
     public

@@ -53,7 +53,7 @@ interface ITokenWithReservedBidsMarketplace {
     event TokenWithReserveBiddingAuctionResulted(uint256 indexed _tokenId, uint256 _finalPrice, address indexed _winner);
 
     function placeBidOnTokenWithReserve(uint256 _tokenId) external payable;
-    function listTokenForReserveBidding(uint256 _tokenId, uint256 _reservePrice, uint128 _startDate) external;
+    function listTokenForReserveBidding(uint256 _tokenId, uint128 _reservePrice, uint128 _startDate) external;
     function resultTokenWithReserveBiddingAuction(uint256 _tokenId) external;
 }
 
