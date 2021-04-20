@@ -51,10 +51,12 @@ interface IReservedAuctionMarketplace {
     event EditionListedForReserveAuction(uint256 indexed _editionId, uint256 _reservePrice, uint128 _startDate);
     event BidPlacedOnReserveAuction(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
     event ReserveAuctionResulted(uint256 indexed _editionId, uint256 _finalPrice, address indexed _winner);
+    event BidWithdrawnFromReserveAuction(uint256 _editionId, address indexed _bidder, uint128 _bid);
 
     function placeBidOnReserveAuction(uint256 _editionId) external payable;
     function listEditionForReserveAuction(uint256 _editionId, uint128 _reservePrice, uint128 _startDate) external;
     function resultReserveAuction(uint256 _editionId) external;
+    function withdrawBidFromReserveAuction(uint256 _editionId) external;
 }
 
 interface IKODAV3PrimarySaleMarketplace is IEditionBuyNowMarketplace, IEditionSteppedMarketplace, IEditionOffersMarketplace, IReservedAuctionMarketplace {

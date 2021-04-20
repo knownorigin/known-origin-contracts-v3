@@ -561,13 +561,24 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         emit ReserveAuctionResulted(_editionId, editionWithReserveAuction.bid, editionWithReserveAuction.bidder);
     }
 
-    // todo withdraw bid if reserve not met
+    // Only permit bid withdrawals if reserve not met
     function withdrawBidFromReserveAuction(uint256 _editionId)
     public
-    // todo override
+    override
     whenNotPaused
     nonReentrant {
+        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
 
+        require(editionWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
+        require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Bids can only be withdrawn if reserve not met");
+        require(editionWithReserveAuction.bidder == _msgSender(), "Only the bidder can withdraw their bid");
+
+        _refundBidder(editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
+
+        editionWithReserveAuction.bidder = address(0);
+        editionWithReserveAuction.bid = 0;
+
+        emit BidWithdrawnFromReserveAuction(_editionId, editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
     }
 
     // todo reduce reserve if reserve not met
