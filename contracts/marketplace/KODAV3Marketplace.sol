@@ -549,9 +549,13 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         require(editionWithReserveAuction.bid > 0, "No bids received");
         require(editionWithReserveAuction.bid >= editionWithReserveAuction.reservePrice, "Reserve not met");
         require(block.timestamp > editionWithReserveAuction.biddingEnd, "Bidding has not yet ended");
-        require(editionWithReserveAuction.bidder == _msgSender() || koda.ownerOf(_editionId) == _msgSender());
+        require(
+            editionWithReserveAuction.bidder == _msgSender() || editionWithReserveAuction.seller == _msgSender(),
+            "Only winner or seller can result"
+        );
 
         // send token to winner
+        // todo - check if edition ID matches token ID and think about what happens when the seller transfers the token
         koda.safeTransferFrom(editionWithReserveAuction.seller, editionWithReserveAuction.bidder, _editionId);
 
         handleEditionSaleFunds(editionWithReserveAuction.seller, editionWithReserveAuction.bid);
@@ -599,25 +603,42 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         emit ReservePriceUpdated(_editionId, _reservePrice);
     }
 
-    // todo cancel reserve auction? i.e. if you didn't want to convert to buy it now
-
-    function convertTokenWithReserveAuctionToBuyItNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate)
+    function convertReserveAuctionToOffers(uint256 _editionId, uint128 _startDate)
     public
-    // todo override
+    override
     whenNotPaused
     nonReentrant {
-        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_tokenId];
+        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
+
+        require(editionWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
+        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller");
+        require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Reserve price reached");
+
+        delete editionWithReserveAuctions[_editionId];
+
+        editionOffersStartDate[_editionId] = _startDate;
+
+        // Emit event
+        emit EditionAcceptingOffer(_editionId, _startDate);
+    }
+
+    function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
 
         require(editionWithReserveAuction.reservePrice > 0, "No active auction");
         require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Can only convert before reserve met");
-        require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
+        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller");
 
         // refund any bids
         if (editionWithReserveAuction.bid > 0) {
             _refundBidder(editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
         }
 
-        delete editionWithReserveAuctions[_tokenId];
+        delete editionWithReserveAuctions[_editionId];
 
         // No contracts can list to prevent money lockups on transfer
         require(!Address.isContract(_msgSender()), "Cannot list as a contract");
@@ -625,10 +646,10 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         // Check price over min bid
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
-        tokenListings[_tokenId] = Listing(_listingPrice, _startDate, _msgSender());
+        editionListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
 
-        // todo work out approach
-        emit TokenListed(_tokenId, _msgSender(), _listingPrice);
+        // todo for conversion methods, do we need events for indicating conversions
+        emit EditionListed(_editionId, _listingPrice, _startDate);
     }
 
     // primary sale helpers
