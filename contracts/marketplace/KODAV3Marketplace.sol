@@ -646,12 +646,12 @@ contract KODAV3Marketplace is IKODAV3PrimarySaleMarketplace, IKODAV3SecondarySal
         emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
     }
 
-    function updateReserveAuctionBidExtensionWindow(uint256 _reserveAuctionBidExtensionWindow) onlyAdmin public {
+    function updateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow) onlyAdmin public {
         reserveAuctionBidExtensionWindow = _reserveAuctionBidExtensionWindow;
         emit AdminUpdateReserveAuctionBidExtensionWindow(_reserveAuctionBidExtensionWindow);
     }
 
-    function updateReserveAuctionLengthOnceReserveMet(uint256 _reserveAuctionLengthOnceReserveMet) onlyAdmin public {
+    function updateReserveAuctionLengthOnceReserveMet(uint128 _reserveAuctionLengthOnceReserveMet) onlyAdmin public {
         reserveAuctionLengthOnceReserveMet = _reserveAuctionLengthOnceReserveMet;
         emit AdminUpdateReserveAuctionLengthOnceReserveMet(_reserveAuctionLengthOnceReserveMet);
     }
