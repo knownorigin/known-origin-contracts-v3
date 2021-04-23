@@ -41,11 +41,23 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         address seller;
     }
 
+    struct ReserveAuction {
+        address seller;
+        address bidder;
+        uint128 reservePrice;
+        uint128 bid;
+        uint128 startDate;
+        uint128 biddingEnd;
+    }
+
     // Token ID to Offer mapping
     mapping(uint256 => Offer) public tokenOffers;
 
     // Token ID to Listing
     mapping(uint256 => Listing) public tokenListings;
+
+    // 1 of 1 tokens with reserve auctions
+    mapping(uint256 => ReserveAuction) public tokenWithReserveAuctions;
 
     // KODA token
     IKODAV3 public koda;
@@ -68,6 +80,10 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     // TODO add admin setter (with event)
     // Bid lockup period
     uint256 public bidLockupPeriod = 6 hours;
+
+    uint128 reserveAuctionBidExtensionWindow = 15 minutes;
+
+    uint128 reserveAuctionLengthOnceReserveMet = 24 hours;
 
     // TODO add admin setter (with event)
     IKOAccessControlsLookup public accessControls;
@@ -320,6 +336,133 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         return tokenListings[_tokenId].startDate;
     }
 
+    function listTokenForReserveAuction(address _creator, uint256 _tokenId, uint128 _reservePrice, uint128 _startDate)
+    public
+    override
+    whenNotPaused
+    onlyContract {
+        require(tokenWithReserveAuctions[_tokenId].reservePrice == 0, "Auction already in flight");
+        require(koda.getSizeOfEdition(_tokenId) == 1, "Only 1 of 1 editions are supported");
+        require(_reservePrice >= minBidAmount, "Reserve price must be at least min bid");
+
+        tokenWithReserveAuctions[_tokenId] = ReserveAuction({
+        seller: _creator,
+        bidder: address(0),
+        reservePrice: _reservePrice,
+        startDate: _startDate,
+        biddingEnd: 0,
+        bid: 0
+        });
+
+        emit TokenListedForReserveAuction(_tokenId, _reservePrice, _startDate);
+    }
+
+    function placeBidOnReserveAuction(uint256 _tokenId)
+    public
+    override
+    payable
+    whenNotPaused
+    nonReentrant {
+        ReserveAuction storage tokenWithReserveAuction = tokenWithReserveAuctions[_tokenId];
+        require(tokenWithReserveAuction.reservePrice > 0, "Token not set up for reserve bidding");
+        require(block.timestamp >= tokenWithReserveAuction.startDate, "Token not accepting bids yet");
+        require(!_msgSender().isContract(), "Cannot bid as a contract");
+        require(msg.value >= tokenWithReserveAuction.bid + minBidAmount, "You have not exceeded previous bid by min bid amount");
+
+        // if a bid has been placed, then we will have a bidding end timestamp and we need to ensure no one
+        // can bid beyond this
+        if (tokenWithReserveAuction.biddingEnd > 0) {
+            require(block.timestamp < tokenWithReserveAuction.biddingEnd, "Token is no longer accepting bids");
+        }
+
+        // If the reserve has been met, then bidding will end in 24 hours
+        // if we are near the end, we have bids, then extend the bidding end
+        if (tokenWithReserveAuction.bid + msg.value >= tokenWithReserveAuction.reservePrice && tokenWithReserveAuction.biddingEnd == 0) {
+            tokenWithReserveAuction.biddingEnd = uint128(block.timestamp) + reserveAuctionLengthOnceReserveMet;
+        } else if (tokenWithReserveAuction.biddingEnd > 0) {
+            uint128 secondsUntilBiddingEnd = tokenWithReserveAuction.biddingEnd - uint128(block.timestamp);
+            if (secondsUntilBiddingEnd <= reserveAuctionBidExtensionWindow) {
+                tokenWithReserveAuction.biddingEnd = tokenWithReserveAuction.biddingEnd + reserveAuctionBidExtensionWindow;
+            }
+        }
+
+        // if someone else has previously bid, there is a bid we need to refund
+        if (tokenWithReserveAuction.bid > 0) {
+            _refundSecondaryBidder(tokenWithReserveAuction.bidder, tokenWithReserveAuction.bid);
+        }
+
+        tokenWithReserveAuction.bid = uint128(msg.value);
+        tokenWithReserveAuction.bidder = _msgSender();
+
+        emit BidPlacedOnReserveAuction(_tokenId, _msgSender(), msg.value);
+    }
+
+    function resultReserveAuction(uint256 _tokenId)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        ReserveAuction storage tokenWithReserveAuction = tokenWithReserveAuctions[_tokenId];
+
+        require(tokenWithReserveAuction.reservePrice > 0, "No active auction");
+        require(tokenWithReserveAuction.bid > 0, "No bids received");
+        require(tokenWithReserveAuction.bid >= tokenWithReserveAuction.reservePrice, "Reserve not met");
+        require(block.timestamp > tokenWithReserveAuction.biddingEnd, "Bidding has not yet ended");
+        require(
+            tokenWithReserveAuction.bidder == _msgSender() || tokenWithReserveAuction.seller == _msgSender(),
+            "Only winner or seller can result"
+        );
+
+        // send token to winner
+        // todo - check if edition ID matches token ID and think about what happens when the seller transfers the token before resulting
+        // todo we could allow buyer to withdraw if we know seller
+        koda.safeTransferFrom(tokenWithReserveAuction.seller, tokenWithReserveAuction.bidder, _tokenId);
+
+        facilitateSecondarySale(_tokenId, tokenWithReserveAuction.bid, tokenWithReserveAuction.seller, tokenWithReserveAuction.bidder);
+
+        delete tokenWithReserveAuctions[_tokenId];
+
+        emit ReserveAuctionResulted(_tokenId, tokenWithReserveAuction.bid, tokenWithReserveAuction.bidder);
+    }
+
+    // Only permit bid withdrawals if reserve not met
+    function withdrawBidFromReserveAuction(uint256 _tokenId)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        ReserveAuction storage tokenWithReserveAuction = tokenWithReserveAuctions[_tokenId];
+
+        require(tokenWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
+        require(tokenWithReserveAuction.bid < tokenWithReserveAuction.reservePrice, "Bids can only be withdrawn if reserve not met");
+        require(tokenWithReserveAuction.bidder == _msgSender(), "Only the bidder can withdraw their bid");
+
+        _refundSecondaryBidder(tokenWithReserveAuction.bidder, tokenWithReserveAuction.bid);
+
+        tokenWithReserveAuction.bidder = address(0);
+        tokenWithReserveAuction.bid = 0;
+
+        emit BidWithdrawnFromReserveAuction(_tokenId, tokenWithReserveAuction.bidder, tokenWithReserveAuction.bid);
+    }
+
+    // can only do this if the reserve has not been met
+    function updateReservePriceForReserveAuction(uint256 _tokenId, uint128 _reservePrice)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        ReserveAuction storage tokenWithReserveAuction = tokenWithReserveAuctions[_tokenId];
+
+        require(tokenWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
+        require(tokenWithReserveAuction.seller == _msgSender(), "Not the seller");
+        require(tokenWithReserveAuction.bid < tokenWithReserveAuction.reservePrice, "Reserve price reached");
+        require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
+
+        tokenWithReserveAuction.reservePrice = _reservePrice;
+
+        emit ReservePriceUpdated(_tokenId, _reservePrice);
+    }
+
     // Admin Methods
 
     function updatePlatformSecondarySaleCommission(uint256 _platformSecondarySaleCommission) public onlyAdmin {
@@ -351,11 +494,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     }
 
     // internal
-
-    function _refundBidder(address _receiver, uint256 _paymentAmount) internal {
-        (bool success,) = _receiver.call{value : _paymentAmount}("");
-        require(success, "Refund failed");
-    }
 
     function getLockupTime() internal view returns (uint256 lockupUntil) {
         lockupUntil = block.timestamp + bidLockupPeriod;
