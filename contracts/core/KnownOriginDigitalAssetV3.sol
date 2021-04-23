@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.3;
@@ -67,6 +68,13 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     // Optional one time use storage slot for additional unlockable content
     mapping(uint256 => string) public additionalEditionUnlockableSlot;
+
+    // TODO soft burn (edition level) - primary sales not possible if soft burn, remove from marketplace and KO with soft burnt
+    //   - what happens when one has been sold/gift?
+
+    // TODO helper method for getting unsold primary tokens
+
+    // TODO get GAS costs for buying edition of 50
 
     constructor(
         IKOAccessControlsLookup _accessControls,
