@@ -6,7 +6,7 @@ const {ether} = require("@openzeppelin/test-helpers");
 const {expect} = require('chai');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
-const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
+const KODAV3Marketplace = artifacts.require('KODAV3PrimaryMarketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
@@ -44,7 +44,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  describe.only('End to end reserve auctions', () => {
+  describe.skip('End to end reserve auctions', () => {
     beforeEach(async () => {
       await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -59,7 +59,8 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
         minter,
         STARTING_EDITION,
         reservePrice,
-        '0'
+        '0',
+        {from: contract}
       )
 
       await expectEvent(receipt, 'EditionListedForReserveAuction', {

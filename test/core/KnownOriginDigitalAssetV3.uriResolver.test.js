@@ -7,7 +7,7 @@ const {expect} = require('chai');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
-const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
+const KODAV3Marketplace = artifacts.require('KODAV3PrimaryMarketplace');
 const MockTokenUriResolver = artifacts.require('MockTokenUriResolver');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
