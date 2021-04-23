@@ -43,7 +43,7 @@ contract MintingFactory is Context {
     mapping(address => MintingPeriod) mintingPeriodConfig;
 
     enum SaleType {
-        BUY_NOW, OFFERS, STEPPED
+        BUY_NOW, OFFERS, STEPPED, RESERVE
     }
 
     constructor(
@@ -71,6 +71,7 @@ contract MintingFactory is Context {
         uint256 editionId = koda.mintBatchEdition(1, _msgSender(), _uri);
 
         setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_msgSender());
     }
 
     function mintBatchEdition(
@@ -89,6 +90,7 @@ contract MintingFactory is Context {
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
 
         setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_msgSender());
     }
 
     function mintBatchEditionAndComposeERC20s(
@@ -104,6 +106,7 @@ contract MintingFactory is Context {
         uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint96(_config[1]), _msgSender(), _uri, _erc20s, _amounts);
 
         setupSalesMechanic(editionId, _saleType, _config[2], _config[3], _config[4]);
+        _recordSuccessfulMint(_msgSender());
     }
 
     function mintConsecutiveBatchEdition(
@@ -122,6 +125,7 @@ contract MintingFactory is Context {
         uint256 editionId = koda.mintConsecutiveBatchEdition(_editionSize, _msgSender(), _uri);
 
         setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_msgSender());
     }
 
     function setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
@@ -133,9 +137,10 @@ contract MintingFactory is Context {
         }
         else if (SaleType.OFFERS == _saleType) {
             marketplace.enableEditionOffers(_editionId, _startDate);
+        } else if (SaleType.RESERVE == _saleType) {
+            // use base price for reserve price
+            marketplace.listEditionForReserveAuction(_msgSender(), _editionId, _basePrice, _startDate);
         }
-
-        _recordSuccessfulMint(_msgSender());
     }
 
     /// Internal helpers
