@@ -102,9 +102,9 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     // Bid lockup period
     uint256 public bidLockupPeriod = 6 hours;
 
-    uint128 reserveAuctionBidExtensionWindow = 15 minutes;
+    uint128 public reserveAuctionBidExtensionWindow = 15 minutes;
 
-    uint128 reserveAuctionLengthOnceReserveMet = 24 hours;
+    uint128 public reserveAuctionLengthOnceReserveMet = 24 hours;
 
     // TODO add admin setter (with event)
     IKOAccessControlsLookup public accessControls;

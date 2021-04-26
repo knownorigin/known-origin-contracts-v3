@@ -157,7 +157,24 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       await this.marketplace.listEditionForReserveAuction(minter, EDITION_ONE_ID, ether('0.25'), '0', {from: contract})
 
       // mint another batch of tokens for further testing
-      await this.token.mintBatchEdition(2, minter, TOKEN_URI, {from: contract})
+      await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+    })
+
+    it('Extends the bidding window when bidding near the end of the aucton', async () => {
+      const bid = ether('0.5')
+      await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: bid})
+
+      const reserveAuctionMetadataPostBid = await this.marketplace.editionWithReserveAuctions(EDITION_ONE_ID)
+      const reserveAuctionBidExtensionWindow = await this.marketplace.reserveAuctionBidExtensionWindow()
+
+      // place the time within the end window
+      await time.increaseTo(reserveAuctionMetadataPostBid.biddingEnd.sub(reserveAuctionBidExtensionWindow).addn(60))
+
+      // bid again
+      await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder2, value: bid.muln(2)})
+
+      const reserveAuctionMetadataPostBid2 = await this.marketplace.editionWithReserveAuctions(EDITION_ONE_ID)
+      expect(reserveAuctionMetadataPostBid2.biddingEnd).to.be.bignumber.equal(reserveAuctionMetadataPostBid.biddingEnd.add(reserveAuctionBidExtensionWindow))
     })
 
     it('Reverts when edition not set up for reserve auction', async () => {
@@ -167,11 +184,19 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       )
     })
 
-    // it('Reverts when reserve auction not yet started', async () => {
-    //
-    // })
+    it('Reverts when reserve auction not yet started', async () => {
+      const currentTime = await time.latest()
+      const _5_Mins_In_The_Future = currentTime.addn(5 * 60)
 
-    // it('Reverts when bidding as a contract', async () => {})
+      await this.marketplace.listEditionForReserveAuction(minter, EDITION_TWO_ID, ether('0.25'), _5_Mins_In_The_Future, {from: contract})
+
+      await expectRevert(
+        this.marketplace.placeBidOnReserveAuction(EDITION_TWO_ID),
+        "Edition not accepting bids yet"
+      )
+    })
+
+    // todo it('Reverts when bidding as a contract', async () => {})
 
     it('Reverts when first bid is not above min bid', async () => {
       await expectRevert(
@@ -190,6 +215,18 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       )
     })
 
-    // it('Reverts when beyond the bid end window', async () => {})
+    it('Reverts when beyond the bid end window', async () => {
+      const bid = ether('0.5')
+      await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: bid})
+
+      // move beyond end
+      const {biddingEnd} = await this.marketplace.editionWithReserveAuctions(EDITION_ONE_ID)
+      await time.increaseTo(biddingEnd)
+
+      await expectRevert(
+        this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: bid.muln(2)}),
+        "Edition is no longer accepting bids"
+      )
+    })
   })
 })
