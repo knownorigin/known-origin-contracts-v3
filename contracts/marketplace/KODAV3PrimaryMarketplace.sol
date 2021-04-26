@@ -492,15 +492,15 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     whenNotPaused
     nonReentrant {
         ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
-        require(editionWithReserveAuction.reservePrice > 0, "Token not set up for reserve bidding");
-        require(block.timestamp >= editionWithReserveAuction.startDate, "Token not accepting bids yet");
+        require(editionWithReserveAuction.reservePrice > 0, "Edition not set up for reserve auction");
+        require(block.timestamp >= editionWithReserveAuction.startDate, "Edition not accepting bids yet");
         require(!_msgSender().isContract(), "Cannot bid as a contract");
         require(msg.value >= editionWithReserveAuction.bid + minBidAmount, "You have not exceeded previous bid by min bid amount");
 
         // if a bid has been placed, then we will have a bidding end timestamp and we need to ensure no one
         // can bid beyond this
         if (editionWithReserveAuction.biddingEnd > 0) {
-            require(block.timestamp < editionWithReserveAuction.biddingEnd, "Token is no longer accepting bids");
+            require(block.timestamp < editionWithReserveAuction.biddingEnd, "Edition is no longer accepting bids");
         }
 
         // If the reserve has been met, then bidding will end in 24 hours
