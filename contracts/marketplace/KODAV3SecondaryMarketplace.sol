@@ -308,11 +308,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         require(success, "Token payment failed");
     }
 
-    function _refundSecondaryBidder(address _receiver, uint256 _paymentAmount) internal {
-        (bool success,) = _receiver.call{value : _paymentAmount}("");
-        require(success, "Token offer refund failed");
-    }
-
     // Token accessors
 
     function getTokenListing(uint256 _tokenId) public view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
@@ -445,6 +440,32 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         emit BidWithdrawnFromReserveAuction(_tokenId, tokenWithReserveAuction.bidder, tokenWithReserveAuction.bid);
     }
 
+    function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        ReserveAuction storage tokenWithReserveAuction = tokenWithReserveAuctions[_editionId];
+
+        require(tokenWithReserveAuction.reservePrice > 0, "No active auction");
+        require(tokenWithReserveAuction.bid < tokenWithReserveAuction.reservePrice, "Can only convert before reserve met");
+        require(tokenWithReserveAuction.seller == _msgSender(), "Not the seller");
+
+        // refund any bids
+        if (tokenWithReserveAuction.bid > 0) {
+            _refundSecondaryBidder(tokenWithReserveAuction.bidder, tokenWithReserveAuction.bid);
+        }
+
+        delete tokenWithReserveAuctions[_editionId];
+
+        // Check price over min bid
+        require(_listingPrice >= minBidAmount, "Listing price not enough");
+
+        tokenListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
+
+        emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
+    }
+
     // can only do this if the reserve has not been met
     function updateReservePriceForReserveAuction(uint256 _tokenId, uint128 _reservePrice)
     public
@@ -497,5 +518,10 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
 
     function getLockupTime() internal view returns (uint256 lockupUntil) {
         lockupUntil = block.timestamp + bidLockupPeriod;
+    }
+
+    function _refundSecondaryBidder(address _receiver, uint256 _paymentAmount) internal {
+        (bool success,) = _receiver.call{value : _paymentAmount}("");
+        require(success, "Token offer refund failed");
     }
 }

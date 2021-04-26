@@ -591,24 +591,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         emit ReservePriceUpdated(_editionId, _reservePrice);
     }
 
-    function convertReserveAuctionToOffers(uint256 _editionId, uint128 _startDate)
-    public
-    override
-    whenNotPaused
-    nonReentrant {
-        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
-
-        require(editionWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
-        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller");
-        require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Reserve price reached");
-
-        delete editionWithReserveAuctions[_editionId];
-
-        editionOffersStartDate[_editionId] = _startDate;
-
-        emit ReserveAuctionConvertedToOffers(_editionId, _startDate);
-    }
-
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
     public
     override
