@@ -229,4 +229,96 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       )
     })
   })
+
+  describe.only('resultReserveAuction()', () => {
+    beforeEach(async () => {
+      await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+      // reserve is only for 1 of 1
+      await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+
+      // list the token for reserve auction
+      await this.marketplace.listEditionForReserveAuction(minter, EDITION_ONE_ID, ether('0.25'), '0', {from: contract})
+
+      // mint another batch of tokens for further testing
+      await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+    })
+
+    it('Reverts for no active auction', async () => {
+      await expectRevert(
+        this.marketplace.resultReserveAuction(EDITION_TWO_ID),
+        "No active auction"
+      )
+    })
+
+    it('Reverts when no bids received', async () => {
+      await expectRevert(
+        this.marketplace.resultReserveAuction(EDITION_ONE_ID),
+        "No bids received"
+      )
+    })
+
+    it('Reverts when reserve not reached', async () => {
+      await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: ether('0.1')})
+
+      await expectRevert(
+        this.marketplace.resultReserveAuction(EDITION_ONE_ID),
+        "Reserve not met"
+      )
+    })
+
+    it('Reverts when reserve not reached', async () => {
+      await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: ether('0.5')})
+
+      await expectRevert(
+        this.marketplace.resultReserveAuction(EDITION_ONE_ID),
+        "Bidding has not yet ended"
+      )
+    })
+
+    it('Reverts when not winner or seller when resulting', async () => {
+      await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: ether('0.5')})
+
+      const {biddingEnd} = await this.marketplace.editionWithReserveAuctions(EDITION_ONE_ID)
+
+      await time.increaseTo(biddingEnd.addn(5))
+
+      await expectRevert(
+        this.marketplace.resultReserveAuction(EDITION_ONE_ID, {from: koCommission}),
+        "Only winner or seller can result"
+      )
+    })
+
+    it('Can result as winner', async () => {
+      await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: ether('0.5')})
+
+      const {biddingEnd} = await this.marketplace.editionWithReserveAuctions(EDITION_ONE_ID)
+
+      await time.increaseTo(biddingEnd.addn(5))
+
+      const {receipt} = await this.marketplace.resultReserveAuction(EDITION_ONE_ID, {from: bidder1})
+      expectEvent(receipt, 'ReserveAuctionResulted', {
+        _editionId: EDITION_ONE_ID,
+        _finalPrice: ether('0.5'),
+        _winner: bidder1,
+        _resulter: bidder1
+      })
+    })
+
+    it('Can result as seller', async () => {
+      await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: ether('0.5')})
+
+      const {biddingEnd} = await this.marketplace.editionWithReserveAuctions(EDITION_ONE_ID)
+
+      await time.increaseTo(biddingEnd.addn(5))
+
+      const {receipt} = await this.marketplace.resultReserveAuction(EDITION_ONE_ID, {from: minter})
+      expectEvent(receipt, 'ReserveAuctionResulted', {
+        _editionId: EDITION_ONE_ID,
+        _finalPrice: ether('0.5'),
+        _winner: bidder1,
+        _resulter: minter
+      })
+    })
+  })
 })

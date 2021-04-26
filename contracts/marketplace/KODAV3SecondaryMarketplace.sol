@@ -415,9 +415,12 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
 
         facilitateSecondarySale(_tokenId, tokenWithReserveAuction.bid, tokenWithReserveAuction.seller, tokenWithReserveAuction.bidder);
 
+        address winner = tokenWithReserveAuction.bidder;
+        uint256 winningBid = tokenWithReserveAuction.bid;
+
         delete tokenWithReserveAuctions[_tokenId];
 
-        emit ReserveAuctionResulted(_tokenId, tokenWithReserveAuction.bid, tokenWithReserveAuction.bidder);
+        emit ReserveAuctionResulted(_tokenId, winningBid, winner, _msgSender());
     }
 
     // Only permit bid withdrawals if reserve not met

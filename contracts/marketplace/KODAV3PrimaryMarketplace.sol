@@ -548,9 +548,11 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
 
         handleEditionSaleFunds(editionWithReserveAuction.seller, editionWithReserveAuction.bid);
 
+        address winner = editionWithReserveAuction.bidder;
+        uint256 winningBid = editionWithReserveAuction.bid;
         delete editionWithReserveAuctions[_editionId];
 
-        emit ReserveAuctionResulted(_editionId, editionWithReserveAuction.bid, editionWithReserveAuction.bidder);
+        emit ReserveAuctionResulted(_editionId, winningBid, winner, _msgSender());
     }
 
     // Only permit bid withdrawals if reserve not met
