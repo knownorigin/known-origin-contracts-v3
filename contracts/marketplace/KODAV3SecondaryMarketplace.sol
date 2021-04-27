@@ -81,9 +81,9 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     // Bid lockup period
     uint256 public bidLockupPeriod = 6 hours;
 
-    uint128 reserveAuctionBidExtensionWindow = 15 minutes;
+    uint128 public reserveAuctionBidExtensionWindow = 15 minutes;
 
-    uint128 reserveAuctionLengthOnceReserveMet = 24 hours;
+    uint128 public reserveAuctionLengthOnceReserveMet = 24 hours;
 
     // TODO add admin setter (with event)
     IKOAccessControlsLookup public accessControls;
@@ -341,12 +341,12 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         require(_reservePrice >= minBidAmount, "Reserve price must be at least min bid");
 
         tokenWithReserveAuctions[_tokenId] = ReserveAuction({
-        seller: _creator,
-        bidder: address(0),
-        reservePrice: _reservePrice,
-        startDate: _startDate,
-        biddingEnd: 0,
-        bid: 0
+            seller: _creator,
+            bidder: address(0),
+            reservePrice: _reservePrice,
+            startDate: _startDate,
+            biddingEnd: 0,
+            bid: 0
         });
 
         emit TokenListedForReserveAuction(_tokenId, _reservePrice, _startDate);
@@ -359,7 +359,7 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     whenNotPaused
     nonReentrant {
         ReserveAuction storage tokenWithReserveAuction = tokenWithReserveAuctions[_tokenId];
-        require(tokenWithReserveAuction.reservePrice > 0, "Token not set up for reserve bidding");
+        require(tokenWithReserveAuction.reservePrice > 0, "Token not set up for reserve auction");
         require(block.timestamp >= tokenWithReserveAuction.startDate, "Token not accepting bids yet");
         require(!_msgSender().isContract(), "Cannot bid as a contract");
         require(msg.value >= tokenWithReserveAuction.bid + minBidAmount, "You have not exceeded previous bid by min bid amount");
@@ -411,8 +411,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         // send token to winner
         // todo - check if edition ID matches token ID and think about what happens when the seller transfers the token before resulting
         // todo we could allow buyer to withdraw if we know seller
-        koda.safeTransferFrom(tokenWithReserveAuction.seller, tokenWithReserveAuction.bidder, _tokenId);
-
         facilitateSecondarySale(_tokenId, tokenWithReserveAuction.bid, tokenWithReserveAuction.seller, tokenWithReserveAuction.bidder);
 
         address winner = tokenWithReserveAuction.bidder;
@@ -435,12 +433,13 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         require(tokenWithReserveAuction.bid < tokenWithReserveAuction.reservePrice, "Bids can only be withdrawn if reserve not met");
         require(tokenWithReserveAuction.bidder == _msgSender(), "Only the bidder can withdraw their bid");
 
-        _refundSecondaryBidder(tokenWithReserveAuction.bidder, tokenWithReserveAuction.bid);
+        uint128 bidToRefund = tokenWithReserveAuction.bid;
+        _refundSecondaryBidder(tokenWithReserveAuction.bidder, bidToRefund);
 
         tokenWithReserveAuction.bidder = address(0);
         tokenWithReserveAuction.bid = 0;
 
-        emit BidWithdrawnFromReserveAuction(_tokenId, tokenWithReserveAuction.bidder, tokenWithReserveAuction.bid);
+        emit BidWithdrawnFromReserveAuction(_tokenId, _msgSender(), bidToRefund);
     }
 
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
