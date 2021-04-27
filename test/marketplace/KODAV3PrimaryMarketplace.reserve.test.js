@@ -380,4 +380,60 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       )
     })
   })
+
+  describe.only('updateReservePriceForReserveAuction()', () => {
+    beforeEach(async () => {
+      await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+      // reserve is only for 1 of 1
+      await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+
+      // list the token for reserve auction
+      await this.marketplace.listEditionForReserveAuction(minter, EDITION_ONE_ID, ether('0.25'), '0', {from: contract})
+
+      // mint another batch of tokens for further testing
+      await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+    })
+
+    it('Can update reserve before any bids received', async () => {
+      const newReserve = ether('0.6')
+      await this.marketplace.updateReservePriceForReserveAuction(EDITION_ONE_ID, newReserve, {from: minter})
+
+      const {
+        reservePrice
+      } = await this.marketplace.editionWithReserveAuctions(EDITION_ONE_ID)
+
+      expect(reservePrice).to.be.bignumber.equal(newReserve)
+    })
+
+    it('Reverts when auction not in flight', async () => {
+      await expectRevert(
+        this.marketplace.updateReservePriceForReserveAuction(EDITION_TWO_ID, '2'),
+        "No reserve auction in flight"
+      )
+    })
+
+    it('Reverts when not the seller', async () => {
+      await expectRevert(
+        this.marketplace.updateReservePriceForReserveAuction(EDITION_ONE_ID, '2', {from: bidder1}),
+        "Not the seller"
+      )
+    })
+
+    it('Reverts when bid in flight', async () => {
+      await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: ether('0.5')})
+
+      await expectRevert(
+        this.marketplace.updateReservePriceForReserveAuction(EDITION_ONE_ID, '2', {from: minter}),
+        "Due to the active bid the reserve cannot be adjusted"
+      )
+    })
+
+    it('Reverts when new reserve not greater than min bid', async () => {
+      await expectRevert(
+        this.marketplace.updateReservePriceForReserveAuction(EDITION_ONE_ID, '2', {from: minter}),
+        "Reserve must be at least min bid"
+      )
+    })
+  })
 })

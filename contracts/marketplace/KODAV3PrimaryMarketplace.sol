@@ -586,7 +586,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
 
         require(editionWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
         require(editionWithReserveAuction.seller == _msgSender(), "Not the seller");
-        require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Reserve price reached");
+        require(editionWithReserveAuction.bid == 0, "Due to the active bid the reserve cannot be adjusted");
         require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
 
         editionWithReserveAuction.reservePrice = _reservePrice;

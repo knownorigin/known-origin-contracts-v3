@@ -479,7 +479,7 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
 
         require(tokenWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
         require(tokenWithReserveAuction.seller == _msgSender(), "Not the seller");
-        require(tokenWithReserveAuction.bid < tokenWithReserveAuction.reservePrice, "Reserve price reached");
+        require(tokenWithReserveAuction.bid == 0, "Due to the active bid the reserve cannot be adjusted");
         require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
 
         tokenWithReserveAuction.reservePrice = _reservePrice;
