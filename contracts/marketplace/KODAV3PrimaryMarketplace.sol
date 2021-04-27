@@ -604,6 +604,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         require(editionWithReserveAuction.reservePrice > 0, "No active auction");
         require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Can only convert before reserve met");
         require(editionWithReserveAuction.seller == _msgSender(), "Not the seller");
+        require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         // refund any bids
         if (editionWithReserveAuction.bid > 0) {
@@ -611,9 +612,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         }
 
         delete editionWithReserveAuctions[_editionId];
-
-        // Check price over min bid
-        require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         editionListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
 
