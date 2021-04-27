@@ -567,12 +567,13 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Bids can only be withdrawn if reserve not met");
         require(editionWithReserveAuction.bidder == _msgSender(), "Only the bidder can withdraw their bid");
 
-        _refundBidder(editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
+        uint256 bidToRefund = editionWithReserveAuction.bid;
+        _refundBidder(editionWithReserveAuction.bidder, bidToRefund);
 
         editionWithReserveAuction.bidder = address(0);
         editionWithReserveAuction.bid = 0;
 
-        emit BidWithdrawnFromReserveAuction(_editionId, editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
+        emit BidWithdrawnFromReserveAuction(_editionId, _msgSender(), uint128(bidToRefund));
     }
 
     // can only do this if the reserve has not been met

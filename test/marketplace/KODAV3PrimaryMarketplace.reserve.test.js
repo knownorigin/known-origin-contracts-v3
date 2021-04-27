@@ -321,4 +321,63 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       })
     })
   })
+
+  describe.only('withdrawBidFromReserveAuction()', () => {
+    beforeEach(async () => {
+      await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+      // reserve is only for 1 of 1
+      await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+
+      // list the token for reserve auction
+      await this.marketplace.listEditionForReserveAuction(minter, EDITION_ONE_ID, ether('0.25'), '0', {from: contract})
+
+      // mint another batch of tokens for further testing
+      await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+    })
+
+    it('Can withdraw a bid before the reserve is met', async () => {
+      // place a bid on edition one below reserve
+      const bid = ether('0.2')
+      await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: bid})
+
+      // withdrawal should be possible
+      const bidder1Tracker = await balance.tracker(bidder1)
+
+      const { receipt } = await this.marketplace.withdrawBidFromReserveAuction(EDITION_ONE_ID, {from: bidder1})
+
+      expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid.sub(new BN(receipt.gasUsed.toString()).mul(new BN('8000000000'))))
+
+      expectEvent(receipt, 'BidWithdrawnFromReserveAuction', {
+        _editionId: EDITION_ONE_ID,
+        _bidder: bidder1,
+        _bid: bid
+      })
+    })
+
+    it('Reverts when no auction in flight', async () => {
+      await expectRevert(
+        this.marketplace.withdrawBidFromReserveAuction(EDITION_TWO_ID, {from: bidder1}),
+        "No reserve auction in flight"
+      )
+    })
+
+    it('Reverts when over reserve', async () => {
+      await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: ether('0.5')})
+
+      await expectRevert(
+        this.marketplace.withdrawBidFromReserveAuction(EDITION_ONE_ID, {from: bidder1}),
+        "Bids can only be withdrawn if reserve not met"
+      )
+    })
+
+    it('Reverts when not the bidder', async () => {
+      await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: ether('0.1')})
+
+      await expectRevert(
+        this.marketplace.withdrawBidFromReserveAuction(EDITION_ONE_ID, {from: bidder2}),
+        "Only the bidder can withdraw their bid"
+      )
+    })
+  })
 })
