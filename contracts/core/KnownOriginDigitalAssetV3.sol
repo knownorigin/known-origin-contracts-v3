@@ -167,6 +167,16 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return start;
     }
 
+    // todo add to interface
+    function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external {
+        require(_msgSender() == editionDetails[_editionId].creator, "Not creator");
+        require(!hasMadePrimarySale(_editionId), "Edition has had primary sale and cannot update its URI");
+
+        editionDetails[_editionId].uri = _newURI;
+
+        // todo emit event
+    }
+
     function _defineEditionConfig(uint256 _editionId, uint96 _editionSize, address _to, string calldata _uri) internal {
         require(_editionSize <= MAX_EDITION_ID, "Unable to make any more editions");
 
@@ -436,7 +446,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return owners[_tokenId] != address(0);
     }
 
-    function hasMadePrimarySale(uint256 _editionId) public override view returns (bool) {
+    // todo add to interface
+    function hasMadePrimarySale(uint256 _editionId) public view returns (bool) {
         require(editionDetails[_editionId].editionSize > 0, "Edition does not exist");
         uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
 
