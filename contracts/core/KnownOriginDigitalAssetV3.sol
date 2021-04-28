@@ -347,6 +347,34 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     // Primary Sale Utilities methods //
     ////////////////////////////////////
 
+    function getAllUnsoldTokenIdsForEdition(uint256 _editionId) public view returns (uint256[] memory) {
+        require(editionDetails[_editionId].editionSize > 0, "Edition does not exist");
+        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
+
+        // work out number of unsold tokens in order to allocate memory to an array later
+        uint256 numOfUnsoldTokens;
+        for (uint256 i = _editionId; i < maxTokenId; i++) {
+            // if no owner set - assume primary if not moved
+            if (owners[i] == address(0)) {
+                numOfUnsoldTokens += 1;
+            }
+        }
+
+        uint256[] memory unsoldTokens = new uint256[](numOfUnsoldTokens);
+
+        // record token IDs of unsold tokens
+        uint256 nextIndex;
+        for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
+            // if no owner set - assume primary if not moved
+            if (owners[tokenId] == address(0)) {
+                unsoldTokens[nextIndex] = tokenId;
+                nextIndex += 1;
+            }
+        }
+
+        return unsoldTokens;
+    }
+
     function facilitateNextPrimarySale(uint256 _editionId)
     public
     override
@@ -406,6 +434,21 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     function hadPrimarySaleOfToken(uint256 _tokenId) public override view returns (bool) {
         return owners[_tokenId] != address(0);
+    }
+
+    function hasMadePrimarySale(uint256 _editionId) public override view returns (bool) {
+        require(editionDetails[_editionId].editionSize > 0, "Edition does not exist");
+        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
+
+        // low to high
+        for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
+            // if no owner set - assume primary if not moved
+            if (owners[tokenId] != address(0)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     //////////////
@@ -601,7 +644,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /// @dev Allowing for batch transfers from the provided address, will fail if from does not own all the tokens
     function batchTransferFrom(address _from, address _to, uint256[] calldata _tokenIds) public {
         for (uint256 i = 0; i < _tokenIds.length; i++) {
-            _safeTransferFrom(_from, _to, _tokenIds[i], bytes(""));
+            //_safeTransferFrom(_from, _to, _tokenIds[i], bytes(""));
+            balances[_from] = balances[_from] - _tokenIds.length;
             emit Transfer(_from, _to, _tokenIds[i]);
         }
     }

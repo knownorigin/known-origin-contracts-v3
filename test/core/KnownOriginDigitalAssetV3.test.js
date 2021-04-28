@@ -1248,5 +1248,33 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
   });
 
+  describe.only('getAllUnsoldTokenIdsForEdition() and transfering to the dead address', () => {
+    const editionSize = 50
+    const edition2Size = 100
 
+    beforeEach(async () => {
+      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract})
+      await this.token.mintBatchEdition(edition2Size, owner, TOKEN_URI, {from: contract})
+    })
+
+    it('Returns the correct list of unsold tokens when no tokens sold for first edition', async () => {
+      const expectedTokenIdsFirstEdition = Array(editionSize).fill(0).map((val, idx) => (11000 + idx).toString())
+
+      const unsoldTokenIdsFirstEdition = (await this.token.getAllUnsoldTokenIdsForEdition(firstEditionTokenId)).map(unsoldTokenId => unsoldTokenId.toString())
+
+      expect(unsoldTokenIdsFirstEdition).to.be.deep.equal(expectedTokenIdsFirstEdition)
+    })
+
+    it('Returns the correct list of unsold tokens when no tokens sold for second edition', async () => {
+      const expectedTokenIdsSecondEdition = Array(edition2Size).fill(0).map((val, idx) => (12000 + idx).toString())
+
+      const unsoldTokenIdsSecondEdition = (await this.token.getAllUnsoldTokenIdsForEdition(secondEditionTokenId)).map(unsoldTokenId => unsoldTokenId.toString())
+
+      expect(unsoldTokenIdsSecondEdition).to.be.deep.equal(expectedTokenIdsSecondEdition)
+    })
+
+    it('Transfers all unsold tokens to the dead address', async () => {
+      await this.token.batchTransferFrom(owner, '0x000000000000000000000000000000000000dEaD', await this.token.getAllUnsoldTokenIdsForEdition(firstEditionTokenId), {from: owner})
+    })
+  })
 });
