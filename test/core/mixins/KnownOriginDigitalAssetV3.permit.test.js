@@ -10,7 +10,7 @@ const {expect} = require('chai');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
-const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
+const KODAV3Marketplace = artifacts.require('KODAV3PrimaryMarketplace');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
 contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts) {

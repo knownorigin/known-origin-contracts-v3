@@ -5,11 +5,11 @@ const {ether} = require('@openzeppelin/test-helpers');
 const {expect} = require('chai');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
-const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
+const KODAV3Marketplace = artifacts.require('KODAV3PrimaryMarketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
-contract('KODAV3Marketplace pausable', function (accounts) {
+contract('KODAV3PrimaryMarketplace pausable', function (accounts) {
   const [admin, owner, minter, koCommission, contract, collectorA] = accounts;
 
   const STARTING_EDITION = '10000';

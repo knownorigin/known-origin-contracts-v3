@@ -18,10 +18,18 @@
 
 * `Rinkeby` - `0x9028b16494a9363F3EAaf381a6Fde67296abc68C` (DO NOT VERIFY YET)
 
-### Marketplace
+### Old V3 Marketplace (Primary and Secondary combined)
 
 * `Rinkeby` - `0x0Eb65B4c3d3dE340e1b15384f8F211784247a37A` (verified)
 
+### Primary V3 Marketplace
+
+* `Rinkeby` - `0xfAfEDFa41BEA1C68b4121d0dFF26081676A7B9c2`
+
+### Secondary V3 Marketplace
+
+* `Rinkeby` - `0xf69881f9e3F9aD0B3c59Fa7Ab293A28FB7048db5`
+
 ### Minting Factory
 
-* `Rinkeby` - `0xe28e054d596576841682e8c993E415B3ccB2EBeB` (verified)
+* `Rinkeby` - `0xE86C3e9D942dE22dd49636b88A5dAb20755deE33` (verified)
