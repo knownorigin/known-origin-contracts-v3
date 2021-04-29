@@ -539,7 +539,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         require(
             editionWithReserveAuction.bidder == _msgSender() || editionWithReserveAuction.seller == _msgSender(),
             "Only winner or seller can result"
-        );
+        ); // todo: should we allow KO admin too? (if so, do change in secondary sales)
 
         address winner = editionWithReserveAuction.bidder;
         uint256 winningBid = editionWithReserveAuction.bid;
@@ -552,9 +552,37 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         emit ReserveAuctionResulted(_editionId, winningBid, winner, _msgSender());
     }
 
-    // todo emergency exit reserve for scenerios where no approval and or soft burn / sales disabled regardless of reserve met
-    // todo bidder, seller and known original
     // todo event
+    function emergencyExitBidFromReserveAuction(uint256 _editionId)
+    public
+    // todo override i.e. implement interface
+    whenNotPaused
+    nonReentrant {
+        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
+
+        require(editionWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
+        require(editionWithReserveAuction.bid > 0, "No bid in flight");
+
+        bool isApprovalActiveForMarketplace = koda.isApprovedForAll(editionWithReserveAuction.seller, address(this));
+        require(
+            !isApprovalActiveForMarketplace || koda.getEditionSalesDisabled(_editionId),
+            "Bid cannot be withdrawn as reserve auction listing is valid"
+        );
+
+        bool isSeller = editionWithReserveAuction.seller == _msgSender();
+        bool isBidder = editionWithReserveAuction.bidder == _msgSender();
+        require(
+            isSeller || isBidder || accessControls.hasAdminRole(_msgSender()),
+            "Only seller, bidder or platform admin"
+        ); // external call done last as a gas optimisation i.e. it wont be called if isSeller || isBidder is true
+
+        _refundBidder(editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
+
+        emit EmergencyBidWithdrawFromReserveAuction(_editionId, editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
+
+        editionWithReserveAuction.bidder = address(0);
+        editionWithReserveAuction.bid = 0;
+    }
 
     // Only permit bid withdrawals if reserve not met
     function withdrawBidFromReserveAuction(uint256 _editionId)
@@ -566,7 +594,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
 
         require(editionWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
         require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Bids can only be withdrawn if reserve not met");
-        require(editionWithReserveAuction.bidder == _msgSender(), "Only the bidder can withdraw their bid");
+        require(editionWithReserveAuction.bidder == _msgSender(), "Only the bidder can withdraw their bid"); // todo: should we allow KO admin too? (if so, do change in secondary sales)
 
         uint256 bidToRefund = editionWithReserveAuction.bid;
         _refundBidder(editionWithReserveAuction.bidder, bidToRefund);
@@ -586,7 +614,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
 
         require(editionWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
-        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller");
+        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller"); // todo: should we allow KO admin too? (if so, do change in secondary sales)
         require(editionWithReserveAuction.bid == 0, "Due to the active bid the reserve cannot be adjusted");
         require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
 
@@ -604,7 +632,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
 
         require(editionWithReserveAuction.reservePrice > 0, "No active auction");
         require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Can only convert before reserve met");
-        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller");
+        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller"); // todo: should we allow KO admin too? (if so, do change in secondary sales)
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         // refund any bids

@@ -236,6 +236,10 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         );
     }
 
+    function getEditionSalesDisabled(uint256 _editionId) external view override returns (bool) {
+        return editionSalesDisabled[_editionId];
+    }
+
     function toggleEditionSalesDisabled(uint256 _editionId) external override {
         address creator = editionDetails[_editionId].creator;
         require(creator != address(0), "Edition does not exist");

@@ -27,6 +27,8 @@ IERC2981  // Royalties
 
     function editionExists(uint256 _editionId) external view returns (bool);
 
+    function getEditionSalesDisabled(uint256 _editionId) external view returns (bool);
+
     function maxTokenIdOfEdition(uint256 _editionId) external view returns (uint256 _tokenId);
 
     // Helper method for getting the next primary sale token from an edition starting low to high token IDs
