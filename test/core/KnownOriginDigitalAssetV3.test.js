@@ -1248,7 +1248,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
   });
 
-  describe.only('getAllUnsoldTokenIdsForEdition() and transfering to the dead address', () => {
+  describe('getAllUnsoldTokenIdsForEdition() and transfering to the dead address', () => {
     const editionSize = 50
     const edition2Size = 100
 
@@ -1275,6 +1275,68 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
     it('Transfers all unsold tokens to the dead address', async () => {
       await this.token.batchTransferFrom(owner, '0x000000000000000000000000000000000000dEaD', await this.token.getAllUnsoldTokenIdsForEdition(firstEditionTokenId), {from: owner})
+    })
+  })
+
+  describe('hasMadePrimarySale()', () => {
+    const editionSize = 10
+
+    beforeEach(async () => {
+      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract})
+    })
+
+    it('Should return false when no tokens in edition sold', async () => {
+      const hasMadePrimarySale = await this.token.hasMadePrimarySale(firstEditionTokenId)
+      expect(hasMadePrimarySale).to.be.false
+    })
+
+    it('Returns true when at least 1 token in edition is sold', async () => {
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner})
+
+      const hasMadePrimarySale = await this.token.hasMadePrimarySale(firstEditionTokenId)
+      expect(hasMadePrimarySale).to.be.true
+    })
+  })
+
+  describe('updateURIIfNoSaleMade()', () => {
+    const editionSize = 10
+
+    beforeEach(async () => {
+      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract})
+    })
+
+    it('Updated the URI when primary sale not made on edition', async () => {
+      const uri = 'random'
+      const { receipt } = await this.token.updateURIIfNoSaleMade(firstEditionTokenId, uri, {from: owner})
+
+      await expectEvent(receipt, 'EditionURIUpdated', {
+        _editionId: firstEditionTokenId
+      })
+
+      expect(await this.token.tokenURI(firstEditionTokenId)).to.be.equal(uri)
+    })
+
+    it('Reverts when edition does not exist', async () => {
+      await expectRevert(
+        this.token.updateURIIfNoSaleMade(secondEditionTokenId, 'random', {from: owner}),
+        "Not creator"
+      )
+    })
+
+    it('Reverts when not creator of edition', async () => {
+      await expectRevert(
+        this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: contract}),
+        "Not creator"
+      )
+    })
+
+    it('Reverts when edition has had a primary sale', async () => {
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner})
+
+      await expectRevert(
+        this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: owner}),
+        "Edition has had primary sale and cannot update its URI"
+      )
     })
   })
 });

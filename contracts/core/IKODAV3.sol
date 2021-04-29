@@ -53,4 +53,8 @@ IERC2981  // Royalties
     function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri);
 
     function hadPrimarySaleOfToken(uint256 _tokenId) external view returns (bool);
+
+    function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external;
+
+    function hasMadePrimarySale(uint256 _editionId) external view returns (bool);
 }

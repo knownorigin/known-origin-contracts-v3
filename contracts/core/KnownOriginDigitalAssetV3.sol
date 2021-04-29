@@ -19,6 +19,7 @@ import {BaseKoda} from "./BaseKoda.sol";
  */
 contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165Storage, IKODAV3Minter {
 
+    event EditionURIUpdated(uint256 indexed _editionId);
     event AdditionalEditionMetaDataSet(uint256 indexed _editionId);
     event AdditionalEditionUnlockableSet(uint256 indexed _editionId);
     event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
@@ -167,14 +168,13 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return start;
     }
 
-    // todo add to interface
-    function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external {
+    function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external override {
         require(_msgSender() == editionDetails[_editionId].creator, "Not creator");
         require(!hasMadePrimarySale(_editionId), "Edition has had primary sale and cannot update its URI");
 
         editionDetails[_editionId].uri = _newURI;
 
-        // todo emit event
+        emit EditionURIUpdated(_editionId);
     }
 
     function _defineEditionConfig(uint256 _editionId, uint96 _editionSize, address _to, string calldata _uri) internal {
@@ -446,8 +446,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return owners[_tokenId] != address(0);
     }
 
-    // todo add to interface
-    function hasMadePrimarySale(uint256 _editionId) public view returns (bool) {
+    function hasMadePrimarySale(uint256 _editionId) public override view returns (bool) {
         require(editionDetails[_editionId].editionSize > 0, "Edition does not exist");
         uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
 
