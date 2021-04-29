@@ -541,19 +541,20 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
             "Only winner or seller can result"
         );
 
-        // send token to winner
-        // todo - check if edition ID matches token ID and think about what happens when the seller transfers the token before resulting
-        // todo we could allow buyer to withdraw if we know seller
-        koda.safeTransferFrom(editionWithReserveAuction.seller, editionWithReserveAuction.bidder, _editionId);
-
-        handleEditionSaleFunds(editionWithReserveAuction.seller, editionWithReserveAuction.bid);
-
         address winner = editionWithReserveAuction.bidder;
         uint256 winningBid = editionWithReserveAuction.bid;
         delete editionWithReserveAuctions[_editionId];
 
+        // todo think about what happens when the seller transfers the token before resulting
+        // todo we could allow buyer to withdraw if we know seller no longer owns the token
+        facilitateNextPrimarySale(_editionId, winningBid, winner, false);
+
         emit ReserveAuctionResulted(_editionId, winningBid, winner, _msgSender());
     }
+
+    // todo emergency exit reserve for scenerios where no approval and or soft burn / sales disabled regardless of reserve met
+    // todo bidder, seller and known original
+    // todo event
 
     // Only permit bid withdrawals if reserve not met
     function withdrawBidFromReserveAuction(uint256 _editionId)

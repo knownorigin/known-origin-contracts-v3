@@ -20,6 +20,7 @@ import {BaseKoda} from "./BaseKoda.sol";
 contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165Storage, IKODAV3Minter {
 
     event EditionURIUpdated(uint256 indexed _editionId);
+    event EditionSalesDisabledToggled(uint256 indexed _editionId, bool _oldValue, bool _newValue);
     event AdditionalEditionMetaDataSet(uint256 indexed _editionId);
     event AdditionalEditionUnlockableSet(uint256 indexed _editionId);
     event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
@@ -70,12 +71,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     // Optional one time use storage slot for additional unlockable content
     mapping(uint256 => string) public additionalEditionUnlockableSlot;
 
-    // TODO soft burn (edition level) - primary sales not possible if soft burn, remove from marketplace and KO with soft burnt
-    //   - what happens when one has been sold/gift?
-
-    // TODO helper method for getting unsold primary tokens
-
-    // TODO get GAS costs for buying edition of 50
+    /// @notice Allows a creator to disable sales of their edition or they can ask KnownOrigin to do this
+    mapping(uint256 => bool) public editionSalesDisabled;
 
     constructor(
         IKOAccessControlsLookup _accessControls,
@@ -239,6 +236,19 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         );
     }
 
+    function toggleEditionSalesDisabled(uint256 _editionId) external override {
+        address creator = editionDetails[_editionId].creator;
+        require(creator != address(0), "Edition does not exist");
+
+        bool isCreator = creator == _msgSender();
+        bool isAdmin = accessControls.hasAdminRole(_msgSender());
+        require(isCreator || isAdmin, "Only creator or platform admin");
+
+        emit EditionSalesDisabledToggled(_editionId, editionSalesDisabled[_editionId], !editionSalesDisabled[_editionId]);
+
+        editionSalesDisabled[_editionId] = !editionSalesDisabled[_editionId];
+    }
+
     ///////////////////
     // Creator query //
     ///////////////////
@@ -389,6 +399,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     public
     override
     returns (address receiver, address creator, uint256 tokenId) {
+        require(!editionSalesDisabled[_editionId], "Edition sales disabled");
+
         uint256 _tokenId = getNextAvailablePrimarySaleToken(_editionId);
         address _creator = _getCreatorOfEdition(_editionId);
 
