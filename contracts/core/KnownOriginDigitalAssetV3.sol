@@ -447,6 +447,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     public
     override
     returns (address receiver, address creator, uint256 tokenId) {
+        require(!editionSalesDisabled[_editionId], "Edition sales disabled");
+
         uint256 _tokenId = getReverseAvailablePrimarySaleToken(_editionId);
         address _creator = _getCreatorOfEdition(_editionId);
 

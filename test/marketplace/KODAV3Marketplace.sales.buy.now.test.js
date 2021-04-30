@@ -525,6 +525,37 @@ contract('KODAV3Marketplace', function (accounts) {
         expect(listing._startDate).to.be.bignumber.equal(ZERO);
       });
     });
+
+    describe('buy when sales disabled', () => {
+      const _0_1_ETH = ether('0.1');
+
+      beforeEach(async () => {
+        // Ensure owner is approved as this will fail if not
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // create 3 tokens to the minter
+        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+
+        this.start = await time.latest();
+        await this.marketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, this.start, {from: contract});
+      });
+
+      it('Can buy a token until sales are disabled', async () => {
+        // collector A buys a token
+        await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: _0_1_ETH});
+
+        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+
+        // seller disables sales
+        await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: minter})
+
+        // any further sale should fail
+        await expectRevert(
+          this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: _0_1_ETH}),
+          "Edition sales disabled"
+        )
+      });
+    })
   });
 
 });

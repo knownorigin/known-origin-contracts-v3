@@ -105,6 +105,54 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       const sellerCommission = bidder2Bid.sub(platformCommission)
       expect(await sellerTracker.delta()).to.be.bignumber.equal(sellerCommission)
     })
+
+    it('Reverts when sales disabled', async () => {
+      const reservePrice = ether('0.5')
+
+      const editionId = EDITION_ONE_ID
+      const { receipt } = await this.marketplace.listEditionForReserveAuction(
+        minter,
+        editionId,
+        reservePrice,
+        '0',
+        {from: contract}
+      )
+
+      await expectEvent(receipt, 'EditionListedForReserveAuction', {
+        _editionId: editionId,
+        _reservePrice: reservePrice,
+        _startDate: '0'
+      })
+
+      // place a bid as bidder 1
+      await this.marketplace.placeBidOnReserveAuction(editionId, {from: bidder1, value: ether('1')})
+
+      // outbid by bidder 2 - bidder 1 gets money back
+      const bidder1Tracker = await balance.tracker(bidder1)
+
+      const bidder2Bid = ether('1.2')
+      await this.marketplace.placeBidOnReserveAuction(editionId, {from: bidder2, value: bidder2Bid})
+
+      expect(await bidder1Tracker.delta()).to.be.bignumber.equal(ether('1'))
+
+      const reserveAuctionDetailsAfterBid = await this.marketplace.editionWithReserveAuctions(editionId)
+
+      expect(reserveAuctionDetailsAfterBid.bidder).to.be.equal(bidder2)
+
+      // move past bidding end to result the auction
+      await time.increaseTo(
+        parseInt(reserveAuctionDetailsAfterBid.biddingEnd.toString()) + 5
+      )
+
+      // seller disables sales
+      await this.token.toggleEditionSalesDisabled(EDITION_ONE_ID, {from: minter})
+
+      // any further sale should fail
+      await expectRevert(
+        this.marketplace.resultReserveAuction(EDITION_ONE_ID, {from: bidder2}),
+        "Edition sales disabled"
+      )
+    })
   })
 
   describe('listEditionForReserveAuction()', () => {
