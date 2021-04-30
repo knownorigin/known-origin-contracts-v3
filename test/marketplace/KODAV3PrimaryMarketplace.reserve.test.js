@@ -278,6 +278,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
     })
   })
 
+  // todo result as admin and contract
   describe('resultReserveAuction()', () => {
     beforeEach(async () => {
       await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
@@ -392,9 +393,12 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       // withdrawal should be possible
       const bidder1Tracker = await balance.tracker(bidder1)
 
-      const { receipt } = await this.marketplace.withdrawBidFromReserveAuction(EDITION_ONE_ID, {from: bidder1})
+      const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString())
+      const { receipt } = await this.marketplace.withdrawBidFromReserveAuction(EDITION_ONE_ID, {from: bidder1, gasPrice})
 
-      expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid.sub(new BN(receipt.gasUsed.toString()).mul(new BN('8000000000'))))
+      const gasUsed = new BN( receipt.cumulativeGasUsed );
+      const txCost = gasUsed.mul(gasPrice);
+      expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid.sub(txCost))
 
       expectEvent(receipt, 'BidWithdrawnFromReserveAuction', {
         _editionId: EDITION_ONE_ID,
@@ -576,6 +580,153 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       await expectRevert(
         this.marketplace.convertReserveAuctionToBuyItNow(EDITION_ONE_ID, '0', '0', {from: minter}),
         "Listing price not enough"
+      )
+    })
+  })
+
+  describe('emergencyExitBidFromReserveAuction()', () => {
+    beforeEach(async () => {
+      await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+      // reserve is only for 1 of 1
+      await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+
+      // list the token for reserve auction
+      await this.marketplace.listEditionForReserveAuction(minter, EDITION_ONE_ID, ether('0.25'), '0', {from: contract})
+
+      // mint another batch of tokens for further testing
+      await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+    })
+
+    describe('when bid placed', () => {
+      const bid = ether('0.5')
+
+      beforeEach(async () => {
+        await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: bid})
+      })
+
+      describe('As seller', () => {
+        it('Can emergency exit if approval removed', async () => {
+          await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+          const bidder1Tracker = await balance.tracker(bidder1)
+
+          await this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID, {from: minter})
+
+          expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
+        })
+
+        it('Can emergency exit if sales disabled for edition', async () => {
+          await this.token.toggleEditionSalesDisabled(EDITION_ONE_ID, {from: minter})
+
+          const bidder1Tracker = await balance.tracker(bidder1)
+
+          await this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID, {from: minter})
+
+          expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
+        })
+      })
+
+      describe('As bidder', () => {
+        it('Can emergency exit if approval removed', async () => {
+          await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+          const bidder1Tracker = await balance.tracker(bidder1)
+
+          const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString())
+          const tx = await this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID, {from: bidder1, gasPrice})
+
+          const gasUsed = new BN( tx.receipt.cumulativeGasUsed );
+          const txCost = gasUsed.mul(gasPrice);
+          expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid.sub(txCost))
+        })
+
+        it('Can emergency exit if sales disabled for edition', async () => {
+          await this.token.toggleEditionSalesDisabled(EDITION_ONE_ID, {from: minter})
+
+          const bidder1Tracker = await balance.tracker(bidder1)
+
+          const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString())
+          const tx = await this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID, {from: bidder1, gasPrice})
+
+          const gasUsed = new BN( tx.receipt.cumulativeGasUsed );
+          const txCost = gasUsed.mul(gasPrice);
+          expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid.sub(txCost))
+        })
+      })
+
+      describe('As contract', () => {
+        it('Can emergency exit if approval removed', async () => {
+          await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+          const bidder1Tracker = await balance.tracker(bidder1)
+
+          await this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID, {from: contract})
+
+          expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
+        })
+
+        it('Can emergency exit if sales disabled for edition', async () => {
+          await this.token.toggleEditionSalesDisabled(EDITION_ONE_ID, {from: minter})
+
+          const bidder1Tracker = await balance.tracker(bidder1)
+
+          await this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID, {from: contract})
+
+          expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
+        })
+      })
+
+      describe('As platform admin', () => {
+        it('Can emergency exit if approval removed', async () => {
+          await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+          const bidder1Tracker = await balance.tracker(bidder1)
+
+          await this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID, {from: owner})
+
+          expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
+        })
+
+        it('Can emergency exit if sales disabled for edition', async () => {
+          await this.token.toggleEditionSalesDisabled(EDITION_ONE_ID, {from: minter})
+
+          const bidder1Tracker = await balance.tracker(bidder1)
+
+          await this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID, {from: owner})
+
+          expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
+        })
+      })
+
+      it('Reverts when listing is still valid', async () => {
+        await expectRevert(
+          this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID),
+          "Bid cannot be withdrawn as reserve auction listing is valid"
+        )
+      })
+
+      it('Reverts when not on approved list of callers', async () => {
+        await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+        await expectRevert(
+          this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID, {from: koCommission}),
+          "Only seller, bidder, contract or platform admin"
+        )
+      })
+    })
+
+    it('Reverts when no auction in flight', async () => {
+      await expectRevert(
+        this.marketplace.emergencyExitBidFromReserveAuction(EDITION_TWO_ID),
+        "No reserve auction in flight"
+      )
+    })
+
+    it('Reverts when no bid in flight', async () => {
+      await expectRevert(
+        this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID),
+        "No bid in flight"
       )
     })
   })

@@ -340,9 +340,12 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       // withdrawal should be possible
       const bidder1Tracker = await balance.tracker(bidder1)
 
-      const { receipt } = await this.marketplace.withdrawBidFromReserveAuction(FIRST_TOKEN_ID, {from: bidder1})
+      const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString())
+      const { receipt } = await this.marketplace.withdrawBidFromReserveAuction(FIRST_TOKEN_ID, {from: bidder1, gasPrice})
 
-      expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid.sub(new BN(receipt.gasUsed.toString()).mul(new BN('8000000000'))))
+      const gasUsed = new BN( receipt.cumulativeGasUsed );
+      const txCost = gasUsed.mul(gasPrice);
+      expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid.sub(txCost))
 
       expectEvent(receipt, 'BidWithdrawnFromReserveAuction', {
         _tokenId: FIRST_TOKEN_ID,

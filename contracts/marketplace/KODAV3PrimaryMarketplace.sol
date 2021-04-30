@@ -573,8 +573,8 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         bool isSeller = editionWithReserveAuction.seller == _msgSender();
         bool isBidder = editionWithReserveAuction.bidder == _msgSender();
         require(
-            isSeller || isBidder || accessControls.hasAdminRole(_msgSender()),
-            "Only seller, bidder or platform admin"
+            isSeller || isBidder || accessControls.hasContractOrAdminRole(_msgSender()),
+            "Only seller, bidder, contract or platform admin"
         ); // external call done last as a gas optimisation i.e. it wont be called if isSeller || isBidder is true
 
         _refundBidder(editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
