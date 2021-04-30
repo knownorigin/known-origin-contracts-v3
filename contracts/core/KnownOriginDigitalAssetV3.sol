@@ -672,8 +672,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /// @dev Allowing for batch transfers from the provided address, will fail if from does not own all the tokens
     function batchTransferFrom(address _from, address _to, uint256[] calldata _tokenIds) public {
         for (uint256 i = 0; i < _tokenIds.length; i++) {
-            //_safeTransferFrom(_from, _to, _tokenIds[i], bytes(""));
-            balances[_from] = balances[_from] - _tokenIds.length;
+            _safeTransferFrom(_from, _to, _tokenIds[i], bytes(""));
             emit Transfer(_from, _to, _tokenIds[i]);
         }
     }
