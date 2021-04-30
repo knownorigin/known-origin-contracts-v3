@@ -11,7 +11,7 @@ import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
 contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, ReentrancyGuard {
-    using Address for address;
+    using Address for address; // todo make a call on bids from isContract
 
     event AdminUpdatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission);
     event AdminUpdateModulo(uint256 _modulo);
@@ -540,7 +540,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
             editionWithReserveAuction.bidder == _msgSender() ||
             editionWithReserveAuction.seller == _msgSender() ||
             accessControls.hasContractOrAdminRole(_msgSender()),
-            "Only winner or seller can result"
+            "Only winner or seller can result" // todo update message
         );
 
         address winner = editionWithReserveAuction.bidder;
