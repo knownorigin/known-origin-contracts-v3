@@ -540,7 +540,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
             editionWithReserveAuction.bidder == _msgSender() ||
             editionWithReserveAuction.seller == _msgSender() ||
             accessControls.hasContractOrAdminRole(_msgSender()),
-            "Only winner or seller can result" // todo update message
+            "Only winner, seller, contract or admin can result"
         );
 
         address winner = editionWithReserveAuction.bidder;

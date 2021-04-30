@@ -407,7 +407,7 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
             tokenWithReserveAuction.bidder == _msgSender() ||
             tokenWithReserveAuction.seller == _msgSender() ||
             accessControls.hasContractOrAdminRole(_msgSender()),
-            "Only winner or seller can result" // todo update message
+            "Only winner, seller, contract or admin can result"
         );
 
         // send token to winner

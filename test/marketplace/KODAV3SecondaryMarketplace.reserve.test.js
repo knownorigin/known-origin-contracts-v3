@@ -272,7 +272,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       )
     })
 
-    it('Reverts when not winner or seller when resulting', async () => {
+    it('Reverts when not authorised caller when resulting', async () => {
       await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.5')})
 
       const {biddingEnd} = await this.marketplace.tokenWithReserveAuctions(FIRST_TOKEN_ID)
@@ -281,7 +281,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
 
       await expectRevert(
         this.marketplace.resultReserveAuction(FIRST_TOKEN_ID, {from: koCommission}),
-        "Only winner or seller can result"
+        "Only winner, seller, contract or admin can result"
       )
     })
 
@@ -314,6 +314,38 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         _finalPrice: ether('0.5'),
         _winner: bidder1,
         _resulter: minter
+      })
+    })
+
+    it('Can result as contract', async () => {
+      await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.5')})
+
+      const {biddingEnd} = await this.marketplace.tokenWithReserveAuctions(FIRST_TOKEN_ID)
+
+      await time.increaseTo(biddingEnd.addn(5))
+
+      const {receipt} = await this.marketplace.resultReserveAuction(FIRST_TOKEN_ID, {from: contract})
+      expectEvent(receipt, 'ReserveAuctionResulted', {
+        _tokenId: FIRST_TOKEN_ID,
+        _finalPrice: ether('0.5'),
+        _winner: bidder1,
+        _resulter: contract
+      })
+    })
+
+    it('Can result as admin', async () => {
+      await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.5')})
+
+      const {biddingEnd} = await this.marketplace.tokenWithReserveAuctions(FIRST_TOKEN_ID)
+
+      await time.increaseTo(biddingEnd.addn(5))
+
+      const {receipt} = await this.marketplace.resultReserveAuction(FIRST_TOKEN_ID, {from: owner})
+      expectEvent(receipt, 'ReserveAuctionResulted', {
+        _tokenId: FIRST_TOKEN_ID,
+        _finalPrice: ether('0.5'),
+        _winner: bidder1,
+        _resulter: owner
       })
     })
   })
