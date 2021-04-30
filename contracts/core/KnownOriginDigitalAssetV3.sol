@@ -443,7 +443,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         revert("No tokens left on the primary market");
     }
 
-    function facilitateReveresPrimarySale(uint256 _editionId)
+    function facilitateReversePrimarySale(uint256 _editionId)
     public
     override
     returns (address receiver, address creator, uint256 tokenId) {

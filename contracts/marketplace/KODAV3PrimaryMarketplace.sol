@@ -666,7 +666,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         // for stepped sales, should they be sold in reverse order ie. 10...1 and not 1...10?
         // get next token to sell along with the royalties recipient and the original creator
         (address receiver, address creator, uint256 tokenId) = _reverse
-            ? koda.facilitateReveresPrimarySale(_editionId) // todo - is function name a known typo?
+            ? koda.facilitateReversePrimarySale(_editionId)
             : koda.facilitateNextPrimarySale(_editionId);
 
         // split money
