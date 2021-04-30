@@ -60,6 +60,7 @@ interface IReserveAuctionMarketplace {
     function placeBidOnReserveAuction(uint256 _editionId) external payable;
     function resultReserveAuction(uint256 _editionId) external;
     function withdrawBidFromReserveAuction(uint256 _editionId) external;
+    function emergencyExitBidFromReserveAuction(uint256 _editionId) external;
     function updateReservePriceForReserveAuction(uint256 _editionId, uint128 _reservePrice) external;
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
 }

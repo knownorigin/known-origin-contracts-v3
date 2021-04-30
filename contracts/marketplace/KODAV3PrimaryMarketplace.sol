@@ -537,9 +537,11 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         require(editionWithReserveAuction.bid >= editionWithReserveAuction.reservePrice, "Reserve not met");
         require(block.timestamp > editionWithReserveAuction.biddingEnd, "Bidding has not yet ended");
         require(
-            editionWithReserveAuction.bidder == _msgSender() || editionWithReserveAuction.seller == _msgSender(),
+            editionWithReserveAuction.bidder == _msgSender() ||
+            editionWithReserveAuction.seller == _msgSender() ||
+            accessControls.hasContractOrAdminRole(_msgSender()),
             "Only winner or seller can result"
-        ); // todo: should we allow KO admin too? (if so, do change in secondary sales)
+        );
 
         address winner = editionWithReserveAuction.bidder;
         uint256 winningBid = editionWithReserveAuction.bid;
@@ -552,10 +554,9 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         emit ReserveAuctionResulted(_editionId, winningBid, winner, _msgSender());
     }
 
-    // todo event
     function emergencyExitBidFromReserveAuction(uint256 _editionId)
     public
-    // todo override i.e. implement interface
+    override
     whenNotPaused
     nonReentrant {
         ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
@@ -594,7 +595,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
 
         require(editionWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
         require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Bids can only be withdrawn if reserve not met");
-        require(editionWithReserveAuction.bidder == _msgSender(), "Only the bidder can withdraw their bid"); // todo: should we allow KO admin too? (if so, do change in secondary sales)
+        require(editionWithReserveAuction.bidder == _msgSender(), "Only the bidder can withdraw their bid");
 
         uint256 bidToRefund = editionWithReserveAuction.bid;
         _refundBidder(editionWithReserveAuction.bidder, bidToRefund);
@@ -614,7 +615,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
 
         require(editionWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
-        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller"); // todo: should we allow KO admin too? (if so, do change in secondary sales)
+        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller");
         require(editionWithReserveAuction.bid == 0, "Due to the active bid the reserve cannot be adjusted");
         require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
 
@@ -632,7 +633,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
 
         require(editionWithReserveAuction.reservePrice > 0, "No active auction");
         require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Can only convert before reserve met");
-        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller"); // todo: should we allow KO admin too? (if so, do change in secondary sales)
+        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller");
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         // refund any bids
@@ -647,11 +648,13 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
     }
 
+    // todo test
     function updateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow) onlyAdmin public {
         reserveAuctionBidExtensionWindow = _reserveAuctionBidExtensionWindow;
         emit AdminUpdateReserveAuctionBidExtensionWindow(_reserveAuctionBidExtensionWindow);
     }
 
+    // todo test
     function updateReserveAuctionLengthOnceReserveMet(uint128 _reserveAuctionLengthOnceReserveMet) onlyAdmin public {
         reserveAuctionLengthOnceReserveMet = _reserveAuctionLengthOnceReserveMet;
         emit AdminUpdateReserveAuctionLengthOnceReserveMet(_reserveAuctionLengthOnceReserveMet);

@@ -404,7 +404,9 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         require(tokenWithReserveAuction.bid >= tokenWithReserveAuction.reservePrice, "Reserve not met");
         require(block.timestamp > tokenWithReserveAuction.biddingEnd, "Bidding has not yet ended");
         require(
-            tokenWithReserveAuction.bidder == _msgSender() || tokenWithReserveAuction.seller == _msgSender(),
+            tokenWithReserveAuction.bidder == _msgSender() ||
+            tokenWithReserveAuction.seller == _msgSender() ||
+            accessControls.hasContractOrAdminRole(_msgSender()),
             "Only winner or seller can result"
         );
 
