@@ -9,6 +9,10 @@ import {IKODAV3PrimarySaleMarketplace} from "./IKODAV3Marketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
+/// @title KnownOrigin Primary Marketplace for all V3 tokens
+/// @notice The following listing types are supported: Buy now, Stepped, Reserve and Offers
+/// @dev The contract is pausable and has reentrancy guards
+/// @author KnownOrigin Labs
 contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, ReentrancyGuard {
 
     event AdminUpdatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission);
@@ -20,12 +24,14 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     event AdminUpdateBidLockupPeriod(uint256 _bidLockupPeriod);
     event AdminUpdatePlatformAccount(address indexed _oldAddress, address indexed _newAddress);
 
-    modifier onlyContract(){
+    // Only a whitelisted smart contract in the access controls contract
+    modifier onlyContract() {
         require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
         _;
     }
 
-    modifier onlyContractOrCreator(uint256 _editionId){
+    // Only a whitelisted smart contract or edition creator
+    modifier onlyContractOrCreator(uint256 _editionId) {
         require(
             accessControls.hasContractRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
             "Caller not creator or contract"
@@ -33,24 +39,27 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         _;
     }
 
-    modifier onlyAdmin(){
+    // Only admin defined in the access controls contract
+    modifier onlyAdmin() {
         require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
         _;
     }
 
+    // Offer / Bid definition placed on an edition
     struct Offer {
         uint256 offer;
         address bidder;
         uint256 lockupUntil;
     }
 
-    // buy now
+    // Buy now listing definition
     struct Listing {
         uint128 price;
         uint128 startDate;
         address seller;
     }
 
+    // Stepped auction definition
     struct Stepped {
         uint128 basePrice;
         uint128 stepPrice;
@@ -59,6 +68,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         uint16 currentStep;
     }
 
+    // Reserve auction definition
     struct ReserveAuction {
         address seller;
         address bidder;
@@ -68,43 +78,46 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         uint128 biddingEnd;
     }
 
-    // Edition ID to Offer mapping
+    /// @notice Edition ID to Offer mapping
     mapping(uint256 => Offer) public editionOffers;
 
-    // Edition ID to StartDate
+    /// @notice Edition ID to StartDate
     mapping(uint256 => uint256) public editionOffersStartDate;
 
-    // Edition ID to Listing
+    /// @notice Edition ID to Listing
     mapping(uint256 => Listing) public editionListings;
 
-    // Edition ID to stepped auction
+    /// @notice Edition ID to stepped auction
     mapping(uint256 => Stepped) public editionStep;
 
-    // 1 of 1 editions with reserve auctions
+    /// @notice 1 of 1 edition ID to reserve auction definition
     mapping(uint256 => ReserveAuction) public editionWithReserveAuctions;
 
-    // KODA token
+    /// @notice KODA V3 token
     IKODAV3 public koda;
 
-    // platform funds collector
+    /// @notice platform funds collector
     address public platformAccount;
 
-    // KO commission
+    /// @notice KO commission on every sale
     uint256 public platformPrimarySaleCommission = 15_00000;  // 15.00000%
 
-    // precision 100.00000%
+    /// @notice precision 100.00000%
     uint256 public modulo = 100_00000;
 
-    // Minimum bid/list amount
+    /// @notice Minimum bid / minimum list amount
     uint256 public minBidAmount = 0.01 ether;
 
-    // Bid lockup period
+    /// @notice Bid lockup period
     uint256 public bidLockupPeriod = 6 hours;
 
+    /// @notice A reserve auction will be extended by this amount of time if a bid is received near the end
     uint128 public reserveAuctionBidExtensionWindow = 15 minutes;
 
+    /// @notice Length that bidding window remains open once the reserve price for an auction has been met
     uint128 public reserveAuctionLengthOnceReserveMet = 24 hours;
 
+    /// @notice Address of the access control contract
     IKOAccessControlsLookup public accessControls;
 
     // TODO artist commission override feature (speak to andy)

@@ -79,10 +79,13 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     // Bid lockup period
     uint256 public bidLockupPeriod = 6 hours;
 
+    /// @notice A reserve auction will be extended by this amount of time if a bid is received near the end
     uint128 public reserveAuctionBidExtensionWindow = 15 minutes;
 
+    /// @notice Length that bidding window remains open once the reserve price for an auction has been met
     uint128 public reserveAuctionLengthOnceReserveMet = 24 hours;
 
+    /// @notice Address of the access control contract
     IKOAccessControlsLookup public accessControls;
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount) {
