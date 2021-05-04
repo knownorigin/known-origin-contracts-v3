@@ -527,7 +527,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         platformAccount = _newPlatformAccount;
     }
 
-    // todo test
     function updateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow) onlyAdmin public {
         reserveAuctionBidExtensionWindow = _reserveAuctionBidExtensionWindow;
         emit AdminUpdateReserveAuctionBidExtensionWindow(_reserveAuctionBidExtensionWindow);

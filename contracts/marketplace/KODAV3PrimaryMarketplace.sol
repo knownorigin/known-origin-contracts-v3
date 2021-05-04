@@ -655,7 +655,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
     }
 
-    // todo test
     function updateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow) onlyAdmin public {
         reserveAuctionBidExtensionWindow = _reserveAuctionBidExtensionWindow;
         emit AdminUpdateReserveAuctionBidExtensionWindow(_reserveAuctionBidExtensionWindow);

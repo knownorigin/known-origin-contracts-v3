@@ -781,5 +781,24 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
         )
       })
     })
+
+    describe('updateReserveAuctionLengthOnceReserveMet()', () => {
+      const one_minute = new BN('60');
+
+      it('updates the reserve auction length as admin', async () => {
+        const {receipt} = await this.marketplace.updateReserveAuctionLengthOnceReserveMet(one_minute, {from: owner})
+
+        await expectEvent(receipt, 'AdminUpdateReserveAuctionLengthOnceReserveMet', {
+          _reserveAuctionLengthOnceReserveMet: one_minute
+        })
+      })
+
+      it('Reverts when not admin', async () => {
+        await expectRevert(
+          this.marketplace.updateReserveAuctionLengthOnceReserveMet(one_minute, {from: bidder1}),
+          "Caller not admin"
+        )
+      })
+    })
   })
 })

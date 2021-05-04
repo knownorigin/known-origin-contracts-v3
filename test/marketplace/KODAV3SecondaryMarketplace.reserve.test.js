@@ -46,7 +46,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  describe.only('all tests', () => {
+  describe('all tests', () => {
     describe('End to end reserve auctions', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
@@ -578,6 +578,25 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       it('Reverts when not admin', async () => {
         await expectRevert(
           this.marketplace.updateReserveAuctionBidExtensionWindow(one_minute, {from: bidder1}),
+          "Caller not admin"
+        )
+      })
+    })
+
+    describe('updateReserveAuctionLengthOnceReserveMet()', () => {
+      const one_minute = new BN('60');
+
+      it('updates the reserve auction length as admin', async () => {
+        const {receipt} = await this.marketplace.updateReserveAuctionLengthOnceReserveMet(one_minute, {from: owner})
+
+        await expectEvent(receipt, 'AdminUpdateReserveAuctionLengthOnceReserveMet', {
+          _reserveAuctionLengthOnceReserveMet: one_minute
+        })
+      })
+
+      it('Reverts when not admin', async () => {
+        await expectRevert(
+          this.marketplace.updateReserveAuctionLengthOnceReserveMet(one_minute, {from: bidder1}),
           "Caller not admin"
         )
       })
