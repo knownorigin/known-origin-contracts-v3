@@ -16,6 +16,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
     event AdminUpdateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow);
     event AdminUpdateReserveAuctionLengthOnceReserveMet(uint128 _reserveAuctionLengthOnceReserveMet);
+    event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
 
     modifier onlyContract(){
         require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
@@ -104,7 +105,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
 
     uint128 public reserveAuctionLengthOnceReserveMet = 24 hours;
 
-    // TODO add admin setter (with event)
     IKOAccessControlsLookup public accessControls;
 
     // TODO artist commission override feature (speak to andy)
@@ -706,6 +706,11 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     function updateMinBidAmount(uint256 _minBidAmount) public onlyAdmin {
         minBidAmount = _minBidAmount;
         emit AdminUpdateMinBidAmount(_minBidAmount);
+    }
+
+    function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {
+        emit AdminUpdateAccessControls(accessControls, _accessControls);
+        accessControls = _accessControls;
     }
 
     function pause() public onlyAdmin {

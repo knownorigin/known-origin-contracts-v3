@@ -14,6 +14,7 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     event AdminUpdateSecondarySaleCommission(uint256 _platformSecondarySaleCommission);
     event AdminUpdateModulo(uint256 _modulo);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
+    event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
 
     modifier onlyContract() {
         require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
@@ -82,7 +83,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
 
     uint128 public reserveAuctionLengthOnceReserveMet = 24 hours;
 
-    // TODO add admin setter (with event)
     IKOAccessControlsLookup public accessControls;
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount) {
@@ -505,6 +505,11 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
 
     function unpause() public onlyAdmin {
         super._unpause();
+    }
+
+    function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {
+        emit AdminUpdateAccessControls(accessControls, _accessControls);
+        accessControls = _accessControls;
     }
 
     // internal
