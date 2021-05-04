@@ -3,7 +3,6 @@
 pragma solidity 0.8.3;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
 import {IKODAV3PrimarySaleMarketplace} from "./IKODAV3Marketplace.sol";
@@ -11,7 +10,6 @@ import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
 contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, ReentrancyGuard {
-    using Address for address; // todo make a call on bids from isContract
 
     event AdminUpdatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission);
     event AdminUpdateModulo(uint256 _modulo);
@@ -270,9 +268,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         Offer storage offer = editionOffers[_editionId];
         require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
 
-        // No contracts can bid to prevent money lockups on reverts
-        require(!_msgSender().isContract(), "Cannot offer as a contract");
-
         // Honor start date if set
         uint256 startDate = editionOffersStartDate[_editionId];
         if (startDate > 0) {
@@ -494,7 +489,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
         require(editionWithReserveAuction.reservePrice > 0, "Edition not set up for reserve auction");
         require(block.timestamp >= editionWithReserveAuction.startDate, "Edition not accepting bids yet");
-        require(!_msgSender().isContract(), "Cannot bid as a contract");
         require(msg.value >= editionWithReserveAuction.bid + minBidAmount, "You have not exceeded previous bid by min bid amount");
 
         // if a bid has been placed, then we will have a bidding end timestamp and we need to ensure no one

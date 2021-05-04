@@ -3,7 +3,6 @@
 pragma solidity 0.8.3;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
 import {IKODAV3SecondarySaleMarketplace} from "./IKODAV3Marketplace.sol";
@@ -11,8 +10,6 @@ import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
 contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable, ReentrancyGuard {
-    using Address for address; // todo make a call on bids from isContract
-
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
     event AdminUpdateSecondarySaleCommission(uint256 _platformSecondarySaleCommission);
     event AdminUpdateModulo(uint256 _modulo);
@@ -101,9 +98,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         // Check ownership before listing
         require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
 
-        // No contracts can list to prevent money lockups on transfer
-        require(!_msgSender().isContract(), "Cannot list as a contract");
-
         // Check price over min bid
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
@@ -178,10 +172,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         // Check for highest offer
         Offer storage offer = tokenOffers[_tokenId];
         require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
-
-        // TODO create testing contract for this
-        // No contracts can place a bid to prevent money lockups on refunds
-        require(!_msgSender().isContract(), "Cannot make an offer as a contract");
 
         // send money back to top bidder if existing offer found
         if (offer.offer > 0) {
@@ -361,7 +351,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         ReserveAuction storage tokenWithReserveAuction = tokenWithReserveAuctions[_tokenId];
         require(tokenWithReserveAuction.reservePrice > 0, "Token not set up for reserve auction");
         require(block.timestamp >= tokenWithReserveAuction.startDate, "Token not accepting bids yet");
-        require(!_msgSender().isContract(), "Cannot bid as a contract");
         require(msg.value >= tokenWithReserveAuction.bid + minBidAmount, "You have not exceeded previous bid by min bid amount");
 
         // if a bid has been placed, then we will have a bidding end timestamp and we need to ensure no one
