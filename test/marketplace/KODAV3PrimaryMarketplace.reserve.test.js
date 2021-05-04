@@ -11,7 +11,7 @@ const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
 contract('KODAV3Marketplace reserve auction tests', function (accounts) {
-  const [owner, minter, koCommission, contract, bidder1, bidder2] = accounts
+  const [owner, minter, koCommission, contract, bidder1, bidder2, newAccessControls] = accounts
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
@@ -796,6 +796,81 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       it('Reverts when not admin', async () => {
         await expectRevert(
           this.marketplace.updateReserveAuctionLengthOnceReserveMet(one_minute, {from: bidder1}),
+          "Caller not admin"
+        )
+      })
+    })
+
+    describe('updatePlatformPrimarySaleCommission()', () => {
+      const new_commission = new BN('1550000');
+
+      it('updates the reserve auction length as admin', async () => {
+        const {receipt} = await this.marketplace.updatePlatformPrimarySaleCommission(new_commission, {from: owner})
+
+        await expectEvent(receipt, 'AdminUpdatePlatformPrimarySaleCommission', {
+          _platformPrimarySaleCommission: new_commission
+        })
+      })
+
+      it('Reverts when not admin', async () => {
+        await expectRevert(
+          this.marketplace.updatePlatformPrimarySaleCommission(new_commission, {from: bidder1}),
+          "Caller not admin"
+        )
+      })
+    })
+
+    describe('updateModulo()', () => {
+      const new_modulo = new BN('10000');
+
+      it('updates the reserve auction length as admin', async () => {
+        const {receipt} = await this.marketplace.updateModulo(new_modulo, {from: owner})
+
+        await expectEvent(receipt, 'AdminUpdateModulo', {
+          _modulo: new_modulo
+        })
+      })
+
+      it('Reverts when not admin', async () => {
+        await expectRevert(
+          this.marketplace.updateModulo(new_modulo, {from: bidder1}),
+          "Caller not admin"
+        )
+      })
+    })
+
+    describe('updateMinBidAmount()', () => {
+      const new_min_bid = ether('0.3');
+
+      it('updates the reserve auction length as admin', async () => {
+        const {receipt} = await this.marketplace.updateMinBidAmount(new_min_bid, {from: owner})
+
+        await expectEvent(receipt, 'AdminUpdateMinBidAmount', {
+          _minBidAmount: new_min_bid
+        })
+      })
+
+      it('Reverts when not admin', async () => {
+        await expectRevert(
+          this.marketplace.updateMinBidAmount(new_min_bid, {from: bidder1}),
+          "Caller not admin"
+        )
+      })
+    })
+
+    describe('updateAccessControls()', () => {
+      it('updates the reserve auction length as admin', async () => {
+        const {receipt} = await this.marketplace.updateAccessControls(newAccessControls, {from: owner})
+
+        await expectEvent(receipt, 'AdminUpdateAccessControls', {
+          _oldAddress: this.accessControls.address,
+          _newAddress: newAccessControls
+        })
+      })
+
+      it('Reverts when not admin', async () => {
+        await expectRevert(
+          this.marketplace.updateAccessControls(newAccessControls, {from: bidder1}),
           "Caller not admin"
         )
       })
