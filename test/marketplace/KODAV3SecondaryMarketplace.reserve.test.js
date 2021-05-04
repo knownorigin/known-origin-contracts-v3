@@ -676,5 +676,42 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         )
       })
     })
+
+    describe('updateBidLockupPeriod()', () => {
+      const new_lock_up = ether((6 * 60).toString());
+
+      it('updates the reserve auction length as admin', async () => {
+        const {receipt} = await this.marketplace.updateBidLockupPeriod(new_lock_up, {from: owner})
+
+        await expectEvent(receipt, 'AdminUpdateBidLockupPeriod', {
+          _bidLockupPeriod: new_lock_up
+        })
+      })
+
+      it('Reverts when not admin', async () => {
+        await expectRevert(
+          this.marketplace.updateBidLockupPeriod(new_lock_up, {from: bidder1}),
+          "Caller not admin"
+        )
+      })
+    })
+
+    describe('updatePlatformAccount()', () => {
+      it('updates the reserve auction length as admin', async () => {
+        const {receipt} = await this.marketplace.updatePlatformAccount(owner, {from: owner})
+
+        await expectEvent(receipt, 'AdminUpdatePlatformAccount', {
+          _oldAddress: koCommission,
+          _newAddress: owner
+        })
+      })
+
+      it('Reverts when not admin', async () => {
+        await expectRevert(
+          this.marketplace.updatePlatformAccount(owner, {from: bidder1}),
+          "Caller not admin"
+        )
+      })
+    })
   })
 })

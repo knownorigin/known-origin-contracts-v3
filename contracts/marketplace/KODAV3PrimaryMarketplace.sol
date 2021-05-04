@@ -23,6 +23,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
     event AdminUpdateBidLockupPeriod(uint256 _bidLockupPeriod);
     event AdminUpdatePlatformAccount(address indexed _oldAddress, address indexed _newAddress);
+    event AdminSetKoCommissionOverride(address indexed _receiver, uint256 _koCommission);
 
     // Only a whitelisted smart contract in the access controls contract
     modifier onlyContract() {
@@ -43,6 +44,12 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     modifier onlyAdmin() {
         require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
         _;
+    }
+
+    // KO Commission override definition for a given creator
+    struct KOCommissionOverride {
+        bool active;
+        uint256 koCommission;
     }
 
     // Offer / Bid definition placed on an edition
@@ -77,6 +84,9 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         uint128 startDate;
         uint128 biddingEnd;
     }
+
+    /// @notice primary sale proceed address
+    mapping(address => KOCommissionOverride) public koCommissionOverrides;
 
     /// @notice Edition ID to Offer mapping
     mapping(uint256 => Offer) public editionOffers;
@@ -688,9 +698,19 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     }
 
     function handleEditionSaleFunds(address _receiver, uint256 _paymentAmount) internal {
-        uint256 koCommission = (_paymentAmount / modulo) * platformPrimarySaleCommission;
-        (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
-        require(koCommissionSuccess, "Edition commission payment failed");
+        uint256 primarySaleCommission;
+
+        if (koCommissionOverrides[_receiver].active) {
+            primarySaleCommission = koCommissionOverrides[_receiver].koCommission;
+        } else {
+            primarySaleCommission = platformPrimarySaleCommission;
+        }
+
+        uint256 koCommission = (_paymentAmount / modulo) * primarySaleCommission;
+        if (koCommission > 0) {
+            (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
+            require(koCommissionSuccess, "Edition commission payment failed");
+        }
 
         (bool success,) = _receiver.call{value : _paymentAmount - koCommission}("");
         require(success, "Edition payment failed");
@@ -733,6 +753,14 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     function updatePlatformAccount(address _newPlatformAccount) public onlyAdmin {
         emit AdminUpdatePlatformAccount(platformAccount, _newPlatformAccount);
         platformAccount = _newPlatformAccount;
+    }
+
+    function setKoCommissionOverrideForReceiver(address _receiver, uint256 _koCommission) public onlyAdmin {
+        KOCommissionOverride storage koCommissionOverride = koCommissionOverrides[_receiver];
+        koCommissionOverride.active = true;
+        koCommissionOverride.koCommission = _koCommission;
+
+        emit AdminSetKoCommissionOverride(_receiver, _koCommission);
     }
 
     function pause() public onlyAdmin {
