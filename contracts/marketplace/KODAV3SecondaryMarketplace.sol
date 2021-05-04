@@ -15,6 +15,8 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     event AdminUpdateModulo(uint256 _modulo);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
     event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
+    event AdminUpdateBidLockupPeriod(uint256 _bidLockupPeriod);
+    event AdminUpdatePlatformAccount(address indexed _oldAddress, address indexed _newAddress);
 
     modifier onlyContract() {
         require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
@@ -60,7 +62,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     // KODA token
     IKODAV3 public koda;
 
-    // TODO add admin setter (with event)
     // platform funds collector
     address public platformAccount;
 
@@ -75,7 +76,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     // Minimum bid/list amount
     uint256 public minBidAmount = 0.01 ether;
 
-    // TODO add admin setter (with event)
     // Bid lockup period
     uint256 public bidLockupPeriod = 6 hours;
 
@@ -510,6 +510,16 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {
         emit AdminUpdateAccessControls(accessControls, _accessControls);
         accessControls = _accessControls;
+    }
+
+    function updateBidLockupPeriod(uint256 _bidLockupPeriod) public onlyAdmin {
+        bidLockupPeriod = _bidLockupPeriod;
+        emit AdminUpdateBidLockupPeriod(_bidLockupPeriod);
+    }
+
+    function updatePlatformAccount(address _newPlatformAccount) public onlyAdmin {
+        emit AdminUpdatePlatformAccount(platformAccount, _newPlatformAccount);
+        platformAccount = _newPlatformAccount;
     }
 
     // internal
