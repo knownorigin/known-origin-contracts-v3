@@ -464,6 +464,26 @@ contract('KODAV3Marketplace', function (accounts) {
 
         });
 
+        it('can withdraw bid if all tokens in an edition are sold out', async () => {
+
+          const edition = firstEditionTokenId;
+
+          // all tokens bought whilst there is an offer
+          await this.marketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, '0', {from: contract});
+
+          // collector a bids
+          await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
+
+          // collector b buys up all tokens
+          await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorB, value: _0_1_ETH});
+          await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorB, value: _0_1_ETH});
+          await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorB, value: _0_1_ETH});
+
+          await time.increase(time.duration.hours(LOCKUP_HOURS));
+
+          // withdraw bid
+          await this.marketplace.withdrawEditionBid(edition, {from: collectorA});
+        })
       });
 
     });
@@ -510,6 +530,25 @@ contract('KODAV3Marketplace', function (accounts) {
       });
 
       describe('on success', () => {
+
+        it('can reject bid if all tokens in an edition are sold out', async () => {
+
+          const edition = firstEditionTokenId;
+
+          // all tokens bought whilst there is an offer
+          await this.marketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, '0', {from: contract});
+
+          // collector a bids
+          await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
+
+          // collector b buys up all tokens
+          await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorB, value: _0_1_ETH});
+          await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorB, value: _0_1_ETH});
+          await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorB, value: _0_1_ETH});
+
+          // withdraw bid
+          await this.marketplace.rejectEditionBid(edition, {from: minter});
+        })
 
         it('emits EditionBidRejected event when creator rejects offer', async () => {
 
@@ -870,7 +909,6 @@ contract('KODAV3Marketplace', function (accounts) {
         )
       });
     })
-
   });
 
 });

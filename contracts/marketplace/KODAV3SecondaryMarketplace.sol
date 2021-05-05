@@ -405,8 +405,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         );
 
         // send token to winner
-        // todo - check if edition ID matches token ID and think about what happens when the seller transfers the token before resulting
-        // todo we could allow buyer to withdraw if we know seller
         facilitateSecondarySale(_tokenId, tokenWithReserveAuction.bid, tokenWithReserveAuction.seller, tokenWithReserveAuction.bidder);
 
         address winner = tokenWithReserveAuction.bidder;

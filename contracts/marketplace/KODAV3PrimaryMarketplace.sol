@@ -562,8 +562,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         uint256 winningBid = editionWithReserveAuction.bid;
         delete editionWithReserveAuctions[_editionId];
 
-        // todo think about what happens when the seller transfers the token before resulting
-        // todo we could allow buyer to withdraw if we know seller no longer owns the token
         facilitateNextPrimarySale(_editionId, winningBid, winner, false);
 
         emit ReserveAuctionResulted(_editionId, winningBid, winner, _msgSender());
@@ -688,7 +686,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, _buyer, tokenId);
 
-        // TODO add a test to prove that once an edition sells out, if there are open offers on they cannot be action and only withdrawn/rejected
         // N:B. open offers are left once sold out for the bidder to withdraw or the artist to reject
 
         return tokenId;
