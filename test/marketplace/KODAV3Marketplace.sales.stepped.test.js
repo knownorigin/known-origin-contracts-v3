@@ -448,6 +448,57 @@ contract('KODAV3Marketplace', function (accounts) {
         })
       });
 
+    describe('buy when sales disabled', () => {
+      const _0_1_ETH = ether('0.1');
+
+      beforeEach(async () => {
+        // Ensure owner is approved as this will fail if not
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // create firstEdition of 3 tokens to the minter
+        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+
+        // create secondEdition of 3 tokens to the minter
+        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+
+        // time of latest block
+        const latestBlockTime = await time.latest();
+
+        // list firstEdition for sale at 0.1 ETH per token, starting immediately
+        const start = latestBlockTime;
+        await this.marketplace.listSteppedEditionAuction(minter, firstEditionTokenId, _1_ETH, _0_1_ETH, start, {from: contract});
+
+        // list secondEdition for sale at 0.1 ETH per token, starting in 24 hours
+        const tomorrow = new Date(Number(latestBlockTime.toString()));
+        tomorrow.setDate(tomorrow.getDate()+1); // wraps automagically
+        const deferredStart = new BN(tomorrow.getTime());
+        await this.marketplace.listSteppedEditionAuction(minter, secondEditionTokenId, _1_ETH, _0_1_ETH, deferredStart, {from: contract})
+      });
+
+      it('Can buy a token until sales are disabled', async () => {
+        const edition = firstEditionTokenId;
+
+        // collector A buys a token
+        const receipt = await this.marketplace.buyNextStep(edition, {from: collectorA, value: _1_ETH});
+        expectEvent(receipt, 'EditionSteppedSaleBuy', {
+          _editionId: edition,
+          _tokenId: new BN(edition).add(ONE).add(ONE), // highest token ID
+          _buyer: collectorA,
+          _price: _1_ETH,
+          _currentStep: ZERO
+        });
+
+        // seller disables sales
+        await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: minter})
+
+        // any further sale should fail
+        await expectRevert(
+          this.marketplace.buyNextStep(edition, {from: collectorA, value: ether('3')}),
+          "Edition sales disabled"
+        )
+      });
+    })
+
     describe("convertSteppedAuctionToListing()", () => {
 
       beforeEach(async () => {

@@ -10,6 +10,8 @@ import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 
 contract MintingFactory is Context {
 
+    event EditionMintedAndListed(uint256 indexed _editionId, SaleType _saleType);
+
     event AdminMintingPeriodChanged(uint256 _mintingPeriod);
     event AdminMaxMintsInPeriodChanged(uint256 _maxMintsInPeriod);
     event AdminFrequencyOverrideChanged(address _account, bool _override);
@@ -70,7 +72,7 @@ contract MintingFactory is Context {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(1, _msgSender(), _uri);
 
-        setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_msgSender());
     }
 
@@ -89,7 +91,7 @@ contract MintingFactory is Context {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
 
-        setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_msgSender());
     }
 
@@ -105,7 +107,7 @@ contract MintingFactory is Context {
 
         uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint96(_config[1]), _msgSender(), _uri, _erc20s, _amounts);
 
-        setupSalesMechanic(editionId, _saleType, _config[2], _config[3], _config[4]);
+        _setupSalesMechanic(editionId, _saleType, _config[2], _config[3], _config[4]);
         _recordSuccessfulMint(_msgSender());
     }
 
@@ -124,11 +126,11 @@ contract MintingFactory is Context {
         // Make tokens & edition
         uint256 editionId = koda.mintConsecutiveBatchEdition(_editionSize, _msgSender(), _uri);
 
-        setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_msgSender());
     }
 
-    function setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
+    function _setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
         if (SaleType.BUY_NOW == _saleType) {
             marketplace.listEdition(_msgSender(), _editionId, _basePrice, _startDate);
         }
@@ -141,6 +143,8 @@ contract MintingFactory is Context {
             // use base price for reserve price
             marketplace.listEditionForReserveAuction(_msgSender(), _editionId, _basePrice, _startDate);
         }
+
+        emit EditionMintedAndListed(_editionId, _saleType);
     }
 
     /// Internal helpers

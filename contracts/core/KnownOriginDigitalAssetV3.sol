@@ -20,6 +20,7 @@ import {BaseKoda} from "./BaseKoda.sol";
 contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165Storage, IKODAV3Minter {
 
     event EditionURIUpdated(uint256 indexed _editionId);
+    event EditionSalesDisabledToggled(uint256 indexed _editionId, bool _oldValue, bool _newValue);
     event AdditionalEditionMetaDataSet(uint256 indexed _editionId);
     event AdditionalEditionUnlockableSet(uint256 indexed _editionId);
     event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
@@ -70,12 +71,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     // Optional one time use storage slot for additional unlockable content
     mapping(uint256 => string) public additionalEditionUnlockableSlot;
 
-    // TODO soft burn (edition level) - primary sales not possible if soft burn, remove from marketplace and KO with soft burnt
-    //   - what happens when one has been sold/gift?
-
-    // TODO helper method for getting unsold primary tokens
-
-    // TODO get GAS costs for buying edition of 50
+    /// @notice Allows a creator to disable sales of their edition or they can ask KnownOrigin to do this
+    mapping(uint256 => bool) public editionSalesDisabled;
 
     constructor(
         IKOAccessControlsLookup _accessControls,
@@ -239,6 +236,24 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         );
     }
 
+    function getEditionSalesDisabled(uint256 _editionId) external view override returns (bool) {
+        return editionSalesDisabled[_editionId];
+    }
+
+    function toggleEditionSalesDisabled(uint256 _editionId) external override {
+        address creator = editionDetails[_editionId].creator;
+        require(creator != address(0), "Edition does not exist");
+
+        require(
+            creator == _msgSender() || accessControls.hasAdminRole(_msgSender()),
+            "Only creator or platform admin"
+        );
+
+        emit EditionSalesDisabledToggled(_editionId, editionSalesDisabled[_editionId], !editionSalesDisabled[_editionId]);
+
+        editionSalesDisabled[_editionId] = !editionSalesDisabled[_editionId];
+    }
+
     ///////////////////
     // Creator query //
     ///////////////////
@@ -389,6 +404,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     public
     override
     returns (address receiver, address creator, uint256 tokenId) {
+        require(!editionSalesDisabled[_editionId], "Edition sales disabled");
+
         uint256 _tokenId = getNextAvailablePrimarySaleToken(_editionId);
         address _creator = _getCreatorOfEdition(_editionId);
 
@@ -427,10 +444,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         revert("No tokens left on the primary market");
     }
 
-    function facilitateReveresPrimarySale(uint256 _editionId)
+    function facilitateReversePrimarySale(uint256 _editionId)
     public
     override
     returns (address receiver, address creator, uint256 tokenId) {
+        require(!editionSalesDisabled[_editionId], "Edition sales disabled");
+
         uint256 _tokenId = getReverseAvailablePrimarySaleToken(_editionId);
         address _creator = _getCreatorOfEdition(_editionId);
 
@@ -654,8 +673,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /// @dev Allowing for batch transfers from the provided address, will fail if from does not own all the tokens
     function batchTransferFrom(address _from, address _to, uint256[] calldata _tokenIds) public {
         for (uint256 i = 0; i < _tokenIds.length; i++) {
-            //_safeTransferFrom(_from, _to, _tokenIds[i], bytes(""));
-            balances[_from] = balances[_from] - _tokenIds.length;
+            _safeTransferFrom(_from, _to, _tokenIds[i], bytes(""));
             emit Transfer(_from, _to, _tokenIds[i]);
         }
     }

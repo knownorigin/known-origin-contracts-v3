@@ -3,7 +3,6 @@
 pragma solidity 0.8.3;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
 import {IKODAV3SecondarySaleMarketplace} from "./IKODAV3Marketplace.sol";
@@ -11,12 +10,15 @@ import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
 contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable, ReentrancyGuard {
-    using Address for address;
-
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
     event AdminUpdateSecondarySaleCommission(uint256 _platformSecondarySaleCommission);
     event AdminUpdateModulo(uint256 _modulo);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
+    event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
+    event AdminUpdateBidLockupPeriod(uint256 _bidLockupPeriod);
+    event AdminUpdatePlatformAccount(address indexed _oldAddress, address indexed _newAddress);
+    event AdminUpdateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow);
+    event AdminUpdateReserveAuctionLengthOnceReserveMet(uint128 _reserveAuctionLengthOnceReserveMet);
 
     modifier onlyContract() {
         require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
@@ -62,7 +64,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     // KODA token
     IKODAV3 public koda;
 
-    // TODO add admin setter (with event)
     // platform funds collector
     address public platformAccount;
 
@@ -77,15 +78,16 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     // Minimum bid/list amount
     uint256 public minBidAmount = 0.01 ether;
 
-    // TODO add admin setter (with event)
     // Bid lockup period
     uint256 public bidLockupPeriod = 6 hours;
 
+    /// @notice A reserve auction will be extended by this amount of time if a bid is received near the end
     uint128 public reserveAuctionBidExtensionWindow = 15 minutes;
 
+    /// @notice Length that bidding window remains open once the reserve price for an auction has been met
     uint128 public reserveAuctionLengthOnceReserveMet = 24 hours;
 
-    // TODO add admin setter (with event)
+    /// @notice Address of the access control contract
     IKOAccessControlsLookup public accessControls;
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount) {
@@ -100,9 +102,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     whenNotPaused {
         // Check ownership before listing
         require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
-
-        // No contracts can list to prevent money lockups on transfer
-        require(!_msgSender().isContract(), "Cannot list as a contract");
 
         // Check price over min bid
         require(_listingPrice >= minBidAmount, "Listing price not enough");
@@ -178,10 +177,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         // Check for highest offer
         Offer storage offer = tokenOffers[_tokenId];
         require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
-
-        // TODO create testing contract for this
-        // No contracts can place a bid to prevent money lockups on refunds
-        require(!_msgSender().isContract(), "Cannot make an offer as a contract");
 
         // send money back to top bidder if existing offer found
         if (offer.offer > 0) {
@@ -361,7 +356,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         ReserveAuction storage tokenWithReserveAuction = tokenWithReserveAuctions[_tokenId];
         require(tokenWithReserveAuction.reservePrice > 0, "Token not set up for reserve auction");
         require(block.timestamp >= tokenWithReserveAuction.startDate, "Token not accepting bids yet");
-        require(!_msgSender().isContract(), "Cannot bid as a contract");
         require(msg.value >= tokenWithReserveAuction.bid + minBidAmount, "You have not exceeded previous bid by min bid amount");
 
         // if a bid has been placed, then we will have a bidding end timestamp and we need to ensure no one
@@ -404,8 +398,10 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         require(tokenWithReserveAuction.bid >= tokenWithReserveAuction.reservePrice, "Reserve not met");
         require(block.timestamp > tokenWithReserveAuction.biddingEnd, "Bidding has not yet ended");
         require(
-            tokenWithReserveAuction.bidder == _msgSender() || tokenWithReserveAuction.seller == _msgSender(),
-            "Only winner or seller can result"
+            tokenWithReserveAuction.bidder == _msgSender() ||
+            tokenWithReserveAuction.seller == _msgSender() ||
+            accessControls.hasContractOrAdminRole(_msgSender()),
+            "Only winner, seller, contract or admin can result"
         );
 
         // send token to winner
@@ -514,6 +510,31 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
 
     function unpause() public onlyAdmin {
         super._unpause();
+    }
+
+    function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {
+        emit AdminUpdateAccessControls(accessControls, _accessControls);
+        accessControls = _accessControls;
+    }
+
+    function updateBidLockupPeriod(uint256 _bidLockupPeriod) public onlyAdmin {
+        bidLockupPeriod = _bidLockupPeriod;
+        emit AdminUpdateBidLockupPeriod(_bidLockupPeriod);
+    }
+
+    function updatePlatformAccount(address _newPlatformAccount) public onlyAdmin {
+        emit AdminUpdatePlatformAccount(platformAccount, _newPlatformAccount);
+        platformAccount = _newPlatformAccount;
+    }
+
+    function updateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow) onlyAdmin public {
+        reserveAuctionBidExtensionWindow = _reserveAuctionBidExtensionWindow;
+        emit AdminUpdateReserveAuctionBidExtensionWindow(_reserveAuctionBidExtensionWindow);
+    }
+
+    function updateReserveAuctionLengthOnceReserveMet(uint128 _reserveAuctionLengthOnceReserveMet) onlyAdmin public {
+        reserveAuctionLengthOnceReserveMet = _reserveAuctionLengthOnceReserveMet;
+        emit AdminUpdateReserveAuctionLengthOnceReserveMet(_reserveAuctionLengthOnceReserveMet);
     }
 
     // internal

@@ -828,6 +828,49 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
+    describe('buy when sales disabled', () => {
+      const _0_1_ETH = ether('0.1');
+
+      beforeEach(async () => {
+        // Ensure owner is approved as this will fail if not
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // create 3 tokens to the minter
+        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+
+        this.start = await time.latest();
+        await this.marketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, this.start, {from: contract});
+      });
+
+      it('Can buy a token until sales are disabled', async () => {
+        // collector A buys a token
+        const edition = firstEditionTokenId;
+
+        // offer 0.5 ETH for token (first bid)
+        const _0_5_ETH = ether('0.5')
+        await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
+
+        // accept bid
+        const receipt = await this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter});
+        expectEvent(receipt, 'EditionBidAccepted', {
+          _editionId: edition,
+          _bidder: collectorA,
+          _amount: _0_5_ETH
+        });
+
+        await this.marketplace.placeEditionBid(edition, {from: collectorB, value: _0_5_ETH})
+
+        // seller disables sales
+        await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: minter})
+
+        // any further sale should fail
+        await expectRevert(
+          this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter}),
+          "Edition sales disabled"
+        )
+      });
+    })
+
   });
 
 });

@@ -1339,4 +1339,64 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       )
     })
   })
+
+  describe('toggleEditionSalesDisabled()', () => {
+    const editionSize = 10
+
+    beforeEach(async () => {
+      await this.token.mintBatchEdition(editionSize, minter, TOKEN_URI, {from: contract})
+    })
+
+    it('Flips the toggle if creator', async () => {
+      const {receipt} = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: minter})
+
+      await expectEvent(receipt, 'EditionSalesDisabledToggled', {
+        _editionId: firstEditionTokenId,
+        _oldValue: false,
+        _newValue: true
+      })
+    })
+
+    it('Flips the toggle if admin', async () => {
+      const {receipt} = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: owner})
+
+      await expectEvent(receipt, 'EditionSalesDisabledToggled', {
+        _editionId: firstEditionTokenId,
+        _oldValue: false,
+        _newValue: true
+      })
+    })
+
+    it('Can flip the toggle off after turning on', async () => {
+      const tx1 = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: owner})
+
+      await expectEvent(tx1.receipt, 'EditionSalesDisabledToggled', {
+        _editionId: firstEditionTokenId,
+        _oldValue: false,
+        _newValue: true
+      })
+
+      const tx2 = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: owner})
+
+      await expectEvent(tx2.receipt, 'EditionSalesDisabledToggled', {
+        _editionId: firstEditionTokenId,
+        _oldValue: true,
+        _newValue: false
+      })
+    })
+
+    it('Reverts when edition does not exist', async () => {
+      await expectRevert(
+        this.token.toggleEditionSalesDisabled(secondEditionTokenId, {from: owner}),
+        "Edition does not exist"
+      )
+    })
+
+    it('Reverts when not creator or platform', async () => {
+      await expectRevert(
+        this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: collectorA}),
+        "Only creator or platform admin"
+      )
+    })
+  })
 });

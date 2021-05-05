@@ -27,6 +27,8 @@ IERC2981  // Royalties
 
     function editionExists(uint256 _editionId) external view returns (bool);
 
+    function getEditionSalesDisabled(uint256 _editionId) external view returns (bool);
+
     function maxTokenIdOfEdition(uint256 _editionId) external view returns (uint256 _tokenId);
 
     // Helper method for getting the next primary sale token from an edition starting low to high token IDs
@@ -39,10 +41,16 @@ IERC2981  // Royalties
     function facilitateNextPrimarySale(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _tokenId);
 
     // Utility method to get all data needed for the next primary sale, high token ID to low
-    function facilitateReveresPrimarySale(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _tokenId);
+    function facilitateReversePrimarySale(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _tokenId);
 
     // Expanded royalty method for the edition, not token
     function royaltyAndCreatorInfo(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _amount);
+
+    function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external;
+
+    function hasMadePrimarySale(uint256 _editionId) external view returns (bool);
+
+    function toggleEditionSalesDisabled(uint256 _editionId) external;
 
     // token utils
 
@@ -53,8 +61,4 @@ IERC2981  // Royalties
     function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri);
 
     function hadPrimarySaleOfToken(uint256 _tokenId) external view returns (bool);
-
-    function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external;
-
-    function hasMadePrimarySale(uint256 _editionId) external view returns (bool);
 }
