@@ -244,9 +244,10 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         address creator = editionDetails[_editionId].creator;
         require(creator != address(0), "Edition does not exist");
 
-        bool isCreator = creator == _msgSender();
-        bool isAdmin = accessControls.hasAdminRole(_msgSender());
-        require(isCreator || isAdmin, "Only creator or platform admin");
+        require(
+            creator == _msgSender() || accessControls.hasAdminRole(_msgSender()),
+            "Only creator or platform admin"
+        );
 
         emit EditionSalesDisabledToggled(_editionId, editionSalesDisabled[_editionId], !editionSalesDisabled[_editionId]);
 
