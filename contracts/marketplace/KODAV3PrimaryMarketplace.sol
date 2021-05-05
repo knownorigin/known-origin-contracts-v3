@@ -130,8 +130,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     /// @notice Address of the access control contract
     IKOAccessControlsLookup public accessControls;
 
-    // TODO artist commission override feature (speak to andy)
-
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount) {
         koda = _koda;
         accessControls = _accessControls;
@@ -670,7 +668,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         emit AdminUpdateReserveAuctionBidExtensionWindow(_reserveAuctionBidExtensionWindow);
     }
 
-    // todo test
     function updateReserveAuctionLengthOnceReserveMet(uint128 _reserveAuctionLengthOnceReserveMet) onlyAdmin public {
         reserveAuctionLengthOnceReserveMet = _reserveAuctionLengthOnceReserveMet;
         emit AdminUpdateReserveAuctionLengthOnceReserveMet(_reserveAuctionLengthOnceReserveMet);
