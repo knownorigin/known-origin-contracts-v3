@@ -9,8 +9,6 @@ interface IEditionBuyNowMarketplace {
 
     function listEdition(address _creator, uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
 
-    function delistEdition(uint256 _editionId) external;
-
     function buyEditionToken(uint256 _editionId) external payable;
 
     function buyEditionTokenFor(uint256 _editionId, address _recipient) external payable;
@@ -42,12 +40,15 @@ interface IEditionOffersMarketplace {
 interface IEditionSteppedMarketplace {
     event EditionSteppedSaleListed(uint256 indexed _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate);
     event EditionSteppedSaleBuy(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price, uint16 _currentStep);
+    event EditionSteppedAuctionUpdated(uint256 indexed _editionId, uint128 _basePrice, uint128 _stepPrice);
 
     function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate) external;
 
     function buyNextStep(uint256 _editionId) external payable;
 
     function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice) external;
+
+    function updateSteppedAuction(uint256 _editionId, uint128 _basePrice, uint128 _stepPrice) external;
 }
 
 interface IReserveAuctionMarketplace {

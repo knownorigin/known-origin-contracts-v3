@@ -160,19 +160,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         emit EditionListed(_editionId, _listingPrice, _startDate);
     }
 
-    // delist the "buy now" price - putting the edition in an "accepting offers" state
-    function delistEdition(uint256 _editionId)
-    public
-    override
-    whenNotPaused
-    onlyContractOrCreator(_editionId) {
-        // Clear listing
-        delete editionListings[_editionId];
-
-        // Emit event
-        emit EditionDeListed(_editionId);
-    }
-
     // update the "buy now" price
     function setEditionPriceListing(uint256 _editionId, uint128 _listingPrice)
     public
@@ -222,9 +209,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     public
     whenNotPaused
     onlyContractOrCreator(_editionId) {
-        require(editionStep[_editionId].basePrice == 0, "Cannot convert from a step");
         require(editionListings[_editionId].seller != address(0), "No listing found");
-        require(editionOffers[_editionId].offer == 0, "Already have offers set");
 
         // clear listing
         delete editionListings[_editionId];
@@ -268,7 +253,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     external
     override
     whenNotPaused
-    onlyContractOrCreator(_editionId) {
+    onlyContract {
         // Set the start date if one supplied
         editionOffersStartDate[_editionId] = _startDate;
 
@@ -282,6 +267,9 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     payable
     whenNotPaused
     nonReentrant {
+        require(!isEditionListed(_editionId), "Edition is listed");
+        // todo - block a bid if all primary sale tokens sold out
+
         Offer storage offer = editionOffers[_editionId];
         require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
 
@@ -382,8 +370,9 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     public
     override
     whenNotPaused
-    nonReentrant {
-        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Only creator");
+    nonReentrant
+    onlyContractOrCreator(_editionId) {
+        require(!isEditionListed(_editionId), "Edition is listed");
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         // send money back to top bidder if existing offer found
@@ -411,7 +400,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     public
     override
     whenNotPaused
-    onlyContractOrCreator(_editionId) {
+    onlyContract {
         require(_basePrice >= minBidAmount, "Base price not enough");
         require(editionStep[_editionId].seller == address(0), "Unable to setup listing again");
         require(koda.getCreatorOfToken(_editionId) == _creator, "Only creator can list edition");
@@ -426,6 +415,20 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         );
 
         emit EditionSteppedSaleListed(_editionId, _basePrice, _stepPrice, _startDate);
+    }
+
+    function updateSteppedAuction(uint256 _editionId, uint128 _basePrice, uint128 _stepPrice)
+    public
+    override
+    whenNotPaused {
+        Stepped storage steppedAuction = editionStep[_editionId];
+        require(steppedAuction.seller == _msgSender(), "Only seller");
+        require(steppedAuction.currentStep == 0, "Only when no sales");
+
+        steppedAuction.basePrice = _basePrice;
+        steppedAuction.stepPrice = _stepPrice;
+
+        emit EditionSteppedAuctionUpdated(_editionId, _basePrice, _stepPrice);
     }
 
     function buyNextStep(uint256 _editionId)
@@ -467,6 +470,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         Stepped storage steppedAuction = editionStep[_editionId];
         require(_listingPrice >= minBidAmount, "List price not enough");
         require(steppedAuction.seller == _msgSender(), "Only seller can convert");
+        require(steppedAuction.currentStep == 0, "Sale has been made");
 
         // Store listing data
         editionListings[_editionId] = Listing(_listingPrice, 0, steppedAuction.seller);
@@ -741,6 +745,23 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
 
     function getLockupTime() internal view returns (uint256 lockupUntil) {
         lockupUntil = block.timestamp + bidLockupPeriod;
+    }
+
+    // as offers are always possible, we wont count it as a listing
+    function isEditionListed(uint256 _editionId) internal view returns (bool) {
+        if (editionListings[_editionId].seller != address(0)) {
+            return true;
+        }
+
+        if (editionStep[_editionId].seller != address(0)) {
+            return true;
+        }
+
+        if (editionWithReserveAuctions[_editionId].seller != address(0)) {
+            return true;
+        }
+
+        return false;
     }
 
     function updatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission) public onlyAdmin {
