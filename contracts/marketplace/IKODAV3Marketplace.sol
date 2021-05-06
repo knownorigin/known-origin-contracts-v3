@@ -24,6 +24,7 @@ interface IEditionOffersMarketplace {
     event EditionBidWithdrawn(uint256 indexed _editionId, address indexed _bidder);
     event EditionBidAccepted(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _bidder, uint256 _amount);
     event EditionBidRejected(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
+    event EditionConvertedFromOffersToBuyItNow(uint256 indexed _editionId, uint128 _price, uint128 _startDate);
 
     function enableEditionOffers(uint256 _editionId, uint128 _startDate) external;
 
@@ -34,6 +35,8 @@ interface IEditionOffersMarketplace {
     function rejectEditionBid(uint256 _editionId) external;
 
     function acceptEditionBid(uint256 _editionId, uint256 _offerPrice) external;
+
+    function convertOffersToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
 }
 
 interface IEditionSteppedMarketplace {

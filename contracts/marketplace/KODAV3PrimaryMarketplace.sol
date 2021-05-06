@@ -269,11 +269,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     override
     whenNotPaused
     onlyContractOrCreator(_editionId) {
-
-        // clear any buy now price which could be set
-        delete editionListings[_editionId];
-
-        // setup offers only
+        // Set the start date if one supplied
         editionOffersStartDate[_editionId] = _startDate;
 
         // Emit event
@@ -380,6 +376,34 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
 
         // delete offer
         delete editionOffers[_editionId];
+    }
+
+    function convertOffersToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Only creator");
+        require(_listingPrice >= minBidAmount, "Listing price not enough");
+
+        // send money back to top bidder if existing offer found
+        Offer storage offer = editionOffers[_editionId];
+        if (offer.offer > 0) {
+            _refundBidder(offer.bidder, offer.offer);
+        }
+
+        emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
+
+        // delete offer
+        delete editionOffers[_editionId];
+
+        // delete rest of offer information
+        delete editionOffersStartDate[_editionId];
+
+        // Store listing data
+        editionListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
+
+        emit EditionConvertedFromOffersToBuyItNow(_editionId, _listingPrice, _startDate);
     }
 
     // Primary sale "stepped pricing" flow
