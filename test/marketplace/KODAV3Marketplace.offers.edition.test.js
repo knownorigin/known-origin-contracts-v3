@@ -909,6 +909,117 @@ contract('KODAV3Marketplace', function (accounts) {
         )
       });
     })
+
+    describe('convert to buy it now', () => {
+      describe('when offers enabled', () => {
+        beforeEach(async () => {
+          const now = await time.latest();
+          const duration = time.duration.days(1);
+          this.start = now.add(duration);
+
+          await this.marketplace.enableEditionOffers(firstEditionTokenId, this.start, {from: minter});
+        })
+
+        describe('when an offer is in flight', () => {
+          it('can convert and refund', async () => {
+            // place bid
+            await time.increaseTo(this.start);
+            await this.marketplace.placeEditionBid(firstEditionTokenId, {from: collectorA, value: MIN_BID})
+
+            const collectorATracker = await balance.tracker(collectorA)
+
+            const price = ether('0.75')
+            const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter})
+
+            expect(await collectorATracker.delta()).to.be.bignumber.equal(MIN_BID)
+
+            await expectEvent(receipt, 'EditionConvertedFromOffersToBuyItNow', {
+              _editionId: firstEditionTokenId,
+              _price: price,
+              _startDate: new BN('0')
+            })
+
+            // test buy
+            await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: price})
+            expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA)
+          })
+        })
+
+        describe('when no offer is in flight', () => {
+          it('can convert', async () => {
+            const price = ether('0.75')
+            const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter})
+
+            await expectEvent(receipt, 'EditionConvertedFromOffersToBuyItNow', {
+              _editionId: firstEditionTokenId,
+              _price: price,
+              _startDate: new BN('0')
+            })
+
+            // test buy
+            await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: price})
+            expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA)
+          })
+        })
+      })
+
+      describe('when not listed (generally accepting bids)', () => {
+        describe('with bid', () => {
+          it('can convert and refund', async () => {
+            // place bid
+            await this.marketplace.placeEditionBid(firstEditionTokenId, {from: collectorA, value: MIN_BID})
+
+            const collectorATracker = await balance.tracker(collectorA)
+
+            const price = ether('0.75')
+            const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter})
+
+            expect(await collectorATracker.delta()).to.be.bignumber.equal(MIN_BID)
+
+            await expectEvent(receipt, 'EditionConvertedFromOffersToBuyItNow', {
+              _editionId: firstEditionTokenId,
+              _price: price,
+              _startDate: new BN('0')
+            })
+
+            // test buy
+            await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: price})
+            expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA)
+          })
+        })
+
+        describe('without bid', () => {
+          it('can convert', async () => {
+            const price = ether('0.75')
+            const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter})
+
+            await expectEvent(receipt, 'EditionConvertedFromOffersToBuyItNow', {
+              _editionId: firstEditionTokenId,
+              _price: price,
+              _startDate: new BN('0')
+            })
+
+            // test buy
+            await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: price})
+            expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA)
+          })
+        })
+      })
+
+      it('Reverts when not creator', async () => {
+        await expectRevert(
+          this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, '0', '0', {from: collectorA}),
+          "Only creator"
+        )
+      })
+
+      it('Reverts when listing price not enough', async () => {
+        await expectRevert(
+          this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, '0', '0', {from: minter}),
+          "Listing price not enough"
+        )
+      })
+    })
   });
 
 });
