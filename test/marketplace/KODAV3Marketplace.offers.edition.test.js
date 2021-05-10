@@ -132,6 +132,15 @@ contract('KODAV3Marketplace', function (accounts) {
 
       const _0_5_ETH = ether('0.5');
 
+      it('Reverts when edition is listed', async () => {
+        await this.marketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, '0', {from: contract})
+
+        await expectRevert(
+          this.marketplace.placeEditionBid(firstEditionTokenId, {from: collectorB, value: _0_1_ETH}),
+          "Edition is listed"
+        );
+      })
+
       it('reverts if bid lower than minimum on first bid', async () => {
 
         const edition = firstEditionTokenId;
@@ -1029,6 +1038,51 @@ contract('KODAV3Marketplace', function (accounts) {
         await expectRevert(
           this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, '0', '0', {from: minter}),
           "Listing price not enough"
+        )
+      })
+
+      it('Reverts when edition is listed - buy now', async () => {
+        await this.marketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, '0', {from: contract})
+        await expectRevert(
+          this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, _0_1_ETH, '0', {from: minter}),
+          "Edition is listed"
+        )
+      })
+
+      it('Reverts when edition is listed - stepped', async () => {
+        const latestBlockTime = await time.latest();
+
+        // list firstEdition for sale at 0.1 ETH per token, starting immediately
+        const start = latestBlockTime;
+        await this.marketplace.listSteppedEditionAuction(
+          minter,
+          firstEditionTokenId,
+          ether('1'),
+          _0_1_ETH,
+          start,
+          {from: contract}
+        );
+
+        await expectRevert(
+          this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, _0_1_ETH, '0', {from: minter}),
+          "Edition is listed"
+        )
+      })
+
+      it('Reverts when edition is listed - reserve', async () => {
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract});
+
+        await this.marketplace.listEditionForReserveAuction(
+          minter,
+          secondEditionTokenId,
+          ether('1'),
+          '0',
+          {from: contract}
+        )
+
+        await expectRevert(
+          this.marketplace.convertOffersToBuyItNow(secondEditionTokenId, _0_1_ETH, '0', {from: minter}),
+          "Edition is listed"
         )
       })
     })

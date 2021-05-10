@@ -268,7 +268,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     whenNotPaused
     nonReentrant {
         require(!isEditionListed(_editionId), "Edition is listed");
-        // todo - block a bid if all primary sale tokens sold out
 
         Offer storage offer = editionOffers[_editionId];
         require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");

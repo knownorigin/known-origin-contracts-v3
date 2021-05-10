@@ -549,6 +549,18 @@ contract('KODAV3Marketplace', function (accounts) {
 
       });
 
+      it('reverts if a sale has been made', async () => {
+        await this.marketplace.buyNextStep(firstEditionTokenId, {
+          from: collectorA,
+          value: _1_5_ETH
+        });
+
+        await expectRevert(
+          this.marketplace.convertSteppedAuctionToListing(firstEditionTokenId, _0_1_ETH, {from: minter}),
+          "Sale has been made"
+        )
+      })
+
       context("on successful conversion", () => {
 
         it('emits an EditionListed event', async () => {
@@ -607,6 +619,68 @@ contract('KODAV3Marketplace', function (accounts) {
 
         });
 
+      })
+    })
+
+    describe('updateSteppedAuction()', () => {
+      beforeEach(async () => {
+        // Ensure owner is approved as this will fail if not
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // create firstEdition of 3 tokens to the minter
+        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+
+        // create secondEdition of 3 tokens to the minter
+        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+
+        // time of latest block
+        const latestBlockTime = await time.latest();
+
+        // list firstEdition for sale at 0.1 ETH per token, starting immediately
+        const start = latestBlockTime;
+        await this.marketplace.listSteppedEditionAuction(minter, firstEditionTokenId, _1_ETH, _0_1_ETH, start, {from: contract});
+
+        // list secondEdition for sale at 0.1 ETH per token, starting in 24 hours
+        const tomorrow = new Date(Number(latestBlockTime.toString()));
+        tomorrow.setDate(tomorrow.getDate()+1); // wraps automagically
+        const deferredStart = new BN(tomorrow.getTime());
+        await this.marketplace.listSteppedEditionAuction(minter, secondEditionTokenId, _1_ETH, _0_1_ETH, '0', {from: contract});
+      })
+
+      it('Can update the stepped auction before the first sale', async () => {
+        const {receipt} = await this.marketplace.updateSteppedAuction(firstEditionTokenId, _1_5_ETH, _0_0_0_1_ETH, {from: minter})
+        await expectEvent(receipt, 'EditionSteppedAuctionUpdated', {
+          _editionId: firstEditionTokenId,
+          _basePrice: _1_5_ETH,
+          _stepPrice: _0_0_0_1_ETH
+        })
+
+        await this.marketplace.buyNextStep(firstEditionTokenId, {
+          from: collectorA,
+          value: _1_5_ETH
+        });
+
+        const token1 = new BN(firstEditionTokenId).add(ONE).add(ONE);
+        expect(await this.token.ownerOf(token1)).to.be.equal(collectorA)
+      })
+
+      it('Reverts when not seller', async () => {
+        await expectRevert(
+          this.marketplace.updateSteppedAuction(firstEditionTokenId, _1_5_ETH, _0_0_0_1_ETH, {from: collectorA}),
+          "Only seller"
+        )
+      })
+
+      it('Reverts when sales have taken place', async () => {
+        await this.marketplace.buyNextStep(firstEditionTokenId, {
+          from: collectorA,
+          value: _1_5_ETH
+        });
+
+        await expectRevert(
+          this.marketplace.updateSteppedAuction(firstEditionTokenId, _1_5_ETH, _0_0_0_1_ETH, {from: minter}),
+          "Only when no sales"
+        )
       })
     })
   })
