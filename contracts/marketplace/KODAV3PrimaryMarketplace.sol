@@ -2,49 +2,24 @@
 
 pragma solidity 0.8.3;
 
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
-
-import {IKODAV3PrimarySaleMarketplace} from "./IKODAV3Marketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
+import {IKODAV3PrimarySaleMarketplace} from "./IKODAV3Marketplace.sol";
+import {ReserveAuctionMarketplace} from "./ReserveAuctionMarketplace.sol";
 
 /// @title KnownOrigin Primary Marketplace for all V3 tokens
 /// @notice The following listing types are supported: Buy now, Stepped, Reserve and Offers
 /// @dev The contract is pausable and has reentrancy guards
 /// @author KnownOrigin Labs
-contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, ReentrancyGuard {
+contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAuctionMarketplace {
 
     event AdminUpdatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission);
     event AdminUpdateModulo(uint256 _modulo);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
-    event AdminUpdateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow);
-    event AdminUpdateReserveAuctionLengthOnceReserveMet(uint128 _reserveAuctionLengthOnceReserveMet);
     event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
     event AdminUpdateBidLockupPeriod(uint256 _bidLockupPeriod);
     event AdminUpdatePlatformAccount(address indexed _oldAddress, address indexed _newAddress);
     event AdminSetKoCommissionOverride(address indexed _receiver, uint256 _koCommission);
-
-    // Only a whitelisted smart contract in the access controls contract
-    modifier onlyContract() {
-        require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
-        _;
-    }
-
-    // Only a whitelisted smart contract or edition creator
-    modifier onlyContractOrCreator(uint256 _editionId) {
-        require(
-            accessControls.hasContractRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
-            "Caller not creator or contract"
-        );
-        _;
-    }
-
-    // Only admin defined in the access controls contract
-    modifier onlyAdmin() {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
-        _;
-    }
 
     // KO Commission override definition for a given creator
     struct KOCommissionOverride {
@@ -75,16 +50,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         uint16 currentStep;
     }
 
-    // Reserve auction definition
-    struct ReserveAuction {
-        address seller;
-        address bidder;
-        uint128 reservePrice;
-        uint128 bid;
-        uint128 startDate;
-        uint128 biddingEnd;
-    }
-
     /// @notice primary sale proceed address
     mapping(address => KOCommissionOverride) public koCommissionOverrides;
 
@@ -103,38 +68,11 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
     /// @notice 1 of 1 edition ID to reserve auction definition
     mapping(uint256 => ReserveAuction) public editionWithReserveAuctions;
 
-    /// @notice KODA V3 token
-    IKODAV3 public koda;
-
-    /// @notice platform funds collector
-    address public platformAccount;
-
     /// @notice KO commission on every sale
     uint256 public platformPrimarySaleCommission = 15_00000;  // 15.00000%
 
-    /// @notice precision 100.00000%
-    uint256 public modulo = 100_00000;
-
-    /// @notice Minimum bid / minimum list amount
-    uint256 public minBidAmount = 0.01 ether;
-
-    /// @notice Bid lockup period
-    uint256 public bidLockupPeriod = 6 hours;
-
-    /// @notice A reserve auction will be extended by this amount of time if a bid is received near the end
-    uint128 public reserveAuctionBidExtensionWindow = 15 minutes;
-
-    /// @notice Length that bidding window remains open once the reserve price for an auction has been met
-    uint128 public reserveAuctionLengthOnceReserveMet = 24 hours;
-
-    /// @notice Address of the access control contract
-    IKOAccessControlsLookup public accessControls;
-
-    constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount) {
-        koda = _koda;
-        accessControls = _accessControls;
-        platformAccount = _platformAccount;
-    }
+    constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
+    ReserveAuctionMarketplace(_accessControls, _koda, _platformAccount) {}
 
     // assumes frontend protects against from these things from being called when:
     //  - they dont need to be e.g. listing an edition when its sold out
@@ -507,93 +445,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         price = uint256(steppedAuction.basePrice) + stepAmount;
     }
 
-    function listEditionForReserveAuction(address _creator, uint256 _editionId, uint128 _reservePrice, uint128 _startDate)
-    public
-    override
-    whenNotPaused
-    onlyContract {
-        require(editionWithReserveAuctions[_editionId].reservePrice == 0, "Auction already in flight");
-        require(koda.getSizeOfEdition(_editionId) == 1, "Only 1 of 1 editions are supported");
-        require(_reservePrice >= minBidAmount, "Reserve price must be at least min bid");
-
-        editionWithReserveAuctions[_editionId] = ReserveAuction({
-            seller: _creator,
-            bidder: address(0),
-            reservePrice: _reservePrice,
-            startDate: _startDate,
-            biddingEnd: 0,
-            bid: 0
-        });
-
-        emit EditionListedForReserveAuction(_editionId, _reservePrice, _startDate);
-    }
-
-    function placeBidOnReserveAuction(uint256 _editionId)
-    public
-    override
-    payable
-    whenNotPaused
-    nonReentrant {
-        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
-        require(editionWithReserveAuction.reservePrice > 0, "Edition not set up for reserve auction");
-        require(block.timestamp >= editionWithReserveAuction.startDate, "Edition not accepting bids yet");
-        require(msg.value >= editionWithReserveAuction.bid + minBidAmount, "You have not exceeded previous bid by min bid amount");
-
-        // if a bid has been placed, then we will have a bidding end timestamp and we need to ensure no one
-        // can bid beyond this
-        if (editionWithReserveAuction.biddingEnd > 0) {
-            require(block.timestamp < editionWithReserveAuction.biddingEnd, "Edition is no longer accepting bids");
-        }
-
-        // If the reserve has been met, then bidding will end in 24 hours
-        // if we are near the end, we have bids, then extend the bidding end
-        if (editionWithReserveAuction.bid + msg.value >= editionWithReserveAuction.reservePrice && editionWithReserveAuction.biddingEnd == 0) {
-            editionWithReserveAuction.biddingEnd = uint128(block.timestamp) + reserveAuctionLengthOnceReserveMet;
-        } else if (editionWithReserveAuction.biddingEnd > 0) {
-            uint128 secondsUntilBiddingEnd = editionWithReserveAuction.biddingEnd - uint128(block.timestamp);
-            if (secondsUntilBiddingEnd <= reserveAuctionBidExtensionWindow) {
-                editionWithReserveAuction.biddingEnd = editionWithReserveAuction.biddingEnd + reserveAuctionBidExtensionWindow;
-            }
-        }
-
-        // if someone else has previously bid, there is a bid we need to refund
-        if (editionWithReserveAuction.bid > 0) {
-            _refundBidder(editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
-        }
-
-        editionWithReserveAuction.bid = uint128(msg.value);
-        editionWithReserveAuction.bidder = _msgSender();
-
-        emit BidPlacedOnReserveAuction(_editionId, _msgSender(), msg.value);
-    }
-
-    function resultReserveAuction(uint256 _editionId)
-    public
-    override
-    whenNotPaused
-    nonReentrant {
-        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
-
-        require(editionWithReserveAuction.reservePrice > 0, "No active auction");
-        require(editionWithReserveAuction.bid > 0, "No bids received");
-        require(editionWithReserveAuction.bid >= editionWithReserveAuction.reservePrice, "Reserve not met");
-        require(block.timestamp > editionWithReserveAuction.biddingEnd, "Bidding has not yet ended");
-        require(
-            editionWithReserveAuction.bidder == _msgSender() ||
-            editionWithReserveAuction.seller == _msgSender() ||
-            accessControls.hasContractOrAdminRole(_msgSender()),
-            "Only winner, seller, contract or admin can result"
-        );
-
-        address winner = editionWithReserveAuction.bidder;
-        uint256 winningBid = editionWithReserveAuction.bid;
-        delete editionWithReserveAuctions[_editionId];
-
-        facilitateNextPrimarySale(_editionId, winningBid, winner, false);
-
-        emit ReserveAuctionResulted(_editionId, winningBid, winner, _msgSender());
-    }
-
     function emergencyExitBidFromReserveAuction(uint256 _editionId)
     public
     override
@@ -688,16 +539,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
         emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
     }
 
-    function updateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow) onlyAdmin public {
-        reserveAuctionBidExtensionWindow = _reserveAuctionBidExtensionWindow;
-        emit AdminUpdateReserveAuctionBidExtensionWindow(_reserveAuctionBidExtensionWindow);
-    }
-
-    function updateReserveAuctionLengthOnceReserveMet(uint128 _reserveAuctionLengthOnceReserveMet) onlyAdmin public {
-        reserveAuctionLengthOnceReserveMet = _reserveAuctionLengthOnceReserveMet;
-        emit AdminUpdateReserveAuctionLengthOnceReserveMet(_reserveAuctionLengthOnceReserveMet);
-    }
-
     // primary sale helpers
 
     function facilitateNextPrimarySale(uint256 _editionId, uint256 _paymentAmount, address _buyer, bool _reverse) internal returns (uint256) {
@@ -735,11 +576,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
 
         (bool success,) = _receiver.call{value : _paymentAmount - koCommission}("");
         require(success, "Edition payment failed");
-    }
-
-    function _refundBidder(address _receiver, uint256 _paymentAmount) internal {
-        (bool success,) = _receiver.call{value : _paymentAmount}("");
-        require(success, "Edition offer refund failed");
     }
 
     function getLockupTime() internal view returns (uint256 lockupUntil) {
