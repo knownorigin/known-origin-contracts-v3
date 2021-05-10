@@ -106,6 +106,9 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
         // Check price over min bid
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
+        // Ensure we are not overwriting a listing or it is listed as another type of auction
+        require(!isTokenListed(_tokenId), "Token is listed");
+
         // List the token
         tokenListings[_tokenId] = Listing(_listingPrice, _startDate, _msgSender());
 
@@ -174,6 +177,8 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     override
     whenNotPaused
     nonReentrant {
+        require(!isTokenListed(_tokenId), "Token is listed");
+
         // Check for highest offer
         Offer storage offer = tokenOffers[_tokenId];
         require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
@@ -331,7 +336,8 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     override
     whenNotPaused
     onlyContract {
-        require(tokenWithReserveAuctions[_tokenId].reservePrice == 0, "Auction already in flight");
+        // Ensure we are not overwriting a listing or it is listed as another type of auction
+        require(!isTokenListed(_tokenId), "Auction already in flight");
         require(koda.getSizeOfEdition(_tokenId) == 1, "Only 1 of 1 editions are supported");
         require(_reservePrice >= minBidAmount, "Reserve price must be at least min bid");
 
@@ -536,6 +542,19 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, Pausable
     }
 
     // internal
+
+    // as offers are always possible, we wont count it as a listing
+    function isTokenListed(uint256 _tokenId) internal view returns (bool) {
+        if (tokenListings[_tokenId].seller != address(0)) {
+            return true;
+        }
+
+        if (tokenWithReserveAuctions[_tokenId].seller != address(0)) {
+            return true;
+        }
+
+        return false;
+    }
 
     function getLockupTime() internal view returns (uint256 lockupUntil) {
         lockupUntil = block.timestamp + bidLockupPeriod;

@@ -9,7 +9,7 @@ const KODAV3Marketplace = artifacts.require('KODAV3SecondaryMarketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
-contract('KODAV3SecondaryMarketplace pausable', function (accounts) {
+contract('KODAV3SecondaryMarketplace', function (accounts) {
   const [admin, owner, minter, koCommission, contract, collectorA] = accounts;
 
   const STARTING_EDITION = '10000';
@@ -82,4 +82,20 @@ contract('KODAV3SecondaryMarketplace pausable', function (accounts) {
     });
   });
 
+  describe('updateSecondaryRoyalty()', () => {
+    it('can update as admin', async () => {
+      const newCommission = new BN('1350000')
+      const {receipt} = await this.marketplace.updateSecondaryRoyalty(newCommission, {from: owner})
+      await expectEvent(receipt, 'AdminUpdateSecondaryRoyalty', {
+        _secondarySaleRoyalty: newCommission
+      })
+    })
+
+    it('reverts if not admin', async () => {
+      await expectRevert(
+        this.marketplace.updateSecondaryRoyalty('0', {from: minter}),
+        "Caller not admin"
+      )
+    })
+  })
 });

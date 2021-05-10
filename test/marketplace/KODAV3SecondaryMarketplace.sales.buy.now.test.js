@@ -83,6 +83,14 @@ contract('KODAV3Marketplace', function (accounts) {
         await this.primaryMarketplace.buyEditionToken(firstEditionTokenId, {from: collectorC, value: _0_1_ETH});
       });
 
+      it('Reverts when already listed', async () => {
+        await this.marketplace.listToken(firstEditionTokenId, _0_1_ETH, '0', {from: collectorA})
+        await expectRevert(
+          this.marketplace.listToken(firstEditionTokenId, _0_1_ETH, '0', {from: collectorA}),
+          "Token is listed"
+        )
+      })
+
       it('can list token', async () => {
 
         const token1 = firstEditionTokenId;
