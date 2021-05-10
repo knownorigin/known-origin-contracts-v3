@@ -472,7 +472,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
         await expectRevert(
           this.marketplace.convertFromBuyNowToOffers(secondEditionTokenId, start, {from: anotherMinter}),
-          'Cannot convert from a step'
+          'No listing found'
         );
       });
 
@@ -491,16 +491,6 @@ contract('KODAV3Marketplace', function (accounts) {
         await expectRevert(
           this.marketplace.convertFromBuyNowToOffers(secondEditionTokenId, start, {from: collectorA}),
           'Caller not creator or contract'
-        );
-      });
-
-      it('reverts if offers already found', async () => {
-        await this.marketplace.placeEditionBid(firstEditionTokenId, {from: collectorA, value: _0_2_ETH});
-
-        const start = await time.latest();
-        await expectRevert(
-          this.marketplace.convertFromBuyNowToOffers(firstEditionTokenId, start, {from: minter}),
-          'Already have offers set'
         );
       });
 

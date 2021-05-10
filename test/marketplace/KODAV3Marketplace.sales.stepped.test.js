@@ -78,7 +78,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
           await expectRevert(
               this.marketplace.listSteppedEditionAuction(minter, token, _1_ETH, _0_1_ETH, start, {from: collectorA}),
-              "Caller not creator or contract"
+              "Caller not contract"
           )
 
         });
