@@ -133,6 +133,8 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
 
         uint256 tokenId = _facilitateNextPrimarySale(_editionId, msg.value, _recipient, false);
 
+        delete editionListings[_editionId];
+
         emit EditionPurchased(_editionId, tokenId, _recipient, msg.value);
     }
 
@@ -439,35 +441,53 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
         price = uint256(steppedAuction.basePrice) + stepAmount;
     }
 
-    // todo move listing to base marketplace
-//    function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
-//    public
-//    override
-//    whenNotPaused
-//    nonReentrant {
-//        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
-//
-//        require(editionWithReserveAuction.reservePrice > 0, "No active auction");
-//        require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Can only convert before reserve met");
-//        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller");
-//        require(_listingPrice >= minBidAmount, "Listing price not enough");
-//
-//        // refund any bids
-//        if (editionWithReserveAuction.bid > 0) {
-//            _refundBidder(editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
-//        }
-//
-//        delete editionWithReserveAuctions[_editionId];
-//
-//        editionListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
-//
-//        emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
-//    }
+    function emergencyExitBidFromReserveAuction(uint256 _editionId)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        bool isApprovalActiveForMarketplace = koda.isApprovedForAll(
+            editionOrTokenWithReserveAuctions[_editionId].seller,
+            address(this)
+        );
+
+        require(
+            !isApprovalActiveForMarketplace || koda.getEditionSalesDisabled(_editionId),
+            "Bid cannot be withdrawn as reserve auction listing is valid"
+        );
+
+        _emergencyExitBidFromReserveAuction(_editionId);
+    }
+
+    // todo - consider moving listing to base marketplace?
+    function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
+    public
+    //override
+    whenNotPaused
+    nonReentrant {
+        ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_editionId];
+
+        require(reserveAuction.reservePrice > 0, "No active auction");
+        require(reserveAuction.bid < reserveAuction.reservePrice, "Can only convert before reserve met");
+        require(reserveAuction.seller == _msgSender(), "Not the seller");
+        require(_listingPrice >= minBidAmount, "Listing price not enough");
+
+        // refund any bids
+        if (reserveAuction.bid > 0) {
+            _refundBidder(reserveAuction.bidder, reserveAuction.bid);
+        }
+
+        delete editionOrTokenWithReserveAuctions[_editionId];
+
+        editionListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
+
+        emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
+    }
 
     // primary sale helpers
 
-    function _processReserveAuctionSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller) internal override {
-        _facilitateNextPrimarySale(_id, _paymentAmount, _buyer, false);
+    function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller, bool _reverse) internal override returns (uint256) {
+        return _facilitateNextPrimarySale(_id, _paymentAmount, _buyer, _reverse);
     }
 
     function _facilitateNextPrimarySale(uint256 _editionId, uint256 _paymentAmount, address _buyer, bool _reverse) internal returns (uint256) {

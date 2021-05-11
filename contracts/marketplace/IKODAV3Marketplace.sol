@@ -51,7 +51,11 @@ interface IEditionSteppedMarketplace {
     function updateSteppedAuction(uint256 _editionId, uint128 _basePrice, uint128 _stepPrice) external;
 }
 
-interface IKODAV3PrimarySaleMarketplace is IEditionBuyNowMarketplace, IEditionSteppedMarketplace, IEditionOffersMarketplace {
+interface IReserveAuctionExit {
+    function emergencyExitBidFromReserveAuction(uint256 _editionId) external;
+}
+
+interface IKODAV3PrimarySaleMarketplace is IEditionBuyNowMarketplace, IEditionSteppedMarketplace, IEditionOffersMarketplace, IReserveAuctionExit {
     // combo
 }
 

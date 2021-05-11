@@ -46,8 +46,8 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  describe('all tests', () => {
-    describe.only('End to end reserve auctions', () => {
+  describe.only('all tests', () => {
+    describe('End to end reserve auctions', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -156,7 +156,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       })
     })
 
-    describe.only('listForReserveAuction()', () => {
+    describe('listForReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -195,7 +195,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       })
     })
 
-    describe.only('placeBidOnReserveAuction()', () => {
+    describe('placeBidOnReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -279,7 +279,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       })
     })
 
-    describe.only('resultReserveAuction()', () => {
+    describe('resultReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -403,7 +403,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       })
     })
 
-    describe.only('withdrawBidFromReserveAuction()', () => {
+    describe('withdrawBidFromReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -465,7 +465,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       })
     })
 
-    describe.only('updateReservePriceForReserveAuction()', () => {
+    describe('updateReservePriceForReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -540,7 +540,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
 
         const {receipt} = await this.marketplace.convertReserveAuctionToBuyItNow(EDITION_ONE_ID, ether('0.1'), now, {from: minter})
         await expectEvent(receipt, 'ReserveAuctionConvertedToBuyItNow', {
-          _editionId: EDITION_ONE_ID,
+          _id: EDITION_ONE_ID,
           _listingPrice: ether('0.1'),
           _startDate: now
         })
@@ -566,7 +566,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
 
         const {receipt} = await this.marketplace.convertReserveAuctionToBuyItNow(EDITION_ONE_ID, ether('0.1'), now, {from: minter})
         await expectEvent(receipt, 'ReserveAuctionConvertedToBuyItNow', {
-          _editionId: EDITION_ONE_ID,
+          _id: EDITION_ONE_ID,
           _listingPrice: ether('0.1'),
           _startDate: now
         })
@@ -756,6 +756,8 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       })
 
       it('Reverts when no bid in flight', async () => {
+        await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
         await expectRevert(
           this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID),
           "No bid in flight"
@@ -763,7 +765,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       })
     })
 
-    describe.only('updateReserveAuctionBidExtensionWindow()', () => {
+    describe('updateReserveAuctionBidExtensionWindow()', () => {
       const one_minute = new BN('60');
 
       it('updates the reserve auction extension window as admin', async () => {
@@ -782,7 +784,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       })
     })
 
-    describe.only('updateReserveAuctionLengthOnceReserveMet()', () => {
+    describe('updateReserveAuctionLengthOnceReserveMet()', () => {
       const one_minute = new BN('60');
 
       it('updates the reserve auction length as admin', async () => {

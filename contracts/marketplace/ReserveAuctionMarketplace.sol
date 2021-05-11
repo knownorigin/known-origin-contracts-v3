@@ -14,13 +14,13 @@ interface IReserveAuctionMarketplace {
     event BidWithdrawnFromReserveAuction(uint256 _id, address indexed _bidder, uint128 _bid);
     event ReservePriceUpdated(uint256 indexed _id, uint256 _reservePrice);
     event ReserveAuctionConvertedToBuyItNow(uint256 indexed _id, uint128 _listingPrice, uint128 _startDate);
+    event EmergencyBidWithdrawFromReserveAuction(uint256 indexed _id, address _bidder, uint128 _bid);
 
     function placeBidOnReserveAuction(uint256 _id) external payable;
     function listForReserveAuction(address _creator, uint256 _id, uint128 _reservePrice, uint128 _startDate) external;
     function resultReserveAuction(uint256 _id) external;
     function withdrawBidFromReserveAuction(uint256 _id) external;
     function updateReservePriceForReserveAuction(uint256 _id, uint128 _reservePrice) external;
-    //function convertReserveAuctionToBuyItNow(uint256 _id, uint128 _listingPrice, uint128 _startDate) external;
 }
 
 abstract contract ReserveAuctionMarketplace is BaseMarketplace, IReserveAuctionMarketplace {
@@ -136,41 +136,10 @@ abstract contract ReserveAuctionMarketplace is BaseMarketplace, IReserveAuctionM
         uint256 winningBid = reserveAuction.bid;
         delete editionOrTokenWithReserveAuctions[_id];
 
-        _processReserveAuctionSale(_id, winningBid, winner, seller);
+        _processSale(_id, winningBid, winner, seller, false);
 
         emit ReserveAuctionResulted(_id, winningBid, winner, _msgSender());
     }
-
-//    function emergencyExitBidFromReserveAuction(uint256 _editionId)
-//    public
-//    override
-//    whenNotPaused
-//    nonReentrant {
-//        ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_editionId];
-//
-//        require(reserveAuction.reservePrice > 0, "No reserve auction in flight");
-//        require(reserveAuction.bid > 0, "No bid in flight");
-//
-//        bool isApprovalActiveForMarketplace = koda.isApprovedForAll(reserveAuction.seller, address(this));
-//        require(
-//            !isApprovalActiveForMarketplace || koda.getEditionSalesDisabled(_editionId),
-//            "Bid cannot be withdrawn as reserve auction listing is valid"
-//        );
-//
-//        bool isSeller = reserveAuction.seller == _msgSender();
-//        bool isBidder = reserveAuction.bidder == _msgSender();
-//        require(
-//            isSeller || isBidder || accessControls.hasContractOrAdminRole(_msgSender()),
-//            "Only seller, bidder, contract or platform admin"
-//        ); // external call done last as a gas optimisation i.e. it wont be called if isSeller || isBidder is true
-//
-//        _refundBidder(reserveAuction.bidder, reserveAuction.bid);
-//
-//        emit EmergencyBidWithdrawFromReserveAuction(_editionId, reserveAuction.bidder, reserveAuction.bid);
-//
-//        reserveAuction.bidder = address(0);
-//        reserveAuction.bid = 0;
-//    }
 
     // Only permit bid withdrawals if reserve not met
     function withdrawBidFromReserveAuction(uint256 _id)
@@ -221,5 +190,32 @@ abstract contract ReserveAuctionMarketplace is BaseMarketplace, IReserveAuctionM
         emit AdminUpdateReserveAuctionLengthOnceReserveMet(_reserveAuctionLengthOnceReserveMet);
     }
 
-    function _processReserveAuctionSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller) internal virtual;
+    function _emergencyExitBidFromReserveAuction(uint256 _id) internal {
+        ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
+
+        require(reserveAuction.reservePrice > 0, "No reserve auction in flight");
+        require(reserveAuction.bid > 0, "No bid in flight");
+
+        bool isSeller = reserveAuction.seller == _msgSender();
+        bool isBidder = reserveAuction.bidder == _msgSender();
+        require(
+            isSeller || isBidder || accessControls.hasContractOrAdminRole(_msgSender()),
+            "Only seller, bidder, contract or platform admin"
+        ); // external call done last as a gas optimisation i.e. it wont be called if isSeller || isBidder is true
+
+        _refundBidder(reserveAuction.bidder, reserveAuction.bid);
+
+        emit EmergencyBidWithdrawFromReserveAuction(_id, reserveAuction.bidder, reserveAuction.bid);
+
+        reserveAuction.bidder = address(0);
+        reserveAuction.bid = 0;
+    }
+
+    function _processSale(
+        uint256 _id,
+        uint256 _paymentAmount,
+        address _buyer,
+        address _seller,
+        bool _reverse
+    ) internal virtual returns (uint256);
 }
