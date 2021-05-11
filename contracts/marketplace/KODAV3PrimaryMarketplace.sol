@@ -459,7 +459,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
         _emergencyExitBidFromReserveAuction(_editionId);
     }
 
-    // todo - consider moving listing to base marketplace?
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
     public
     //override

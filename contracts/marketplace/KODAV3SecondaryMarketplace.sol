@@ -219,7 +219,7 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, ReserveA
 
     function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller, bool) internal override returns (uint256) {
         facilitateSecondarySale(_id, _paymentAmount, _seller, _buyer);
-        return 0;
+        return _id;
     }
 
     function facilitateSecondarySale(uint256 _tokenId, uint256 _paymentAmount, address _seller, address _buyer) internal {
@@ -302,6 +302,24 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, ReserveA
         tokenListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
 
         emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
+    }
+
+    function emergencyExitBidFromReserveAuction(uint256 _editionId)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        bool isApprovalActiveForMarketplace = koda.isApprovedForAll(
+            editionOrTokenWithReserveAuctions[_editionId].seller,
+            address(this)
+        );
+
+        require(
+            !isApprovalActiveForMarketplace,
+            "Bid cannot be withdrawn as reserve auction listing is valid"
+        );
+
+        _emergencyExitBidFromReserveAuction(_editionId);
     }
 
     // Admin Methods
