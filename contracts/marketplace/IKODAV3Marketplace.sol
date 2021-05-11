@@ -51,21 +51,7 @@ interface IEditionSteppedMarketplace {
     function updateSteppedAuction(uint256 _editionId, uint128 _basePrice, uint128 _stepPrice) external;
 }
 
-interface IReserveAuctionMarketplace {
-    event ReserveAuctionResulted(uint256 indexed _editionId, uint256 _finalPrice, address indexed _winner, address indexed _resulter);
-    event BidWithdrawnFromReserveAuction(uint256 _editionId, address indexed _bidder, uint128 _bid);
-    event EmergencyBidWithdrawFromReserveAuction(uint256 _editionId, address indexed _bidder, uint128 _bid);
-    event ReservePriceUpdated(uint256 indexed _editionId, uint256 _reservePrice);
-    event ReserveAuctionConvertedToBuyItNow(uint256 indexed _editionId, uint128 _listingPrice, uint128 _startDate);
-
-    function listEditionForReserveAuction(address _creator, uint256 _editionId, uint128 _reservePrice, uint128 _startDate) external;
-    function withdrawBidFromReserveAuction(uint256 _editionId) external;
-    function emergencyExitBidFromReserveAuction(uint256 _editionId) external;
-    function updateReservePriceForReserveAuction(uint256 _editionId, uint128 _reservePrice) external;
-    function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
-}
-
-interface IKODAV3PrimarySaleMarketplace is IEditionBuyNowMarketplace, IEditionSteppedMarketplace, IEditionOffersMarketplace, IReserveAuctionMarketplace {
+interface IKODAV3PrimarySaleMarketplace is IEditionBuyNowMarketplace, IEditionSteppedMarketplace, IEditionOffersMarketplace {
     // combo
 }
 

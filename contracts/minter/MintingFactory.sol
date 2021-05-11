@@ -5,7 +5,7 @@ pragma solidity 0.8.3;
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
 import {IKODAV3Minter} from "../core/IKODAV3Minter.sol";
-import {IKODAV3PrimarySaleMarketplace} from "../marketplace/IKODAV3Marketplace.sol";
+import {KODAV3PrimaryMarketplace} from "../marketplace/KODAV3PrimaryMarketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 
 contract MintingFactory is Context {
@@ -20,7 +20,7 @@ contract MintingFactory is Context {
 
     IKODAV3Minter public koda;
 
-    IKODAV3PrimarySaleMarketplace public marketplace;
+    KODAV3PrimaryMarketplace public marketplace;
 
     modifier canMintAgain(){
         require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
@@ -51,7 +51,7 @@ contract MintingFactory is Context {
     constructor(
         IKOAccessControlsLookup _accessControls,
         IKODAV3Minter _koda,
-        IKODAV3PrimarySaleMarketplace _marketplace
+        KODAV3PrimaryMarketplace _marketplace
     ) {
         accessControls = _accessControls;
         koda = _koda;
@@ -141,7 +141,7 @@ contract MintingFactory is Context {
             marketplace.enableEditionOffers(_editionId, _startDate);
         } else if (SaleType.RESERVE == _saleType) {
             // use base price for reserve price
-            marketplace.listEditionForReserveAuction(_msgSender(), _editionId, _basePrice, _startDate);
+            marketplace.listForReserveAuction(_msgSender(), _editionId, _basePrice, _startDate);
         }
 
         emit EditionMintedAndListed(_editionId, _saleType);

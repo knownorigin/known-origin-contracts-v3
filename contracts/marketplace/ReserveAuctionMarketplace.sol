@@ -20,10 +20,10 @@ interface IReserveAuctionMarketplace {
     function resultReserveAuction(uint256 _id) external;
     function withdrawBidFromReserveAuction(uint256 _id) external;
     function updateReservePriceForReserveAuction(uint256 _id, uint128 _reservePrice) external;
-    function convertReserveAuctionToBuyItNow(uint256 _id, uint128 _listingPrice, uint128 _startDate) external;
+    //function convertReserveAuctionToBuyItNow(uint256 _id, uint128 _listingPrice, uint128 _startDate) external;
 }
 
-contract ReserveAuctionMarketplace is BaseMarketplace, IReserveAuctionMarketplace {
+abstract contract ReserveAuctionMarketplace is BaseMarketplace, IReserveAuctionMarketplace {
     event AdminUpdateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow);
     event AdminUpdateReserveAuctionLengthOnceReserveMet(uint128 _reserveAuctionLengthOnceReserveMet);
 
@@ -81,14 +81,14 @@ contract ReserveAuctionMarketplace is BaseMarketplace, IReserveAuctionMarketplac
     whenNotPaused
     nonReentrant {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
-        require(reserveAuction.reservePrice > 0, "Edition not set up for reserve auction");
-        require(block.timestamp >= reserveAuction.startDate, "Edition not accepting bids yet");
+        require(reserveAuction.reservePrice > 0, "Not set up for reserve auction");
+        require(block.timestamp >= reserveAuction.startDate, "Not accepting bids yet");
         require(msg.value >= reserveAuction.bid + minBidAmount, "You have not exceeded previous bid by min bid amount");
 
         // if a bid has been placed, then we will have a bidding end timestamp and we need to ensure no one
         // can bid beyond this
         if (reserveAuction.biddingEnd > 0) {
-            require(block.timestamp < reserveAuction.biddingEnd, "Edition is no longer accepting bids");
+            require(block.timestamp < reserveAuction.biddingEnd, "No longer accepting bids");
         }
 
         // If the reserve has been met, then bidding will end in 24 hours
@@ -132,12 +132,83 @@ contract ReserveAuctionMarketplace is BaseMarketplace, IReserveAuctionMarketplac
         );
 
         address winner = reserveAuction.bidder;
+        address seller = reserveAuction.seller;
         uint256 winningBid = reserveAuction.bid;
-        delete editionWithReserveAuctions[_id];
+        delete editionOrTokenWithReserveAuctions[_id];
 
-        facilitateNextPrimarySale(_id, winningBid, winner, false);
+        _processReserveAuctionSale(_id, winningBid, winner, seller);
 
         emit ReserveAuctionResulted(_id, winningBid, winner, _msgSender());
+    }
+
+//    function emergencyExitBidFromReserveAuction(uint256 _editionId)
+//    public
+//    override
+//    whenNotPaused
+//    nonReentrant {
+//        ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_editionId];
+//
+//        require(reserveAuction.reservePrice > 0, "No reserve auction in flight");
+//        require(reserveAuction.bid > 0, "No bid in flight");
+//
+//        bool isApprovalActiveForMarketplace = koda.isApprovedForAll(reserveAuction.seller, address(this));
+//        require(
+//            !isApprovalActiveForMarketplace || koda.getEditionSalesDisabled(_editionId),
+//            "Bid cannot be withdrawn as reserve auction listing is valid"
+//        );
+//
+//        bool isSeller = reserveAuction.seller == _msgSender();
+//        bool isBidder = reserveAuction.bidder == _msgSender();
+//        require(
+//            isSeller || isBidder || accessControls.hasContractOrAdminRole(_msgSender()),
+//            "Only seller, bidder, contract or platform admin"
+//        ); // external call done last as a gas optimisation i.e. it wont be called if isSeller || isBidder is true
+//
+//        _refundBidder(reserveAuction.bidder, reserveAuction.bid);
+//
+//        emit EmergencyBidWithdrawFromReserveAuction(_editionId, reserveAuction.bidder, reserveAuction.bid);
+//
+//        reserveAuction.bidder = address(0);
+//        reserveAuction.bid = 0;
+//    }
+
+    // Only permit bid withdrawals if reserve not met
+    function withdrawBidFromReserveAuction(uint256 _id)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
+
+        require(reserveAuction.reservePrice > 0, "No reserve auction in flight");
+        require(reserveAuction.bid < reserveAuction.reservePrice, "Bids can only be withdrawn if reserve not met");
+        require(reserveAuction.bidder == _msgSender(), "Only the bidder can withdraw their bid");
+
+        uint256 bidToRefund = reserveAuction.bid;
+        _refundBidder(reserveAuction.bidder, bidToRefund);
+
+        reserveAuction.bidder = address(0);
+        reserveAuction.bid = 0;
+
+        emit BidWithdrawnFromReserveAuction(_id, _msgSender(), uint128(bidToRefund));
+    }
+
+    // can only do this if the reserve has not been met
+    function updateReservePriceForReserveAuction(uint256 _id, uint128 _reservePrice)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
+
+        require(reserveAuction.reservePrice > 0, "No reserve auction in flight");
+        require(reserveAuction.seller == _msgSender(), "Not the seller");
+        require(reserveAuction.bid == 0, "Due to the active bid the reserve cannot be adjusted");
+        require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
+
+        reserveAuction.reservePrice = _reservePrice;
+
+        emit ReservePriceUpdated(_id, _reservePrice);
     }
 
     function updateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow) onlyAdmin public {
@@ -149,4 +220,6 @@ contract ReserveAuctionMarketplace is BaseMarketplace, IReserveAuctionMarketplac
         reserveAuctionLengthOnceReserveMet = _reserveAuctionLengthOnceReserveMet;
         emit AdminUpdateReserveAuctionLengthOnceReserveMet(_reserveAuctionLengthOnceReserveMet);
     }
+
+    function _processReserveAuctionSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller) internal virtual;
 }

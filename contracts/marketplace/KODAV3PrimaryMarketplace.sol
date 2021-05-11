@@ -13,12 +13,6 @@ import {ReserveAuctionMarketplace} from "./ReserveAuctionMarketplace.sol";
 /// @author KnownOrigin Labs
 contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAuctionMarketplace {
 
-    event AdminUpdatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission);
-    event AdminUpdateModulo(uint256 _modulo);
-    event AdminUpdateMinBidAmount(uint256 _minBidAmount);
-    event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
-    event AdminUpdateBidLockupPeriod(uint256 _bidLockupPeriod);
-    event AdminUpdatePlatformAccount(address indexed _oldAddress, address indexed _newAddress);
     event AdminSetKoCommissionOverride(address indexed _receiver, uint256 _koCommission);
 
     // KO Commission override definition for a given creator
@@ -137,7 +131,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
         require(msg.value >= listing.price, "List price not satisfied");
         require(block.timestamp >= listing.startDate, "List not available yet");
 
-        uint256 tokenId = facilitateNextPrimarySale(_editionId, msg.value, _recipient, false);
+        uint256 tokenId = _facilitateNextPrimarySale(_editionId, msg.value, _recipient, false);
 
         emit EditionPurchased(_editionId, tokenId, _recipient, msg.value);
     }
@@ -280,7 +274,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
         require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
 
         // get a new token from the edition to transfer ownership
-        uint256 tokenId = facilitateNextPrimarySale(_editionId, offer.offer, offer.bidder, false);
+        uint256 tokenId = _facilitateNextPrimarySale(_editionId, offer.offer, offer.bidder, false);
 
         // emit event
         emit EditionBidAccepted(_editionId, tokenId, offer.bidder, offer.offer);
@@ -381,7 +375,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
         uint256 expectedPrice = _getNextEditionSteppedPrice(_editionId);
         require(msg.value >= expectedPrice, "Expected price not met");
 
-        uint256 tokenId = facilitateNextPrimarySale(_editionId, expectedPrice, _msgSender(), true);
+        uint256 tokenId = _facilitateNextPrimarySale(_editionId, expectedPrice, _msgSender(), true);
 
         // Bump the current step
         uint16 step = steppedAuction.currentStep;
@@ -445,103 +439,38 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
         price = uint256(steppedAuction.basePrice) + stepAmount;
     }
 
-    function emergencyExitBidFromReserveAuction(uint256 _editionId)
-    public
-    override
-    whenNotPaused
-    nonReentrant {
-        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
-
-        require(editionWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
-        require(editionWithReserveAuction.bid > 0, "No bid in flight");
-
-        bool isApprovalActiveForMarketplace = koda.isApprovedForAll(editionWithReserveAuction.seller, address(this));
-        require(
-            !isApprovalActiveForMarketplace || koda.getEditionSalesDisabled(_editionId),
-            "Bid cannot be withdrawn as reserve auction listing is valid"
-        );
-
-        bool isSeller = editionWithReserveAuction.seller == _msgSender();
-        bool isBidder = editionWithReserveAuction.bidder == _msgSender();
-        require(
-            isSeller || isBidder || accessControls.hasContractOrAdminRole(_msgSender()),
-            "Only seller, bidder, contract or platform admin"
-        ); // external call done last as a gas optimisation i.e. it wont be called if isSeller || isBidder is true
-
-        _refundBidder(editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
-
-        emit EmergencyBidWithdrawFromReserveAuction(_editionId, editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
-
-        editionWithReserveAuction.bidder = address(0);
-        editionWithReserveAuction.bid = 0;
-    }
-
-    // Only permit bid withdrawals if reserve not met
-    function withdrawBidFromReserveAuction(uint256 _editionId)
-    public
-    override
-    whenNotPaused
-    nonReentrant {
-        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
-
-        require(editionWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
-        require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Bids can only be withdrawn if reserve not met");
-        require(editionWithReserveAuction.bidder == _msgSender(), "Only the bidder can withdraw their bid");
-
-        uint256 bidToRefund = editionWithReserveAuction.bid;
-        _refundBidder(editionWithReserveAuction.bidder, bidToRefund);
-
-        editionWithReserveAuction.bidder = address(0);
-        editionWithReserveAuction.bid = 0;
-
-        emit BidWithdrawnFromReserveAuction(_editionId, _msgSender(), uint128(bidToRefund));
-    }
-
-    // can only do this if the reserve has not been met
-    function updateReservePriceForReserveAuction(uint256 _editionId, uint128 _reservePrice)
-    public
-    override
-    whenNotPaused
-    nonReentrant {
-        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
-
-        require(editionWithReserveAuction.reservePrice > 0, "No reserve auction in flight");
-        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller");
-        require(editionWithReserveAuction.bid == 0, "Due to the active bid the reserve cannot be adjusted");
-        require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
-
-        editionWithReserveAuction.reservePrice = _reservePrice;
-
-        emit ReservePriceUpdated(_editionId, _reservePrice);
-    }
-
-    function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
-    public
-    override
-    whenNotPaused
-    nonReentrant {
-        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
-
-        require(editionWithReserveAuction.reservePrice > 0, "No active auction");
-        require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Can only convert before reserve met");
-        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller");
-        require(_listingPrice >= minBidAmount, "Listing price not enough");
-
-        // refund any bids
-        if (editionWithReserveAuction.bid > 0) {
-            _refundBidder(editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
-        }
-
-        delete editionWithReserveAuctions[_editionId];
-
-        editionListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
-
-        emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
-    }
+    // todo move listing to base marketplace
+//    function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
+//    public
+//    override
+//    whenNotPaused
+//    nonReentrant {
+//        ReserveAuction storage editionWithReserveAuction = editionWithReserveAuctions[_editionId];
+//
+//        require(editionWithReserveAuction.reservePrice > 0, "No active auction");
+//        require(editionWithReserveAuction.bid < editionWithReserveAuction.reservePrice, "Can only convert before reserve met");
+//        require(editionWithReserveAuction.seller == _msgSender(), "Not the seller");
+//        require(_listingPrice >= minBidAmount, "Listing price not enough");
+//
+//        // refund any bids
+//        if (editionWithReserveAuction.bid > 0) {
+//            _refundBidder(editionWithReserveAuction.bidder, editionWithReserveAuction.bid);
+//        }
+//
+//        delete editionWithReserveAuctions[_editionId];
+//
+//        editionListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
+//
+//        emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
+//    }
 
     // primary sale helpers
 
-    function facilitateNextPrimarySale(uint256 _editionId, uint256 _paymentAmount, address _buyer, bool _reverse) internal returns (uint256) {
+    function _processReserveAuctionSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller) internal override {
+        _facilitateNextPrimarySale(_id, _paymentAmount, _buyer, false);
+    }
+
+    function _facilitateNextPrimarySale(uint256 _editionId, uint256 _paymentAmount, address _buyer, bool _reverse) internal returns (uint256) {
         // for stepped sales, should they be sold in reverse order ie. 10...1 and not 1...10?
         // get next token to sell along with the royalties recipient and the original creator
         (address receiver, address creator, uint256 tokenId) = _reverse
@@ -602,31 +531,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
     function updatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission) public onlyAdmin {
         platformPrimarySaleCommission = _platformPrimarySaleCommission;
         emit AdminUpdatePlatformPrimarySaleCommission(_platformPrimarySaleCommission);
-    }
-
-    function updateModulo(uint256 _modulo) public onlyAdmin {
-        modulo = _modulo;
-        emit AdminUpdateModulo(_modulo);
-    }
-
-    function updateMinBidAmount(uint256 _minBidAmount) public onlyAdmin {
-        minBidAmount = _minBidAmount;
-        emit AdminUpdateMinBidAmount(_minBidAmount);
-    }
-
-    function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {
-        emit AdminUpdateAccessControls(accessControls, _accessControls);
-        accessControls = _accessControls;
-    }
-
-    function updateBidLockupPeriod(uint256 _bidLockupPeriod) public onlyAdmin {
-        bidLockupPeriod = _bidLockupPeriod;
-        emit AdminUpdateBidLockupPeriod(_bidLockupPeriod);
-    }
-
-    function updatePlatformAccount(address _newPlatformAccount) public onlyAdmin {
-        emit AdminUpdatePlatformAccount(platformAccount, _newPlatformAccount);
-        platformAccount = _newPlatformAccount;
     }
 
     function setKoCommissionOverrideForReceiver(address _receiver, uint256 _koCommission) public onlyAdmin {
