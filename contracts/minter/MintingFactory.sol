@@ -132,7 +132,7 @@ contract MintingFactory is Context {
 
     function _setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
         if (SaleType.BUY_NOW == _saleType) {
-            marketplace.listEdition(_msgSender(), _editionId, _basePrice, _startDate);
+            marketplace.listForBuyNow(_msgSender(), _editionId, _basePrice, _startDate);
         }
         else if (SaleType.STEPPED == _saleType) {
             marketplace.listSteppedEditionAuction(_msgSender(), _editionId, _basePrice, _stepPrice, _startDate);

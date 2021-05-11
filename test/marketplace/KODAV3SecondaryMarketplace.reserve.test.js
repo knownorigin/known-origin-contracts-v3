@@ -500,7 +500,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         )
 
         // but can buy the token
-        await this.marketplace.buyToken(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.1')})
+        await this.marketplace.buyEditionToken(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.1')})
 
         expect(await this.token.ownerOf(FIRST_TOKEN_ID)).to.be.equal(bidder1)
       })
@@ -528,7 +528,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         )
 
         // but can buy the token
-        await this.marketplace.buyToken(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.1')})
+        await this.marketplace.buyEditionToken(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.1')})
 
         expect(await this.token.ownerOf(FIRST_TOKEN_ID)).to.be.equal(bidder1)
       })

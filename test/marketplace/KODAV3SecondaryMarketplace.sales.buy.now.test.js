@@ -58,8 +58,8 @@ contract('KODAV3Marketplace', function (accounts) {
     this.secondarySaleRoyalty = await this.marketplace.secondarySaleRoyalty();
   });
 
-  describe('secondary sale token listing', async () => {
-    describe('listToken()', () => {
+  describe.only('secondary sale token listing', async () => {
+    describe('listTokenForBuyNow()', () => {
 
       const _0_1_ETH = ether('0.1');
 
@@ -71,7 +71,7 @@ contract('KODAV3Marketplace', function (accounts) {
         await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
 
         const start = await time.latest();
-        await this.primaryMarketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, start, {from: contract});
+        await this.primaryMarketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, start, {from: contract});
 
         // collector A buys a token (primary)
         await this.primaryMarketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: _0_1_ETH});
@@ -84,10 +84,10 @@ contract('KODAV3Marketplace', function (accounts) {
       });
 
       it('Reverts when already listed', async () => {
-        await this.marketplace.listToken(firstEditionTokenId, _0_1_ETH, '0', {from: collectorA})
+        await this.marketplace.listTokenForBuyNow(firstEditionTokenId, _0_1_ETH, '0', {from: collectorA})
         await expectRevert(
-          this.marketplace.listToken(firstEditionTokenId, _0_1_ETH, '0', {from: collectorA}),
-          "Token is listed"
+          this.marketplace.listTokenForBuyNow(firstEditionTokenId, _0_1_ETH, '0', {from: collectorA}),
+          "Already listed"
         )
       })
 
@@ -99,45 +99,45 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // list token for sale at 0.1 ETH per token
         const start = await time.latest();
-        await this.marketplace.listToken(token1, _0_1_ETH, start, {from: collectorA});
-        await this.marketplace.listToken(token2, _0_1_ETH, start, {from: collectorB});
-        await this.marketplace.listToken(token3, _0_1_ETH, start, {from: collectorC});
+        await this.marketplace.listTokenForBuyNow(token1, _0_1_ETH, start, {from: collectorA});
+        await this.marketplace.listTokenForBuyNow(token2, _0_1_ETH, start, {from: collectorB});
+        await this.marketplace.listTokenForBuyNow(token3, _0_1_ETH, start, {from: collectorC});
 
-        let listing = await this.marketplace.getTokenListing(token1);
+        let listing = await this.marketplace.getListing(token1);
         expect(listing._seller).to.be.equal(collectorA);
         expect(listing._listingPrice).to.be.bignumber.equal(_0_1_ETH);
         expect(listing._startDate).to.be.bignumber.equal(start);
 
-        listing = await this.marketplace.getTokenListing(token2);
+        listing = await this.marketplace.getListing(token2);
         expect(listing._seller).to.be.equal(collectorB);
         expect(listing._listingPrice).to.be.bignumber.equal(_0_1_ETH);
         expect(listing._startDate).to.be.bignumber.equal(start);
 
-        listing = await this.marketplace.getTokenListing(token3);
+        listing = await this.marketplace.getListing(token3);
         expect(listing._seller).to.be.equal(collectorC);
         expect(listing._listingPrice).to.be.bignumber.equal(_0_1_ETH);
         expect(listing._startDate).to.be.bignumber.equal(start);
 
-        const seller = await this.marketplace.getTokenListingSeller(token1);
+        const seller = await this.marketplace.getListingSeller(token1);
         expect(seller).to.be.equal(collectorA);
 
-        const listingPrice = await this.marketplace.getTokenListingPrice(token1);
+        const listingPrice = await this.marketplace.getListingPrice(token1);
         expect(listingPrice).to.be.bignumber.equal(_0_1_ETH);
 
-        const startDate = await this.marketplace.getTokenListingDate(token1);
+        const startDate = await this.marketplace.getListingDate(token1);
         expect(startDate).to.be.bignumber.equal(start);
       });
 
       it('reverts if not owner', async () => {
         await expectRevert(
-          this.marketplace.listToken(firstEditionTokenId, _0_1_ETH, await time.latest(), {from: collectorD}),
-          'Not token owner'
+          this.marketplace.listTokenForBuyNow(firstEditionTokenId, _0_1_ETH, await time.latest(), {from: collectorD}),
+          'Only owner or contract'
         );
       });
 
       it('reverts if under min bid amount listing price', async () => {
         await expectRevert(
-          this.marketplace.listToken(firstEditionTokenId, this.minBidAmount.sub(ONE), await time.latest(), {from: collectorA}),
+          this.marketplace.listTokenForBuyNow(firstEditionTokenId, this.minBidAmount.sub(ONE), await time.latest(), {from: collectorA}),
           'Listing price not enough'
         );
       });
@@ -155,7 +155,7 @@ contract('KODAV3Marketplace', function (accounts) {
         await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
 
         const start = await time.latest();
-        await this.primaryMarketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, start, {from: contract});
+        await this.primaryMarketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, start, {from: contract});
 
         // collector A buys a token (primary)
         await this.primaryMarketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: _0_1_ETH});
@@ -172,15 +172,15 @@ contract('KODAV3Marketplace', function (accounts) {
         const token1 = firstEditionTokenId;
 
         const start = await time.latest();
-        await this.marketplace.listToken(token1, _0_1_ETH, start, {from: collectorA});
+        await this.marketplace.listTokenForBuyNow(token1, _0_1_ETH, start, {from: collectorA});
 
-        let listing = await this.marketplace.getTokenListing(token1);
+        let listing = await this.marketplace.getListing(token1);
         expect(listing._seller).to.be.equal(collectorA);
         expect(listing._listingPrice).to.be.bignumber.equal(_0_1_ETH);
         expect(listing._startDate).to.be.bignumber.equal(start);
 
         await this.marketplace.delistToken(token1, {from: collectorA});
-        listing = await this.marketplace.getTokenListing(token1);
+        listing = await this.marketplace.getListing(token1);
         expect(listing._seller).to.be.equal(ZERO_ADDRESS);
         expect(listing._listingPrice).to.be.bignumber.equal(ZERO);
         expect(listing._startDate).to.be.bignumber.equal(ZERO);
@@ -188,7 +188,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
       it('reverts if not owner', async () => {
         const start = await time.latest();
-        await this.marketplace.listToken(firstEditionTokenId, _0_1_ETH, start, {from: collectorA});
+        await this.marketplace.listTokenForBuyNow(firstEditionTokenId, _0_1_ETH, start, {from: collectorA});
         await expectRevert(
           this.marketplace.delistToken(firstEditionTokenId, {from: collectorD}),
           'Not token owner'
@@ -197,7 +197,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
       it('reverts if not listed', async () => {
         const start = await time.latest();
-        await this.marketplace.listToken(firstEditionTokenId, _0_1_ETH, start, {from: collectorA});
+        await this.marketplace.listTokenForBuyNow(firstEditionTokenId, _0_1_ETH, start, {from: collectorA});
         await expectRevert(
           this.marketplace.delistToken(firstEditionTokenId.sub(ONE), {from: collectorA}),
           'No listing found'
@@ -205,7 +205,7 @@ contract('KODAV3Marketplace', function (accounts) {
       });
     });
 
-    describe('buyToken()', () => {
+    describe('buyEditionToken()', () => {
 
       const _0_1_ETH = ether('0.1');
 
@@ -217,7 +217,7 @@ contract('KODAV3Marketplace', function (accounts) {
         await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
 
         const start = await time.latest();
-        await this.primaryMarketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, start, {from: contract});
+        await this.primaryMarketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, start, {from: contract});
 
         // collector A buys a token (primary)
         await this.primaryMarketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: _0_1_ETH});
@@ -242,13 +242,13 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // list token for sale at 0.1 ETH per token
         const start = await time.latest();
-        await this.marketplace.listToken(token1, _0_1_ETH, start, {from: collectorA});
-        await this.marketplace.listToken(token2, _0_1_ETH, start, {from: collectorB});
-        await this.marketplace.listToken(token3, _0_1_ETH, start, {from: collectorC});
+        await this.marketplace.listTokenForBuyNow(token1, _0_1_ETH, start, {from: collectorA});
+        await this.marketplace.listTokenForBuyNow(token2, _0_1_ETH, start, {from: collectorB});
+        await this.marketplace.listTokenForBuyNow(token3, _0_1_ETH, start, {from: collectorC});
 
-        await this.marketplace.buyToken(token1, {from: collectorD, value: _0_1_ETH});
-        await this.marketplace.buyToken(token2, {from: collectorD, value: _0_1_ETH});
-        await this.marketplace.buyToken(token3, {from: collectorD, value: _0_1_ETH});
+        await this.marketplace.buyEditionToken(token1, {from: collectorD, value: _0_1_ETH});
+        await this.marketplace.buyEditionToken(token2, {from: collectorD, value: _0_1_ETH});
+        await this.marketplace.buyEditionToken(token3, {from: collectorD, value: _0_1_ETH});
 
         expect(await this.token.ownerOf(token1)).to.be.equal(collectorD);
         expect(await this.token.ownerOf(token2)).to.be.equal(collectorD);
@@ -260,14 +260,14 @@ contract('KODAV3Marketplace', function (accounts) {
         const token1 = firstEditionTokenId;
 
         const start = await time.latest();
-        await this.marketplace.listToken(token1, _0_1_ETH, start, {from: collectorA});
+        await this.marketplace.listTokenForBuyNow(token1, _0_1_ETH, start, {from: collectorA});
         expect(await this.token.ownerOf(token1)).to.be.equal(collectorA);
 
         this.token.transferFrom(collectorA, collectorB, token1, {from: collectorA});
 
         await expectRevert(
-          this.marketplace.buyToken(token1, {from: collectorD, value: _0_1_ETH}),
-          'Listing not valid, token owner has changed'
+          this.marketplace.buyEditionToken(token1, {from: collectorD, value: _0_1_ETH}),
+          'ERC721_OWNER_MISMATCH'
         );
 
       });
@@ -275,7 +275,7 @@ contract('KODAV3Marketplace', function (accounts) {
       it('reverts if no listing', async () => {
         const token1 = firstEditionTokenId;
         await expectRevert(
-          this.marketplace.buyToken(token1, {from: collectorA, value: _0_1_ETH}),
+          this.marketplace.buyEditionToken(token1, {from: collectorA, value: _0_1_ETH}),
           'No listing found'
         );
       });
@@ -284,10 +284,10 @@ contract('KODAV3Marketplace', function (accounts) {
         const token1 = firstEditionTokenId;
 
         const start = await time.latest();
-        await this.marketplace.listToken(token1, _0_1_ETH, start, {from: collectorA});
+        await this.marketplace.listTokenForBuyNow(token1, _0_1_ETH, start, {from: collectorA});
 
         await expectRevert(
-          this.marketplace.buyToken(token1, {from: collectorD, value: _0_1_ETH.sub(ONE)}),
+          this.marketplace.buyEditionToken(token1, {from: collectorD, value: _0_1_ETH.sub(ONE)}),
           'List price not satisfied'
         );
       });
@@ -297,16 +297,16 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // in future
         const start = await time.latest();
-        await this.marketplace.listToken(token1, _0_1_ETH, start.mul(new BN('2')), {from: collectorA});
+        await this.marketplace.listTokenForBuyNow(token1, _0_1_ETH, start.mul(new BN('2')), {from: collectorA});
 
         await expectRevert(
-          this.marketplace.buyToken(token1, {from: collectorD, value: _0_1_ETH}),
+          this.marketplace.buyEditionToken(token1, {from: collectorD, value: _0_1_ETH}),
           'List not available yet'
         );
       });
     });
 
-    describe('buyTokenFor()', () => {
+    describe('buyEditionTokenFor()', () => {
 
       const _0_1_ETH = ether('0.1');
 
@@ -318,7 +318,7 @@ contract('KODAV3Marketplace', function (accounts) {
         await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
 
         const start = await time.latest();
-        await this.primaryMarketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, start, {from: contract});
+        await this.primaryMarketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, start, {from: contract});
 
         // collector A buys a token (primary)
         await this.primaryMarketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: _0_1_ETH});
@@ -343,14 +343,14 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // list token for sale at 0.1 ETH per token
         const start = await time.latest();
-        await this.marketplace.listToken(token1, _0_1_ETH, start, {from: collectorA});
-        await this.marketplace.listToken(token2, _0_1_ETH, start, {from: collectorB});
-        await this.marketplace.listToken(token3, _0_1_ETH, start, {from: collectorC});
+        await this.marketplace.listTokenForBuyNow(token1, _0_1_ETH, start, {from: collectorA});
+        await this.marketplace.listTokenForBuyNow(token2, _0_1_ETH, start, {from: collectorB});
+        await this.marketplace.listTokenForBuyNow(token3, _0_1_ETH, start, {from: collectorC});
 
         // collectorC bought it for collectorD
-        await this.marketplace.buyTokenFor(token1, collectorD, {from: collectorC, value: _0_1_ETH});
-        await this.marketplace.buyTokenFor(token2, collectorD, {from: collectorC, value: _0_1_ETH});
-        await this.marketplace.buyTokenFor(token3, collectorD, {from: collectorC, value: _0_1_ETH});
+        await this.marketplace.buyEditionTokenFor(token1, collectorD, {from: collectorC, value: _0_1_ETH});
+        await this.marketplace.buyEditionTokenFor(token2, collectorD, {from: collectorC, value: _0_1_ETH});
+        await this.marketplace.buyEditionTokenFor(token3, collectorD, {from: collectorC, value: _0_1_ETH});
 
         expect(await this.token.ownerOf(token1)).to.be.equal(collectorD);
         expect(await this.token.ownerOf(token2)).to.be.equal(collectorD);
@@ -362,14 +362,14 @@ contract('KODAV3Marketplace', function (accounts) {
         const token1 = firstEditionTokenId;
 
         const start = await time.latest();
-        await this.marketplace.listToken(token1, _0_1_ETH, start, {from: collectorA});
+        await this.marketplace.listTokenForBuyNow(token1, _0_1_ETH, start, {from: collectorA});
         expect(await this.token.ownerOf(token1)).to.be.equal(collectorA);
 
         this.token.transferFrom(collectorA, collectorB, token1, {from: collectorA});
 
         await expectRevert(
-          this.marketplace.buyTokenFor(token1, collectorD, {from: collectorD, value: _0_1_ETH}),
-          'Listing not valid, token owner has changed'
+          this.marketplace.buyEditionTokenFor(token1, collectorD, {from: collectorD, value: _0_1_ETH}),
+          'ERC721_OWNER_MISMATCH'
         );
 
       });
@@ -377,7 +377,7 @@ contract('KODAV3Marketplace', function (accounts) {
       it('reverts if no listing', async () => {
         const token1 = firstEditionTokenId;
         await expectRevert(
-          this.marketplace.buyTokenFor(token1, collectorD, {from: collectorA, value: _0_1_ETH}),
+          this.marketplace.buyEditionTokenFor(token1, collectorD, {from: collectorA, value: _0_1_ETH}),
           'No listing found'
         );
       });
@@ -386,10 +386,10 @@ contract('KODAV3Marketplace', function (accounts) {
         const token1 = firstEditionTokenId;
 
         const start = await time.latest();
-        await this.marketplace.listToken(token1, _0_1_ETH, start, {from: collectorA});
+        await this.marketplace.listTokenForBuyNow(token1, _0_1_ETH, start, {from: collectorA});
 
         await expectRevert(
-          this.marketplace.buyTokenFor(token1, collectorD, {from: collectorD, value: _0_1_ETH.sub(ONE)}),
+          this.marketplace.buyEditionTokenFor(token1, collectorD, {from: collectorD, value: _0_1_ETH.sub(ONE)}),
           'List price not satisfied'
         );
       });
@@ -399,10 +399,10 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // in future
         const start = await time.latest();
-        await this.marketplace.listToken(token1, _0_1_ETH, start.mul(new BN('2')), {from: collectorA});
+        await this.marketplace.listTokenForBuyNow(token1, _0_1_ETH, start.mul(new BN('2')), {from: collectorA});
 
         await expectRevert(
-          this.marketplace.buyTokenFor(token1, collectorD, {from: collectorD, value: _0_1_ETH}),
+          this.marketplace.buyEditionTokenFor(token1, collectorD, {from: collectorD, value: _0_1_ETH}),
           'List not available yet'
         );
       });

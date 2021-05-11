@@ -5,13 +5,20 @@ pragma solidity 0.8.3;
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 import {IKODAV3PrimarySaleMarketplace} from "./IKODAV3Marketplace.sol";
+
+import {BuyNowMarketplace} from "./BuyNowMarketplace.sol";
 import {ReserveAuctionMarketplace} from "./ReserveAuctionMarketplace.sol";
+import {BaseMarketplace} from "./BaseMarketplace.sol";
 
 /// @title KnownOrigin Primary Marketplace for all V3 tokens
 /// @notice The following listing types are supported: Buy now, Stepped, Reserve and Offers
 /// @dev The contract is pausable and has reentrancy guards
 /// @author KnownOrigin Labs
-contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAuctionMarketplace {
+contract KODAV3PrimaryMarketplace is
+    IKODAV3PrimarySaleMarketplace,
+    BaseMarketplace,
+    ReserveAuctionMarketplace,
+    BuyNowMarketplace {
 
     event AdminSetKoCommissionOverride(address indexed _receiver, uint256 _koCommission);
 
@@ -26,13 +33,6 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
         uint256 offer;
         address bidder;
         uint256 lockupUntil;
-    }
-
-    // Buy now listing definition
-    struct Listing {
-        uint128 price;
-        uint128 startDate;
-        address seller;
     }
 
     // Stepped auction definition
@@ -53,20 +53,14 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
     /// @notice Edition ID to StartDate
     mapping(uint256 => uint256) public editionOffersStartDate;
 
-    /// @notice Edition ID to Listing
-    mapping(uint256 => Listing) public editionListings;
-
     /// @notice Edition ID to stepped auction
     mapping(uint256 => Stepped) public editionStep;
-
-    /// @notice 1 of 1 edition ID to reserve auction definition
-    mapping(uint256 => ReserveAuction) public editionWithReserveAuctions;
 
     /// @notice KO commission on every sale
     uint256 public platformPrimarySaleCommission = 15_00000;  // 15.00000%
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
-    ReserveAuctionMarketplace(_accessControls, _koda, _platformAccount) {}
+    BaseMarketplace(_accessControls, _koda, _platformAccount) {}
 
     // assumes frontend protects against from these things from being called when:
     //  - they dont need to be e.g. listing an edition when its sold out
@@ -76,109 +70,31 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
 
     // FIXME admin functions for fixing issues/draining tokens & ETH
 
-    // Primary "buy now" sale flow
-
-    // list edition with "buy now" price and start date
-    function listEdition(address _creator, uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
+    function setBuyNowPriceListing(uint256 _editionId, uint128 _listingPrice)
     public
-    override
-    whenNotPaused
-    onlyContract {
-        require(_listingPrice >= minBidAmount, "Listing price not enough");
-
-        // Store listing data
-        editionListings[_editionId] = Listing(_listingPrice, _startDate, _creator);
-
-        emit EditionListed(_editionId, _listingPrice, _startDate);
-    }
-
-    // update the "buy now" price
-    function setEditionPriceListing(uint256 _editionId, uint128 _listingPrice)
-    public
-    override
-    whenNotPaused
-    onlyContractOrCreator(_editionId) {
-        // Set price
-        editionListings[_editionId].price = _listingPrice;
-
-        // Emit event
-        emit EditionPriceChanged(_editionId, _listingPrice);
-    }
-
-    // Buy an token from the edition on the primary market
-    function buyEditionToken(uint256 _editionId)
-    public
-    override
-    payable
-    whenNotPaused
-    nonReentrant {
-        _purchaseEdition(_editionId, _msgSender());
-    }
-
-    // Buy an token from the edition on the primary market, ability to define the recipient
-    function buyEditionTokenFor(uint256 _editionId, address _recipient)
-    public
-    override
-    payable
-    whenNotPaused
-    nonReentrant {
-        _purchaseEdition(_editionId, _recipient);
-    }
-
-    function _purchaseEdition(uint256 _editionId, address _recipient) internal {
-        Listing storage listing = editionListings[_editionId];
-        require(address(0) != listing.seller, "No listing found");
-        require(msg.value >= listing.price, "List price not satisfied");
-        require(block.timestamp >= listing.startDate, "List not available yet");
-
-        uint256 tokenId = _facilitateNextPrimarySale(_editionId, msg.value, _recipient, false);
-
-        delete editionListings[_editionId];
-
-        emit EditionPurchased(_editionId, tokenId, _recipient, msg.value);
+    // todo override
+    whenNotPaused {
+        _setBuyNowPriceListing(_editionId, _listingPrice);
     }
 
     // convert from a "buy now" listing and converting to "accepting offers" with an optional start date
     function convertFromBuyNowToOffers(uint256 _editionId, uint128 _startDate)
     public
-    whenNotPaused
-    onlyContractOrCreator(_editionId) {
-        require(editionListings[_editionId].seller != address(0), "No listing found");
+    whenNotPaused {
+        // This will also catch no listing as seller wont be set
+        require(
+            editionOrTokenListings[_editionId].seller == _msgSender() || accessControls.hasContractRole(_msgSender()),
+            "Only seller or contract"
+        );
 
         // clear listing
-        delete editionListings[_editionId];
+        delete editionOrTokenListings[_editionId];
 
         // set the start date for the offer (optional)
         editionOffersStartDate[_editionId] = _startDate;
 
         // Emit event
         emit EditionAcceptingOffer(_editionId, _startDate);
-    }
-
-    // Edition listing accessors
-
-    function getEditionListing(uint256 _editionId)
-    public
-    view
-    returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
-        Listing storage listing = editionListings[_editionId];
-        return (
-        listing.seller, // original seller
-        listing.price,
-        listing.startDate
-        );
-    }
-
-    function getEditionListingSeller(uint256 _editionId) public view returns (address _seller) {
-        return editionListings[_editionId].seller;
-    }
-
-    function getEditionListingPrice(uint256 _editionId) public view returns (uint128 _listingPrice) {
-        return uint128(editionListings[_editionId].price);
-    }
-
-    function getEditionListingDate(uint256 _editionId) public view returns (uint128 _startDate) {
-        return uint128(editionListings[_editionId].startDate);
     }
 
     // Primary "offers" sale flow
@@ -201,7 +117,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
     payable
     whenNotPaused
     nonReentrant {
-        require(!isEditionListed(_editionId), "Edition is listed");
+        require(!_isEditionListed(_editionId), "Edition is listed");
 
         Offer storage offer = editionOffers[_editionId];
         require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
@@ -221,7 +137,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
         }
 
         // setup offer
-        editionOffers[_editionId] = Offer(msg.value, _msgSender(), getLockupTime());
+        editionOffers[_editionId] = Offer(msg.value, _msgSender(), _getLockupTime());
 
         emit EditionBidPlaced(_editionId, _msgSender(), msg.value);
     }
@@ -305,7 +221,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
     whenNotPaused
     nonReentrant
     onlyContractOrCreator(_editionId) {
-        require(!isEditionListed(_editionId), "Edition is listed");
+        require(!_isEditionListed(_editionId), "Edition is listed");
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         // send money back to top bidder if existing offer found
@@ -323,7 +239,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
         delete editionOffersStartDate[_editionId];
 
         // Store listing data
-        editionListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
+        editionOrTokenListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
 
         emit EditionConvertedFromOffersToBuyItNow(_editionId, _listingPrice, _startDate);
     }
@@ -406,10 +322,10 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
         require(steppedAuction.currentStep == 0, "Sale has been made");
 
         // Store listing data
-        editionListings[_editionId] = Listing(_listingPrice, 0, steppedAuction.seller);
+        editionOrTokenListings[_editionId] = Listing(_listingPrice, 0, steppedAuction.seller);
 
         // emit event
-        emit EditionListed(_editionId, _listingPrice, 0);
+        emit ListedForBuyNow(_editionId, _listingPrice, 0);
 
         // Clear up the step logic
         delete editionStep[_editionId];
@@ -478,12 +394,27 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
 
         delete editionOrTokenWithReserveAuctions[_editionId];
 
-        editionListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
+        editionOrTokenListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
 
         emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
     }
 
-    // primary sale helpers
+    // admin
+
+    function updatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission) public onlyAdmin {
+        platformPrimarySaleCommission = _platformPrimarySaleCommission;
+        emit AdminUpdatePlatformPrimarySaleCommission(_platformPrimarySaleCommission);
+    }
+
+    function setKoCommissionOverrideForReceiver(address _receiver, uint256 _koCommission) public onlyAdmin {
+        KOCommissionOverride storage koCommissionOverride = koCommissionOverrides[_receiver];
+        koCommissionOverride.active = true;
+        koCommissionOverride.koCommission = _koCommission;
+
+        emit AdminSetKoCommissionOverride(_receiver, _koCommission);
+    }
+
+    // internal
 
     function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller, bool _reverse) internal override returns (uint256) {
         return _facilitateNextPrimarySale(_id, _paymentAmount, _buyer, _reverse);
@@ -497,7 +428,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
             : koda.facilitateNextPrimarySale(_editionId);
 
         // split money
-        handleEditionSaleFunds(receiver, _paymentAmount);
+        _handleEditionSaleFunds(receiver, _paymentAmount);
 
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, _buyer, tokenId);
@@ -507,7 +438,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
         return tokenId;
     }
 
-    function handleEditionSaleFunds(address _receiver, uint256 _paymentAmount) internal {
+    function _handleEditionSaleFunds(address _receiver, uint256 _paymentAmount) internal {
         uint256 primarySaleCommission;
 
         if (koCommissionOverrides[_receiver].active) {
@@ -526,13 +457,13 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
         require(success, "Edition payment failed");
     }
 
-    function getLockupTime() internal view returns (uint256 lockupUntil) {
+    function _getLockupTime() internal view returns (uint256 lockupUntil) {
         lockupUntil = block.timestamp + bidLockupPeriod;
     }
 
     // as offers are always possible, we wont count it as a listing
-    function isEditionListed(uint256 _editionId) internal view returns (bool) {
-        if (editionListings[_editionId].seller != address(0)) {
+    function _isEditionListed(uint256 _editionId) internal view returns (bool) {
+        if (editionOrTokenListings[_editionId].seller != address(0)) {
             return true;
         }
 
@@ -540,32 +471,11 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, ReserveAucti
             return true;
         }
 
-        if (editionWithReserveAuctions[_editionId].seller != address(0)) {
+        if (editionOrTokenWithReserveAuctions[_editionId].seller != address(0)) {
             return true;
         }
 
         return false;
-    }
-
-    function updatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission) public onlyAdmin {
-        platformPrimarySaleCommission = _platformPrimarySaleCommission;
-        emit AdminUpdatePlatformPrimarySaleCommission(_platformPrimarySaleCommission);
-    }
-
-    function setKoCommissionOverrideForReceiver(address _receiver, uint256 _koCommission) public onlyAdmin {
-        KOCommissionOverride storage koCommissionOverride = koCommissionOverrides[_receiver];
-        koCommissionOverride.active = true;
-        koCommissionOverride.koCommission = _koCommission;
-
-        emit AdminSetKoCommissionOverride(_receiver, _koCommission);
-    }
-
-    function pause() public onlyAdmin {
-        super._pause();
-    }
-
-    function unpause() public onlyAdmin {
-        super._unpause();
     }
 }
 

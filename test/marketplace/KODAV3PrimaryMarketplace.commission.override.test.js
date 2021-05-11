@@ -50,7 +50,7 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
 
   });
 
-  describe('commission override', () => {
+  describe.only('commission override', () => {
     const commissionOverride = new BN('4000000')
 
     describe('setKoCommissionOverrideForReceiver()', () => {
@@ -81,7 +81,7 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
       await this.token.mintBatchEdition(3, minter, 'random', {from: contract});
 
       this.start = await time.latest();
-      await this.marketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, this.start, {from: contract});
+      await this.marketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, this.start, {from: contract});
 
       const minterTracker = await balance.tracker(minter)
       const platformTracker = await balance.tracker(koCommission)
@@ -104,7 +104,7 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
       await this.token.mintBatchEdition(3, minter, 'random', {from: contract});
 
       this.start = await time.latest();
-      await this.marketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, this.start, {from: contract});
+      await this.marketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, this.start, {from: contract});
 
       const minterTracker = await balance.tracker(minter)
       const platformTracker = await balance.tracker(koCommission)
@@ -125,7 +125,7 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
       await this.token.mintBatchEdition(3, minter, 'random', {from: contract});
 
       this.start = await time.latest();
-      await this.marketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, this.start, {from: contract});
+      await this.marketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, this.start, {from: contract});
 
       const minterTracker = await balance.tracker(minter)
       const platformTracker = await balance.tracker(koCommission)

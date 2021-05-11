@@ -57,7 +57,7 @@ contract('KODAV3Marketplace', function (accounts) {
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  describe("stepped auctions", () => {
+  describe.only("stepped auctions", () => {
 
     describe("listSteppedEditionAuction()", () => {
 
@@ -563,7 +563,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
       context("on successful conversion", () => {
 
-        it('emits an EditionListed event', async () => {
+        it('emits an ListedForBuyNow event', async () => {
 
           const edition = firstEditionTokenId;
           const listingPrice = _1_ETH;
@@ -575,8 +575,8 @@ contract('KODAV3Marketplace', function (accounts) {
               {from: minter}
           );
 
-          expectEvent(receipt, 'EditionListed', {
-            _editionId: edition,
+          expectEvent(receipt, 'ListedForBuyNow', {
+            _id: edition,
             _price: _1_ETH,
             _startDate: ZERO
           });
@@ -592,7 +592,7 @@ contract('KODAV3Marketplace', function (accounts) {
           await this.marketplace.convertSteppedAuctionToListing(edition, listingPrice, {from: minter});
 
           //address _seller, uint128 _listingPrice, uint128 _startDate
-          const listing = await this.marketplace.getEditionListing(edition);
+          const listing = await this.marketplace.getListing(edition);
           expect(listing._seller).to.be.equal(minter);
           expect(listing._listingPrice).to.be.bignumber.equal(_1_ETH);
           expect(listing._startDate).to.be.bignumber.equal(ZERO);

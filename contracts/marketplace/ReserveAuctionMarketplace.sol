@@ -23,7 +23,7 @@ interface IReserveAuctionMarketplace {
     function updateReservePriceForReserveAuction(uint256 _id, uint128 _reservePrice) external;
 }
 
-abstract contract ReserveAuctionMarketplace is BaseMarketplace, IReserveAuctionMarketplace {
+abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseMarketplace {
     event AdminUpdateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow);
     event AdminUpdateReserveAuctionLengthOnceReserveMet(uint128 _reserveAuctionLengthOnceReserveMet);
 
@@ -45,9 +45,6 @@ abstract contract ReserveAuctionMarketplace is BaseMarketplace, IReserveAuctionM
 
     /// @notice Length that bidding window remains open once the reserve price for an auction has been met
     uint128 public reserveAuctionLengthOnceReserveMet = 24 hours;
-
-    constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
-    BaseMarketplace(_accessControls, _koda, _platformAccount) {}
 
     function listForReserveAuction(
         address _creator,
@@ -210,12 +207,4 @@ abstract contract ReserveAuctionMarketplace is BaseMarketplace, IReserveAuctionM
         reserveAuction.bidder = address(0);
         reserveAuction.bid = 0;
     }
-
-    function _processSale(
-        uint256 _id,
-        uint256 _paymentAmount,
-        address _buyer,
-        address _seller,
-        bool _reverse
-    ) internal virtual returns (uint256);
 }

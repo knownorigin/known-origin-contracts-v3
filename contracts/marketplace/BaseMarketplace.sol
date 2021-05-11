@@ -9,7 +9,7 @@ import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
 /// @notice Core logic and state shared between both marketplaces
-contract BaseMarketplace is ReentrancyGuard, Pausable {
+abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     event AdminUpdateModulo(uint256 _modulo);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
     event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
@@ -87,8 +87,24 @@ contract BaseMarketplace is ReentrancyGuard, Pausable {
         platformAccount = _newPlatformAccount;
     }
 
+    function pause() public onlyAdmin {
+        super._pause();
+    }
+
+    function unpause() public onlyAdmin {
+        super._unpause();
+    }
+
     function _refundBidder(address _receiver, uint256 _paymentAmount) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
         require(success, "ETH refund failed");
     }
+
+    function _processSale(
+        uint256 _id,
+        uint256 _paymentAmount,
+        address _buyer,
+        address _seller,
+        bool _reverse
+    ) internal virtual returns (uint256);
 }

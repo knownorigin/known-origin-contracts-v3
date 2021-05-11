@@ -5,9 +5,15 @@ pragma solidity 0.8.3;
 import {IKODAV3SecondarySaleMarketplace} from "./IKODAV3Marketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
+import {BuyNowMarketplace} from "./BuyNowMarketplace.sol";
 import {ReserveAuctionMarketplace} from "./ReserveAuctionMarketplace.sol";
+import {BaseMarketplace} from "./BaseMarketplace.sol";
 
-contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, ReserveAuctionMarketplace {
+contract KODAV3SecondaryMarketplace is
+    IKODAV3SecondarySaleMarketplace,
+    BaseMarketplace,
+    BuyNowMarketplace,
+    ReserveAuctionMarketplace {
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
     event AdminUpdateSecondarySaleCommission(uint256 _platformSecondarySaleCommission);
 
@@ -17,18 +23,8 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, ReserveA
         uint256 lockupUntil;
     }
 
-    // buy now
-    struct Listing {
-        uint128 price;
-        uint128 startDate;
-        address seller;
-    }
-
     // Token ID to Offer mapping
     mapping(uint256 => Offer) public tokenOffers;
-
-    // Token ID to Listing
-    mapping(uint256 => Listing) public tokenListings;
 
     // Secondary sale commission
     uint256 public secondarySaleRoyalty = 12_50000; // 12.5%
@@ -36,25 +32,13 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, ReserveA
     uint256 public platformSecondarySaleCommission = 2_50000;  // 2.50000%
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
-    ReserveAuctionMarketplace(_accessControls, _koda, _platformAccount) {}
+    BaseMarketplace(_accessControls, _koda, _platformAccount) {}
 
-    function listToken(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate)
+    function listTokenForBuyNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate)
     public
-    override
+    // todo override
     whenNotPaused {
-        // Check ownership before listing
-        require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
-
-        // Check price over min bid
-        require(_listingPrice >= minBidAmount, "Listing price not enough");
-
-        // Ensure we are not overwriting a listing or it is listed as another type of auction
-        require(!isTokenListed(_tokenId), "Token is listed");
-
-        // List the token
-        tokenListings[_tokenId] = Listing(_listingPrice, _startDate, _msgSender());
-
-        emit TokenListed(_tokenId, _msgSender(), _listingPrice);
+        listForBuyNow(_msgSender(), _tokenId, _listingPrice, _startDate);
     }
 
     function delistToken(uint256 _tokenId)
@@ -62,53 +46,15 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, ReserveA
     override
     whenNotPaused {
         // check listing found
-        require(tokenListings[_tokenId].seller != address(0), "No listing found");
+        require(editionOrTokenListings[_tokenId].seller != address(0), "No listing found");
 
         // check owner is caller
         require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
 
         // remove the listing
-        delete tokenListings[_tokenId];
+        delete editionOrTokenListings[_tokenId];
 
         emit TokenDeListed(_tokenId);
-    }
-
-    function buyToken(uint256 _tokenId)
-    public
-    payable
-    override
-    whenNotPaused
-    nonReentrant {
-        _buyNow(_tokenId, _msgSender());
-    }
-
-    function buyTokenFor(uint256 _tokenId, address _recipient)
-    public
-    payable
-    override
-    whenNotPaused
-    nonReentrant {
-        _buyNow(_tokenId, _recipient);
-    }
-
-    function _buyNow(uint256 _tokenId, address _recipient) internal {
-        Listing storage listing = tokenListings[_tokenId];
-
-        require(address(0) != listing.seller, "No listing found");
-        require(msg.value >= listing.price, "List price not satisfied");
-        require(block.timestamp >= listing.startDate, "List not available yet");
-
-        // check current owner is the lister as it may have changed hands
-        address currentOwner = koda.ownerOf(_tokenId);
-        require(listing.seller == currentOwner, "Listing not valid, token owner has changed");
-
-        // trade the token
-        facilitateSecondarySale(_tokenId, msg.value, currentOwner, _recipient);
-
-        // remove the listing
-        delete tokenListings[_tokenId];
-
-        emit TokenPurchased(_tokenId, _recipient, currentOwner, msg.value);
     }
 
     // Secondary sale "offer" flow
@@ -191,7 +137,7 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, ReserveA
         address currentOwner = koda.ownerOf(_tokenId);
         require(currentOwner == _msgSender(), "Not current owner");
 
-        facilitateSecondarySale(_tokenId, offer.offer, currentOwner, offer.bidder);
+        _facilitateSecondarySale(_tokenId, offer.offer, currentOwner, offer.bidder);
 
         // clear open offer
         delete tokenOffers[_tokenId];
@@ -218,11 +164,11 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, ReserveA
     //////////////////////////////
 
     function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller, bool) internal override returns (uint256) {
-        facilitateSecondarySale(_id, _paymentAmount, _seller, _buyer);
+        _facilitateSecondarySale(_id, _paymentAmount, _seller, _buyer);
         return _id;
     }
 
-    function facilitateSecondarySale(uint256 _tokenId, uint256 _paymentAmount, address _seller, address _buyer) internal {
+    function _facilitateSecondarySale(uint256 _tokenId, uint256 _paymentAmount, address _seller, address _buyer) internal {
         (address royaltyRecipient,) = koda.royaltyInfo(_tokenId);
 
         // split money
@@ -255,29 +201,6 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, ReserveA
         require(success, "Token payment failed");
     }
 
-    // Token accessors
-
-    function getTokenListing(uint256 _tokenId) public view returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
-        Listing storage listing = tokenListings[_tokenId];
-        return (
-        listing.seller, // original seller
-        listing.price, // price
-        listing.startDate // date
-        );
-    }
-
-    function getTokenListingSeller(uint256 _tokenId) public view returns (address _seller) {
-        return tokenListings[_tokenId].seller;
-    }
-
-    function getTokenListingPrice(uint256 _tokenId) public view returns (uint128 _listingPrice) {
-        return tokenListings[_tokenId].price;
-    }
-
-    function getTokenListingDate(uint256 _tokenId) public view returns (uint128 _startDate) {
-        return tokenListings[_tokenId].startDate;
-    }
-
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
     public
     //override
@@ -299,7 +222,7 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, ReserveA
         // Check price over min bid
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
-        tokenListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
+        editionOrTokenListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
 
         emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
     }
@@ -334,19 +257,11 @@ contract KODAV3SecondaryMarketplace is IKODAV3SecondarySaleMarketplace, ReserveA
         emit AdminUpdateSecondaryRoyalty(_secondarySaleRoyalty);
     }
 
-    function pause() public onlyAdmin {
-        super._pause();
-    }
-
-    function unpause() public onlyAdmin {
-        super._unpause();
-    }
-
     // internal
 
     // as offers are always possible, we wont count it as a listing
     function isTokenListed(uint256 _tokenId) internal view returns (bool) {
-        if (tokenListings[_tokenId].seller != address(0)) {
+        if (editionOrTokenListings[_tokenId].seller != address(0)) {
             return true;
         }
 
