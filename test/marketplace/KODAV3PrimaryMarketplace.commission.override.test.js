@@ -57,7 +57,7 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
       it('Updates the override as admin', async () => {
         const {receipt} = await this.marketplace.setKoCommissionOverrideForReceiver(minter, commissionOverride, {from: admin})
 
-        await expectEvent(receipt, 'AdminSetKoCommissionOverride', {
+        await expectEvent(receipt, 'AdminSetKoCommissionOverrideForReceiver', {
           _receiver: minter,
           _koCommission: commissionOverride
         })
@@ -66,6 +66,68 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
       it('Reverts when not admin', async () => {
         await expectRevert(
           this.marketplace.setKoCommissionOverrideForReceiver(minter, commissionOverride, {from: collectorA}),
+          "Caller not admin"
+        )
+      })
+    })
+
+    describe('deactivateKOCommissionOverrideForReceiver()', () => {
+      it('Deactivates as admin', async () => {
+        // set the commission override
+        await this.marketplace.setKoCommissionOverrideForReceiver(minter, commissionOverride, {from: admin})
+
+        // check the override is valid
+        const koCommissionOverrideForReceiver = await this.marketplace.koCommissionOverrideForReceivers(minter)
+        expect(koCommissionOverrideForReceiver.active).to.be.true
+        expect(koCommissionOverrideForReceiver.koCommission).to.be.bignumber.equal(commissionOverride)
+
+        await this.marketplace.deactivateKOCommissionOverrideForReceiver(minter)
+        expect((await this.marketplace.koCommissionOverrideForReceivers(minter)).active).to.be.false
+      })
+
+      it('Reverts when not admin', async () => {
+        await expectRevert(
+          this.marketplace.deactivateKOCommissionOverrideForReceiver(minter, {from: collectorA}),
+          "Caller not admin"
+        )
+      })
+    })
+
+    describe('setKoCommissionOverrideForEdition()', () => {
+      it('Updates the override as admin', async () => {
+        const {receipt} = await this.marketplace.setKoCommissionOverrideForEdition(firstEditionTokenId, commissionOverride, {from: admin})
+
+        await expectEvent(receipt, 'AdminSetKoCommissionOverrideForEdition', {
+          _editionId: firstEditionTokenId,
+          _koCommission: commissionOverride
+        })
+      })
+
+      it('Reverts when not admin', async () => {
+        await expectRevert(
+          this.marketplace.setKoCommissionOverrideForEdition(firstEditionTokenId, commissionOverride, {from: collectorA}),
+          "Caller not admin"
+        )
+      })
+    })
+
+    describe('deactivateKOCommissionOverrideForReceiver()', () => {
+      it('Deactivates as admin', async () => {
+        // set the commission override
+        await this.marketplace.setKoCommissionOverrideForEdition(firstEditionTokenId, commissionOverride, {from: admin})
+
+        // check the override is valid
+        const koCommissionOverrideForEdition = await this.marketplace.koCommissionOverrideForEditions(firstEditionTokenId)
+        expect(koCommissionOverrideForEdition.active).to.be.true
+        expect(koCommissionOverrideForEdition.koCommission).to.be.bignumber.equal(commissionOverride)
+
+        await this.marketplace.deactivateKOCommissionOverrideForEdition(firstEditionTokenId)
+        expect((await this.marketplace.koCommissionOverrideForEditions(firstEditionTokenId)).active).to.be.false
+      })
+
+      it('Reverts when not admin', async () => {
+        await expectRevert(
+          this.marketplace.deactivateKOCommissionOverrideForReceiver(minter, {from: collectorA}),
           "Caller not admin"
         )
       })
@@ -134,6 +196,42 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
 
       expect(await platformTracker.delta()).to.be.bignumber.equal(_0_1_ETH)
       expect(await minterTracker.delta()).to.be.bignumber.equal('0')
+    })
+
+    it('Edition override takes precedence over receiver override', async () => {
+      await this.marketplace.setKoCommissionOverrideForReceiver(minter, commissionOverride, {from: admin})
+
+      await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+      await this.token.mintBatchEdition(3, minter, 'random', {from: contract});
+
+      this.start = await time.latest();
+      await this.marketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, this.start, {from: contract});
+
+      let minterTracker = await balance.tracker(minter)
+      let platformTracker = await balance.tracker(koCommission)
+
+      // first purchase will use the receiver override
+      await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: _0_1_ETH})
+
+      let platformCommission = _0_1_ETH.divn(10000000).mul(commissionOverride)
+      expect(await platformTracker.delta()).to.be.bignumber.equal(platformCommission)
+
+      expect(await minterTracker.delta()).to.be.bignumber.equal(_0_1_ETH.sub(platformCommission))
+
+      const editionCommissionOverride = new BN('8000000')
+      await this.marketplace.setKoCommissionOverrideForEdition(firstEditionTokenId, editionCommissionOverride, {from: admin})
+
+      minterTracker = await balance.tracker(minter)
+      platformTracker = await balance.tracker(koCommission)
+
+      // second purchase should use the edition override
+      await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: _0_1_ETH})
+
+      platformCommission = _0_1_ETH.divn(10000000).mul(editionCommissionOverride)
+      expect(await platformTracker.delta()).to.be.bignumber.equal(platformCommission)
+
+      expect(await minterTracker.delta()).to.be.bignumber.equal(_0_1_ETH.sub(platformCommission))
     })
   })
 
