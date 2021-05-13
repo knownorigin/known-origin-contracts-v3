@@ -20,7 +20,10 @@ contract KODAV3PrimaryMarketplace is
     ReserveAuctionMarketplace,
     BuyNowMarketplace {
 
-    event AdminSetKoCommissionOverride(address indexed _receiver, uint256 _koCommission);
+    event AdminSetKoCommissionOverrideForReceiver(address indexed _receiver, uint256 _koCommission);
+    event AdminDeactivateKoCommissionOverrideForReceiver(address indexed _receiver);
+    event AdminSetKoCommissionOverrideForEdition(uint256 indexed _editionId, uint256 _koCommission);
+    event AdminDeactivateKoCommissionOverrideForEdition(uint256 indexed _editionId);
 
     // KO Commission override definition for a given creator
     struct KOCommissionOverride {
@@ -44,8 +47,11 @@ contract KODAV3PrimaryMarketplace is
         uint16 currentStep;
     }
 
-    /// @notice primary sale proceed address
-    mapping(address => KOCommissionOverride) public koCommissionOverrides;
+    /// @notice Edition ID -> KO commission override set by admin
+    mapping(uint256 => KOCommissionOverride) public koCommissionOverrideForEditions;
+
+    /// @notice primary sale receiver -> KO commission override set by admin
+    mapping(address => KOCommissionOverride) public koCommissionOverrideForReceivers;
 
     /// @notice Edition ID to Offer mapping
     mapping(uint256 => Offer) public editionOffers;
@@ -405,11 +411,29 @@ contract KODAV3PrimaryMarketplace is
     }
 
     function setKoCommissionOverrideForReceiver(address _receiver, uint256 _koCommission) public onlyAdmin {
-        KOCommissionOverride storage koCommissionOverride = koCommissionOverrides[_receiver];
+        KOCommissionOverride storage koCommissionOverride = koCommissionOverrideForReceivers[_receiver];
         koCommissionOverride.active = true;
         koCommissionOverride.koCommission = _koCommission;
 
-        emit AdminSetKoCommissionOverride(_receiver, _koCommission);
+        emit AdminSetKoCommissionOverrideForReceiver(_receiver, _koCommission);
+    }
+
+    function deactivateKOCommissionOverrideForReceiver(address _receiver) public onlyAdmin {
+        koCommissionOverrideForReceivers[_receiver].active = false;
+        emit AdminDeactivateKoCommissionOverrideForReceiver(_receiver);
+    }
+
+    function setKoCommissionOverrideForEdition(uint256 _editionId, uint256 _koCommission) public onlyAdmin {
+        KOCommissionOverride storage koCommissionOverride = koCommissionOverrideForEditions[_editionId];
+        koCommissionOverride.active = true;
+        koCommissionOverride.koCommission = _koCommission;
+
+        emit AdminSetKoCommissionOverrideForEdition(_editionId, _koCommission);
+    }
+
+    function deactivateKOCommissionOverrideForEdition(uint256 _editionId) public onlyAdmin {
+        koCommissionOverrideForEditions[_editionId].active = false;
+        emit AdminDeactivateKoCommissionOverrideForEdition(_editionId);
     }
 
     // internal
@@ -426,7 +450,7 @@ contract KODAV3PrimaryMarketplace is
             : koda.facilitateNextPrimarySale(_editionId);
 
         // split money
-        _handleEditionSaleFunds(receiver, _paymentAmount);
+        _handleEditionSaleFunds(_editionId, receiver, _paymentAmount);
 
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, _buyer, tokenId);
@@ -436,11 +460,13 @@ contract KODAV3PrimaryMarketplace is
         return tokenId;
     }
 
-    function _handleEditionSaleFunds(address _receiver, uint256 _paymentAmount) internal {
+    function _handleEditionSaleFunds(uint256 _editionId, address _receiver, uint256 _paymentAmount) internal {
         uint256 primarySaleCommission;
 
-        if (koCommissionOverrides[_receiver].active) {
-            primarySaleCommission = koCommissionOverrides[_receiver].koCommission;
+        if (koCommissionOverrideForEditions[_editionId].active) {
+            primarySaleCommission = koCommissionOverrideForEditions[_editionId].koCommission;
+        } else if (koCommissionOverrideForReceivers[_receiver].active) {
+            primarySaleCommission = koCommissionOverrideForReceivers[_receiver].koCommission;
         } else {
             primarySaleCommission = platformPrimarySaleCommission;
         }

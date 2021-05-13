@@ -17,6 +17,8 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     event AdminUpdatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission);
     event AdminUpdateBidLockupPeriod(uint256 _bidLockupPeriod);
     event AdminUpdatePlatformAccount(address indexed _oldAddress, address indexed _newAddress);
+    event AdminRecoverERC20(IERC20 indexed token, address indexed recipient, uint256 amount);
+    event AdminRecoverETH(address payable indexed recipient, uint256 amount);
 
     // Only a whitelisted smart contract in the access controls contract
     modifier onlyContract() {
@@ -63,9 +65,14 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         platformAccount = _platformAccount;
     }
 
-    // FIXME admin functions for fixing issues/draining tokens & ETH
     function recoverERC20(IERC20 _token, address _recipient, uint256 _amount) public onlyAdmin {
         _token.transfer(_recipient, _amount);
+        emit AdminRecoverERC20(_token, _recipient, _amount);
+    }
+
+    function recoverStuckETH(address payable _recipient, uint256 _amount) public onlyAdmin {
+        _recipient.call{value: _amount}("");
+        emit AdminRecoverETH(_recipient, _amount);
     }
 
     function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {
