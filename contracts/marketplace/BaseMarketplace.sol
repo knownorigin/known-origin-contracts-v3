@@ -4,6 +4,7 @@ pragma solidity 0.8.3;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
@@ -60,6 +61,11 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         koda = _koda;
         accessControls = _accessControls;
         platformAccount = _platformAccount;
+    }
+
+    // FIXME admin functions for fixing issues/draining tokens & ETH
+    function recoverERC20(IERC20 _token, address _recipient, uint256 _amount) public onlyAdmin {
+        _token.transfer(_recipient, _amount);
     }
 
     function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {

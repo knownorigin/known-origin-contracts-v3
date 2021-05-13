@@ -6,22 +6,7 @@ import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
 import {BaseMarketplace} from "./BaseMarketplace.sol";
-
-interface IReserveAuctionMarketplace {
-    event ListedForReserveAuction(uint256 indexed _id, uint256 _reservePrice, uint128 _startDate);
-    event BidPlacedOnReserveAuction(uint256 indexed _id, address indexed _bidder, uint256 _amount);
-    event ReserveAuctionResulted(uint256 indexed _id, uint256 _finalPrice, address indexed _winner, address indexed _resulter);
-    event BidWithdrawnFromReserveAuction(uint256 _id, address indexed _bidder, uint128 _bid);
-    event ReservePriceUpdated(uint256 indexed _id, uint256 _reservePrice);
-    event ReserveAuctionConvertedToBuyItNow(uint256 indexed _id, uint128 _listingPrice, uint128 _startDate);
-    event EmergencyBidWithdrawFromReserveAuction(uint256 indexed _id, address _bidder, uint128 _bid);
-
-    function placeBidOnReserveAuction(uint256 _id) external payable;
-    function listForReserveAuction(address _creator, uint256 _id, uint128 _reservePrice, uint128 _startDate) external;
-    function resultReserveAuction(uint256 _id) external;
-    function withdrawBidFromReserveAuction(uint256 _id) external;
-    function updateReservePriceForReserveAuction(uint256 _id, uint128 _reservePrice) external;
-}
+import {IReserveAuctionMarketplace} from "./IKODAV3Marketplace.sol";
 
 abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseMarketplace {
     event AdminUpdateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow);

@@ -68,11 +68,9 @@ contract KODAV3PrimaryMarketplace is
     //  - approvals go astray/removed - approvals may need to be mapped in subgraph
     //  - when an edition sells out - implicit failure due to creator not owning anymore - we dont explicitly check remaining due to GAS
 
-    // FIXME admin functions for fixing issues/draining tokens & ETH
-
     function setBuyNowPriceListing(uint256 _editionId, uint128 _listingPrice)
     public
-    // todo override
+    override
     whenNotPaused {
         _setBuyNowPriceListing(_editionId, _listingPrice);
     }

@@ -36,7 +36,7 @@ contract KODAV3SecondaryMarketplace is
 
     function listTokenForBuyNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate)
     public
-    // todo override
+    override
     whenNotPaused {
         listForBuyNow(_msgSender(), _tokenId, _listingPrice, _startDate);
     }

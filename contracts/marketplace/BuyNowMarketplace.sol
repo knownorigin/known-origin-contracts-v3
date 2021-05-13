@@ -3,21 +3,7 @@
 pragma solidity 0.8.3;
 
 import {BaseMarketplace} from "./BaseMarketplace.sol";
-
-interface IBuyNowMarketplace {
-    event ListedForBuyNow(uint256 indexed _id, uint256 _price, uint256 _startDate);
-    event BuyNowPriceChanged(uint256 indexed _id, uint256 _price);
-    event BuyNowDeListed(uint256 indexed _id);
-    event BuyNowPurchased(uint256 indexed _tokenId, address indexed _buyer, uint256 _price);
-
-    function listForBuyNow(address _creator, uint256 _id, uint128 _listingPrice, uint128 _startDate) external;
-
-    function buyEditionToken(uint256 _id) external payable;
-
-    function buyEditionTokenFor(uint256 _id, address _recipient) external payable;
-
-    //function setBuyNowPriceListing(uint256 _id, uint128 _listingPrice) external;
-}
+import {IBuyNowMarketplace} from "./IKODAV3Marketplace.sol";
 
 // "buy now" sale flow
 abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
