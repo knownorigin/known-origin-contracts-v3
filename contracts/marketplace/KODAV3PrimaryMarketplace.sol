@@ -20,6 +20,7 @@ contract KODAV3PrimaryMarketplace is
     ReserveAuctionMarketplace,
     BuyNowMarketplace {
 
+    event PrimaryMarketplaceDeployed();
     event AdminSetKoCommissionOverrideForReceiver(address indexed _receiver, uint256 _koCommission);
     event AdminDeactivateKoCommissionOverrideForReceiver(address indexed _receiver);
     event AdminSetKoCommissionOverrideForEdition(uint256 indexed _editionId, uint256 _koCommission);
@@ -67,7 +68,7 @@ contract KODAV3PrimaryMarketplace is
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
     BaseMarketplace(_accessControls, _koda, _platformAccount) {
-        //todo event on construction
+        emit PrimaryMarketplaceDeployed();
     }
 
     // assumes frontend protects against from these things from being called when:

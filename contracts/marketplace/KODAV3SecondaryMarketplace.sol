@@ -14,6 +14,8 @@ contract KODAV3SecondaryMarketplace is
     BaseMarketplace,
     BuyNowMarketplace,
     ReserveAuctionMarketplace {
+
+    event SecondaryMarketplaceDeployed();
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
     event AdminUpdateSecondarySaleCommission(uint256 _platformSecondarySaleCommission);
 
@@ -33,7 +35,7 @@ contract KODAV3SecondaryMarketplace is
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
     BaseMarketplace(_accessControls, _koda, _platformAccount) {
-        //todo event on construction
+        emit SecondaryMarketplaceDeployed();
     }
 
     function listTokenForBuyNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate)
