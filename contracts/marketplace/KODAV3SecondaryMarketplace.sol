@@ -69,7 +69,7 @@ contract KODAV3SecondaryMarketplace is
     override
     whenNotPaused
     nonReentrant {
-        require(!isTokenListed(_tokenId), "Token is listed");
+        require(!_isTokenListed(_tokenId), "Token is listed");
 
         // Check for highest offer
         Offer storage offer = tokenOffers[_tokenId];
@@ -81,7 +81,7 @@ contract KODAV3SecondaryMarketplace is
         }
 
         // setup offer
-        tokenOffers[_tokenId] = Offer(msg.value, _msgSender(), getLockupTime());
+        tokenOffers[_tokenId] = Offer(msg.value, _msgSender(), _getLockupTime());
 
         emit TokenBidPlaced(_tokenId, koda.ownerOf(_tokenId), _msgSender(), msg.value);
     }
@@ -166,11 +166,6 @@ contract KODAV3SecondaryMarketplace is
     //////////////////////////////
     // Secondary sale "helpers" //
     //////////////////////////////
-
-    function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller, bool) internal override returns (uint256) {
-        _facilitateSecondarySale(_id, _paymentAmount, _seller, _buyer);
-        return _id;
-    }
 
     function _facilitateSecondarySale(uint256 _tokenId, uint256 _paymentAmount, address _seller, address _buyer) internal {
         (address royaltyRecipient,) = koda.royaltyInfo(_tokenId);
@@ -266,8 +261,27 @@ contract KODAV3SecondaryMarketplace is
 
     // internal
 
+    function _isListingPermitted(uint256 _tokenId) internal override returns (bool) {
+        return !_isTokenListed(_tokenId);
+    }
+
+    function _isReserveListingPermitted(uint256 _tokenId) internal override returns (bool) {
+        return koda.ownerOf(_tokenId) == _msgSender();
+    }
+
+    function _processSale(
+        uint256 _tokenId,
+        uint256 _paymentAmount,
+        address _buyer,
+        address _seller,
+        bool
+    ) internal override returns (uint256) {
+        _facilitateSecondarySale(_tokenId, _paymentAmount, _seller, _buyer);
+        return _tokenId;
+    }
+
     // as offers are always possible, we wont count it as a listing
-    function isTokenListed(uint256 _tokenId) internal view returns (bool) {
+    function _isTokenListed(uint256 _tokenId) internal view returns (bool) {
         if (editionOrTokenListings[_tokenId].seller != address(0)) {
             return true;
         }
@@ -279,7 +293,7 @@ contract KODAV3SecondaryMarketplace is
         return false;
     }
 
-    function getLockupTime() internal view returns (uint256 lockupUntil) {
+    function _getLockupTime() internal view returns (uint256 lockupUntil) {
         lockupUntil = block.timestamp + bidLockupPeriod;
     }
 }

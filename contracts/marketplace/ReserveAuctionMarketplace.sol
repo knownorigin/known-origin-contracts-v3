@@ -38,10 +38,10 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         uint128 _startDate
     ) public
     override
-    whenNotPaused
-    onlyContract { // todo only contract or owner like buy now marketplace
-        require(editionOrTokenWithReserveAuctions[_id].reservePrice == 0, "Auction already in flight");
-        require(koda.getSizeOfEdition(_id) == 1, "Only 1 of 1 editions are supported"); // todo discuss primary vs secondary
+    whenNotPaused {
+        require(_isListingPermitted(_id), "Listing not permitted");
+
+        require(_isReserveListingPermitted(_id), "Reserve listing not permitted");
         require(_reservePrice >= minBidAmount, "Reserve price must be at least min bid");
 
         editionOrTokenWithReserveAuctions[_id] = ReserveAuction({
@@ -174,6 +174,8 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         emit AdminUpdateReserveAuctionLengthOnceReserveMet(_reserveAuctionLengthOnceReserveMet);
     }
 
+    function _isReserveListingPermitted(uint256 _id) internal virtual returns (bool);
+
     function _emergencyExitBidFromReserveAuction(uint256 _id) internal {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
 
@@ -191,9 +193,6 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
         emit EmergencyBidWithdrawFromReserveAuction(_id, reserveAuction.bidder, reserveAuction.bid);
 
-        reserveAuction.bidder = address(0);
-        reserveAuction.bid = 0;
-
-        // todo clear struct
+        delete editionOrTokenWithReserveAuctions[_id];
     }
 }

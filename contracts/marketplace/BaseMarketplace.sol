@@ -113,6 +113,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         require(success, "ETH refund failed");
     }
 
+    /// @dev This allows the processing of a marketplace sale to be delegated higher up the inheritance hierarchy
     function _processSale(
         uint256 _id,
         uint256 _paymentAmount,
@@ -120,4 +121,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         address _seller,
         bool _reverse
     ) internal virtual returns (uint256);
+
+    /// @dev This allows an auction mechanic to ask a marketplace if a new listing is permitted i.e. this could be false if the edition or token is already listed under a different mechanic
+    function _isListingPermitted(uint256 _id) internal virtual returns (bool);
 }

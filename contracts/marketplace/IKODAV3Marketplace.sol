@@ -12,9 +12,7 @@ interface IBuyNowMarketplace {
     function buyEditionToken(uint256 _id) external payable;
 
     function buyEditionTokenFor(uint256 _id, address _recipient) external payable;
-}
 
-interface IBuyNowPrimaryMarketplace {
     function setBuyNowPriceListing(uint256 _editionId, uint128 _listingPrice) external;
 }
 
@@ -73,7 +71,7 @@ interface IReserveAuctionMarketplace {
     function updateReservePriceForReserveAuction(uint256 _id, uint128 _reservePrice) external;
 }
 
-interface IKODAV3PrimarySaleMarketplace is IEditionSteppedMarketplace, IEditionOffersMarketplace, IReserveAuctionExit, IBuyNowPrimaryMarketplace {
+interface IKODAV3PrimarySaleMarketplace is IEditionSteppedMarketplace, IEditionOffersMarketplace, IReserveAuctionExit {
     // combo
 }
 

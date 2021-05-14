@@ -77,13 +77,6 @@ contract KODAV3PrimaryMarketplace is
     //  - approvals go astray/removed - approvals may need to be mapped in subgraph
     //  - when an edition sells out - implicit failure due to creator not owning anymore - we dont explicitly check remaining due to GAS
 
-    function setBuyNowPriceListing(uint256 _editionId, uint128 _listingPrice)
-    public
-    override
-    whenNotPaused {
-        _setBuyNowPriceListing(_editionId, _listingPrice);
-    }
-
     // convert from a "buy now" listing and converting to "accepting offers" with an optional start date
     function convertFromBuyNowToOffers(uint256 _editionId, uint128 _startDate)
     public
@@ -443,6 +436,14 @@ contract KODAV3PrimaryMarketplace is
     }
 
     // internal
+
+    function _isListingPermitted(uint256 _editionId) internal override returns (bool) {
+        return !_isEditionListed(_editionId);
+    }
+
+    function _isReserveListingPermitted(uint256 _editionId) internal override returns (bool) {
+        return koda.getSizeOfEdition(_editionId) == 1 && accessControls.hasContractRole(_msgSender());
+    }
 
     function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller, bool _reverse) internal override returns (uint256) {
         return _facilitateNextPrimarySale(_id, _paymentAmount, _buyer, _reverse);
