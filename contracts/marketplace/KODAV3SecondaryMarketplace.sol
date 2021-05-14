@@ -241,6 +241,7 @@ contract KODAV3SecondaryMarketplace is
             address(this)
         );
 
+        // todo test on last case
         require(
             !isApprovalActiveForMarketplace || koda.ownerOf(_tokenId) != editionOrTokenWithReserveAuctions[_tokenId].seller,
             "Bid cannot be withdrawn as reserve auction listing is valid"

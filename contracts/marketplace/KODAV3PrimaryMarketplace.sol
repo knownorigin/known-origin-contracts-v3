@@ -374,9 +374,10 @@ contract KODAV3PrimaryMarketplace is
             editionOrTokenWithReserveAuctions[_editionId].seller,
             address(this)
         );
-        // todo are there any primary tokens left for sale
+
+        // todo test on last case
         require(
-            !isApprovalActiveForMarketplace || koda.getEditionSalesDisabled(_editionId),
+            !isApprovalActiveForMarketplace || koda.isSalesDisabledOrSoldOut(_editionId),
             "Bid cannot be withdrawn as reserve auction listing is valid"
         );
 
