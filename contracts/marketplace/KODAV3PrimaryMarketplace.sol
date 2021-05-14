@@ -94,6 +94,7 @@ contract KODAV3PrimaryMarketplace is
         editionOffersStartDate[_editionId] = _startDate;
 
         // Emit event
+        // todo emit a conversion event rather than the main enable event
         emit EditionAcceptingOffer(_editionId, _startDate);
     }
 
@@ -325,10 +326,34 @@ contract KODAV3PrimaryMarketplace is
         editionOrTokenListings[_editionId] = Listing(_listingPrice, 0, steppedAuction.seller);
 
         // emit event
+        // todo emit a conversion event rather than the same as if it was listed for buy now from the start
         emit ListedForBuyNow(_editionId, _listingPrice, 0);
 
         // Clear up the step logic
         delete editionStep[_editionId];
+    }
+
+    function convertSteppedAuctionToOffers(uint256 _editionId, uint128 _startDate)
+    public
+    // todo add to interface - override
+    nonReentrant
+    whenNotPaused {
+        Stepped storage steppedAuction = editionStep[_editionId];
+
+        // This will also catch no listing as seller wont be set
+        require(
+            steppedAuction.seller == _msgSender() || accessControls.hasContractRole(_msgSender()),
+            "Only seller or contract"
+        );
+        require(steppedAuction.currentStep == 0, "Sale has been made");
+
+        // set the start date for the offer (optional)
+        editionOffersStartDate[_editionId] = _startDate;
+
+        // Clear up the step logic
+        delete editionStep[_editionId];
+
+        // todo emit a conversion event
     }
 
     // todo convert straight to offers from stepped and reserve
@@ -380,14 +405,19 @@ contract KODAV3PrimaryMarketplace is
 
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
     public
-    //override
+    //todo add to interface - override
     whenNotPaused
     nonReentrant {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_editionId];
 
         require(reserveAuction.reservePrice > 0, "No active auction");
         require(reserveAuction.bid < reserveAuction.reservePrice, "Can only convert before reserve met");
-        require(reserveAuction.seller == _msgSender(), "Not the seller");
+
+        require(
+            reserveAuction.seller == _msgSender() || accessControls.hasContractRole(_msgSender()),
+            "Not the seller or contract"
+        );
+
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         // refund any bids
@@ -400,6 +430,34 @@ contract KODAV3PrimaryMarketplace is
         editionOrTokenListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
 
         emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
+    }
+
+    function convertReserveAuctionToOffers(uint256 _editionId, uint128 _startDate)
+    public
+    //todo add to interface - override
+    whenNotPaused
+    nonReentrant {
+        ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_editionId];
+
+        require(reserveAuction.reservePrice > 0, "No active auction");
+        require(reserveAuction.bid < reserveAuction.reservePrice, "Can only convert before reserve met");
+        require(
+            reserveAuction.seller == _msgSender() || accessControls.hasContractRole(_msgSender()),
+            "Not the seller or contract"
+        );
+
+        // refund any bids
+        if (reserveAuction.bid > 0) {
+            _refundBidder(reserveAuction.bidder, reserveAuction.bid);
+        }
+
+        delete editionOrTokenWithReserveAuctions[_editionId];
+
+        // set the start date for the offer (optional)
+        editionOffersStartDate[_editionId] = _startDate;
+
+        // todo emit a conversion event
+        //emit ReserveAuctionConvertedToOffers(_editionId, _listingPrice, _startDate);
     }
 
     // admin

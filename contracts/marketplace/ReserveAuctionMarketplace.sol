@@ -40,7 +40,6 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
     override
     whenNotPaused {
         require(_isListingPermitted(_id), "Listing not permitted");
-
         require(_isReserveListingPermitted(_id), "Reserve listing not permitted");
         require(_reservePrice >= minBidAmount, "Reserve price must be at least min bid");
 
