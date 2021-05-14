@@ -32,7 +32,9 @@ contract KODAV3SecondaryMarketplace is
     uint256 public platformSecondarySaleCommission = 2_50000;  // 2.50000%
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
-    BaseMarketplace(_accessControls, _koda, _platformAccount) {}
+    BaseMarketplace(_accessControls, _koda, _platformAccount) {
+        //todo event on construction
+    }
 
     function listTokenForBuyNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate)
     public
@@ -227,22 +229,24 @@ contract KODAV3SecondaryMarketplace is
         emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
     }
 
-    function emergencyExitBidFromReserveAuction(uint256 _editionId)
+    // todo convert straight to offers from and reserve
+
+    function emergencyExitBidFromReserveAuction(uint256 _tokenId)
     public
     override
     whenNotPaused
     nonReentrant {
         bool isApprovalActiveForMarketplace = koda.isApprovedForAll(
-            editionOrTokenWithReserveAuctions[_editionId].seller,
+            editionOrTokenWithReserveAuctions[_tokenId].seller,
             address(this)
         );
 
         require(
-            !isApprovalActiveForMarketplace,
+            !isApprovalActiveForMarketplace || koda.ownerOf(_tokenId) != editionOrTokenWithReserveAuctions[_tokenId].seller,
             "Bid cannot be withdrawn as reserve auction listing is valid"
         );
 
-        _emergencyExitBidFromReserveAuction(_editionId);
+        _emergencyExitBidFromReserveAuction(_tokenId);
     }
 
     // Admin Methods

@@ -39,9 +39,9 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
     ) public
     override
     whenNotPaused
-    onlyContract {
+    onlyContract { // todo only contract or owner like buy now marketplace
         require(editionOrTokenWithReserveAuctions[_id].reservePrice == 0, "Auction already in flight");
-        require(koda.getSizeOfEdition(_id) == 1, "Only 1 of 1 editions are supported");
+        require(koda.getSizeOfEdition(_id) == 1, "Only 1 of 1 editions are supported"); // todo discuss primary vs secondary
         require(_reservePrice >= minBidAmount, "Reserve price must be at least min bid");
 
         editionOrTokenWithReserveAuctions[_id] = ReserveAuction({
@@ -157,6 +157,8 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         require(reserveAuction.bid == 0, "Due to the active bid the reserve cannot be adjusted");
         require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
 
+        // todo allow when bids in flight and trigger countdown if we go below active bid in flight
+
         reserveAuction.reservePrice = _reservePrice;
 
         emit ReservePriceUpdated(_id, _reservePrice);
@@ -191,5 +193,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
         reserveAuction.bidder = address(0);
         reserveAuction.bid = 0;
+
+        // todo clear struct
     }
 }

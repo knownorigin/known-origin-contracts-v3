@@ -621,95 +621,108 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('updateModulo()', () => {
-      const new_modulo = new BN('10000');
+    describe('emergencyExitBidFromReserveAuction()', () => {
+      beforeEach(async () => {
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
-      it('updates the reserve auction length as admin', async () => {
-        const {receipt} = await this.marketplace.updateModulo(new_modulo, {from: owner})
+        // reserve is only for 1 of 1
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
 
-        await expectEvent(receipt, 'AdminUpdateModulo', {
-          _modulo: new_modulo
+        // list the token for reserve auction
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract})
+
+        // mint another batch of tokens for further testing
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+      })
+
+      describe('when bid placed', () => {
+        const bid = ether('0.5')
+
+        beforeEach(async () => {
+          await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: bid})
+        })
+
+        describe('As seller', () => {
+          it('Can emergency exit if approval removed', async () => {
+            await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+            const bidder1Tracker = await balance.tracker(bidder1)
+
+            await this.marketplace.emergencyExitBidFromReserveAuction(FIRST_TOKEN_ID, {from: minter})
+
+            expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
+          })
+        })
+
+        describe('As bidder', () => {
+          it('Can emergency exit if approval removed', async () => {
+            await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+            const bidder1Tracker = await balance.tracker(bidder1)
+
+            const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString())
+            const tx = await this.marketplace.emergencyExitBidFromReserveAuction(FIRST_TOKEN_ID, {from: bidder1, gasPrice})
+
+            const gasUsed = new BN( tx.receipt.cumulativeGasUsed );
+            const txCost = gasUsed.mul(gasPrice);
+            expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid.sub(txCost))
+          })
+        })
+
+        describe('As contract', () => {
+          it('Can emergency exit if approval removed', async () => {
+            await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+            const bidder1Tracker = await balance.tracker(bidder1)
+
+            await this.marketplace.emergencyExitBidFromReserveAuction(FIRST_TOKEN_ID, {from: contract})
+
+            expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
+          })
+        })
+
+        describe('As platform admin', () => {
+          it('Can emergency exit if approval removed', async () => {
+            await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+            const bidder1Tracker = await balance.tracker(bidder1)
+
+            await this.marketplace.emergencyExitBidFromReserveAuction(FIRST_TOKEN_ID, {from: owner})
+
+            expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
+          })
+        })
+
+        it('Reverts when listing is still valid', async () => {
+          await expectRevert(
+            this.marketplace.emergencyExitBidFromReserveAuction(FIRST_TOKEN_ID),
+            "Bid cannot be withdrawn as reserve auction listing is valid"
+          )
+        })
+
+        it('Reverts when not on approved list of callers', async () => {
+          await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+          await expectRevert(
+            this.marketplace.emergencyExitBidFromReserveAuction(FIRST_TOKEN_ID, {from: koCommission}),
+            "Only seller, bidder, contract or platform admin"
+          )
         })
       })
 
-      it('Reverts when not admin', async () => {
+      it('Reverts when no auction in flight', async () => {
         await expectRevert(
-          this.marketplace.updateModulo(new_modulo, {from: bidder1}),
-          "Caller not admin"
+          this.marketplace.emergencyExitBidFromReserveAuction(SECOND_TOKEN_ID),
+          "No reserve auction in flight"
         )
       })
-    })
 
-    describe('updateMinBidAmount()', () => {
-      const new_min_bid = ether('0.3');
+      it('Reverts when no bid in flight', async () => {
+        await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
 
-      it('updates the reserve auction length as admin', async () => {
-        const {receipt} = await this.marketplace.updateMinBidAmount(new_min_bid, {from: owner})
-
-        await expectEvent(receipt, 'AdminUpdateMinBidAmount', {
-          _minBidAmount: new_min_bid
-        })
-      })
-
-      it('Reverts when not admin', async () => {
         await expectRevert(
-          this.marketplace.updateMinBidAmount(new_min_bid, {from: bidder1}),
-          "Caller not admin"
-        )
-      })
-    })
-
-    describe('updateAccessControls()', () => {
-      it('updates the reserve auction length as admin', async () => {
-        const {receipt} = await this.marketplace.updateAccessControls(newAccessControls, {from: owner})
-
-        await expectEvent(receipt, 'AdminUpdateAccessControls', {
-          _oldAddress: this.accessControls.address,
-          _newAddress: newAccessControls
-        })
-      })
-
-      it('Reverts when not admin', async () => {
-        await expectRevert(
-          this.marketplace.updateAccessControls(newAccessControls, {from: bidder1}),
-          "Caller not admin"
-        )
-      })
-    })
-
-    describe('updateBidLockupPeriod()', () => {
-      const new_lock_up = ether((6 * 60).toString());
-
-      it('updates the reserve auction length as admin', async () => {
-        const {receipt} = await this.marketplace.updateBidLockupPeriod(new_lock_up, {from: owner})
-
-        await expectEvent(receipt, 'AdminUpdateBidLockupPeriod', {
-          _bidLockupPeriod: new_lock_up
-        })
-      })
-
-      it('Reverts when not admin', async () => {
-        await expectRevert(
-          this.marketplace.updateBidLockupPeriod(new_lock_up, {from: bidder1}),
-          "Caller not admin"
-        )
-      })
-    })
-
-    describe('updatePlatformAccount()', () => {
-      it('updates the reserve auction length as admin', async () => {
-        const {receipt} = await this.marketplace.updatePlatformAccount(owner, {from: owner})
-
-        await expectEvent(receipt, 'AdminUpdatePlatformAccount', {
-          _oldAddress: koCommission,
-          _newAddress: owner
-        })
-      })
-
-      it('Reverts when not admin', async () => {
-        await expectRevert(
-          this.marketplace.updatePlatformAccount(owner, {from: bidder1}),
-          "Caller not admin"
+          this.marketplace.emergencyExitBidFromReserveAuction(FIRST_TOKEN_ID),
+          "No bid in flight"
         )
       })
     })

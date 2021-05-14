@@ -22,6 +22,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
     public
     override
     whenNotPaused {
+        // todo check if allowed to do this by implementing class method
         require(
             accessControls.hasContractRole(_msgSender()) || koda.ownerOf(_id) == _msgSender(),
             "Only owner or contract"
@@ -80,6 +81,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
     }
 
     // update the "buy now" price
+    // todo expose publicly
     function _setBuyNowPriceListing(uint256 _id, uint128 _listingPrice) internal {
         require(
             editionOrTokenListings[_id].seller == _msgSender() || accessControls.hasContractRole(_msgSender()),

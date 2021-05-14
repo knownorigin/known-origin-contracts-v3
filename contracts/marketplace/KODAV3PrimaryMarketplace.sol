@@ -66,7 +66,9 @@ contract KODAV3PrimaryMarketplace is
     uint256 public platformPrimarySaleCommission = 15_00000;  // 15.00000%
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
-    BaseMarketplace(_accessControls, _koda, _platformAccount) {}
+    BaseMarketplace(_accessControls, _koda, _platformAccount) {
+        //todo event on construction
+    }
 
     // assumes frontend protects against from these things from being called when:
     //  - they dont need to be e.g. listing an edition when its sold out
@@ -335,6 +337,8 @@ contract KODAV3PrimaryMarketplace is
         delete editionStep[_editionId];
     }
 
+    // todo convert straight to offers from stepped and reserve
+
     // get the current state of a stepped auction
     function getSteppedAuctionState(uint256 _editionId)
     public
@@ -370,7 +374,7 @@ contract KODAV3PrimaryMarketplace is
             editionOrTokenWithReserveAuctions[_editionId].seller,
             address(this)
         );
-
+        // todo are there any primary tokens left for sale
         require(
             !isApprovalActiveForMarketplace || koda.getEditionSalesDisabled(_editionId),
             "Bid cannot be withdrawn as reserve auction listing is valid"
