@@ -50,6 +50,8 @@ IERC2981  // Royalties
 
     function hasMadePrimarySale(uint256 _editionId) external view returns (bool);
 
+    function isEditionSoldOut(uint256 _editionId) external view returns (bool);
+
     function toggleEditionSalesDisabled(uint256 _editionId) external;
 
     // token utils
