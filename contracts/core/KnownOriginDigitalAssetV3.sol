@@ -236,8 +236,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         );
     }
 
-    function getEditionSalesDisabled(uint256 _editionId) external view override returns (bool) {
+    function isEditionSalesDisabled(uint256 _editionId) external view override returns (bool) {
         return editionSalesDisabled[_editionId];
+    }
+
+    function isSalesDisabledOrSoldOut(uint256 _editionId) external view override returns (bool) {
+        return editionSalesDisabled[_editionId] || isEditionSoldOut(_editionId);
     }
 
     function toggleEditionSalesDisabled(uint256 _editionId) external override {
@@ -478,6 +482,20 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         }
 
         return false;
+    }
+
+    function isEditionSoldOut(uint256 _editionId) public override view returns (bool) {
+        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
+
+        // low to high
+        for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
+            // if no owner set - assume primary if not moved
+            if (owners[tokenId] == address(0)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     //////////////

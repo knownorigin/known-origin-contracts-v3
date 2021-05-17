@@ -607,7 +607,7 @@ contract KODAV3PrimaryMarketplace is IKODAV3PrimarySaleMarketplace, Pausable, Re
 
         bool isApprovalActiveForMarketplace = koda.isApprovedForAll(editionWithReserveAuction.seller, address(this));
         require(
-            !isApprovalActiveForMarketplace || koda.getEditionSalesDisabled(_editionId),
+            !isApprovalActiveForMarketplace || koda.isSalesDisabledOrSoldOut(_editionId),
             "Bid cannot be withdrawn as reserve auction listing is valid"
         );
 

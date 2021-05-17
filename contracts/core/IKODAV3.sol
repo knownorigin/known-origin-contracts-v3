@@ -27,7 +27,9 @@ IERC2981  // Royalties
 
     function editionExists(uint256 _editionId) external view returns (bool);
 
-    function getEditionSalesDisabled(uint256 _editionId) external view returns (bool);
+    function isEditionSalesDisabled(uint256 _editionId) external view returns (bool);
+
+    function isSalesDisabledOrSoldOut(uint256 _editionId) external view returns (bool);
 
     function maxTokenIdOfEdition(uint256 _editionId) external view returns (uint256 _tokenId);
 
@@ -49,6 +51,8 @@ IERC2981  // Royalties
     function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external;
 
     function hasMadePrimarySale(uint256 _editionId) external view returns (bool);
+
+    function isEditionSoldOut(uint256 _editionId) external view returns (bool);
 
     function toggleEditionSalesDisabled(uint256 _editionId) external;
 
