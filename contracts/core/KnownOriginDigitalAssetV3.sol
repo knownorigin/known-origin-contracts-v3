@@ -217,8 +217,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     override
     view
     returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri) {
-        // FIXME check exists? Or just return all the zeros?
-
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
         return (
@@ -301,6 +299,10 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     function maxTokenIdOfEdition(uint256 _editionId) public override view returns (uint256 _tokenId) {
+        return _maxTokenIdOfEdition(_editionId);
+    }
+
+    function _maxTokenIdOfEdition(uint256 _editionId) internal view returns (uint256 _tokenId) {
         return editionDetails[_editionId].editionSize + _editionId;
     }
 
@@ -321,8 +323,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     external
     override
     returns (address receiver, uint256 amount) {
-        // FIXME check exists?
-
         uint256 editionId = _editionFromTokenId(_tokenId);
 
         // If we have a registry and its defined, use it
@@ -340,8 +340,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     external
     override
     returns (address receiver, address creator, uint256 amount) {
-        // FIXME check exists?
-
         address originalCreator = _getCreatorOfEdition(_editionId);
 
         if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)) {
@@ -377,8 +375,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     ////////////////////////////////////
 
     function getAllUnsoldTokenIdsForEdition(uint256 _editionId) public view returns (uint256[] memory) {
-        require(_editionExists(_editionId), "Edition does not exist"); 
-        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize; // FIXME maxTokenIdOfEdition
+        require(_editionExists(_editionId), "Edition does not exist");
+        uint256 maxTokenId = _maxTokenIdOfEdition(_editionId);
 
         // work out number of unsold tokens in order to allocate memory to an array later
         uint256 numOfUnsoldTokens;
@@ -422,7 +420,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     function getNextAvailablePrimarySaleToken(uint256 _editionId) public override view returns (uint256 _tokenId) {
-        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize; // FIXME maxTokenIdOfEdition
+        uint256 maxTokenId = _maxTokenIdOfEdition(_editionId);
 
         // low to high
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
@@ -435,7 +433,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     function getReverseAvailablePrimarySaleToken(uint256 _editionId) public override view returns (uint256 _tokenId) {
-        uint256 highestTokenId = _editionId + editionDetails[_editionId].editionSize - 1; // FIXME maxTokenIdOfEdition - 1?
+        uint256 highestTokenId = _maxTokenIdOfEdition(_editionId) - 1;
 
         // high to low
         while (highestTokenId >= _editionId) {
@@ -471,7 +469,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     function hasMadePrimarySale(uint256 _editionId) public override view returns (bool) {
         require(_editionExists(_editionId), "Edition does not exist");
-        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize; // FIXME maxTokenIdOfEdition
+        uint256 maxTokenId = _maxTokenIdOfEdition(_editionId);
 
         // low to high
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
@@ -485,7 +483,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     function isEditionSoldOut(uint256 _editionId) public override view returns (bool) {
-        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize; // FIXME maxTokenIdOfEdition
+        uint256 maxTokenId = _maxTokenIdOfEdition(_editionId);
 
         // low to high
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
@@ -625,9 +623,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
         // fall back to edition creator
         address possibleCreator = _getCreatorOfEdition(_editionId);
-
-        // FIXME maxTokenIdOfEdition - 1
-        if (possibleCreator != address(0) && (editionDetails[_editionId].editionSize + _editionId - 1) >= _tokenId) {
+        if (possibleCreator != address(0) && (_maxTokenIdOfEdition(_editionId) - 1) >= _tokenId) {
             return possibleCreator;
         }
 
