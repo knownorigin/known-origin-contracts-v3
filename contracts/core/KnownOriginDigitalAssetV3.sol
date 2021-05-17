@@ -21,7 +21,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     event EditionURIUpdated(uint256 indexed _editionId);
     event EditionSalesDisabledToggled(uint256 indexed _editionId, bool _oldValue, bool _newValue);
-    event AdditionalEditionMetaDataSet(uint256 indexed _editionId);
+    event SealedEditionMetaDataSet(uint256 indexed _editionId);
     event AdditionalEditionUnlockableSet(uint256 indexed _editionId);
     event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
     event AdminTokenUriResolverSet(address indexed _tokenUriResolver);
@@ -739,7 +739,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         require(_msgSender() == getCreatorOfEdition(_editionId), "Unable to set when not creator");
         require(bytes(sealedEditionMetaData[_editionId]).length == 0, "can only be set once");
         sealedEditionMetaData[_editionId] = _metadata;
-        emit AdditionalEditionMetaDataSet(_editionId);
+        emit SealedEditionMetaDataSet(_editionId);
     }
 
     // Optional storage slot which allows the creator to set an additional unlockable blob on the edition
