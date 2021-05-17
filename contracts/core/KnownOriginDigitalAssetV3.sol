@@ -27,13 +27,13 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     event AdminTokenUriResolverSet(address indexed _tokenUriResolver);
 
     // Token name
-    string public name = "KnownOriginDigitalAsset";
+    string public constant name = "KnownOriginDigitalAsset";
 
     // Token symbol
-    string public symbol = "KODA";
+    string public constant symbol = "KODA";
 
     // KODA version
-    string public version = "3";
+    string public constant version = "3";
 
     // Royalties registry
     IERC2981 public royaltiesRegistryProxy;
@@ -51,7 +51,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     // tokens are minted in batches - the first token ID used is representative of the edition ID
-    mapping(uint256 => EditionDetails) editionDetails;
+    mapping(uint256 => EditionDetails) internal editionDetails;
 
     // Mapping of tokenId => owner - only set on first transfer (after mint) such as a primary sale and/or gift
     mapping(uint256 => address) internal owners;
