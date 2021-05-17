@@ -1399,4 +1399,25 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       )
     })
   })
+
+  describe('lockInUnlockableContent()', () => {
+    it('Can call as creator', async () => {
+      await this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: contract})
+
+      const content = 'random'
+      const {receipt} = await this.token.lockInUnlockableContent(firstEditionTokenId, content, {from: owner})
+      await expectEvent(receipt, 'AdditionalEditionUnlockableSet', {
+        _editionId: firstEditionTokenId
+      })
+
+      expect(await this.token.additionalEditionUnlockableSlot(firstEditionTokenId)).to.be.equal(content)
+    })
+
+    it('Reverts when not creator', async () => {
+      await expectRevert(
+        this.token.lockInUnlockableContent(firstEditionTokenId, 'collector a is the best', {from: collectorA}),
+        "Unable to set when not creator"
+      )
+    })
+  })
 });
