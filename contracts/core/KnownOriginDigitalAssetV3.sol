@@ -50,7 +50,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         string uri; // the referenced metadata
     }
 
-    // tokens are minted in batches - the first token ID used is representative of the edition ID (for now)
+    // tokens are minted in batches - the first token ID used is representative of the edition ID
     mapping(uint256 => EditionDetails) editionDetails;
 
     // Mapping of tokenId => owner - only set on first transfer (after mint) such as a primary sale and/or gift
@@ -130,7 +130,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         balances[_to] = balances[_to] + _editionSize;
 
         // edition of x
-        _defineEditionConfig(start, _editionSize, _to, _uri);
+        editionDetails[start] = EditionDetails(_to, _editionSize, _uri);
 
         // Loop emit all transfer events
         uint256 end = start + _editionSize;
@@ -156,7 +156,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         balances[_to] = balances[_to] + _editionSize;
 
         // Start ID always equals edition ID
-        _defineEditionConfig(start, _editionSize, _to, _uri);
+        editionDetails[start] = EditionDetails(_to, _editionSize, _uri);
 
         // emit EIP-2309 consecutive transfer event
         emit ConsecutiveTransfer(start, start + _editionSize, address(0), _to);
@@ -171,13 +171,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         editionDetails[_editionId].uri = _newURI;
 
         emit EditionURIUpdated(_editionId);
-    }
-
-    function _defineEditionConfig(uint256 _editionId, uint96 _editionSize, address _to, string calldata _uri) internal {
-        require(_editionSize <= MAX_EDITION_ID, "Exceeds max edition size");
-
-        // Store edition blob to be the next token pointer
-        editionDetails[_editionId] = EditionDetails(_to, _editionSize, _uri);
     }
 
     function generateNextEditionNumber() internal returns (uint256) {
