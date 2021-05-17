@@ -106,10 +106,6 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[editionId].contains(_erc20Contract);
         bool nftAlreadyContainsERC20 = ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract);
-        require(
-            nftAlreadyContainsERC20 || editionAlreadyContainsERC20,
-            "Token limit for number of unique ERC20s reached"
-        );
 
         // does not already contain _erc20Contract
         if (!editionAlreadyContainsERC20 && !nftAlreadyContainsERC20) {

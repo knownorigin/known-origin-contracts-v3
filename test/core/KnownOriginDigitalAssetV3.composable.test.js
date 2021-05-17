@@ -520,19 +520,6 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           "Edition already contains ERC20"
         )
       })
-
-      it('Reverts when exceeding the max ERC20 limit', async () => {
-        await expectRevert(
-          mintEditionAndComposeERC20s(
-            [this.erc20Token1, this.erc20Token2, this.erc20Token3, this.erc20Token4],
-            Array(4).fill(ONE_THOUSAND_TOKENS),
-            this.token,
-            owner,
-            contract
-          ),
-          "ERC20 limit exceeded"
-        )
-      })
     })
   })
 
@@ -543,69 +530,6 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
       await this.token.removeWhitelistForERC20(this.erc20Token1.address)
 
       expect(await this.token.whitelistedContracts(this.erc20Token1.address)).to.be.false
-    })
-  })
-
-  describe('updateMaxERC20sPerNFT()', () => {
-    beforeEach(async () => {
-      // mint some KODA
-      await this.token.mintBatchEdition(1, owner, 'random', {from: contract});
-    })
-
-    it('Can update the max NFTs per NFT and exceed the old limit', async () => {
-      // wrap 3
-      await addERC20BalanceToNFT(
-        this.erc20Token1,
-        ONE_THOUSAND_TOKENS,
-        this.token,
-        firstEditionTokenId,
-        owner
-      )
-
-      await addERC20BalanceToNFT(
-        this.erc20Token2,
-        ONE_THOUSAND_TOKENS,
-        this.token,
-        firstEditionTokenId,
-        owner
-      )
-
-      await addERC20BalanceToNFT(
-        this.erc20Token3,
-        ONE_THOUSAND_TOKENS,
-        this.token,
-        firstEditionTokenId,
-        owner
-      )
-
-      await expectRevert(
-        this.token.getERC20(
-          owner,
-          firstEditionTokenId,
-          this.erc20Token4.address,
-          ONE_THOUSAND_TOKENS,
-          {from: owner}
-        ),
-        "Token limit for number of unique ERC20s reached"
-      )
-
-      await this.token.updateMaxERC20sPerNFT('4')
-
-      await addERC20BalanceToNFT(
-        this.erc20Token4,
-        ONE_THOUSAND_TOKENS,
-        this.token,
-        firstEditionTokenId,
-        owner
-      )
-
-      expect(
-        await this.token.totalERC20Contracts(firstEditionTokenId)
-      ).to.be.bignumber.equal('4')
-
-      expect(
-        await this.token.erc20ContractByIndex(firstEditionTokenId, '3')
-      ).to.be.equal(this.erc20Token4.address)
     })
   })
 
