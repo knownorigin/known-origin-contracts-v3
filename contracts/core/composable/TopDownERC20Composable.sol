@@ -109,6 +109,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
             "Token limit for number of unique ERC20s reached"
         );
 
+        // does not already contain _erc20Contract
         if (!editionAlreadyContainsERC20 && !nftAlreadyContainsERC20) {
             ERC20sEmbeddedInNft[_tokenId].add(_erc20Contract);
         }
@@ -125,7 +126,6 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
     function _composeERC20IntoEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) internal nonReentrant {
         require(_value > 0, "Value cannot be zero");
-
         require(whitelistedContracts[_erc20Contract], "Specified contract not whitelisted");
 
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract);
