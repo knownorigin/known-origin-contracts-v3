@@ -1200,7 +1200,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('reverts if not admin', async () => {
       await expectRevert(
         this.token.withdrawStuckTokens(this.token.address, '1000', minter, {from: collectorA}),
-        'Caller must have contract or admin role'
+        'Caller must have admin role'
       );
     });
   });

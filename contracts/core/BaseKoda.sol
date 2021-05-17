@@ -65,10 +65,7 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
 
     /// @dev Allows for the ability to extract stuck ERC20 tokens
     /// @dev Only callable from admin
-    function withdrawStuckTokens(address _tokenAddress, uint256 _amount, address _withdrawalAccount) public {
-        require(accessControls.hasContractOrAdminRole(_msgSender()), "Caller must have contract or admin role");
-        //IERC20(_tokenAddress).approve(address(this), _amount);
+    function withdrawStuckTokens(address _tokenAddress, uint256 _amount, address _withdrawalAccount) onlyAdmin public {
         IERC20(_tokenAddress).transfer(_withdrawalAccount, _amount);
     }
-
 }

@@ -683,7 +683,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
   })
 
   describe('getERC20s() validation', () => {
-    it.only('Reverts when token ID array is empty', async () => {
+    it('Reverts when token ID array is empty', async () => {
       await expectRevert(
         this.token.getERC20s(
           owner,

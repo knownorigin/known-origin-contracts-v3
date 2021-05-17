@@ -68,7 +68,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     // Optional one time use storage slot for additional edition metadata
     mapping(uint256 => string) public sealedEditionMetaData;
 
-    // Optional one time use storage slot for additional unlockable content
+    // Optional storage slot for additional unlockable content
     mapping(uint256 => string) public additionalEditionUnlockableSlot;
 
     /// @notice Allows a creator to disable sales of their edition or they can ask KnownOrigin to do this
@@ -179,24 +179,24 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     function editionURI(uint256 _editionId) public view returns (string memory) {
-        EditionDetails storage edition = editionDetails[_editionId];
-        require(edition.editionSize != 0, "Edition does not exist");
+        require(_editionExists(_editionId), "Edition does not exist");
 
         if (tokenUriResolverActive() && tokenUriResolver.isDefined(_editionId)) {
             return tokenUriResolver.editionURI(_editionId);
         }
-        return edition.uri;
+
+        return editionDetails[_editionId].uri;
     }
 
     function tokenURI(uint256 _tokenId) public view returns (string memory) {
+        require(_exists(_tokenId), "Token does not exist");
         uint256 editionId = _editionFromTokenId(_tokenId);
-        EditionDetails storage edition = editionDetails[editionId];
-        require(edition.editionSize != 0, "Token does not exist");
 
         if (tokenUriResolverActive() && tokenUriResolver.isDefined(editionId)) {
             return tokenUriResolver.editionURI(editionId);
         }
-        return edition.uri;
+
+        return editionDetails[editionId].uri;
     }
 
     function tokenUriResolverActive() public view returns (bool) {
@@ -217,6 +217,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     override
     view
     returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri) {
+        // FIXME check exists? Or just return all the zeros?
+
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
         return (
@@ -238,7 +240,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     function toggleEditionSalesDisabled(uint256 _editionId) external override {
         address creator = editionDetails[_editionId].creator;
-        require(creator != address(0), "Edition does not exist");
+        require(_editionExists(_editionId), "Edition does not exist");
 
         require(
             creator == _msgSender() || accessControls.hasAdminRole(_msgSender()),
@@ -262,12 +264,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return _getCreatorOfEdition(_editionFromTokenId(_tokenId));
     }
 
-    function tokenCreator(uint256 _tokenId) public override view returns (address _originalCreator) {
-        return _getCreatorOfEdition(_editionFromTokenId(_tokenId));
-    }
-
     function _getCreatorOfEdition(uint256 _editionId) internal view returns (address _originalCreator) {
-        // drop the other size bits
         return editionDetails[_editionId].creator;
     }
 
@@ -288,12 +285,19 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /////////////////////
 
     function editionExists(uint256 _editionId) public override view returns (bool) {
+        return _editionExists(_editionId);
+    }
+
+    function _editionExists(uint256 _editionId) internal view returns (bool) {
         return editionDetails[_editionId].editionSize > 0;
     }
 
     function exists(uint256 _tokenId) public override view returns (bool) {
-        address owner = _ownerOf(_tokenId, _editionFromTokenId(_tokenId));
-        return owner != address(0);
+        return _exists(_tokenId);
+    }
+
+    function _exists(uint256 _tokenId) internal view returns (bool) {
+        return _ownerOf(_tokenId, _editionFromTokenId(_tokenId)) != address(0);
     }
 
     function maxTokenIdOfEdition(uint256 _editionId) public override view returns (uint256 _tokenId) {
@@ -317,6 +321,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     external
     override
     returns (address receiver, uint256 amount) {
+        // FIXME check exists?
+
         uint256 editionId = _editionFromTokenId(_tokenId);
 
         // If we have a registry and its defined, use it
@@ -334,6 +340,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     external
     override
     returns (address receiver, address creator, uint256 amount) {
+        // FIXME check exists?
+
         address originalCreator = _getCreatorOfEdition(_editionId);
 
         if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)) {
@@ -369,8 +377,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     ////////////////////////////////////
 
     function getAllUnsoldTokenIdsForEdition(uint256 _editionId) public view returns (uint256[] memory) {
-        require(editionDetails[_editionId].editionSize > 0, "Edition does not exist");
-        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
+        require(_editionExists(_editionId), "Edition does not exist"); 
+        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize; // FIXME maxTokenIdOfEdition
 
         // work out number of unsold tokens in order to allocate memory to an array later
         uint256 numOfUnsoldTokens;
@@ -414,7 +422,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     function getNextAvailablePrimarySaleToken(uint256 _editionId) public override view returns (uint256 _tokenId) {
-        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
+        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize; // FIXME maxTokenIdOfEdition
 
         // low to high
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
@@ -427,7 +435,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     function getReverseAvailablePrimarySaleToken(uint256 _editionId) public override view returns (uint256 _tokenId) {
-        uint256 highestTokenId = _editionId + editionDetails[_editionId].editionSize - 1;
+        uint256 highestTokenId = _editionId + editionDetails[_editionId].editionSize - 1; // FIXME maxTokenIdOfEdition - 1?
 
         // high to low
         while (highestTokenId >= _editionId) {
@@ -462,8 +470,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     function hasMadePrimarySale(uint256 _editionId) public override view returns (bool) {
-        require(editionDetails[_editionId].editionSize > 0, "Edition does not exist");
-        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
+        require(_editionExists(_editionId), "Edition does not exist");
+        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize; // FIXME maxTokenIdOfEdition
 
         // low to high
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
@@ -477,7 +485,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     function isEditionSoldOut(uint256 _editionId) public override view returns (bool) {
-        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
+        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize; // FIXME maxTokenIdOfEdition
 
         // low to high
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
@@ -617,6 +625,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
         // fall back to edition creator
         address possibleCreator = _getCreatorOfEdition(_editionId);
+
+        // FIXME maxTokenIdOfEdition - 1
         if (possibleCreator != address(0) && (editionDetails[_editionId].editionSize + _editionId - 1) >= _tokenId) {
             return possibleCreator;
         }
