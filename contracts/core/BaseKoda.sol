@@ -59,8 +59,8 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     }
 
     function updateAccessControls(IKOAccessControlsLookup _accessControls) onlyAdmin public {
-        accessControls = _accessControls;
         emit AdminUpdateAccessControls(accessControls, _accessControls);
+        accessControls = _accessControls;
     }
 
     /// @dev Allows for the ability to extract stuck ERC20 tokens
