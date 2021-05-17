@@ -52,7 +52,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
   });
 
-  describe('primary sale edition offers', async () => {
+  describe.skip('primary sale edition offers', async () => {
 
     const _0_1_ETH = ether('0.1');
 
@@ -65,7 +65,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe('enableEditionOffers()', async () => {
+    describe.skip('enableEditionOffers()', async () => {
 
       it('reverts if caller does not have minter role', async () => {
 
@@ -79,7 +79,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
       });
 
-      describe('on success, with subsequent bids', async () => {
+      describe.skip('on success, with subsequent bids', async () => {
 
         it('reverts when attempting to place a bid before start time', async () => {
 
@@ -128,7 +128,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe('placeEditionBid()', () => {
+    describe.skip('placeEditionBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -179,7 +179,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
       });
 
-      describe('on success', () => {
+      describe.skip('on success', () => {
 
         it('emits EditionBidPlaced event on successful bid', async () => {
 
@@ -286,7 +286,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe('withdrawEditionBid()', () => {
+    describe.skip('withdrawEditionBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -346,7 +346,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
       });
 
-      describe('on success', () => {
+      describe.skip('on success', () => {
 
         it('can withdraw bid after lockup period elapses', async () => {
 
@@ -488,7 +488,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe('rejectEditionBid()', () => {
+    describe.skip('rejectEditionBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -529,7 +529,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
       });
 
-      describe('on success', () => {
+      describe.skip('on success', () => {
 
         it('can reject bid if all tokens in an edition are sold out', async () => {
 
@@ -630,7 +630,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe('acceptEditionBid()', () => {
+    describe.skip('acceptEditionBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -684,7 +684,7 @@ contract('KODAV3Marketplace', function (accounts) {
         );
       });
 
-      describe('on success', () => {
+      describe.skip('on success', () => {
 
         it('emits EditionBidAccepted event when owner accepts offer', async () => {
 
@@ -744,7 +744,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe('adminRejectEditionBid()', () => {
+    describe.skip('adminRejectEditionBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -785,7 +785,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
       });
 
-      describe('on success', () => {
+      describe.skip('on success', () => {
 
         it('emits EditionBidRejected event when creator rejects offer', async () => {
 
@@ -867,7 +867,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe('buy when sales disabled', () => {
+    describe.skip('buy when sales disabled', () => {
       const _0_1_ETH = ether('0.1');
 
       beforeEach(async () => {
@@ -910,8 +910,8 @@ contract('KODAV3Marketplace', function (accounts) {
       });
     })
 
-    describe('convert to buy it now', () => {
-      describe('when offers enabled', () => {
+    describe.skip('convert to buy it now', () => {
+      describe.skip('when offers enabled', () => {
         beforeEach(async () => {
           const now = await time.latest();
           const duration = time.duration.days(1);
@@ -920,7 +920,7 @@ contract('KODAV3Marketplace', function (accounts) {
           await this.marketplace.enableEditionOffers(firstEditionTokenId, this.start, {from: minter});
         })
 
-        describe('when an offer is in flight', () => {
+        describe.skip('when an offer is in flight', () => {
           it('can convert and refund', async () => {
             // place bid
             await time.increaseTo(this.start);
@@ -945,7 +945,7 @@ contract('KODAV3Marketplace', function (accounts) {
           })
         })
 
-        describe('when no offer is in flight', () => {
+        describe.skip('when no offer is in flight', () => {
           it('can convert', async () => {
             const price = ether('0.75')
             const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter})
@@ -963,8 +963,8 @@ contract('KODAV3Marketplace', function (accounts) {
         })
       })
 
-      describe('when not listed (generally accepting bids)', () => {
-        describe('with bid', () => {
+      describe.skip('when not listed (generally accepting bids)', () => {
+        describe.skip('with bid', () => {
           it('can convert and refund', async () => {
             // place bid
             await this.marketplace.placeEditionBid(firstEditionTokenId, {from: collectorA, value: MIN_BID})
@@ -988,7 +988,7 @@ contract('KODAV3Marketplace', function (accounts) {
           })
         })
 
-        describe('without bid', () => {
+        describe.skip('without bid', () => {
           it('can convert', async () => {
             const price = ether('0.75')
             const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter})

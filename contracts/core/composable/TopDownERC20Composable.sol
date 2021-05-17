@@ -76,8 +76,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
     function getERC20s(address _from, uint256[] calldata _tokenIds, address _erc20Contract, uint256 _totalValue) external {
         uint256 totalTokens = _tokenIds.length;
-        require(totalTokens > 0, "Empty array");
-        require(_totalValue > 0, "Total value cannot be zero");
+        require(totalTokens > 0 && _totalValue > 0, "Empty values provided");
 
         uint256 valuePerToken = _totalValue / totalTokens;
         for (uint i = 0; i < totalTokens; i++) {
@@ -86,7 +85,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) public override nonReentrant {
-        require(_value > 0, "getERC20: Value cannot be zero");
+        require(_value > 0, "Value cannot be zero");
 
         address spender = _msgSender();
         IERC721 self = IERC721(address(this));
@@ -96,10 +95,10 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
             owner == spender
             || self.isApprovedForAll(owner, spender)
             || self.getApproved(_tokenId) == spender,
-            "getERC20: Only token owner"
+            "Only token owner"
         );
-        require(_from == _msgSender(), "getERC20: ERC20 owner must be the token owner");
-        require(whitelistedContracts[_erc20Contract], "getERC20: Specified contract not whitelisted");
+        require(_from == _msgSender(), "ERC20 owner must be the token owner");
+        require(whitelistedContracts[_erc20Contract], "Specified contract not whitelisted");
 
         IKODAV3 koda = IKODAV3(address(this));
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
@@ -107,7 +106,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         bool nftAlreadyContainsERC20 = ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract);
         require(
             nftAlreadyContainsERC20 || editionAlreadyContainsERC20 || totalERC20Contracts(_tokenId) < maxERC20sPerNFT,
-            "getERC20: Token limit for number of unique ERC20s reached"
+            "Token limit for number of unique ERC20s reached"
         );
 
         if (!editionAlreadyContainsERC20 && !nftAlreadyContainsERC20) {
@@ -117,7 +116,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract] + _value;
 
         IERC20 token = IERC20(_erc20Contract);
-        require(token.allowance(_from, address(this)) >= _value, "getERC20: Amount exceeds allowance");
+        require(token.allowance(_from, address(this)) >= _value, "Amount exceeds allowance");
 
         token.transferFrom(_from, address(this), _value);
 
@@ -125,13 +124,13 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function _composeERC20IntoEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) internal nonReentrant {
-        require(_value > 0, "_composeERC20IntoEdition: Value cannot be zero");
+        require(_value > 0, "Value cannot be zero");
 
-        require(whitelistedContracts[_erc20Contract], "_composeERC20IntoEdition: Specified contract not whitelisted");
+        require(whitelistedContracts[_erc20Contract], "Specified contract not whitelisted");
 
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract);
-        require(!editionAlreadyContainsERC20, "_composeERC20IntoEdition: Edition already contains ERC20");
-        require(ERC20sEmbeddedInEdition[_editionId].length() < maxERC20sPerNFT, "_composeERC20IntoEdition: ERC20 limit exceeded");
+        require(!editionAlreadyContainsERC20, "Edition already contains ERC20");
+        require(ERC20sEmbeddedInEdition[_editionId].length() < maxERC20sPerNFT, "ERC20 limit exceeded");
 
         ERC20sEmbeddedInEdition[_editionId].add(_erc20Contract);
         editionTokenERC20Balances[_editionId][_erc20Contract] = editionTokenERC20Balances[_editionId][_erc20Contract] + _value;
@@ -171,8 +170,8 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
     function _prepareERC20LikeTransfer(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) private {
         {
-            require(_value > 0, "_prepareERC20LikeTransfer: Value cannot be zero");
-            require(_to != address(0), "_prepareERC20LikeTransfer: To cannot be zero address");
+            require(_value > 0, "Value cannot be zero");
+            require(_to != address(0), "To cannot be zero address");
 
             IERC721 self = IERC721(address(this));
 
@@ -181,7 +180,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
                 owner == _msgSender()
                 || self.isApprovedForAll(owner, _msgSender())
                 || self.getApproved(_tokenId) == _msgSender(),
-                "_prepareERC20LikeTransfer: Not owner"
+                "Not owner"
             );
         }
 
@@ -190,9 +189,9 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         IKODAV3 koda = IKODAV3(address(this));
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
         bool editionContainsERC20 = ERC20sEmbeddedInEdition[editionId].contains(_erc20Contract);
-        require(nftContainsERC20 || editionContainsERC20, "_prepareERC20LikeTransfer: No such ERC20 wrapped in token");
+        require(nftContainsERC20 || editionContainsERC20, "No such ERC20 wrapped in token");
 
-        require(balanceOfERC20(_tokenId, _erc20Contract) >= _value, "_prepareERC20LikeTransfer: Transfer amount exceeds balance");
+        require(balanceOfERC20(_tokenId, _erc20Contract) >= _value, "Transfer amount exceeds balance");
 
         uint256 editionSize = koda.getSizeOfEdition(editionId);
         uint256 tokenInitialBalance = editionTokenERC20Balances[editionId][_erc20Contract] / editionSize;

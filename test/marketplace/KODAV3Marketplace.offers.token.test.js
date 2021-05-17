@@ -51,9 +51,9 @@ contract('KODAV3Marketplace token bids', function (accounts) {
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  describe('secondary sale token offers', async () => {
+  describe.skip('secondary sale token offers', async () => {
 
-    describe('placeTokenBid()', () => {
+    describe.skip('placeTokenBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -114,7 +114,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
       });
 
-      describe('on success', () => {
+      describe.skip('on success', () => {
 
         it('emits TokenBidPlaced event on successful bid', async () => {
 
@@ -226,7 +226,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
     });
 
-    describe('withdrawTokenBid()', () => {
+    describe.skip('withdrawTokenBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -281,7 +281,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
       });
 
-      describe('on success', () => {
+      describe.skip('on success', () => {
 
         it('can withdraw bid after lockup period elapses', async () => {
 
@@ -403,7 +403,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
     });
 
-    describe('rejectTokenBid()', () => {
+    describe.skip('rejectTokenBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -444,7 +444,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
       });
 
-      describe('on success', () => {
+      describe.skip('on success', () => {
 
         it('emits TokenBidRejected event when owner rejects offer', async () => {
 
@@ -528,7 +528,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
     });
 
-    describe('acceptTokenBid()', () => {
+    describe.skip('acceptTokenBid()', () => {
 
       const _0_5_ETH = ether('0.5');
       const _0_1_ETH = ether('0.1');
@@ -583,7 +583,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         );
       });
 
-      describe('on success', () => {
+      describe.skip('on success', () => {
 
         it('emits TokenBidAccepted event when owner accepts offer', async () => {
 
@@ -644,7 +644,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
     });
 
-    describe('adminRejectTokenBid()', () => {
+    describe.skip('adminRejectTokenBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -684,7 +684,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
       });
 
-      describe('on success', () => {
+      describe.skip('on success', () => {
 
         it('emits TokenBidRejected event when owner rejects offer', async () => {
 

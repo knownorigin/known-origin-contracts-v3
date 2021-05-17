@@ -953,7 +953,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('should lockInAdditionalMetaData()', async () => {
       await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
-      expect(await this.token.additionalEditionMetaData(firstEditionTokenId)).to.be.equal('hello');
+      expect(await this.token.sealedEditionMetaData(firstEditionTokenId)).to.be.equal('hello');
     });
 
     it('should editionAdditionalMetaData()', async () => {
@@ -977,7 +977,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
       await expectRevert(
         this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: collabDao}),
-        'unable to set when not creator'
+        'Unable to set when not creator'
       );
     });
 
@@ -1335,7 +1335,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: owner}),
-        "Edition has had primary sale and cannot update its URI"
+        "Edition has had primary sale"
       )
     })
   })

@@ -66,7 +66,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     mapping(address => mapping(address => bool)) internal operatorApprovals;
 
     // Optional one time use storage slot for additional edition metadata
-    mapping(uint256 => string) public additionalEditionMetaData;
+    mapping(uint256 => string) public sealedEditionMetaData;
 
     // Optional one time use storage slot for additional unlockable content
     mapping(uint256 => string) public additionalEditionUnlockableSlot;
@@ -110,8 +110,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     onlyContract
     returns (uint256 _editionId) {
         uint256 totalErc20s = _erc20s.length;
-        require(totalErc20s == _amounts.length, "Array length mismatch");
-        require(totalErc20s > 0, "Empty array");
+        require(totalErc20s > 0 && totalErc20s == _amounts.length, "Tokens invalid");
 
         _editionId = _mintBatchEdition(_editionSize, _to, _uri);
 
@@ -167,7 +166,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external override {
         require(_msgSender() == editionDetails[_editionId].creator, "Not creator");
-        require(!hasMadePrimarySale(_editionId), "Edition has had primary sale and cannot update its URI");
+        require(!hasMadePrimarySale(_editionId), "Edition has had primary sale");
 
         editionDetails[_editionId].uri = _newURI;
 
@@ -175,7 +174,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     function _defineEditionConfig(uint256 _editionId, uint96 _editionSize, address _to, string calldata _uri) internal {
-        require(_editionSize <= MAX_EDITION_ID, "Unable to make any more editions");
+        require(_editionSize <= MAX_EDITION_ID, "Exceeds max edition size");
 
         // Store edition blob to be the next token pointer
         editionDetails[_editionId] = EditionDetails(_to, _editionSize, _uri);
@@ -212,12 +211,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     function editionAdditionalMetaData(uint256 _editionId) public view returns (string memory) {
-        return additionalEditionMetaData[_editionId];
+        return sealedEditionMetaData[_editionId];
     }
 
     function tokenAdditionalMetaData(uint256 _tokenId) public view returns (string memory) {
         uint256 editionId = _editionFromTokenId(_tokenId);
-        return additionalEditionMetaData[editionId];
+        return sealedEditionMetaData[editionId];
     }
 
     function getEditionDetails(uint256 _tokenId)
@@ -737,15 +736,15 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     // Optional metadata storage slot which allows the creator to set an additional metadata blob on the edition
     function lockInAdditionalMetaData(uint256 _editionId, string calldata _metadata) external {
-        require(_msgSender() == getCreatorOfEdition(_editionId), "unable to set when not creator");
-        require(bytes(additionalEditionMetaData[_editionId]).length == 0, "can only be set once");
-        additionalEditionMetaData[_editionId] = _metadata;
+        require(_msgSender() == getCreatorOfEdition(_editionId), "Unable to set when not creator");
+        require(bytes(sealedEditionMetaData[_editionId]).length == 0, "can only be set once");
+        sealedEditionMetaData[_editionId] = _metadata;
         emit AdditionalEditionMetaDataSet(_editionId);
     }
 
     // Optional storage slot which allows the creator to set an additional unlockable blob on the edition
     function lockInUnlockableContent(uint256 _editionId, string calldata _content) external {
-        require(_msgSender() == getCreatorOfEdition(_editionId), "unable to set when not creator");
+        require(_msgSender() == getCreatorOfEdition(_editionId), "Unable to set when not creator");
         additionalEditionUnlockableSlot[_editionId] = _content;
         emit AdditionalEditionUnlockableSet(_editionId);
     }

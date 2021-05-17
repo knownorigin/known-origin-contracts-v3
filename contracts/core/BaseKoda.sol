@@ -16,6 +16,7 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
     event AdminEditionReported(uint256 indexed _editionId, bool indexed _reported);
     event AdminArtistAccountReported(address indexed _account, bool indexed _reported);
+    event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
 
     modifier onlyContract(){
         require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
@@ -27,7 +28,6 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
         _;
     }
 
-    // TODO add admin setter (with event)
     IKOAccessControlsLookup public accessControls;
 
     // A onchain reference to editions which have been reported for some infringement purposes to KO
@@ -53,9 +53,14 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
         emit AdminArtistAccountReported(_account, _reported);
     }
 
-    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) public onlyAdmin {
+    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) onlyAdmin public {
         secondarySaleRoyalty = _secondarySaleRoyalty;
         emit AdminUpdateSecondaryRoyalty(_secondarySaleRoyalty);
+    }
+
+    function updateAccessControls(IKOAccessControlsLookup _accessControls) onlyAdmin public {
+        accessControls = _accessControls;
+        emit AdminUpdateAccessControls(accessControls, _accessControls);
     }
 
     /// @dev Allows for the ability to extract stuck ERC20 tokens
