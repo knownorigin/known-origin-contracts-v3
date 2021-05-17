@@ -46,8 +46,8 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  describe('all tests', () => {
-    describe('End to end reserve auctions', () => {
+  describe.skip('all tests', () => {
+    describe.skip('End to end reserve auctions', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -107,7 +107,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('listTokenForReserveAuction()', () => {
+    describe.skip('listTokenForReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -143,7 +143,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('placeBidOnReserveAuction()', () => {
+    describe.skip('placeBidOnReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -227,7 +227,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('resultReserveAuction()', () => {
+    describe.skip('resultReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -351,7 +351,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('withdrawBidFromReserveAuction()', () => {
+    describe.skip('withdrawBidFromReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -413,7 +413,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('updateReservePriceForReserveAuction()', () => {
+    describe.skip('updateReservePriceForReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -469,7 +469,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('convertReserveAuctionToBuyItNow()', () => {
+    describe.skip('convertReserveAuctionToBuyItNow()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -564,7 +564,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('updateReserveAuctionBidExtensionWindow()', () => {
+    describe.skip('updateReserveAuctionBidExtensionWindow()', () => {
       const one_minute = new BN('60');
 
       it('updates the reserve auction extension window as admin', async () => {
@@ -583,7 +583,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('updateReserveAuctionLengthOnceReserveMet()', () => {
+    describe.skip('updateReserveAuctionLengthOnceReserveMet()', () => {
       const one_minute = new BN('60');
 
       it('updates the reserve auction length as admin', async () => {
@@ -602,7 +602,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('updatePlatformSecondarySaleCommission()', () => {
+    describe.skip('updatePlatformSecondarySaleCommission()', () => {
       const new_commission = new BN('1550000');
 
       it('updates the reserve auction length as admin', async () => {
@@ -621,7 +621,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('updateModulo()', () => {
+    describe.skip('updateModulo()', () => {
       const new_modulo = new BN('10000');
 
       it('updates the reserve auction length as admin', async () => {
@@ -640,7 +640,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('updateMinBidAmount()', () => {
+    describe.skip('updateMinBidAmount()', () => {
       const new_min_bid = ether('0.3');
 
       it('updates the reserve auction length as admin', async () => {
@@ -659,7 +659,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('updateAccessControls()', () => {
+    describe.skip('updateAccessControls()', () => {
       it('updates the reserve auction length as admin', async () => {
         const {receipt} = await this.marketplace.updateAccessControls(newAccessControls, {from: owner})
 
@@ -677,7 +677,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('updateBidLockupPeriod()', () => {
+    describe.skip('updateBidLockupPeriod()', () => {
       const new_lock_up = ether((6 * 60).toString());
 
       it('updates the reserve auction length as admin', async () => {
@@ -696,7 +696,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe('updatePlatformAccount()', () => {
+    describe.skip('updatePlatformAccount()', () => {
       it('updates the reserve auction length as admin', async () => {
         const {receipt} = await this.marketplace.updatePlatformAccount(owner, {from: owner})
 

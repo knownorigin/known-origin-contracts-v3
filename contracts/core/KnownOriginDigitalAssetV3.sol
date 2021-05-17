@@ -14,34 +14,34 @@ import {ITokenUriResolver} from "../programmable/ITokenUriResolver.sol";
 import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 import {BaseKoda} from "./BaseKoda.sol";
 
-/*
- * A base 721 compliant contract which has a focus on being light weight
- */
+/// @title A 721 compliant contract which has a focus on being GAS efficient
+/// @author KnownOrigin Labs
+/// @notice The NFT supports the ERC998 ERC20 composable standard
 contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165Storage, IKODAV3Minter {
 
     event EditionURIUpdated(uint256 indexed _editionId);
     event EditionSalesDisabledToggled(uint256 indexed _editionId, bool _oldValue, bool _newValue);
-    event AdditionalEditionMetaDataSet(uint256 indexed _editionId);
+    event SealedEditionMetaDataSet(uint256 indexed _editionId);
     event AdditionalEditionUnlockableSet(uint256 indexed _editionId);
     event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
     event AdminTokenUriResolverSet(address indexed _tokenUriResolver);
 
-    // Token name
-    string public name = "KnownOriginDigitalAsset";
+    /// @notice Token name
+    string public constant name = "KnownOriginDigitalAsset";
 
-    // Token symbol
-    string public symbol = "KODA";
+    /// @notice Token symbol
+    string public constant symbol = "KODA";
 
-    // KODA version
-    string public version = "3";
+    /// @notice KODA version
+    string public constant version = "3";
 
-    // Royalties registry
+    /// @notice Royalties registry
     IERC2981 public royaltiesRegistryProxy;
 
-    // Token URI resolver
+    /// @notice Token URI resolver
     ITokenUriResolver public tokenUriResolver;
 
-    // Edition number pointer
+    /// @notice Edition number pointer
     uint256 public editionPointer;
 
     struct EditionDetails {
@@ -50,25 +50,25 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         string uri; // the referenced metadata
     }
 
-    // tokens are minted in batches - the first token ID used is representative of the edition ID (for now)
-    mapping(uint256 => EditionDetails) editionDetails;
+    /// @dev tokens are minted in batches - the first token ID used is representative of the edition ID
+    mapping(uint256 => EditionDetails) internal editionDetails;
 
-    // Mapping of tokenId => owner - only set on first transfer (after mint) such as a primary sale and/or gift
+    /// @dev Mapping of tokenId => owner - only set on first transfer (after mint) such as a primary sale and/or gift
     mapping(uint256 => address) internal owners;
 
-    // Mapping of owner => number of tokens owned
+    /// @dev Mapping of owner => number of tokens owned
     mapping(address => uint256) internal balances;
 
-    // Mapping of tokenId => approved address
+    /// @dev Mapping of tokenId => approved address
     mapping(uint256 => address) internal approvals;
 
-    // Mapping of owner => operator => approved
+    /// @dev Mapping of owner => operator => approved
     mapping(address => mapping(address => bool)) internal operatorApprovals;
 
-    // Optional one time use storage slot for additional edition metadata
-    mapping(uint256 => string) public additionalEditionMetaData;
+    /// @notice Optional one time use storage slot for additional edition metadata
+    mapping(uint256 => string) public sealedEditionMetaData;
 
-    // Optional one time use storage slot for additional unlockable content
+    /// @notice Optional storage slot for additional unlockable content
     mapping(uint256 => string) public additionalEditionUnlockableSlot;
 
     /// @notice Allows a creator to disable sales of their edition or they can ask KnownOrigin to do this
@@ -95,7 +95,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         _registerInterface(0x4b7f2c2d);
     }
 
-    // Mints batches of tokens emitting multiple Transfer events
+    /// @notice Mints batches of tokens emitting multiple Transfer events
     function mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri)
     public
     override
@@ -104,14 +104,20 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return _mintBatchEdition(_editionSize, _to, _uri);
     }
 
-    function mintBatchEditionAndComposeERC20s(uint96 _editionSize, address _to, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts)
-    external
+    /// @notice Mints an edition token batch and composes ERC20s for every token in the edition
+    /// @dev there is a limit on the number of ERC20s that can be embedded in an edition
+    function mintBatchEditionAndComposeERC20s(
+        uint96 _editionSize,
+        address _to,
+        string calldata _uri,
+        address[] calldata _erc20s,
+        uint256[] calldata _amounts
+    ) external
     override
     onlyContract
     returns (uint256 _editionId) {
         uint256 totalErc20s = _erc20s.length;
-        require(totalErc20s == _amounts.length, "Array length mismatch");
-        require(totalErc20s > 0, "Empty array");
+        require(totalErc20s > 0 && totalErc20s == _amounts.length, "Tokens invalid");
 
         _editionId = _mintBatchEdition(_editionSize, _to, _uri);
 
@@ -131,7 +137,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         balances[_to] = balances[_to] + _editionSize;
 
         // edition of x
-        _defineEditionConfig(start, _editionSize, _to, _uri);
+        editionDetails[start] = EditionDetails(_to, _editionSize, _uri);
 
         // Loop emit all transfer events
         uint256 end = start + _editionSize;
@@ -141,7 +147,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return start;
     }
 
-    // Mints batches of tokens but emits a single ConsecutiveTransfer event EIP-2309
+    /// @notice Mints batches of tokens but emits a single ConsecutiveTransfer event EIP-2309
     function mintConsecutiveBatchEdition(uint96 _editionSize, address _to, string calldata _uri)
     public
     override
@@ -157,7 +163,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         balances[_to] = balances[_to] + _editionSize;
 
         // Start ID always equals edition ID
-        _defineEditionConfig(start, _editionSize, _to, _uri);
+        editionDetails[start] = EditionDetails(_to, _editionSize, _uri);
 
         // emit EIP-2309 consecutive transfer event
         emit ConsecutiveTransfer(start, start + _editionSize, address(0), _to);
@@ -165,59 +171,59 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return start;
     }
 
+    /// @notice Allows the creator of an edition to update the token URI provided that no primary sales have been made
     function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external override {
         require(_msgSender() == editionDetails[_editionId].creator, "Not creator");
-        require(!hasMadePrimarySale(_editionId), "Edition has had primary sale and cannot update its URI");
+        require(!hasMadePrimarySale(_editionId), "Edition has had primary sale");
 
         editionDetails[_editionId].uri = _newURI;
 
         emit EditionURIUpdated(_editionId);
     }
 
-    function _defineEditionConfig(uint256 _editionId, uint96 _editionSize, address _to, string calldata _uri) internal {
-        require(_editionSize <= MAX_EDITION_ID, "Unable to make any more editions");
-
-        // Store edition blob to be the next token pointer
-        editionDetails[_editionId] = EditionDetails(_to, _editionSize, _uri);
-    }
-
+    /// @notice Increases the edition pointer and then returns this pointer for minting methods
     function generateNextEditionNumber() internal returns (uint256) {
         editionPointer = editionPointer + MAX_EDITION_SIZE;
         return editionPointer;
     }
 
+    /// @notice URI for an edition. Individual tokens in an edition will have this URI when tokenURI() is called
     function editionURI(uint256 _editionId) public view returns (string memory) {
-        EditionDetails storage edition = editionDetails[_editionId];
-        require(edition.editionSize != 0, "Edition does not exist");
+        require(_editionExists(_editionId), "Edition does not exist");
 
         if (tokenUriResolverActive() && tokenUriResolver.isDefined(_editionId)) {
             return tokenUriResolver.editionURI(_editionId);
         }
-        return edition.uri;
+
+        return editionDetails[_editionId].uri;
     }
 
+    /// @notice Returns the URI based on the edition associated with a token
     function tokenURI(uint256 _tokenId) public view returns (string memory) {
+        require(_exists(_tokenId), "Token does not exist");
         uint256 editionId = _editionFromTokenId(_tokenId);
-        EditionDetails storage edition = editionDetails[editionId];
-        require(edition.editionSize != 0, "Token does not exist");
 
         if (tokenUriResolverActive() && tokenUriResolver.isDefined(editionId)) {
             return tokenUriResolver.editionURI(editionId);
         }
-        return edition.uri;
+
+        return editionDetails[editionId].uri;
     }
 
+    /// @notice Allows the caller to check if external URI resolver is active
     function tokenUriResolverActive() public view returns (bool) {
         return address(tokenUriResolver) != address(0);
     }
 
+    /// @notice Additional metadata string for an edition
     function editionAdditionalMetaData(uint256 _editionId) public view returns (string memory) {
-        return additionalEditionMetaData[_editionId];
+        return sealedEditionMetaData[_editionId];
     }
 
+    /// @notice Additional metadata string for a token
     function tokenAdditionalMetaData(uint256 _tokenId) public view returns (string memory) {
         uint256 editionId = _editionFromTokenId(_tokenId);
-        return additionalEditionMetaData[editionId];
+        return sealedEditionMetaData[editionId];
     }
 
     function getEditionDetails(uint256 _tokenId)
@@ -236,13 +242,20 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         );
     }
 
-    function getEditionSalesDisabled(uint256 _editionId) external view override returns (bool) {
+    /// @notice If primary sales for an edition are disabled
+    function isEditionSalesDisabled(uint256 _editionId) external view override returns (bool) {
         return editionSalesDisabled[_editionId];
     }
 
+    /// @notice If primary sales for an edition are disabled or if the edition is sold out
+    function isSalesDisabledOrSoldOut(uint256 _editionId) external view override returns (bool) {
+        return editionSalesDisabled[_editionId] || isEditionSoldOut(_editionId);
+    }
+
+    /// @notice Toggle for disabling primary sales for an edition
     function toggleEditionSalesDisabled(uint256 _editionId) external override {
         address creator = editionDetails[_editionId].creator;
-        require(creator != address(0), "Edition does not exist");
+        require(_editionExists(_editionId), "Edition does not exist");
 
         require(
             creator == _msgSender() || accessControls.hasAdminRole(_msgSender()),
@@ -266,12 +279,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return _getCreatorOfEdition(_editionFromTokenId(_tokenId));
     }
 
-    function tokenCreator(uint256 _tokenId) public override view returns (address _originalCreator) {
-        return _getCreatorOfEdition(_editionFromTokenId(_tokenId));
-    }
-
     function _getCreatorOfEdition(uint256 _editionId) internal view returns (address _originalCreator) {
-        // drop the other size bits
         return editionDetails[_editionId].creator;
     }
 
@@ -292,15 +300,27 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /////////////////////
 
     function editionExists(uint256 _editionId) public override view returns (bool) {
+        return _editionExists(_editionId);
+    }
+
+    function _editionExists(uint256 _editionId) internal view returns (bool) {
         return editionDetails[_editionId].editionSize > 0;
     }
 
     function exists(uint256 _tokenId) public override view returns (bool) {
-        address owner = _ownerOf(_tokenId, _editionFromTokenId(_tokenId));
-        return owner != address(0);
+        return _exists(_tokenId);
     }
 
+    function _exists(uint256 _tokenId) internal view returns (bool) {
+        return _ownerOf(_tokenId, _editionFromTokenId(_tokenId)) != address(0);
+    }
+
+    /// @notice Returns the last token ID of an edition based on the edition's size
     function maxTokenIdOfEdition(uint256 _editionId) public override view returns (uint256 _tokenId) {
+        return _maxTokenIdOfEdition(_editionId);
+    }
+
+    function _maxTokenIdOfEdition(uint256 _editionId) internal view returns (uint256 _tokenId) {
         return editionDetails[_editionId].editionSize + _editionId;
     }
 
@@ -372,9 +392,10 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     // Primary Sale Utilities methods //
     ////////////////////////////////////
 
+    /// @notice List of token IDs that are still with the original creator
     function getAllUnsoldTokenIdsForEdition(uint256 _editionId) public view returns (uint256[] memory) {
-        require(editionDetails[_editionId].editionSize > 0, "Edition does not exist");
-        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
+        require(_editionExists(_editionId), "Edition does not exist");
+        uint256 maxTokenId = _maxTokenIdOfEdition(_editionId);
 
         // work out number of unsold tokens in order to allocate memory to an array later
         uint256 numOfUnsoldTokens;
@@ -400,6 +421,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return unsoldTokens;
     }
 
+    /// @notice For a given edition, returns the next token and associated royalty information
     function facilitateNextPrimarySale(uint256 _editionId)
     public
     override
@@ -417,8 +439,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return (_creator, _creator, _tokenId);
     }
 
+    /// @notice Return the next unsold token ID for a given edition unless all tokens have been sold
     function getNextAvailablePrimarySaleToken(uint256 _editionId) public override view returns (uint256 _tokenId) {
-        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
+        uint256 maxTokenId = _maxTokenIdOfEdition(_editionId);
 
         // low to high
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
@@ -430,8 +453,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         revert("No tokens left on the primary market");
     }
 
+    /// @notice Starting from the last token in an edition and going down the first, returns the next unsold token (if any)
     function getReverseAvailablePrimarySaleToken(uint256 _editionId) public override view returns (uint256 _tokenId) {
-        uint256 highestTokenId = _editionId + editionDetails[_editionId].editionSize - 1;
+        uint256 highestTokenId = _maxTokenIdOfEdition(_editionId) - 1;
 
         // high to low
         while (highestTokenId >= _editionId) {
@@ -444,6 +468,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         revert("No tokens left on the primary market");
     }
 
+    /// @notice Using the reverse token ID logic of an edition, returns next token ID and associated royalty information
     function facilitateReversePrimarySale(uint256 _editionId)
     public
     override
@@ -461,13 +486,15 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return (_creator, _creator, _tokenId);
     }
 
+    /// @notice If the token specified by token ID has been sold on the primary market
     function hadPrimarySaleOfToken(uint256 _tokenId) public override view returns (bool) {
         return owners[_tokenId] != address(0);
     }
 
+    /// @notice If any token in the edition has been sold
     function hasMadePrimarySale(uint256 _editionId) public override view returns (bool) {
-        require(editionDetails[_editionId].editionSize > 0, "Edition does not exist");
-        uint256 maxTokenId = _editionId + editionDetails[_editionId].editionSize;
+        require(_editionExists(_editionId), "Edition does not exist");
+        uint256 maxTokenId = _maxTokenIdOfEdition(_editionId);
 
         // low to high
         for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
@@ -478,6 +505,21 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         }
 
         return false;
+    }
+
+    /// @notice If all tokens in the edition have been sold
+    function isEditionSoldOut(uint256 _editionId) public override view returns (bool) {
+        uint256 maxTokenId = _maxTokenIdOfEdition(_editionId);
+
+        // low to high
+        for (uint256 tokenId = _editionId; tokenId < maxTokenId; tokenId++) {
+            // if no owner set - assume primary if not moved
+            if (owners[tokenId] == address(0)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     //////////////
@@ -596,7 +638,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return owner;
     }
 
-    // magic internal method for working out current owner - this returns
+    /// @dev Newly created editions and its tokens minted to a creator don't have the owner set until the token is sold on the primary market
+    /// @dev Therefore, if internally an edition exists and owner of token is zero address, then creator still owns the token
+    /// @dev Otherwise, the token owner is returned or the zero address if the token does not exist
     function _ownerOf(uint256 _tokenId, uint256 _editionId) internal view returns (address) {
 
         // If an owner assigned
@@ -607,7 +651,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
         // fall back to edition creator
         address possibleCreator = _getCreatorOfEdition(_editionId);
-        if (possibleCreator != address(0) && (editionDetails[_editionId].editionSize + _editionId - 1) >= _tokenId) {
+        if (possibleCreator != address(0) && (_maxTokenIdOfEdition(_editionId) - 1) >= _tokenId) {
             return possibleCreator;
         }
 
@@ -699,10 +743,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         _removeWhitelistERC20(_address);
     }
 
-    function updateMaxERC20sPerNFT(uint256 _max) override onlyAdmin public {
-        _updateMaxERC20sPerNFT(_max);
-    }
-
     function setRoyaltiesRegistryProxy(IERC2981 _royaltiesRegistryProxy) onlyAdmin public {
         royaltiesRegistryProxy = _royaltiesRegistryProxy;
         emit AdminRoyaltiesRegistryProxySet(address(_royaltiesRegistryProxy));
@@ -717,17 +757,17 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     // Creator functions //
     ///////////////////////
 
-    // Optional metadata storage slot which allows the creator to set an additional metadata blob on the edition
+    /// @notice Optional metadata storage slot which allows the creator to set an additional metadata blob on the edition
     function lockInAdditionalMetaData(uint256 _editionId, string calldata _metadata) external {
-        require(_msgSender() == getCreatorOfEdition(_editionId), "unable to set when not creator");
-        require(bytes(additionalEditionMetaData[_editionId]).length == 0, "can only be set once");
-        additionalEditionMetaData[_editionId] = _metadata;
-        emit AdditionalEditionMetaDataSet(_editionId);
+        require(_msgSender() == getCreatorOfEdition(_editionId), "Unable to set when not creator");
+        require(bytes(sealedEditionMetaData[_editionId]).length == 0, "can only be set once");
+        sealedEditionMetaData[_editionId] = _metadata;
+        emit SealedEditionMetaDataSet(_editionId);
     }
 
-    // Optional storage slot which allows the creator to set an additional unlockable blob on the edition
+    /// @notice Optional storage slot which allows the creator to set an additional unlockable blob on the edition
     function lockInUnlockableContent(uint256 _editionId, string calldata _content) external {
-        require(_msgSender() == getCreatorOfEdition(_editionId), "unable to set when not creator");
+        require(_msgSender() == getCreatorOfEdition(_editionId), "Unable to set when not creator");
         additionalEditionUnlockableSlot[_editionId] = _content;
         emit AdditionalEditionUnlockableSet(_editionId);
     }

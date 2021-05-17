@@ -58,8 +58,8 @@ contract('KODAV3Marketplace', function (accounts) {
     this.secondarySaleRoyalty = await this.marketplace.secondarySaleRoyalty();
   });
 
-  describe('secondary sale token listing', async () => {
-    describe('listToken()', () => {
+  describe.skip('secondary sale token listing', async () => {
+    describe.skip('listToken()', () => {
 
       const _0_1_ETH = ether('0.1');
 
@@ -135,7 +135,7 @@ contract('KODAV3Marketplace', function (accounts) {
       });
     });
 
-    describe('delistToken()', () => {
+    describe.skip('delistToken()', () => {
 
       const _0_1_ETH = ether('0.1');
 
@@ -197,7 +197,7 @@ contract('KODAV3Marketplace', function (accounts) {
       });
     });
 
-    describe('buyToken()', () => {
+    describe.skip('buyToken()', () => {
 
       const _0_1_ETH = ether('0.1');
 
@@ -298,7 +298,7 @@ contract('KODAV3Marketplace', function (accounts) {
       });
     });
 
-    describe('buyTokenFor()', () => {
+    describe.skip('buyTokenFor()', () => {
 
       const _0_1_ETH = ether('0.1');
 

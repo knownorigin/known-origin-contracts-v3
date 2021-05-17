@@ -57,9 +57,9 @@ contract('KODAV3Marketplace', function (accounts) {
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  describe("stepped auctions", () => {
+  describe.skip("stepped auctions", () => {
 
-    describe("listSteppedEditionAuction()", () => {
+    describe.skip("listSteppedEditionAuction()", () => {
 
         beforeEach(async () => {
           // Ensure owner is approved as this will fail if not
@@ -181,7 +181,7 @@ contract('KODAV3Marketplace', function (accounts) {
         });
       });
 
-    describe("buyNextStep()", () => {
+    describe.skip("buyNextStep()", () => {
 
         beforeEach(async () => {
           // Ensure owner is approved as this will fail if not
@@ -448,7 +448,7 @@ contract('KODAV3Marketplace', function (accounts) {
         })
       });
 
-    describe('buy when sales disabled', () => {
+    describe.skip('buy when sales disabled', () => {
       const _0_1_ETH = ether('0.1');
 
       beforeEach(async () => {
@@ -499,7 +499,7 @@ contract('KODAV3Marketplace', function (accounts) {
       });
     })
 
-    describe("convertSteppedAuctionToListing()", () => {
+    describe.skip("convertSteppedAuctionToListing()", () => {
 
       beforeEach(async () => {
         // Ensure owner is approved as this will fail if not

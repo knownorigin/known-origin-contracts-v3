@@ -55,7 +55,7 @@ contract('KODAV3Marketplace', function (accounts) {
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  // describe('two primary sales via \'buy now\' purchase and re-sold on secondary', () => {
+  // describe.skip('two primary sales via \'buy now\' purchase and re-sold on secondary', () => {
   //
   //   const _0_1_ETH = ether('0.1');
   //
@@ -178,7 +178,7 @@ contract('KODAV3Marketplace', function (accounts) {
   //     }
   //   }).timeout(300000);
   //
-  //   describe('delistEdition()', async () => {
+  //   describe.skip('delistEdition()', async () => {
   //
   //     it('edition is delisted and emits an event', async () => {
   //       const receipt = await this.marketplace.delistEdition(firstEditionTokenId, {from: minter});
@@ -202,7 +202,7 @@ contract('KODAV3Marketplace', function (accounts) {
   //   });
   // });
 
-  describe('primary sale edition listing', async () => {
+  describe.skip('primary sale edition listing', async () => {
 
     beforeEach(async () => {
       // Ensure owner is approved as this will fail if not
@@ -214,7 +214,7 @@ contract('KODAV3Marketplace', function (accounts) {
       this.start = await time.latest();
     });
 
-    describe('listEdition()', () => {
+    describe.skip('listEdition()', () => {
 
       beforeEach(async () => {
         await this.marketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, this.start, {from: contract});
@@ -273,7 +273,7 @@ contract('KODAV3Marketplace', function (accounts) {
         expect(date).to.be.bignumber.equal(this.start);
       });
 
-      describe('setEditionPriceListing()', async () => {
+      describe.skip('setEditionPriceListing()', async () => {
 
         it('reverts if not edition owner', async () => {
           await expectRevert(
@@ -303,7 +303,7 @@ contract('KODAV3Marketplace', function (accounts) {
       });
     });
 
-    describe('buyEditionToken()', () => {
+    describe.skip('buyEditionToken()', () => {
 
       const _0_1_ETH = ether('0.1');
 
@@ -360,7 +360,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe('buyEditionTokenFor()', () => {
+    describe.skip('buyEditionTokenFor()', () => {
 
       const _0_1_ETH = ether('0.1');
 
@@ -432,7 +432,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe('convertFromBuyNowToOffers()', () => {
+    describe.skip('convertFromBuyNowToOffers()', () => {
 
       beforeEach(async () => {
         // create a second edition
@@ -526,7 +526,7 @@ contract('KODAV3Marketplace', function (accounts) {
       });
     });
 
-    describe('buy when sales disabled', () => {
+    describe.skip('buy when sales disabled', () => {
       const _0_1_ETH = ether('0.1');
 
       beforeEach(async () => {

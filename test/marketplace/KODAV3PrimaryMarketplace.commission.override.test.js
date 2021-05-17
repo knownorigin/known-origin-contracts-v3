@@ -50,10 +50,10 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
 
   });
 
-  describe('commission override', () => {
+  describe.skip('commission override', () => {
     const commissionOverride = new BN('4000000')
 
-    describe('setKoCommissionOverrideForReceiver()', () => {
+    describe.skip('setKoCommissionOverrideForReceiver()', () => {
       it('Updates the override as admin', async () => {
         const {receipt} = await this.marketplace.setKoCommissionOverrideForReceiver(minter, commissionOverride, {from: admin})
 

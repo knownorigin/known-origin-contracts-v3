@@ -953,7 +953,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('should lockInAdditionalMetaData()', async () => {
       await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
-      expect(await this.token.additionalEditionMetaData(firstEditionTokenId)).to.be.equal('hello');
+      expect(await this.token.sealedEditionMetaData(firstEditionTokenId)).to.be.equal('hello');
     });
 
     it('should editionAdditionalMetaData()', async () => {
@@ -977,7 +977,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
       await expectRevert(
         this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: collabDao}),
-        'unable to set when not creator'
+        'Unable to set when not creator'
       );
     });
 
@@ -1200,7 +1200,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('reverts if not admin', async () => {
       await expectRevert(
         this.token.withdrawStuckTokens(this.token.address, '1000', minter, {from: collectorA}),
-        'Caller must have contract or admin role'
+        'Caller must have admin role'
       );
     });
   });
@@ -1335,7 +1335,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: owner}),
-        "Edition has had primary sale and cannot update its URI"
+        "Edition has had primary sale"
       )
     })
   })
@@ -1396,6 +1396,27 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       await expectRevert(
         this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: collectorA}),
         "Only creator or platform admin"
+      )
+    })
+  })
+
+  describe('lockInUnlockableContent()', () => {
+    it('Can call as creator', async () => {
+      await this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: contract})
+
+      const content = 'random'
+      const {receipt} = await this.token.lockInUnlockableContent(firstEditionTokenId, content, {from: owner})
+      await expectEvent(receipt, 'AdditionalEditionUnlockableSet', {
+        _editionId: firstEditionTokenId
+      })
+
+      expect(await this.token.additionalEditionUnlockableSlot(firstEditionTokenId)).to.be.equal(content)
+    })
+
+    it('Reverts when not creator', async () => {
+      await expectRevert(
+        this.token.lockInUnlockableContent(firstEditionTokenId, 'collector a is the best', {from: collectorA}),
+        "Unable to set when not creator"
       )
     })
   })
