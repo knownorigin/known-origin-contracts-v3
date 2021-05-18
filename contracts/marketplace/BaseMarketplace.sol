@@ -75,6 +75,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         emit AdminRecoverETH(_recipient, _amount);
     }
 
+    // todo - should access controls update methods generally have more guards i.e. are we updating to an access controls contract
     function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {
         emit AdminUpdateAccessControls(accessControls, _accessControls);
         accessControls = _accessControls;

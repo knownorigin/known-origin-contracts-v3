@@ -103,28 +103,28 @@ contract('KODAV3Marketplace', function (accounts) {
         await this.marketplace.listTokenForBuyNow(token2, _0_1_ETH, start, {from: collectorB});
         await this.marketplace.listTokenForBuyNow(token3, _0_1_ETH, start, {from: collectorC});
 
-        let listing = await this.marketplace.getListing(token1);
-        expect(listing._seller).to.be.equal(collectorA);
-        expect(listing._listingPrice).to.be.bignumber.equal(_0_1_ETH);
-        expect(listing._startDate).to.be.bignumber.equal(start);
+        let listing = await this.marketplace.editionOrTokenListings(token1);
+        expect(listing.seller).to.be.equal(collectorA);
+        expect(listing.listingPrice).to.be.bignumber.equal(_0_1_ETH);
+        expect(listing.startDate).to.be.bignumber.equal(start);
 
-        listing = await this.marketplace.getListing(token2);
-        expect(listing._seller).to.be.equal(collectorB);
-        expect(listing._listingPrice).to.be.bignumber.equal(_0_1_ETH);
-        expect(listing._startDate).to.be.bignumber.equal(start);
+        listing = await this.marketplace.editionOrTokenListings(token2);
+        expect(listing.seller).to.be.equal(collectorB);
+        expect(listing.listingPrice).to.be.bignumber.equal(_0_1_ETH);
+        expect(listing.startDate).to.be.bignumber.equal(start);
 
-        listing = await this.marketplace.getListing(token3);
-        expect(listing._seller).to.be.equal(collectorC);
-        expect(listing._listingPrice).to.be.bignumber.equal(_0_1_ETH);
-        expect(listing._startDate).to.be.bignumber.equal(start);
+        listing = await this.marketplace.editionOrTokenListings(token3);
+        expect(listing.seller).to.be.equal(collectorC);
+        expect(listing.listingPrice).to.be.bignumber.equal(_0_1_ETH);
+        expect(listing.startDate).to.be.bignumber.equal(start);
 
-        const seller = await this.marketplace.getListingSeller(token1);
+        const {seller} = await this.marketplace.editionOrTokenListings(token1);
         expect(seller).to.be.equal(collectorA);
 
-        const listingPrice = await this.marketplace.getListingPrice(token1);
-        expect(listingPrice).to.be.bignumber.equal(_0_1_ETH);
+        const {price} = await this.marketplace.editionOrTokenListings(token1);
+        expect(price).to.be.bignumber.equal(_0_1_ETH);
 
-        const startDate = await this.marketplace.getListingDate(token1);
+        const {start: startDate} = await this.marketplace.editionOrTokenListings(token1);
         expect(startDate).to.be.bignumber.equal(start);
       });
 
@@ -174,16 +174,16 @@ contract('KODAV3Marketplace', function (accounts) {
         const start = await time.latest();
         await this.marketplace.listTokenForBuyNow(token1, _0_1_ETH, start, {from: collectorA});
 
-        let listing = await this.marketplace.getListing(token1);
-        expect(listing._seller).to.be.equal(collectorA);
-        expect(listing._listingPrice).to.be.bignumber.equal(_0_1_ETH);
-        expect(listing._startDate).to.be.bignumber.equal(start);
+        let listing = await this.marketplace.editionOrTokenListings(token1);
+        expect(listing.seller).to.be.equal(collectorA);
+        expect(listing.listingPrice).to.be.bignumber.equal(_0_1_ETH);
+        expect(listing.startDate).to.be.bignumber.equal(start);
 
         await this.marketplace.delistToken(token1, {from: collectorA});
-        listing = await this.marketplace.getListing(token1);
-        expect(listing._seller).to.be.equal(ZERO_ADDRESS);
-        expect(listing._listingPrice).to.be.bignumber.equal(ZERO);
-        expect(listing._startDate).to.be.bignumber.equal(ZERO);
+        listing = await this.marketplace.editionOrTokenListings(token1);
+        expect(listing.seller).to.be.equal(ZERO_ADDRESS);
+        expect(listing.listingPrice).to.be.bignumber.equal(ZERO);
+        expect(listing.startDate).to.be.bignumber.equal(ZERO);
       });
 
       it('reverts if not owner', async () => {

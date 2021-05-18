@@ -221,10 +221,10 @@ contract('KODAV3Marketplace', function (accounts) {
       });
 
       it('can list and purchase upto limit (of 3)', async () => {
-        const listing = await this.marketplace.getListing(firstEditionTokenId);
-        expect(listing._seller).to.be.equal(minter);
-        expect(listing._listingPrice).to.be.bignumber.equal(_0_1_ETH);
-        expect(listing._startDate).to.be.bignumber.equal(this.start);
+        const listing = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
+        expect(listing.seller).to.be.equal(minter);
+        expect(listing.price).to.be.bignumber.equal(_0_1_ETH);
+        expect(listing.start).to.be.bignumber.equal(this.start);
 
         const token1 = firstEditionTokenId;
         const token2 = firstEditionTokenId.add(ONE);
@@ -258,21 +258,6 @@ contract('KODAV3Marketplace', function (accounts) {
         );
       });
 
-      it('getListingSeller()', async () => {
-        const listingSeller = await this.marketplace.getListingSeller(firstEditionTokenId);
-        expect(listingSeller).to.be.equal(minter);
-      });
-
-      it('getListingPrice()', async () => {
-        const price = await this.marketplace.getListingPrice(firstEditionTokenId);
-        expect(price).to.be.bignumber.equal(_0_1_ETH);
-      });
-
-      it('getListingDate()', async () => {
-        const date = await this.marketplace.getListingDate(firstEditionTokenId);
-        expect(date).to.be.bignumber.equal(this.start);
-      });
-
       describe('setBuyNowPriceListing()', async () => {
 
         it('reverts if not edition owner', async () => {
@@ -285,7 +270,7 @@ contract('KODAV3Marketplace', function (accounts) {
         it('can change if caller is a contract', async () => {
           const receipt = await this.marketplace.setBuyNowPriceListing(firstEditionTokenId, _0_2_ETH, {from: contract});
 
-          const price = await this.marketplace.getListingPrice(firstEditionTokenId);
+          const {price} = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
           expect(price).to.be.bignumber.equal(_0_2_ETH);
 
           expectEvent(receipt, 'BuyNowPriceChanged', {
@@ -297,7 +282,7 @@ contract('KODAV3Marketplace', function (accounts) {
         it('can change if caller is a edition creator', async () => {
           await this.marketplace.setBuyNowPriceListing(firstEditionTokenId, _0_3_ETH, {from: minter});
 
-          const price = await this.marketplace.getListingPrice(firstEditionTokenId);
+          const {price} = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
           expect(price).to.be.bignumber.equal(_0_3_ETH);
         });
       });
@@ -525,10 +510,10 @@ contract('KODAV3Marketplace', function (accounts) {
         expect(startDate).to.be.bignumber.equal(start);
 
         // listing is clear
-        const listing = await this.marketplace.getListing(firstEditionTokenId);
-        expect(listing._seller).to.be.equal(ZERO_ADDRESS);
-        expect(listing._listingPrice).to.be.bignumber.equal(ZERO);
-        expect(listing._startDate).to.be.bignumber.equal(ZERO);
+        const listing = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
+        expect(listing.seller).to.be.equal(ZERO_ADDRESS);
+        expect(listing.price).to.be.bignumber.equal(ZERO);
+        expect(listing.start).to.be.bignumber.equal(ZERO);
       });
     });
 

@@ -169,7 +169,7 @@ contract('KODAV3Marketplace', function (accounts) {
             await this.marketplace.listSteppedEditionAuction(minter, token, _1_ETH, _0_1_ETH, start, {from: contract});
 
             //address _creator, uint128 _basePrice, uint128 _step, uint128 _startDate, uint128 _currentStep
-            const listing = await this.marketplace.getSteppedAuctionState(token);
+            const listing = await this.marketplace.editionStep(token);
             expect(listing.creator).to.be.equal(minter);
             expect(listing.basePrice).to.be.bignumber.equal(_1_ETH);
             expect(listing.stepPrice).to.be.bignumber.equal(_0_1_ETH);
@@ -324,13 +324,13 @@ contract('KODAV3Marketplace', function (accounts) {
 
             const edition = firstEditionTokenId;
 
-            let auctionState = await this.marketplace.getSteppedAuctionState(edition);
+            let auctionState = await this.marketplace.editionStep(edition);
             expect(auctionState.currentStep).to.be.bignumber.equal(ZERO);
 
             // collector A buys a token
             await this.marketplace.buyNextStep(edition, {from: collectorA, value: _1_ETH});
 
-            auctionState = await this.marketplace.getSteppedAuctionState(edition);
+            auctionState = await this.marketplace.editionStep(edition);
             expect(auctionState.currentStep).to.be.bignumber.equal(ONE);
 
           });
@@ -592,10 +592,10 @@ contract('KODAV3Marketplace', function (accounts) {
           await this.marketplace.convertSteppedAuctionToListing(edition, listingPrice, {from: minter});
 
           //address _seller, uint128 _listingPrice, uint128 _startDate
-          const listing = await this.marketplace.getListing(edition);
-          expect(listing._seller).to.be.equal(minter);
-          expect(listing._listingPrice).to.be.bignumber.equal(_1_ETH);
-          expect(listing._startDate).to.be.bignumber.equal(ZERO);
+          const listing = await this.marketplace.editionOrTokenListings(edition);
+          expect(listing.seller).to.be.equal(minter);
+          expect(listing.listingPrice).to.be.bignumber.equal(_1_ETH);
+          expect(listing.startDate).to.be.bignumber.equal(ZERO);
 
         });
 

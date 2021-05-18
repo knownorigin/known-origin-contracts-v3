@@ -89,7 +89,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
           secondEditionTokenId,
           reservePrice,
           '0',
-          {from: contract}
+          {from: minter}
         )
 
         await expectRevert(

@@ -24,6 +24,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
     whenNotPaused {
         require(_isListingPermitted(_id), "Listing is not permitted");
 
+        // todo push requires higher
         require(
             accessControls.hasContractRole(_msgSender()) || koda.ownerOf(_id) == _msgSender(),
             "Only owner or contract"

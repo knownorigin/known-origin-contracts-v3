@@ -63,7 +63,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
           FIRST_TOKEN_ID,
           reservePrice,
           '0',
-          {from: contract}
+          {from: minter}
         )
 
         await expectEvent(receipt, 'ListedForReserveAuction', {
@@ -116,7 +116,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
 
       it('Reverts when reserve auction already in flight', async () => {
-        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract})
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
 
         await expectRevert(
           this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract}),
@@ -235,7 +235,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
 
         // list the token for reserve auction
-        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract})
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
 
         // mint another batch of tokens for further testing
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
@@ -359,7 +359,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
 
         // list the token for reserve auction
-        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract})
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
 
         // mint another batch of tokens for further testing
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
@@ -421,7 +421,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
 
         // list the token for reserve auction
-        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract})
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
 
         // mint another batch of tokens for further testing
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
@@ -477,7 +477,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
 
         // list the token for reserve auction
-        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract})
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
 
         // mint another batch of tokens for further testing
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
@@ -629,7 +629,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
 
         // list the token for reserve auction
-        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract})
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
 
         // mint another batch of tokens for further testing
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})

@@ -71,28 +71,6 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
       })
     })
 
-    describe('deactivateKOCommissionOverrideForReceiver()', () => {
-      it('Deactivates as admin', async () => {
-        // set the commission override
-        await this.marketplace.setKoCommissionOverrideForReceiver(minter, commissionOverride, {from: admin})
-
-        // check the override is valid
-        const koCommissionOverrideForReceiver = await this.marketplace.koCommissionOverrideForReceivers(minter)
-        expect(koCommissionOverrideForReceiver.active).to.be.true
-        expect(koCommissionOverrideForReceiver.koCommission).to.be.bignumber.equal(commissionOverride)
-
-        await this.marketplace.deactivateKOCommissionOverrideForReceiver(minter)
-        expect((await this.marketplace.koCommissionOverrideForReceivers(minter)).active).to.be.false
-      })
-
-      it('Reverts when not admin', async () => {
-        await expectRevert(
-          this.marketplace.deactivateKOCommissionOverrideForReceiver(minter, {from: collectorA}),
-          "Caller not admin"
-        )
-      })
-    })
-
     describe('setKoCommissionOverrideForEdition()', () => {
       it('Updates the override as admin', async () => {
         const {receipt} = await this.marketplace.setKoCommissionOverrideForEdition(firstEditionTokenId, commissionOverride, {from: admin})
@@ -106,28 +84,6 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
       it('Reverts when not admin', async () => {
         await expectRevert(
           this.marketplace.setKoCommissionOverrideForEdition(firstEditionTokenId, commissionOverride, {from: collectorA}),
-          "Caller not admin"
-        )
-      })
-    })
-
-    describe('deactivateKOCommissionOverrideForReceiver()', () => {
-      it('Deactivates as admin', async () => {
-        // set the commission override
-        await this.marketplace.setKoCommissionOverrideForEdition(firstEditionTokenId, commissionOverride, {from: admin})
-
-        // check the override is valid
-        const koCommissionOverrideForEdition = await this.marketplace.koCommissionOverrideForEditions(firstEditionTokenId)
-        expect(koCommissionOverrideForEdition.active).to.be.true
-        expect(koCommissionOverrideForEdition.koCommission).to.be.bignumber.equal(commissionOverride)
-
-        await this.marketplace.deactivateKOCommissionOverrideForEdition(firstEditionTokenId)
-        expect((await this.marketplace.koCommissionOverrideForEditions(firstEditionTokenId)).active).to.be.false
-      })
-
-      it('Reverts when not admin', async () => {
-        await expectRevert(
-          this.marketplace.deactivateKOCommissionOverrideForReceiver(minter, {from: collectorA}),
           "Caller not admin"
         )
       })
