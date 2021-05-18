@@ -95,7 +95,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
         // if someone else has previously bid, there is a bid we need to refund
         if (reserveAuction.bid > 0) {
-            _refundBidder(reserveAuction.bidder, reserveAuction.bid);
+            _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid);
         }
 
         reserveAuction.bid = uint128(msg.value);
@@ -140,7 +140,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         require(reserveAuction.bidder == _msgSender(), "Only the bidder can withdraw their bid");
 
         uint256 bidToRefund = reserveAuction.bid;
-        _refundBidder(reserveAuction.bidder, bidToRefund);
+        _refundBidder(_id, reserveAuction.bidder, bidToRefund);
 
         reserveAuction.bidder = address(0);
         reserveAuction.bid = 0;
@@ -198,7 +198,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         );
         // external call done last as a gas optimisation i.e. it wont be called if isSeller || isBidder is true
 
-        _refundBidder(reserveAuction.bidder, reserveAuction.bid);
+        _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid);
 
         emit EmergencyBidWithdrawFromReserveAuction(_id, reserveAuction.bidder, reserveAuction.bid);
 

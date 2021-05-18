@@ -20,6 +20,8 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     event AdminRecoverERC20(IERC20 indexed token, address indexed recipient, uint256 amount);
     event AdminRecoverETH(address payable indexed recipient, uint256 amount);
 
+    event BidderRefunded(uint256 _id, address _bidder, uint256 bid);
+
     // Only a whitelisted smart contract in the access controls contract
     modifier onlyContract() {
         require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
@@ -106,12 +108,13 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     }
 
     /// todo consume ID of entity and emit an event
-    function _refundBidder(address _receiver, uint256 _paymentAmount) internal {
+    function _refundBidder(uint256 _id, address _receiver, uint256 _paymentAmount) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
         require(success, "ETH refund failed");
+        emit BidderRefunded(_id, _receiver, _paymentAmount);
     }
 
-    function _refundBidderIgnoreError(address _receiver, uint256 _paymentAmount) internal {
+    function _refundBidderIgnoreError(uint256 _id, address _receiver, uint256 _paymentAmount) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
         if (!success) {
             // TODO shit something went wrong path

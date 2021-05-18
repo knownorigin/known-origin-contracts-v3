@@ -77,7 +77,7 @@ contract KODAV3SecondaryMarketplace is
 
         // send money back to top bidder if existing offer found
         if (offer.offer > 0) {
-            _refundBidder(offer.bidder, offer.offer);
+            _refundBidder(_tokenId, offer.bidder, offer.offer);
         }
 
         // setup offer
@@ -100,7 +100,7 @@ contract KODAV3SecondaryMarketplace is
         require(block.timestamp >= offer.lockupUntil, "Bid lockup not elapsed");
 
         // send money back to top bidder
-        _refundBidder(offer.bidder, offer.offer);
+        _refundBidder(_tokenId, offer.bidder, offer.offer);
 
         // delete offer
         delete tokenOffers[_tokenId];
@@ -120,7 +120,7 @@ contract KODAV3SecondaryMarketplace is
         require(currentOwner == _msgSender(), "Not current owner");
 
         // send money back to top bidder
-        _refundBidder(offer.bidder, offer.offer);
+        _refundBidder(_tokenId, offer.bidder, offer.offer);
 
         // delete offer
         delete tokenOffers[_tokenId];
@@ -157,7 +157,7 @@ contract KODAV3SecondaryMarketplace is
         require(offer.bidder != address(0), "No open bid");
 
         // send money back to top bidder
-        _refundBidderIgnoreError(offer.bidder, offer.bidder);
+        _refundBidderIgnoreError(_tokenId, offer.bidder, offer.offer);
 
         // delete offer
         delete tokenOffers[_tokenId];
@@ -216,7 +216,7 @@ contract KODAV3SecondaryMarketplace is
 
         // refund any bids
         if (reserveAuction.bid > 0) {
-            _refundBidder(reserveAuction.bidder, reserveAuction.bid);
+            _refundBidder(_editionId, reserveAuction.bidder, reserveAuction.bid);
         }
 
         delete editionOrTokenWithReserveAuctions[_editionId];

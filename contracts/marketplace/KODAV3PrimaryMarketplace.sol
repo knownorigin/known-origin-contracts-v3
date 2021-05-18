@@ -122,7 +122,7 @@ contract KODAV3PrimaryMarketplace is
 
         // send money back to top bidder if existing offer found
         if (offer.offer > 0) {
-            _refundBidder(offer.bidder, offer.offer);
+            _refundBidder(_editionId, offer.bidder, offer.offer);
         }
 
         // setup offer
@@ -142,7 +142,7 @@ contract KODAV3PrimaryMarketplace is
         require(block.timestamp >= offer.lockupUntil, "Bid lockup not elapsed");
 
         // send money back to top bidder
-        _refundBidder(offer.bidder, offer.offer);
+        _refundBidder(_editionId, offer.bidder, offer.offer);
 
         // emit event
         emit EditionBidWithdrawn(_editionId, _msgSender());
@@ -161,7 +161,7 @@ contract KODAV3PrimaryMarketplace is
         require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Caller not the creator");
 
         // send money back to top bidder
-        _refundBidder(offer.bidder, offer.offer);
+        _refundBidder(_editionId, offer.bidder, offer.offer);
 
         // emit event
         emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
@@ -196,7 +196,7 @@ contract KODAV3PrimaryMarketplace is
         require(offer.bidder != address(0), "No open bid");
 
         // send money back to top bidder
-        _refundBidderIgnoreError(offer.bidder, offer.offer);
+        _refundBidderIgnoreError(_editionId, offer.bidder, offer.offer);
 
         emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
 
@@ -216,7 +216,7 @@ contract KODAV3PrimaryMarketplace is
         // send money back to top bidder if existing offer found
         Offer storage offer = editionOffers[_editionId];
         if (offer.offer > 0) {
-            _refundBidder(offer.bidder, offer.offer);
+            _refundBidder(_editionId, offer.bidder, offer.offer);
             emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
         }
 
@@ -377,7 +377,7 @@ contract KODAV3PrimaryMarketplace is
 
         // refund any bids
         if (reserveAuction.bid > 0) {
-            _refundBidder(reserveAuction.bidder, reserveAuction.bid);
+            _refundBidder(_editionId, reserveAuction.bidder, reserveAuction.bid);
         }
 
         delete editionOrTokenWithReserveAuctions[_editionId];
@@ -400,7 +400,7 @@ contract KODAV3PrimaryMarketplace is
 
         // refund any bids
         if (reserveAuction.bid > 0) {
-            _refundBidder(reserveAuction.bidder, reserveAuction.bid);
+            _refundBidder(_editionId, reserveAuction.bidder, reserveAuction.bid);
         }
 
         delete editionOrTokenWithReserveAuctions[_editionId];
