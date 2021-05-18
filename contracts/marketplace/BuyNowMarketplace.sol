@@ -57,10 +57,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
     public
     override
     whenNotPaused {
-        require(
-            editionOrTokenListings[_id].seller == _msgSender() || accessControls.hasContractRole(_msgSender()),
-            "Only seller or contract"
-        );
+        require(editionOrTokenListings[_id].seller == _msgSender(), "Only seller can change price");
 
         // Set price
         editionOrTokenListings[_id].price = _listingPrice;
@@ -75,7 +72,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
         require(msg.value >= listing.price, "List price not satisfied");
         require(block.timestamp >= listing.startDate, "List not available yet");
 
-        uint256 tokenId = _processSale(_id, msg.value, _recipient, listing.seller, false);
+        uint256 tokenId = _processSale(_id, msg.value, _recipient, listing.seller);
 
         emit BuyNowPurchased(tokenId, _recipient, msg.value);
     }

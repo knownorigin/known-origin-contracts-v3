@@ -62,7 +62,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     }
 
     function recoverStuckETH(address payable _recipient, uint256 _amount) public onlyAdmin {
-        _recipient.call{value: _amount}("");
+        _recipient.call{value : _amount}("");
         emit AdminRecoverETH(_recipient, _amount);
     }
 
@@ -105,9 +105,19 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         lockupUntil = block.timestamp + bidLockupPeriod;
     }
 
+    /// todo consume ID of entity and emit an event
     function _refundBidder(address _receiver, uint256 _paymentAmount) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
         require(success, "ETH refund failed");
+    }
+
+    function _refundBidderIgnoreError(address _receiver, uint256 _paymentAmount) internal {
+        (bool success,) = _receiver.call{value : _paymentAmount}("");
+        if (!success) {
+            // TODO shit something went wrong path
+        } else {
+            // todo consume ID of entity and emit an event
+        }
     }
 
     /// @dev This allows the processing of a marketplace sale to be delegated higher up the inheritance hierarchy
@@ -115,8 +125,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         uint256 _id,
         uint256 _paymentAmount,
         address _buyer,
-        address _seller,
-        bool _reverse
+        address _seller
     ) internal virtual returns (uint256);
 
     /// @dev This allows an auction mechanic to ask a marketplace if a new listing is permitted i.e. this could be false if the edition or token is already listed under a different mechanic

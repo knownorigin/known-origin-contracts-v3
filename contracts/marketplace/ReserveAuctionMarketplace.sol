@@ -43,13 +43,20 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         require(_isReserveListingPermitted(_id), "Reserve listing not permitted");
         require(_reservePrice >= minBidAmount, "Reserve price must be at least min bid");
 
+        // TODO Test scenarios
+        // Scenario 1:
+        //  - enabled for offers
+        //  - offer is made
+        //  - seller then converts to reserve
+        //  - can the original bidder get their money back, what are our options?
+
         editionOrTokenWithReserveAuctions[_id] = ReserveAuction({
-            seller: _creator,
-            bidder: address(0),
-            reservePrice: _reservePrice,
-            startDate: _startDate,
-            biddingEnd: 0,
-            bid: 0
+        seller : _creator,
+        bidder : address(0),
+        reservePrice : _reservePrice,
+        startDate : _startDate,
+        biddingEnd : 0,
+        bid : 0
         });
 
         emit ListedForReserveAuction(_id, _reservePrice, _startDate);
@@ -66,18 +73,21 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         require(block.timestamp >= reserveAuction.startDate, "Not accepting bids yet");
         require(msg.value >= reserveAuction.bid + minBidAmount, "You have not exceeded previous bid by min bid amount");
 
-        // if a bid has been placed, then we will have a bidding end timestamp and we need to ensure no one
-        // can bid beyond this
-        if (reserveAuction.biddingEnd > 0) {
-            require(block.timestamp < reserveAuction.biddingEnd, "No longer accepting bids");
-        }
-
         // If the reserve has been met, then bidding will end in 24 hours
         // if we are near the end, we have bids, then extend the bidding end
-        if (reserveAuction.bid + msg.value >= reserveAuction.reservePrice && reserveAuction.biddingEnd == 0) {
+        bool isCountDownTriggered = reserveAuction.biddingEnd > 0;
+        if (reserveAuction.bid + msg.value >= reserveAuction.reservePrice && !isCountDownTriggered) {
             reserveAuction.biddingEnd = uint128(block.timestamp) + reserveAuctionLengthOnceReserveMet;
-        } else if (reserveAuction.biddingEnd > 0) {
+        }
+        else if (isCountDownTriggered) {
+
+            // if a bid has been placed, then we will have a bidding end timestamp
+            // and we need to ensure no one can bid beyond this
+            require(block.timestamp < reserveAuction.biddingEnd, "No longer accepting bids");
+
             uint128 secondsUntilBiddingEnd = reserveAuction.biddingEnd - uint128(block.timestamp);
+
+            // If bid received with in the extension window, extend bidding end
             if (secondsUntilBiddingEnd <= reserveAuctionBidExtensionWindow) {
                 reserveAuction.biddingEnd = reserveAuction.biddingEnd + reserveAuctionBidExtensionWindow;
             }
@@ -102,22 +112,17 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
 
         require(reserveAuction.reservePrice > 0, "No active auction");
-        require(reserveAuction.bid > 0, "No bids received");
         require(reserveAuction.bid >= reserveAuction.reservePrice, "Reserve not met");
         require(block.timestamp > reserveAuction.biddingEnd, "Bidding has not yet ended");
-        require(
-            reserveAuction.bidder == _msgSender() ||
-            reserveAuction.seller == _msgSender() ||
-            accessControls.hasContractOrAdminRole(_msgSender()),
-            "Only winner, seller, contract or admin can result"
-        );
+
+        // N:B. anyone can result the action as only the winner and seller are compensated
 
         address winner = reserveAuction.bidder;
         address seller = reserveAuction.seller;
         uint256 winningBid = reserveAuction.bid;
         delete editionOrTokenWithReserveAuctions[_id];
 
-        _processSale(_id, winningBid, winner, seller, false);
+        _processSale(_id, winningBid, winner, seller);
 
         emit ReserveAuctionResulted(_id, winningBid, winner, _msgSender());
     }
@@ -153,10 +158,13 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
         require(reserveAuction.reservePrice > 0, "No reserve auction in flight");
         require(reserveAuction.seller == _msgSender(), "Not the seller");
-        require(reserveAuction.bid == 0, "Due to the active bid the reserve cannot be adjusted");
+        require(reserveAuction.biddingEnd == 0, "Reserve countdown commenced");
         require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
 
-        // todo allow when bids in flight and trigger countdown if we go below active bid in flight
+        // Trigger countdown if new reserve price is greater than any current bids
+        if (reserveAuction.bid >= _reservePrice) {
+            reserveAuction.biddingEnd = uint128(block.timestamp) + reserveAuctionLengthOnceReserveMet;
+        }
 
         reserveAuction.reservePrice = _reservePrice;
 
@@ -175,6 +183,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
     function _isReserveListingPermitted(uint256 _id) internal virtual returns (bool);
 
+    // todo - follow pattern when listing of asking the subclass if you can perform action through an internal method
     function _emergencyExitBidFromReserveAuction(uint256 _id) internal {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
 
@@ -186,7 +195,8 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         require(
             isSeller || isBidder || accessControls.hasContractOrAdminRole(_msgSender()),
             "Only seller, bidder, contract or platform admin"
-        ); // external call done last as a gas optimisation i.e. it wont be called if isSeller || isBidder is true
+        );
+        // external call done last as a gas optimisation i.e. it wont be called if isSeller || isBidder is true
 
         _refundBidder(reserveAuction.bidder, reserveAuction.bid);
 

@@ -92,13 +92,12 @@ contract KODAV3SecondaryMarketplace is
     whenNotPaused
     nonReentrant {
         Offer storage offer = tokenOffers[_tokenId];
-        require(offer.bidder != address(0), "No open bid");
 
         // caller must be bidder
         require(offer.bidder == _msgSender(), "Not bidder");
 
         // cannot withdraw before lockup period elapses
-        require(block.timestamp >= (offer.lockupUntil), "Bid lockup not elapsed");
+        require(block.timestamp >= offer.lockupUntil, "Bid lockup not elapsed");
 
         // send money back to top bidder
         _refundBidder(offer.bidder, offer.offer);
@@ -136,7 +135,7 @@ contract KODAV3SecondaryMarketplace is
     nonReentrant {
         Offer memory offer = tokenOffers[_tokenId];
         require(offer.bidder != address(0), "No open bid");
-        require(offer.offer == _offerPrice, "Offer price has changed");
+        require(offer.offer >= _offerPrice, "Offer price has changed");
 
         address currentOwner = koda.ownerOf(_tokenId);
         require(currentOwner == _msgSender(), "Not current owner");
@@ -150,12 +149,15 @@ contract KODAV3SecondaryMarketplace is
     }
 
     // emergency admin "reject" button for stuck bids
-    function adminRejectTokenBid(uint256 _tokenId) public onlyAdmin {
+    function adminRejectTokenBid(uint256 _tokenId)
+    public
+    nonReentrant
+    onlyAdmin {
         Offer memory offer = tokenOffers[_tokenId];
         require(offer.bidder != address(0), "No open bid");
 
         // send money back to top bidder
-        _refundBidder(offer.bidder, offer.offer);
+        _refundBidderIgnoreError(offer.bidder, offer.bidder);
 
         // delete offer
         delete tokenOffers[_tokenId];
@@ -202,24 +204,22 @@ contract KODAV3SecondaryMarketplace is
 
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
     public
-    //override
+    // todo add to interface - override
     whenNotPaused
     nonReentrant {
-        ReserveAuction storage tokenWithReserveAuction = editionOrTokenWithReserveAuctions[_editionId];
+        ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_editionId];
 
-        require(tokenWithReserveAuction.reservePrice > 0, "No active auction");
-        require(tokenWithReserveAuction.bid < tokenWithReserveAuction.reservePrice, "Can only convert before reserve met");
-        require(tokenWithReserveAuction.seller == _msgSender(), "Not the seller");
+        require(reserveAuction.reservePrice > 0, "No active auction");
+        require(reserveAuction.bid < reserveAuction.reservePrice, "Can only convert before reserve met");
+        require(reserveAuction.seller == _msgSender(), "Not the seller");
+        require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         // refund any bids
-        if (tokenWithReserveAuction.bid > 0) {
-            _refundBidder(tokenWithReserveAuction.bidder, tokenWithReserveAuction.bid);
+        if (reserveAuction.bid > 0) {
+            _refundBidder(reserveAuction.bidder, reserveAuction.bid);
         }
 
         delete editionOrTokenWithReserveAuctions[_editionId];
-
-        // Check price over min bid
-        require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         editionOrTokenListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
 
@@ -277,8 +277,7 @@ contract KODAV3SecondaryMarketplace is
         uint256 _tokenId,
         uint256 _paymentAmount,
         address _buyer,
-        address _seller,
-        bool
+        address _seller
     ) internal override returns (uint256) {
         _facilitateSecondarySale(_tokenId, _paymentAmount, _seller, _buyer);
         return _tokenId;

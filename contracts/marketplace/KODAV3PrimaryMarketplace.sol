@@ -177,7 +177,7 @@ contract KODAV3PrimaryMarketplace is
     nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
-        require(offer.offer == _offerPrice, "Offer price has changed");
+        require(offer.offer >= _offerPrice, "Offer price has changed");
         require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
 
         // get a new token from the edition to transfer ownership
@@ -196,7 +196,7 @@ contract KODAV3PrimaryMarketplace is
         require(offer.bidder != address(0), "No open bid");
 
         // send money back to top bidder
-        _refundBidder(offer.bidder, offer.offer);
+        _refundBidderIgnoreError(offer.bidder, offer.offer);
 
         emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
 
@@ -449,8 +449,8 @@ contract KODAV3PrimaryMarketplace is
         return accessControls.hasContractRole(_msgSender());
     }
 
-    function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller, bool _reverse) internal override returns (uint256) {
-        return _facilitateNextPrimarySale(_id, _paymentAmount, _buyer, _reverse);
+    function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller) internal override returns (uint256) {
+        return _facilitateNextPrimarySale(_id, _paymentAmount, _buyer, false);
     }
 
     function _facilitateNextPrimarySale(uint256 _editionId, uint256 _paymentAmount, address _buyer, bool _reverse) internal returns (uint256) {
@@ -503,6 +503,13 @@ contract KODAV3PrimaryMarketplace is
         if (editionStep[_editionId].seller != address(0)) {
             return true;
         }
+
+        // TODO Test scenarios
+        // Scenario 1:
+        //  - enabled for offers
+        //  - offer is made
+        //  - seller then converts to buy now
+        //  - can the original bidder get their money back?
 
         if (editionOrTokenWithReserveAuctions[_editionId].seller != address(0)) {
             return true;
