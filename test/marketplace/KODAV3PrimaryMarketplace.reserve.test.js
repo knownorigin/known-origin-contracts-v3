@@ -170,7 +170,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
 
         await expectRevert(
           this.marketplace.listForReserveAuction(minter, editionId, ether('0.25'), '0', {from: contract}),
-          "Auction already in flight"
+          "Listing not permitted"
         )
       })
 
@@ -183,7 +183,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
 
         await expectRevert(
           this.marketplace.listForReserveAuction(minter, editionId, ether('0.25'), '0', {from: contract}),
-          "Only 1 of 1 editions are supported"
+          "Reserve listing not permitted"
         )
       })
 

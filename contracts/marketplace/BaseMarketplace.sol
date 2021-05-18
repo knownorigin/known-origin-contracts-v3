@@ -26,15 +26,6 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         _;
     }
 
-    // Only a whitelisted smart contract or edition creator
-    modifier onlyContractOrCreator(uint256 _editionId) {
-        require(
-            accessControls.hasContractRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
-            "Caller not creator or contract"
-        );
-        _;
-    }
-
     // Only admin defined in the access controls contract
     modifier onlyAdmin() {
         require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
@@ -77,6 +68,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
 
     // todo - should access controls update methods generally have more guards i.e. are we updating to an access controls contract
     function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {
+        // TODO require _accessControls.hasAdminRole(_msgSender()) - add this all places where access controls can be updated
         emit AdminUpdateAccessControls(accessControls, _accessControls);
         accessControls = _accessControls;
     }

@@ -269,6 +269,10 @@ contract KODAV3SecondaryMarketplace is
         return koda.ownerOf(_tokenId) == _msgSender();
     }
 
+    function _isBuyNowListingPermitted(uint256 _tokenId) internal override returns (bool) {
+        return koda.ownerOf(_tokenId) == _msgSender();
+    }
+
     function _processSale(
         uint256 _tokenId,
         uint256 _paymentAmount,

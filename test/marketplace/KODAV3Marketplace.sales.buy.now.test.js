@@ -224,7 +224,7 @@ contract('KODAV3Marketplace', function (accounts) {
         const listing = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
         expect(listing.seller).to.be.equal(minter);
         expect(listing.price).to.be.bignumber.equal(_0_1_ETH);
-        expect(listing.start).to.be.bignumber.equal(this.start);
+        expect(listing.startDate).to.be.bignumber.equal(this.start);
 
         const token1 = firstEditionTokenId;
         const token2 = firstEditionTokenId.add(ONE);
@@ -513,7 +513,7 @@ contract('KODAV3Marketplace', function (accounts) {
         const listing = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
         expect(listing.seller).to.be.equal(ZERO_ADDRESS);
         expect(listing.price).to.be.bignumber.equal(ZERO);
-        expect(listing.start).to.be.bignumber.equal(ZERO);
+        expect(listing.startDate).to.be.bignumber.equal(ZERO);
       });
     });
 

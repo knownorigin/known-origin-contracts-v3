@@ -23,13 +23,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
     override
     whenNotPaused {
         require(_isListingPermitted(_id), "Listing is not permitted");
-
-        // todo push requires higher
-        require(
-            accessControls.hasContractRole(_msgSender()) || koda.ownerOf(_id) == _msgSender(),
-            "Only owner or contract"
-        );
-
+        require(_isBuyNowListingPermitted(_id), "Buy now listing invalid");
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         // Store listing data
@@ -85,4 +79,6 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
 
         emit BuyNowPurchased(tokenId, _recipient, msg.value);
     }
+
+    function _isBuyNowListingPermitted(uint256 _id) internal virtual returns (bool);
 }

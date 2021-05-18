@@ -46,7 +46,7 @@ interface IEditionSteppedMarketplace {
 
     function buyNextStep(uint256 _editionId) external payable;
 
-    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice) external;
+    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
 
     function updateSteppedAuction(uint256 _editionId, uint128 _basePrice, uint128 _stepPrice) external;
 }

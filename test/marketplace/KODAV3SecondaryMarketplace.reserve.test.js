@@ -119,19 +119,8 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
 
         await expectRevert(
-          this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract}),
-          "Auction already in flight"
-        )
-      })
-
-      it('Reverts for editions that are not 1 of 1', async () => {
-        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract})
-
-        expect(await this.token.getSizeOfEdition(SECOND_TOKEN_ID)).to.be.bignumber.equal('3')
-
-        await expectRevert(
-          this.marketplace.listForReserveAuction(minter, SECOND_TOKEN_ID, ether('0.25'), '0', {from: contract}),
-          "Only 1 of 1 editions are supported"
+          this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter}),
+          "Listing is permitted"
         )
       })
 
@@ -151,7 +140,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
 
         // list the token for reserve auction
-        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract})
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
 
         // mint another batch of tokens for further testing
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
@@ -185,7 +174,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         const currentTime = await time.latest()
         const _5_Mins_In_The_Future = currentTime.addn(5 * 60)
 
-        await this.marketplace.listForReserveAuction(minter, SECOND_TOKEN_ID, ether('0.25'), _5_Mins_In_The_Future, {from: contract})
+        await this.marketplace.listForReserveAuction(minter, SECOND_TOKEN_ID, ether('0.25'), _5_Mins_In_The_Future, {from: minter})
 
         await expectRevert(
           this.marketplace.placeBidOnReserveAuction(SECOND_TOKEN_ID),

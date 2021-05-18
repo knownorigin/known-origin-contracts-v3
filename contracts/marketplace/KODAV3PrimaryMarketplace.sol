@@ -21,7 +21,7 @@ contract KODAV3PrimaryMarketplace is
     BuyNowMarketplace {
 
     event PrimaryMarketplaceDeployed();
-    event AdminSetKoCommissionOverrideForReceiver(address indexed _receiver, uint256 _koCommission);
+    event AdminSetKoCommissionOverrideForCreator(address indexed _creator, uint256 _koCommission);
     event AdminSetKoCommissionOverrideForEdition(uint256 indexed _editionId, uint256 _koCommission);
 
     // KO Commission override definition for a given creator
@@ -49,8 +49,8 @@ contract KODAV3PrimaryMarketplace is
     /// @notice Edition ID -> KO commission override set by admin
     mapping(uint256 => KOCommissionOverride) public koCommissionOverrideForEditions;
 
-    /// @notice primary sale receiver -> KO commission override set by admin
-    mapping(address => KOCommissionOverride) public koCommissionOverrideForReceivers;
+    /// @notice primary sale creator -> KO commission override set by admin
+    mapping(address => KOCommissionOverride) public koCommissionOverrideForCreators;
 
     /// @notice Edition ID to Offer mapping
     mapping(uint256 => Offer) public editionOffers;
@@ -69,21 +69,11 @@ contract KODAV3PrimaryMarketplace is
         emit PrimaryMarketplaceDeployed();
     }
 
-    // assumes frontend protects against from these things from being called when:
-    //  - they dont need to be e.g. listing an edition when its sold out
-    //  - they cannot be done e.g. accepting an offer when the edition is sold out
-    //  - approvals go astray/removed - approvals may need to be mapped in subgraph
-    //  - when an edition sells out - implicit failure due to creator not owning anymore - we dont explicitly check remaining due to GAS
-
     // convert from a "buy now" listing and converting to "accepting offers" with an optional start date
     function convertFromBuyNowToOffers(uint256 _editionId, uint128 _startDate)
     public
     whenNotPaused {
-        // This will also catch no listing as seller wont be set
-        require(
-            editionOrTokenListings[_editionId].seller == _msgSender() || accessControls.hasContractRole(_msgSender()),
-            "Only seller or contract"
-        );
+        require(editionOrTokenListings[_editionId].seller == _msgSender(), "Only seller can convert");
 
         // clear listing
         delete editionOrTokenListings[_editionId];
@@ -93,7 +83,7 @@ contract KODAV3PrimaryMarketplace is
 
         // Emit event
         // todo emit a conversion event rather than the main enable event
-        emit EditionAcceptingOffer(_editionId, _startDate);
+        // emit EditionAcceptingOffer(_editionId, _startDate);
     }
 
     // Primary "offers" sale flow
@@ -218,18 +208,17 @@ contract KODAV3PrimaryMarketplace is
     public
     override
     whenNotPaused
-    nonReentrant
-    onlyContractOrCreator(_editionId) {
+    nonReentrant {
         require(!_isEditionListed(_editionId), "Edition is listed");
         require(_listingPrice >= minBidAmount, "Listing price not enough");
+        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
 
         // send money back to top bidder if existing offer found
         Offer storage offer = editionOffers[_editionId];
         if (offer.offer > 0) {
             _refundBidder(offer.bidder, offer.offer);
+            emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
         }
-
-        emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
 
         // delete offer
         delete editionOffers[_editionId];
@@ -250,8 +239,6 @@ contract KODAV3PrimaryMarketplace is
     whenNotPaused
     onlyContract {
         require(_basePrice >= minBidAmount, "Base price not enough");
-        require(editionStep[_editionId].seller == address(0), "Unable to setup listing again");
-        require(koda.getCreatorOfToken(_editionId) == _creator, "Only creator can list edition");
 
         // Store listing data
         editionStep[_editionId] = Stepped(
@@ -272,6 +259,7 @@ contract KODAV3PrimaryMarketplace is
         Stepped storage steppedAuction = editionStep[_editionId];
         require(steppedAuction.seller == _msgSender(), "Only seller");
         require(steppedAuction.currentStep == 0, "Only when no sales");
+        require(_basePrice >= minBidAmount, "Base price not enough");
 
         steppedAuction.basePrice = _basePrice;
         steppedAuction.stepPrice = _stepPrice;
@@ -310,7 +298,7 @@ contract KODAV3PrimaryMarketplace is
     }
 
     // creates an exit from a step if required but forces a buy now price
-    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice)
+    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
     public
     override
     nonReentrant
@@ -318,14 +306,12 @@ contract KODAV3PrimaryMarketplace is
         Stepped storage steppedAuction = editionStep[_editionId];
         require(_listingPrice >= minBidAmount, "List price not enough");
         require(steppedAuction.seller == _msgSender(), "Only seller can convert");
-        require(steppedAuction.currentStep == 0, "Sale has been made");
 
         // Store listing data
-        editionOrTokenListings[_editionId] = Listing(_listingPrice, 0, steppedAuction.seller);
+        editionOrTokenListings[_editionId] = Listing(_listingPrice, _startDate, steppedAuction.seller);
 
         // emit event
         // todo emit a conversion event rather than the same as if it was listed for buy now from the start
-        emit ListedForBuyNow(_editionId, _listingPrice, 0);
 
         // Clear up the step logic
         delete editionStep[_editionId];
@@ -334,16 +320,9 @@ contract KODAV3PrimaryMarketplace is
     function convertSteppedAuctionToOffers(uint256 _editionId, uint128 _startDate)
     public
     // todo add to interface - override
-    nonReentrant
     whenNotPaused {
         Stepped storage steppedAuction = editionStep[_editionId];
-
-        // This will also catch no listing as seller wont be set
-        require(
-            steppedAuction.seller == _msgSender() || accessControls.hasContractRole(_msgSender()),
-            "Only seller or contract"
-        );
-        require(steppedAuction.currentStep == 0, "Sale has been made");
+        require(steppedAuction.seller == _msgSender(), "Only seller can convert");
 
         // set the start date for the offer (optional)
         editionOffersStartDate[_editionId] = _startDate;
@@ -393,12 +372,7 @@ contract KODAV3PrimaryMarketplace is
 
         require(reserveAuction.reservePrice > 0, "No active auction");
         require(reserveAuction.bid < reserveAuction.reservePrice, "Can only convert before reserve met");
-
-        require(
-            reserveAuction.seller == _msgSender() || accessControls.hasContractRole(_msgSender()),
-            "Not the seller or contract"
-        );
-
+        require(reserveAuction.seller == _msgSender(), "Only the seller can convert");
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         // refund any bids
@@ -422,10 +396,7 @@ contract KODAV3PrimaryMarketplace is
 
         require(reserveAuction.reservePrice > 0, "No active auction");
         require(reserveAuction.bid < reserveAuction.reservePrice, "Can only convert before reserve met");
-        require(
-            reserveAuction.seller == _msgSender() || accessControls.hasContractRole(_msgSender()),
-            "Not the seller or contract"
-        );
+        require(reserveAuction.seller == _msgSender(), "Only the seller can convert");
 
         // refund any bids
         if (reserveAuction.bid > 0) {
@@ -448,17 +419,17 @@ contract KODAV3PrimaryMarketplace is
         emit AdminUpdatePlatformPrimarySaleCommission(_platformPrimarySaleCommission);
     }
 
-    function setKoCommissionOverrideForReceiver(address _receiver, uint256 _koCommission) public onlyAdmin {
-        KOCommissionOverride storage koCommissionOverride = koCommissionOverrideForReceivers[_receiver];
-        koCommissionOverride.active = true;
+    function setKoCommissionOverrideForCreator(address _creator, bool _active, uint256 _koCommission) public onlyAdmin {
+        KOCommissionOverride storage koCommissionOverride = koCommissionOverrideForCreators[_creator];
+        koCommissionOverride.active = _active;
         koCommissionOverride.koCommission = _koCommission;
 
-        emit AdminSetKoCommissionOverrideForReceiver(_receiver, _koCommission);
+        emit AdminSetKoCommissionOverrideForCreator(_creator, _koCommission);
     }
 
-    function setKoCommissionOverrideForEdition(uint256 _editionId, uint256 _koCommission) public onlyAdmin {
+    function setKoCommissionOverrideForEdition(uint256 _editionId, bool _active, uint256 _koCommission) public onlyAdmin {
         KOCommissionOverride storage koCommissionOverride = koCommissionOverrideForEditions[_editionId];
-        koCommissionOverride.active = true;
+        koCommissionOverride.active = _active;
         koCommissionOverride.koCommission = _koCommission;
 
         emit AdminSetKoCommissionOverrideForEdition(_editionId, _koCommission);
@@ -474,6 +445,10 @@ contract KODAV3PrimaryMarketplace is
         return koda.getSizeOfEdition(_editionId) == 1 && accessControls.hasContractRole(_msgSender());
     }
 
+    function _isBuyNowListingPermitted(uint256) internal override returns (bool) {
+        return accessControls.hasContractRole(_msgSender());
+    }
+
     function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller, bool _reverse) internal override returns (uint256) {
         return _facilitateNextPrimarySale(_id, _paymentAmount, _buyer, _reverse);
     }
@@ -486,7 +461,7 @@ contract KODAV3PrimaryMarketplace is
             : koda.facilitateNextPrimarySale(_editionId);
 
         // split money
-        _handleEditionSaleFunds(_editionId, receiver, _paymentAmount);
+        _handleEditionSaleFunds(_editionId, creator, receiver, _paymentAmount);
 
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, _buyer, tokenId);
@@ -496,14 +471,16 @@ contract KODAV3PrimaryMarketplace is
         return tokenId;
     }
 
-    function _handleEditionSaleFunds(uint256 _editionId, address _receiver, uint256 _paymentAmount) internal {
+    function _handleEditionSaleFunds(uint256 _editionId, address _creator, address _receiver, uint256 _paymentAmount) internal {
         uint256 primarySaleCommission;
 
         if (koCommissionOverrideForEditions[_editionId].active) {
             primarySaleCommission = koCommissionOverrideForEditions[_editionId].koCommission;
-        } else if (koCommissionOverrideForReceivers[_receiver].active) {
-            primarySaleCommission = koCommissionOverrideForReceivers[_receiver].koCommission;
-        } else {
+        }
+        else if (koCommissionOverrideForCreators[_creator].active) {
+            primarySaleCommission = koCommissionOverrideForCreators[_creator].koCommission;
+        }
+        else {
             primarySaleCommission = platformPrimarySaleCommission;
         }
 
