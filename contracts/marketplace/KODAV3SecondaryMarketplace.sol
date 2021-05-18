@@ -292,8 +292,4 @@ contract KODAV3SecondaryMarketplace is
 
         return false;
     }
-
-    function _getLockupTime() internal view returns (uint256 lockupUntil) {
-        lockupUntil = block.timestamp + bidLockupPeriod;
-    }
 }

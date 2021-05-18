@@ -22,9 +22,7 @@ contract KODAV3PrimaryMarketplace is
 
     event PrimaryMarketplaceDeployed();
     event AdminSetKoCommissionOverrideForReceiver(address indexed _receiver, uint256 _koCommission);
-    event AdminDeactivateKoCommissionOverrideForReceiver(address indexed _receiver);
     event AdminSetKoCommissionOverrideForEdition(uint256 indexed _editionId, uint256 _koCommission);
-    event AdminDeactivateKoCommissionOverrideForEdition(uint256 indexed _editionId);
 
     // KO Commission override definition for a given creator
     struct KOCommissionOverride {
@@ -356,23 +354,6 @@ contract KODAV3PrimaryMarketplace is
         // todo emit a conversion event
     }
 
-    // todo convert straight to offers from stepped and reserve
-
-    // get the current state of a stepped auction
-    function getSteppedAuctionState(uint256 _editionId)
-    public
-    view
-    returns (address creator, uint128 basePrice, uint128 stepPrice, uint128 startDate, uint16 currentStep) {
-        Stepped storage steppedAuction = editionStep[_editionId];
-        return (
-        steppedAuction.seller,
-        steppedAuction.basePrice,
-        steppedAuction.stepPrice,
-        steppedAuction.startDate,
-        steppedAuction.currentStep
-        );
-    }
-
     // Get the next
     function getNextEditionSteppedPrice(uint256 _editionId) public view returns (uint256 price) {
         price = _getNextEditionSteppedPrice(_editionId);
@@ -475,22 +456,12 @@ contract KODAV3PrimaryMarketplace is
         emit AdminSetKoCommissionOverrideForReceiver(_receiver, _koCommission);
     }
 
-    function deactivateKOCommissionOverrideForReceiver(address _receiver) public onlyAdmin {
-        koCommissionOverrideForReceivers[_receiver].active = false;
-        emit AdminDeactivateKoCommissionOverrideForReceiver(_receiver);
-    }
-
     function setKoCommissionOverrideForEdition(uint256 _editionId, uint256 _koCommission) public onlyAdmin {
         KOCommissionOverride storage koCommissionOverride = koCommissionOverrideForEditions[_editionId];
         koCommissionOverride.active = true;
         koCommissionOverride.koCommission = _koCommission;
 
         emit AdminSetKoCommissionOverrideForEdition(_editionId, _koCommission);
-    }
-
-    function deactivateKOCommissionOverrideForEdition(uint256 _editionId) public onlyAdmin {
-        koCommissionOverrideForEditions[_editionId].active = false;
-        emit AdminDeactivateKoCommissionOverrideForEdition(_editionId);
     }
 
     // internal
@@ -544,10 +515,6 @@ contract KODAV3PrimaryMarketplace is
 
         (bool success,) = _receiver.call{value : _paymentAmount - koCommission}("");
         require(success, "Edition payment failed");
-    }
-
-    function _getLockupTime() internal view returns (uint256 lockupUntil) {
-        lockupUntil = block.timestamp + bidLockupPeriod;
     }
 
     // as offers are always possible, we wont count it as a listing

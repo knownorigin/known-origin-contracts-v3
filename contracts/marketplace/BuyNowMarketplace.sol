@@ -57,30 +57,6 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
         _facilitateBuyNow(_id, _recipient);
     }
 
-    function getListing(uint256 _id)
-    public
-    view
-    returns (address _seller, uint128 _listingPrice, uint128 _startDate) {
-        Listing storage listing = editionOrTokenListings[_id];
-        return (
-            listing.seller, // original seller
-            listing.price,
-            listing.startDate
-        );
-    }
-
-    function getListingSeller(uint256 _id) public view returns (address _seller) {
-        return editionOrTokenListings[_id].seller;
-    }
-
-    function getListingPrice(uint256 _id) public view returns (uint128 _listingPrice) {
-        return uint128(editionOrTokenListings[_id].price);
-    }
-
-    function getListingDate(uint256 _id) public view returns (uint128 _startDate) {
-        return uint128(editionOrTokenListings[_id].startDate);
-    }
-
     // update the "buy now" price
     function setBuyNowPriceListing(uint256 _id, uint128 _listingPrice)
     public

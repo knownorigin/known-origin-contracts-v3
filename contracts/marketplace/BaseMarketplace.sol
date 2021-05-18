@@ -108,6 +108,10 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         super._unpause();
     }
 
+    function _getLockupTime() internal view returns (uint256 lockupUntil) {
+        lockupUntil = block.timestamp + bidLockupPeriod;
+    }
+
     function _refundBidder(address _receiver, uint256 _paymentAmount) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
         require(success, "ETH refund failed");
