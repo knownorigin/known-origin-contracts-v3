@@ -12,6 +12,7 @@ contract MintingFactory is Context {
 
     event EditionMintedAndListed(uint256 indexed _editionId, SaleType _saleType);
 
+    event MintingFactoryCreated();
     event AdminMintingPeriodChanged(uint256 _mintingPeriod);
     event AdminMaxMintsInPeriodChanged(uint256 _maxMintsInPeriod);
     event AdminFrequencyOverrideChanged(address _account, bool _override);
@@ -56,6 +57,8 @@ contract MintingFactory is Context {
         accessControls = _accessControls;
         koda = _koda;
         marketplace = _marketplace;
+
+        emit MintingFactoryCreated();
     }
 
     function mintToken(

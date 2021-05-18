@@ -19,8 +19,6 @@ IERC2981  // Royalties
 
     function getCreatorOfToken(uint256 _tokenId) external view returns (address _originalCreator);
 
-    function tokenCreator(uint256 _tokenId) external view returns (address _originalCreator);
-
     function getSizeOfEdition(uint256 _editionId) external view returns (uint256 _size);
 
     function getEditionSizeOfToken(uint256 _tokenId) external view returns (uint256 _size);
