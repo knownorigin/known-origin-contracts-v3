@@ -23,6 +23,9 @@ contract KODAV3PrimaryMarketplace is
     event PrimaryMarketplaceDeployed();
     event AdminSetKoCommissionOverrideForCreator(address indexed _creator, uint256 _koCommission);
     event AdminSetKoCommissionOverrideForEdition(uint256 indexed _editionId, uint256 _koCommission);
+    event ConvertFromBuyNowToOffers(uint256 indexed _editionId, uint128 _startDate);
+    event ConvertSteppedAuctionToBuyNow(uint256 indexed _editionId, uint128 _listingPrice, uint128 _startDate);
+    event ReserveAuctionConvertedToOffers(uint256 indexed _editionId, uint128 _startDate);
 
     // KO Commission override definition for a given creator
     struct KOCommissionOverride {
@@ -82,8 +85,7 @@ contract KODAV3PrimaryMarketplace is
         editionOffersStartDate[_editionId] = _startDate;
 
         // Emit event
-        // todo emit a conversion event rather than the main enable event
-        // emit EditionAcceptingOffer(_editionId, _startDate);
+        emit ConvertFromBuyNowToOffers(_editionId, _startDate);
     }
 
     // Primary "offers" sale flow
@@ -311,7 +313,7 @@ contract KODAV3PrimaryMarketplace is
         editionOrTokenListings[_editionId] = Listing(_listingPrice, _startDate, steppedAuction.seller);
 
         // emit event
-        // todo emit a conversion event rather than the same as if it was listed for buy now from the start
+        emit ConvertSteppedAuctionToBuyNow(_editionId, _listingPrice, _startDate);
 
         // Clear up the step logic
         delete editionStep[_editionId];
@@ -319,7 +321,7 @@ contract KODAV3PrimaryMarketplace is
 
     function convertSteppedAuctionToOffers(uint256 _editionId, uint128 _startDate)
     public
-    // todo add to interface - override
+    override
     whenNotPaused {
         Stepped storage steppedAuction = editionStep[_editionId];
         require(steppedAuction.seller == _msgSender(), "Only seller can convert");
@@ -330,7 +332,7 @@ contract KODAV3PrimaryMarketplace is
         // Clear up the step logic
         delete editionStep[_editionId];
 
-        // todo emit a conversion event
+        emit ConvertFromBuyNowToOffers(_editionId, _startDate);
     }
 
     // Get the next
@@ -354,7 +356,6 @@ contract KODAV3PrimaryMarketplace is
             address(this)
         );
 
-        // todo test on last case
         require(
             !isApprovalActiveForMarketplace || koda.isSalesDisabledOrSoldOut(_editionId),
             "Bid cannot be withdrawn as reserve auction listing is valid"
@@ -365,7 +366,7 @@ contract KODAV3PrimaryMarketplace is
 
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
     public
-    //todo add to interface - override
+    override
     whenNotPaused
     nonReentrant {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_editionId];
@@ -389,7 +390,7 @@ contract KODAV3PrimaryMarketplace is
 
     function convertReserveAuctionToOffers(uint256 _editionId, uint128 _startDate)
     public
-    //todo add to interface - override
+    override
     whenNotPaused
     nonReentrant {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_editionId];
@@ -408,8 +409,7 @@ contract KODAV3PrimaryMarketplace is
         // set the start date for the offer (optional)
         editionOffersStartDate[_editionId] = _startDate;
 
-        // todo emit a conversion event
-        //emit ReserveAuctionConvertedToOffers(_editionId, _listingPrice, _startDate);
+        emit ReserveAuctionConvertedToOffers(_editionId, _startDate);
     }
 
     // admin

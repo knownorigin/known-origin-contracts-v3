@@ -9,6 +9,10 @@ import {BuyNowMarketplace} from "./BuyNowMarketplace.sol";
 import {ReserveAuctionMarketplace} from "./ReserveAuctionMarketplace.sol";
 import {BaseMarketplace} from "./BaseMarketplace.sol";
 
+/// @title KnownOrigin Secondary Marketplace for all V3 tokens
+/// @notice The following listing types are supported: Buy now, Reserve and Offers
+/// @dev The contract is pausable and has reentrancy guards
+/// @author KnownOrigin Labs
 contract KODAV3SecondaryMarketplace is
     IKODAV3SecondarySaleMarketplace,
     BaseMarketplace,

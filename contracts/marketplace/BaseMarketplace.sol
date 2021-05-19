@@ -21,6 +21,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     event AdminRecoverETH(address payable indexed recipient, uint256 amount);
 
     event BidderRefunded(uint256 _id, address _bidder, uint256 bid);
+    event BidRefundFailed(uint256 _id, address _bidder, uint256 bid);
 
     // Only a whitelisted smart contract in the access controls contract
     modifier onlyContract() {
@@ -68,9 +69,8 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         emit AdminRecoverETH(_recipient, _amount);
     }
 
-    // todo - should access controls update methods generally have more guards i.e. are we updating to an access controls contract
     function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {
-        // TODO require _accessControls.hasAdminRole(_msgSender()) - add this all places where access controls can be updated
+        require(_accessControls.hasAdminRole(_msgSender()), "Sender must have admin role in new contract");
         emit AdminUpdateAccessControls(accessControls, _accessControls);
         accessControls = _accessControls;
     }
@@ -107,7 +107,6 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         lockupUntil = block.timestamp + bidLockupPeriod;
     }
 
-    /// todo consume ID of entity and emit an event
     function _refundBidder(uint256 _id, address _receiver, uint256 _paymentAmount) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
         require(success, "ETH refund failed");
@@ -117,9 +116,9 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     function _refundBidderIgnoreError(uint256 _id, address _receiver, uint256 _paymentAmount) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
         if (!success) {
-            // TODO shit something went wrong path
+            emit BidRefundFailed(_id, _receiver, _paymentAmount);
         } else {
-            // todo consume ID of entity and emit an event
+            emit BidderRefunded(_id, _receiver, _paymentAmount);
         }
     }
 

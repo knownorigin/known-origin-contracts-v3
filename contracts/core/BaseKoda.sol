@@ -58,7 +58,8 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
         emit AdminUpdateSecondaryRoyalty(_secondarySaleRoyalty);
     }
 
-    function updateAccessControls(IKOAccessControlsLookup _accessControls) onlyAdmin public {
+    function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {
+        require(_accessControls.hasAdminRole(_msgSender()), "Sender must have admin role in new contract");
         emit AdminUpdateAccessControls(accessControls, _accessControls);
         accessControls = _accessControls;
     }
