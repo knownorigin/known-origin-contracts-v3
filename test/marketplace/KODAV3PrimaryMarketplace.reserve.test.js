@@ -591,7 +591,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       it('Reverts when not the seller', async () => {
         await expectRevert(
           this.marketplace.convertReserveAuctionToBuyItNow(EDITION_ONE_ID, ether('0.25'), '0', {from: bidder1}),
-          "Not the seller"
+          "Only the seller can convert"
         )
       })
 
@@ -599,6 +599,59 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
         await expectRevert(
           this.marketplace.convertReserveAuctionToBuyItNow(EDITION_ONE_ID, '0', '0', {from: minter}),
           "Listing price not enough"
+        )
+      })
+    })
+
+    describe('convertReserveAuctionToOffers()', () => {
+      beforeEach(async () => {
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // reserve is only for 1 of 1
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+
+        // list the token for reserve auction
+        await this.marketplace.listForReserveAuction(minter, EDITION_ONE_ID, ether('0.25'), '0', {from: contract})
+
+        // mint another batch of tokens for further testing
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+      })
+
+      it('Converts to offers with no bid', async () => {
+        const now = await time.latest()
+
+        const {receipt} = await this.marketplace.convertReserveAuctionToOffers(EDITION_ONE_ID, now, {from: minter})
+        await expectEvent(receipt, 'ReserveAuctionConvertedToOffers', {
+          _editionId: EDITION_ONE_ID,
+          _startDate: now
+        })
+
+        // cant place a bid
+        await expectRevert(
+          this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: ether('0.2')}),
+          "Not set up for reserve auction"
+        )
+      })
+
+      it('Converts to offers with bid below reserve', async () => {
+        await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: ether('0.2')})
+
+        const now = await time.latest()
+
+        const bidder1Tracker = await balance.tracker(bidder1)
+
+        const {receipt} = await this.marketplace.convertReserveAuctionToOffers(EDITION_ONE_ID, now, {from: minter})
+        await expectEvent(receipt, 'ReserveAuctionConvertedToOffers', {
+          _editionId: EDITION_ONE_ID,
+          _startDate: now
+        })
+
+        expect(await bidder1Tracker.delta()).to.be.bignumber.equal(ether('0.2'))
+
+        // cant place a bid
+        await expectRevert(
+          this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: ether('0.2')}),
+          "Not set up for reserve auction"
         )
       })
     })

@@ -120,14 +120,65 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
 
         await expectRevert(
           this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter}),
-          "Listing is permitted"
+          "Listing not permitted"
         )
       })
 
       it('Reverts when reserve price is below min bid', async () => {
         await expectRevert(
-          this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, '1', '0', {from: contract}),
+          this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, '1', '0', {from: minter}),
           "Reserve price must be at least min bid"
+        )
+      })
+    })
+
+    describe('convertReserveAuctionToOffers()', () => {
+      beforeEach(async () => {
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // reserve is only for 1 of 1
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+
+        // list the token for reserve auction
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
+
+        // mint another batch of tokens for further testing
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+      })
+
+      it('Converts to offers with no bid', async () => {
+        const now = await time.latest()
+
+        const {receipt} = await this.marketplace.convertReserveAuctionToOffers(FIRST_TOKEN_ID, {from: minter})
+        await expectEvent(receipt, 'ReserveAuctionConvertedToOffers', {
+          _tokenId: FIRST_TOKEN_ID
+        })
+
+        // cant place a bid
+        await expectRevert(
+          this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.2')}),
+          "Not set up for reserve auction"
+        )
+      })
+
+      it('Converts to offers with bid below reserve', async () => {
+        await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.2')})
+
+        const now = await time.latest()
+
+        const bidder1Tracker = await balance.tracker(bidder1)
+
+        const {receipt} = await this.marketplace.convertReserveAuctionToOffers(FIRST_TOKEN_ID, {from: minter})
+        await expectEvent(receipt, 'ReserveAuctionConvertedToOffers', {
+          _tokenId: FIRST_TOKEN_ID
+        })
+
+        expect(await bidder1Tracker.delta()).to.be.bignumber.equal(ether('0.2'))
+
+        // cant place a bid
+        await expectRevert(
+          this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.2')}),
+          "Not set up for reserve auction"
         )
       })
     })
@@ -240,7 +291,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       it('Reverts when no bids received', async () => {
         await expectRevert(
           this.marketplace.resultReserveAuction(FIRST_TOKEN_ID),
-          "No bids received"
+          "Reserve not met"
         )
       })
 
@@ -414,6 +465,21 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         expect(reservePrice).to.be.bignumber.equal(newReserve)
       })
 
+      it('When reserve is set below current bid, then 24h countdown triggered', async () => {
+        await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.1')})
+
+        const newReserve = ether('0.075')
+        await this.marketplace.updateReservePriceForReserveAuction(FIRST_TOKEN_ID, newReserve, {from: minter})
+
+        const {
+          reservePrice,
+          biddingEnd
+        } = await this.marketplace.editionOrTokenWithReserveAuctions(FIRST_TOKEN_ID)
+
+        expect(reservePrice).to.be.bignumber.equal(newReserve)
+        expect(biddingEnd).to.be.bignumber.gt('0')
+      })
+
       it('Reverts when auction not in flight', async () => {
         await expectRevert(
           this.marketplace.updateReservePriceForReserveAuction(SECOND_TOKEN_ID, '2'),
@@ -433,7 +499,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
 
         await expectRevert(
           this.marketplace.updateReservePriceForReserveAuction(FIRST_TOKEN_ID, '2', {from: minter}),
-          "Due to the active bid the reserve cannot be adjusted"
+          "Reserve countdown commenced"
         )
       })
 
@@ -528,7 +594,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       it('Reverts when not the seller', async () => {
         await expectRevert(
           this.marketplace.convertReserveAuctionToBuyItNow(FIRST_TOKEN_ID, ether('0.25'), '0', {from: bidder1}),
-          "Not the seller"
+          "Only the seller can convert"
         )
       })
 

@@ -567,6 +567,58 @@ contract('KODAV3Marketplace', function (accounts) {
       })
     })
 
+    describe('convertSteppedAuctionToOffers()', () => {
+      beforeEach(async () => {
+        // Ensure owner is approved as this will fail if not
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // create firstEdition of 3 tokens to the minter
+        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+
+        // time of latest block
+        const latestBlockTime = await time.latest();
+
+        // list firstEdition for sale at 0.1 ETH per token, starting immediately
+        const start = latestBlockTime;
+        await this.marketplace.listSteppedEditionAuction(
+          minter,
+          firstEditionTokenId,
+          _1_ETH,
+          _0_1_ETH,
+          start,
+          {from: contract}
+        );
+
+      });
+
+      it('Can convert to offers as seller', async () => {
+        const edition = firstEditionTokenId;
+
+        // seller converts to listed edition
+        const receipt = await this.marketplace.convertSteppedAuctionToOffers(
+          edition,
+          0,
+          {from: minter}
+        );
+
+        expectEvent(receipt, 'ConvertFromBuyNowToOffers', {
+          _editionId: edition,
+          _startDate: ZERO
+        });
+      })
+
+      it('Reverts if not seller', async () => {
+        await expectRevert(
+          this.marketplace.convertSteppedAuctionToOffers(
+            firstEditionTokenId,
+            0,
+            {from: collectorA}
+          ),
+          "Only seller can convert"
+        )
+      })
+    })
+
     describe('updateSteppedAuction()', () => {
       beforeEach(async () => {
         // Ensure owner is approved as this will fail if not

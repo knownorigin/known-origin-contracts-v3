@@ -22,9 +22,8 @@ contract KODAV3SecondaryMarketplace is
     event SecondaryMarketplaceDeployed();
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
     event AdminUpdateSecondarySaleCommission(uint256 _platformSecondarySaleCommission);
-    event ConvertFromBuyNowToOffers(uint256 indexed _editionId, uint128 _startDate);
-    event ConvertSteppedAuctionToBuyNow(uint256 indexed _editionId, uint128 _listingPrice, uint128 _startDate);
-    event ReserveAuctionConvertedToOffers(uint256 indexed _editionId);
+    event ConvertFromBuyNowToOffers(uint256 indexed _tokenId, uint128 _startDate);
+    event ReserveAuctionConvertedToOffers(uint256 indexed _tokenId);
 
     struct Offer {
         uint256 offer;

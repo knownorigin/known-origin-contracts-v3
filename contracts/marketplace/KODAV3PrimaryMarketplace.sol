@@ -219,7 +219,6 @@ contract KODAV3PrimaryMarketplace is
         Offer storage offer = editionOffers[_editionId];
         if (offer.offer > 0) {
             _refundBidder(_editionId, offer.bidder, offer.offer);
-            emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
         }
 
         // delete offer
@@ -472,13 +471,6 @@ contract KODAV3PrimaryMarketplace is
         if (editionStep[_editionId].seller != address(0)) {
             return true;
         }
-
-        // TODO Test scenarios
-        // Scenario 1:
-        //  - enabled for offers
-        //  - offer is made
-        //  - seller then converts to buy now
-        //  - can the original bidder get their money back?
 
         if (editionOrTokenWithReserveAuctions[_editionId].seller != address(0)) {
             return true;
