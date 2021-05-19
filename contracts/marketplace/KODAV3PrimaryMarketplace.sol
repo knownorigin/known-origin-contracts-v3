@@ -212,8 +212,8 @@ contract KODAV3PrimaryMarketplace is
     whenNotPaused
     nonReentrant {
         require(!_isEditionListed(_editionId), "Edition is listed");
-        require(_listingPrice >= minBidAmount, "Listing price not enough");
         require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
+        require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         // send money back to top bidder if existing offer found
         Offer storage offer = editionOffers[_editionId];

@@ -87,7 +87,7 @@ contract('KODAV3Marketplace', function (accounts) {
         await this.marketplace.listTokenForBuyNow(firstEditionTokenId, _0_1_ETH, '0', {from: collectorA})
         await expectRevert(
           this.marketplace.listTokenForBuyNow(firstEditionTokenId, _0_1_ETH, '0', {from: collectorA}),
-          "Listing not permitted"
+          "Listing is not permitted"
         )
       })
 
@@ -131,7 +131,7 @@ contract('KODAV3Marketplace', function (accounts) {
       it('reverts if not owner', async () => {
         await expectRevert(
           this.marketplace.listTokenForBuyNow(firstEditionTokenId, _0_1_ETH, await time.latest(), {from: collectorD}),
-          'Only owner or contract'
+          'Buy now listing invalid'
         );
       });
 

@@ -521,7 +521,7 @@ contract('KODAV3Marketplace', function (accounts) {
           );
 
           expectEvent(receipt, 'ConvertSteppedAuctionToBuyNow', {
-            _id: edition,
+            _editionId: edition,
             _listingPrice: _1_ETH,
             _startDate: ZERO
           });
@@ -539,7 +539,7 @@ contract('KODAV3Marketplace', function (accounts) {
           //address _seller, uint128 _listingPrice, uint128 _startDate
           const listing = await this.marketplace.editionOrTokenListings(edition);
           expect(listing.seller).to.be.equal(minter);
-          expect(listing.listingPrice).to.be.bignumber.equal(_1_ETH);
+          expect(listing.price).to.be.bignumber.equal(_1_ETH);
           expect(listing.startDate).to.be.bignumber.equal(ZERO);
 
         });

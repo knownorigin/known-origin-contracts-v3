@@ -166,12 +166,13 @@ contract('KODAV3BaseMarketplace', function (accounts) {
 
     describe('updateAccessControls()', () => {
       it('updates the reserve auction length as admin', async () => {
+        const oldAccessControlAddress = this.accessControls.address
         this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner});
         const {receipt} = await this.marketplace.updateAccessControls(this.accessControls.address, {from: owner})
 
         await expectEvent(receipt, 'AdminUpdateAccessControls', {
-          _oldAddress: this.accessControls.address,
-          _newAddress: newAccessControls
+          _oldAddress: oldAccessControlAddress,
+          _newAddress: this.accessControls.address
         })
       })
 
@@ -184,7 +185,7 @@ contract('KODAV3BaseMarketplace', function (accounts) {
 
       it('Reverts when updating to an EOA', async () => {
         await expectRevert(
-          this.marketplace.updateAccessControls(newAccessControls, {from: bidder1}),
+          this.marketplace.updateAccessControls(newAccessControls, {from: owner}),
           "function call to a non-contract account"
         )
       })

@@ -303,7 +303,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
       it('Reverts when no bids received', async () => {
         await expectRevert(
           this.marketplace.resultReserveAuction(EDITION_ONE_ID),
-          "No bids received"
+          "Reserve not met"
         )
       })
 
@@ -496,7 +496,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
 
         await expectRevert(
           this.marketplace.updateReservePriceForReserveAuction(EDITION_ONE_ID, '2', {from: minter}),
-          "Due to the active bid the reserve cannot be adjusted"
+          "Reserve countdown commenced"
         )
       })
 
@@ -574,7 +574,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
 
       it('Reverts when no active auction in flight', async () => {
         await expectRevert(
-          this.marketplace.convertReserveAuctionToBuyItNow(EDITION_TWO_ID, '0', '0'),
+          this.marketplace.convertReserveAuctionToBuyItNow(EDITION_TWO_ID, ether('0.25'), '0'),
           "No active auction"
         )
       })
@@ -583,14 +583,14 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
         await this.marketplace.placeBidOnReserveAuction(EDITION_ONE_ID, {from: bidder1, value: ether('0.5')})
 
         await expectRevert(
-          this.marketplace.convertReserveAuctionToBuyItNow(EDITION_ONE_ID, '0', '0'),
+          this.marketplace.convertReserveAuctionToBuyItNow(EDITION_ONE_ID, ether('0.25'), '0'),
           "Can only convert before reserve met"
         )
       })
 
       it('Reverts when not the seller', async () => {
         await expectRevert(
-          this.marketplace.convertReserveAuctionToBuyItNow(EDITION_ONE_ID, '0', '0', {from: bidder1}),
+          this.marketplace.convertReserveAuctionToBuyItNow(EDITION_ONE_ID, ether('0.25'), '0', {from: bidder1}),
           "Not the seller"
         )
       })

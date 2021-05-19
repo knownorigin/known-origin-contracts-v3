@@ -511,7 +511,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
 
       it('Reverts when no active auction in flight', async () => {
         await expectRevert(
-          this.marketplace.convertReserveAuctionToBuyItNow(SECOND_TOKEN_ID, '0', '0'),
+          this.marketplace.convertReserveAuctionToBuyItNow(SECOND_TOKEN_ID, ether('0.25'), '0'),
           "No active auction"
         )
       })
@@ -520,14 +520,14 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.5')})
 
         await expectRevert(
-          this.marketplace.convertReserveAuctionToBuyItNow(FIRST_TOKEN_ID, '0', '0'),
+          this.marketplace.convertReserveAuctionToBuyItNow(FIRST_TOKEN_ID, ether('0.25'), '0'),
           "Can only convert before reserve met"
         )
       })
 
       it('Reverts when not the seller', async () => {
         await expectRevert(
-          this.marketplace.convertReserveAuctionToBuyItNow(FIRST_TOKEN_ID, '0', '0', {from: bidder1}),
+          this.marketplace.convertReserveAuctionToBuyItNow(FIRST_TOKEN_ID, ether('0.25'), '0', {from: bidder1}),
           "Not the seller"
         )
       })

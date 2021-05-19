@@ -247,7 +247,7 @@ contract('KODAV3Marketplace', function (accounts) {
       it('reverts if not contract role', async () => {
         await expectRevert(
           this.marketplace.listForBuyNow(minter, firstEditionTokenId.add(ONE), _0_1_ETH, await time.latest(), {from: collectorA}),
-          "Only owner or contract"
+          "Buy now listing invalid"
         );
       });
 

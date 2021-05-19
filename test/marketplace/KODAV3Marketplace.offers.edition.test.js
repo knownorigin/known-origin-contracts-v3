@@ -1030,7 +1030,7 @@ contract('KODAV3Marketplace', function (accounts) {
       it('Reverts when not creator', async () => {
         await expectRevert(
           this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, '0', '0', {from: collectorA}),
-          "Caller not creator or contract"
+          "Not creator"
         )
       })
 

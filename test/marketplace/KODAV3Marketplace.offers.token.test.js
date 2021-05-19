@@ -292,7 +292,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         // collector A attempts to withdraw bid when none exists
         await expectRevert(
           this.marketplace.withdrawTokenBid(token, {from: collectorA}),
-          'No open bid'
+          'Not bidder'
         );
 
       });
@@ -425,7 +425,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
           // attempt to withdraw bid again
           await expectRevert(
             this.marketplace.withdrawTokenBid(token, {from: collectorA}),
-            'No open bid'
+            'Not bidder'
           );
 
         });
