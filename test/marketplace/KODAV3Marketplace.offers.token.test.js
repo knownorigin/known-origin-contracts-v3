@@ -73,7 +73,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
       });
 
       it('Reverts if edition is listed for buy now', async () => {
-        await this.marketplace.listForBuyNow(minter, firstTokenId, ether('0.1'), '0', {from: contract})
+        await this.marketplace.listForBuyNow(minter, firstTokenId, ether('0.1'), '0', {from: minter})
 
         await expectRevert(
           this.marketplace.placeTokenBid(firstTokenId, {from: collectorB, value: ether('1')}),
@@ -606,10 +606,10 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         const token = firstTokenId;
 
         // offer 0.5 ETH for token (first bid)
-        await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
+        await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_1_ETH});
 
         await expectRevert(
-          this.marketplace.acceptTokenBid(token, _0_1_ETH, {from: minter}),
+          this.marketplace.acceptTokenBid(token, _0_5_ETH, {from: minter}),
           'Offer price has changed'
         );
       });

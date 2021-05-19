@@ -55,7 +55,7 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
 
     describe('setKoCommissionOverrideForCreator()', () => {
       it('Updates the override as admin', async () => {
-        const {receipt} = await this.marketplace.setKoCommissionOverrideForCreator(minter, commissionOverride, {from: admin})
+        const {receipt} = await this.marketplace.setKoCommissionOverrideForCreator(minter, true, commissionOverride, {from: admin})
 
         await expectEvent(receipt, 'AdminSetKoCommissionOverrideForCreator', {
           _creator: minter,
@@ -65,7 +65,7 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
 
       it('Reverts when not admin', async () => {
         await expectRevert(
-          this.marketplace.setKoCommissionOverrideForCreator(minter, commissionOverride, {from: collectorA}),
+          this.marketplace.setKoCommissionOverrideForCreator(minter, true, commissionOverride, {from: collectorA}),
           "Caller not admin"
         )
       })
@@ -73,7 +73,7 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
 
     describe('setKoCommissionOverrideForEdition()', () => {
       it('Updates the override as admin', async () => {
-        const {receipt} = await this.marketplace.setKoCommissionOverrideForEdition(firstEditionTokenId, commissionOverride, {from: admin})
+        const {receipt} = await this.marketplace.setKoCommissionOverrideForEdition(firstEditionTokenId, true, commissionOverride, {from: admin})
 
         await expectEvent(receipt, 'AdminSetKoCommissionOverrideForEdition', {
           _editionId: firstEditionTokenId,
@@ -83,14 +83,14 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
 
       it('Reverts when not admin', async () => {
         await expectRevert(
-          this.marketplace.setKoCommissionOverrideForEdition(firstEditionTokenId, commissionOverride, {from: collectorA}),
+          this.marketplace.setKoCommissionOverrideForEdition(firstEditionTokenId, true, commissionOverride, {from: collectorA}),
           "Caller not admin"
         )
       })
     })
 
     it('When override set to non zero value, sale uses this override', async () => {
-      await this.marketplace.setKoCommissionOverrideForCreator(minter, commissionOverride, {from: admin})
+      await this.marketplace.setKoCommissionOverrideForCreator(minter, true, commissionOverride, {from: admin})
 
       // Ensure owner is approved as this will fail if not
       await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
@@ -113,7 +113,7 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
     })
 
     it('When override set zero value, sale uses this override and KO gets no commission', async () => {
-      await this.marketplace.setKoCommissionOverrideForCreator(minter, new BN('0'), {from: admin})
+      await this.marketplace.setKoCommissionOverrideForCreator(minter, true, new BN('0'), {from: admin})
 
       // Ensure owner is approved as this will fail if not
       await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
@@ -134,7 +134,7 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
     })
 
     it('When override set to 100%, sale uses this override and KO gets no commission', async () => {
-      await this.marketplace.setKoCommissionOverrideForCreator(minter, new BN('10000000'), {from: admin})
+      await this.marketplace.setKoCommissionOverrideForCreator(minter, true, new BN('10000000'), {from: admin})
 
       // Ensure owner is approved as this will fail if not
       await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
@@ -155,7 +155,7 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
     })
 
     it('Edition override takes precedence over creator override', async () => {
-      await this.marketplace.setKoCommissionOverrideForCreator(minter, commissionOverride, {from: admin})
+      await this.marketplace.setKoCommissionOverrideForCreator(minter, true, commissionOverride, {from: admin})
 
       await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -176,7 +176,7 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
       expect(await minterTracker.delta()).to.be.bignumber.equal(_0_1_ETH.sub(platformCommission))
 
       const editionCommissionOverride = new BN('8000000')
-      await this.marketplace.setKoCommissionOverrideForEdition(firstEditionTokenId, editionCommissionOverride, {from: admin})
+      await this.marketplace.setKoCommissionOverrideForEdition(firstEditionTokenId, true, editionCommissionOverride, {from: admin})
 
       minterTracker = await balance.tracker(minter)
       platformTracker = await balance.tracker(koCommission)

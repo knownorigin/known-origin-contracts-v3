@@ -262,19 +262,6 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         )
       })
 
-      it('Reverts when not authorised caller when resulting', async () => {
-        await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.5')})
-
-        const {biddingEnd} = await this.marketplace.editionOrTokenWithReserveAuctions(FIRST_TOKEN_ID)
-
-        await time.increaseTo(biddingEnd.addn(5))
-
-        await expectRevert(
-          this.marketplace.resultReserveAuction(FIRST_TOKEN_ID, {from: koCommission}),
-          "Only winner, seller, contract or admin can result"
-        )
-      })
-
       it('Can result as winner', async () => {
         await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.5')})
 

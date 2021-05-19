@@ -30,9 +30,9 @@ contract('KODAV3BaseMarketplace', function (accounts) {
   const thirdEditionTokenId = new BN('13000');
 
   beforeEach(async () => {
-    const legacyAccessControls = await SelfServiceAccessControls.new();
+    this.legacyAccessControls = await SelfServiceAccessControls.new();
     // setup access controls
-    this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
+    this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner});
 
     // grab the roles
     this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
@@ -166,7 +166,8 @@ contract('KODAV3BaseMarketplace', function (accounts) {
 
     describe('updateAccessControls()', () => {
       it('updates the reserve auction length as admin', async () => {
-        const {receipt} = await this.marketplace.updateAccessControls(newAccessControls, {from: owner})
+        this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner});
+        const {receipt} = await this.marketplace.updateAccessControls(this.accessControls.address, {from: owner})
 
         await expectEvent(receipt, 'AdminUpdateAccessControls', {
           _oldAddress: this.accessControls.address,
@@ -178,6 +179,21 @@ contract('KODAV3BaseMarketplace', function (accounts) {
         await expectRevert(
           this.marketplace.updateAccessControls(newAccessControls, {from: bidder1}),
           "Caller not admin"
+        )
+      })
+
+      it('Reverts when updating to an EOA', async () => {
+        await expectRevert(
+          this.marketplace.updateAccessControls(newAccessControls, {from: bidder1}),
+          "function call to a non-contract account"
+        )
+      })
+
+      it('Reverts when to a contract where sender is not admin', async () => {
+        this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: bidder1});
+        await expectRevert(
+          this.marketplace.updateAccessControls(this.accessControls.address, {from: owner}),
+          "Sender must have admin role in new contract"
         )
       })
     })

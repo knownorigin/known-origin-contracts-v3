@@ -263,12 +263,12 @@ contract('KODAV3Marketplace', function (accounts) {
         it('reverts if not edition owner', async () => {
           await expectRevert(
             this.marketplace.setBuyNowPriceListing(firstEditionTokenId, _0_2_ETH, {from: collectorA}),
-            'Only seller or contract'
+            'Only seller'
           );
         });
 
         it('can change if caller is a contract', async () => {
-          const receipt = await this.marketplace.setBuyNowPriceListing(firstEditionTokenId, _0_2_ETH, {from: contract});
+          const receipt = await this.marketplace.setBuyNowPriceListing(firstEditionTokenId, _0_2_ETH, {from: minter});
 
           const {price} = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
           expect(price).to.be.bignumber.equal(_0_2_ETH);
@@ -447,7 +447,7 @@ contract('KODAV3Marketplace', function (accounts) {
         const start = await time.latest();
         await expectRevert(
           this.marketplace.convertFromBuyNowToOffers(secondEditionTokenId, start, {from: minter}),
-          'Only seller or contract'
+          'Only seller can convert'
         );
       });
 
@@ -455,7 +455,7 @@ contract('KODAV3Marketplace', function (accounts) {
         const start = await time.latest();
         await expectRevert(
           this.marketplace.convertFromBuyNowToOffers(secondEditionTokenId, start, {from: anotherMinter}),
-          'Only seller or contract'
+          'Only seller can convert'
         );
       });
 
@@ -463,7 +463,7 @@ contract('KODAV3Marketplace', function (accounts) {
         const start = await time.latest();
         await expectRevert(
           this.marketplace.convertFromBuyNowToOffers(9999, start, {from: minter}),
-          'Only seller or contract'
+          'Only seller can convert'
         );
       });
 
@@ -473,7 +473,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
         await expectRevert(
           this.marketplace.convertFromBuyNowToOffers(secondEditionTokenId, start, {from: anotherMinter}),
-          'Only seller or contract'
+          'Only seller can convert'
         );
       });
 
@@ -483,7 +483,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
         await expectRevert(
           this.marketplace.convertFromBuyNowToOffers(firstEditionTokenId, start, {from: minter}),
-          'Only seller or contract'
+          'Only seller can convert'
         );
       });
 
@@ -491,7 +491,7 @@ contract('KODAV3Marketplace', function (accounts) {
         const start = await time.latest();
         await expectRevert(
           this.marketplace.convertFromBuyNowToOffers(secondEditionTokenId, start, {from: collectorA}),
-          'Only seller or contract'
+          'Only seller can convert'
         );
       });
 
@@ -500,7 +500,7 @@ contract('KODAV3Marketplace', function (accounts) {
         const receipt = await this.marketplace.convertFromBuyNowToOffers(firstEditionTokenId, start, {from: minter});
 
         // emits event
-        expectEvent(receipt, 'EditionAcceptingOffer', {
+        expectEvent(receipt, 'ConvertFromBuyNowToOffers', {
           _editionId: firstEditionTokenId,
           _startDate: start
         });

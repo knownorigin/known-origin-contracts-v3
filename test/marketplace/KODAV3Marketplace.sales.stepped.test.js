@@ -83,34 +83,6 @@ contract('KODAV3Marketplace', function (accounts) {
 
         });
 
-        it('must be valid edition', async () => {
-
-          const edition = nonExistentTokenId;
-
-          // list edition for sale at 0.1 ETH per token
-          const start = await time.latest();
-
-          await expectRevert(
-              this.marketplace.listSteppedEditionAuction(minter, edition, _1_ETH, _0_1_ETH, start, {from: contract}),
-              "Only creator can list edition"
-          )
-
-        });
-
-        it('lister must be edition creator', async () => {
-
-          const edition = firstEditionTokenId;
-
-          // list edition for sale at 0.1 ETH per token
-          const start = await time.latest();
-
-          await expectRevert(
-              this.marketplace.listSteppedEditionAuction(collectorA, edition, _1_ETH, _0_1_ETH, start, {from: contract}),
-              "Only creator can list edition"
-          )
-
-        });
-
         it('must have base price greater than or equal to minimum bid amount', async () => {
 
           const token = firstEditionTokenId;
@@ -121,22 +93,6 @@ contract('KODAV3Marketplace', function (accounts) {
           await expectRevert(
               this.marketplace.listSteppedEditionAuction(minter, token, _0_0_0_1_ETH, _0_1_ETH, start, {from: contract}),
               "Base price not enough"
-          )
-
-        });
-
-        it('cannot list same edition twice', async () => {
-
-          const token = firstEditionTokenId;
-
-          // list edition for sale at 0.1 ETH per token twice
-          const start = await time.latest();
-
-          await this.marketplace.listSteppedEditionAuction(minter, token, _1_ETH, _0_1_ETH, start, {from: contract});
-
-          await expectRevert(
-              this.marketplace.listSteppedEditionAuction(minter, token, _1_ETH, _0_1_ETH, start, {from: contract}),
-              "Unable to setup listing again"
           )
 
         });
@@ -531,7 +487,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // seller attempts to convert to listed edition with invalid list price
         await expectRevert(
-            this.marketplace.convertSteppedAuctionToListing(edition, listingPrice, {from: minter}),
+            this.marketplace.convertSteppedAuctionToListing(edition, listingPrice, 0, {from: minter}),
             "List price not enough"
         )
 
@@ -543,23 +499,11 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // seller attempts to convert to listed edition with invalid list price
         await expectRevert(
-            this.marketplace.convertSteppedAuctionToListing(edition, _0_1_ETH, {from: collectorA}),
+            this.marketplace.convertSteppedAuctionToListing(edition, _0_1_ETH, 0, {from: collectorA}),
             "Only seller can convert"
         )
 
       });
-
-      it('reverts if a sale has been made', async () => {
-        await this.marketplace.buyNextStep(firstEditionTokenId, {
-          from: collectorA,
-          value: _1_5_ETH
-        });
-
-        await expectRevert(
-          this.marketplace.convertSteppedAuctionToListing(firstEditionTokenId, _0_1_ETH, {from: minter}),
-          "Sale has been made"
-        )
-      })
 
       context("on successful conversion", () => {
 
@@ -572,12 +516,13 @@ contract('KODAV3Marketplace', function (accounts) {
           const receipt = await this.marketplace.convertSteppedAuctionToListing(
               edition,
               listingPrice,
+              0,
               {from: minter}
           );
 
-          expectEvent(receipt, 'ListedForBuyNow', {
+          expectEvent(receipt, 'ConvertSteppedAuctionToBuyNow', {
             _id: edition,
-            _price: _1_ETH,
+            _listingPrice: _1_ETH,
             _startDate: ZERO
           });
 
@@ -589,7 +534,7 @@ contract('KODAV3Marketplace', function (accounts) {
           const listingPrice = _1_ETH;
 
           // seller converts to listed edition
-          await this.marketplace.convertSteppedAuctionToListing(edition, listingPrice, {from: minter});
+          await this.marketplace.convertSteppedAuctionToListing(edition, listingPrice, 0, {from: minter});
 
           //address _seller, uint128 _listingPrice, uint128 _startDate
           const listing = await this.marketplace.editionOrTokenListings(edition);
@@ -606,7 +551,7 @@ contract('KODAV3Marketplace', function (accounts) {
           const listingPrice = token1Price;
 
           // seller converts to listed edition
-          await this.marketplace.convertSteppedAuctionToListing(edition, listingPrice, {from: minter});
+          await this.marketplace.convertSteppedAuctionToListing(edition, listingPrice, 0, {from: minter});
 
           // collector A attempts to buy a token when the stepped auction has been converted to listing
           await expectRevert(

@@ -695,10 +695,10 @@ contract('KODAV3Marketplace', function (accounts) {
         const edition = firstEditionTokenId;
 
         // offer 0.5 ETH for token (first bid)
-        await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
+        await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_1_ETH});
 
         await expectRevert(
-            this.marketplace.acceptEditionBid(firstEditionTokenId, _0_1_ETH, {from: minter}),
+            this.marketplace.acceptEditionBid(firstEditionTokenId, _0_5_ETH, {from: minter}),
             'Offer price has changed'
         );
       });
