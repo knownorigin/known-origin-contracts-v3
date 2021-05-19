@@ -346,42 +346,13 @@ contract KODAV3PrimaryMarketplace is
         price = uint256(steppedAuction.basePrice) + stepAmount;
     }
 
-    function emergencyExitBidFromReserveAuction(uint256 _editionId)
-    public
-    override
-    whenNotPaused
-    nonReentrant {
-        bool isApprovalActiveForMarketplace = koda.isApprovedForAll(
-            editionOrTokenWithReserveAuctions[_editionId].seller,
-            address(this)
-        );
-
-        require(
-            !isApprovalActiveForMarketplace || koda.isSalesDisabledOrSoldOut(_editionId),
-            "Bid cannot be withdrawn as reserve auction listing is valid"
-        );
-
-        _emergencyExitBidFromReserveAuction(_editionId);
-    }
-
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
     public
     override
     whenNotPaused
     nonReentrant {
-        ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_editionId];
-
-        require(reserveAuction.reservePrice > 0, "No active auction");
-        require(reserveAuction.bid < reserveAuction.reservePrice, "Can only convert before reserve met");
-        require(reserveAuction.seller == _msgSender(), "Only the seller can convert");
         require(_listingPrice >= minBidAmount, "Listing price not enough");
-
-        // refund any bids
-        if (reserveAuction.bid > 0) {
-            _refundBidder(_editionId, reserveAuction.bidder, reserveAuction.bid);
-        }
-
-        delete editionOrTokenWithReserveAuctions[_editionId];
+        _removeReserveAuctionListing(_editionId);
 
         editionOrTokenListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
 
@@ -393,18 +364,7 @@ contract KODAV3PrimaryMarketplace is
     override
     whenNotPaused
     nonReentrant {
-        ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_editionId];
-
-        require(reserveAuction.reservePrice > 0, "No active auction");
-        require(reserveAuction.bid < reserveAuction.reservePrice, "Can only convert before reserve met");
-        require(reserveAuction.seller == _msgSender(), "Only the seller can convert");
-
-        // refund any bids
-        if (reserveAuction.bid > 0) {
-            _refundBidder(_editionId, reserveAuction.bidder, reserveAuction.bid);
-        }
-
-        delete editionOrTokenWithReserveAuctions[_editionId];
+        _removeReserveAuctionListing(_editionId);
 
         // set the start date for the offer (optional)
         editionOffersStartDate[_editionId] = _startDate;
@@ -443,6 +403,15 @@ contract KODAV3PrimaryMarketplace is
 
     function _isReserveListingPermitted(uint256 _editionId) internal override returns (bool) {
         return koda.getSizeOfEdition(_editionId) == 1 && accessControls.hasContractRole(_msgSender());
+    }
+
+    function _hasReserveListingBeenInvalidated(uint256 _id) internal override returns (bool) {
+        bool isApprovalActiveForMarketplace = koda.isApprovedForAll(
+            editionOrTokenWithReserveAuctions[_id].seller,
+            address(this)
+        );
+
+        return !isApprovalActiveForMarketplace || koda.isSalesDisabledOrSoldOut(_id);
     }
 
     function _isBuyNowListingPermitted(uint256) internal override returns (bool) {

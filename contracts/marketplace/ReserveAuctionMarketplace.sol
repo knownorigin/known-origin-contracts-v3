@@ -171,24 +171,16 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         emit ReservePriceUpdated(_id, _reservePrice);
     }
 
-    function updateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow) onlyAdmin public {
-        reserveAuctionBidExtensionWindow = _reserveAuctionBidExtensionWindow;
-        emit AdminUpdateReserveAuctionBidExtensionWindow(_reserveAuctionBidExtensionWindow);
-    }
-
-    function updateReserveAuctionLengthOnceReserveMet(uint128 _reserveAuctionLengthOnceReserveMet) onlyAdmin public {
-        reserveAuctionLengthOnceReserveMet = _reserveAuctionLengthOnceReserveMet;
-        emit AdminUpdateReserveAuctionLengthOnceReserveMet(_reserveAuctionLengthOnceReserveMet);
-    }
-
-    function _isReserveListingPermitted(uint256 _id) internal virtual returns (bool);
-
-    // todo - follow pattern when listing of asking the subclass if you can perform action through an internal method
-    function _emergencyExitBidFromReserveAuction(uint256 _id) internal {
+    function emergencyExitBidFromReserveAuction(uint256 _id)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
 
         require(reserveAuction.reservePrice > 0, "No reserve auction in flight");
         require(reserveAuction.bid > 0, "No bid in flight");
+        require(_hasReserveListingBeenInvalidated(_id), "Bid cannot be withdrawn as reserve auction listing is valid");
 
         bool isSeller = reserveAuction.seller == _msgSender();
         bool isBidder = reserveAuction.bidder == _msgSender();
@@ -201,6 +193,35 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid);
 
         emit EmergencyBidWithdrawFromReserveAuction(_id, reserveAuction.bidder, reserveAuction.bid);
+
+        delete editionOrTokenWithReserveAuctions[_id];
+    }
+
+    function updateReserveAuctionBidExtensionWindow(uint128 _reserveAuctionBidExtensionWindow) onlyAdmin public {
+        reserveAuctionBidExtensionWindow = _reserveAuctionBidExtensionWindow;
+        emit AdminUpdateReserveAuctionBidExtensionWindow(_reserveAuctionBidExtensionWindow);
+    }
+
+    function updateReserveAuctionLengthOnceReserveMet(uint128 _reserveAuctionLengthOnceReserveMet) onlyAdmin public {
+        reserveAuctionLengthOnceReserveMet = _reserveAuctionLengthOnceReserveMet;
+        emit AdminUpdateReserveAuctionLengthOnceReserveMet(_reserveAuctionLengthOnceReserveMet);
+    }
+
+    function _isReserveListingPermitted(uint256 _id) internal virtual returns (bool);
+
+    function _hasReserveListingBeenInvalidated(uint256 _id) internal virtual returns (bool);
+
+    function _removeReserveAuctionListing(uint256 _id) internal {
+        ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
+
+        require(reserveAuction.reservePrice > 0, "No active auction");
+        require(reserveAuction.bid < reserveAuction.reservePrice, "Can only convert before reserve met");
+        require(reserveAuction.seller == _msgSender(), "Only the seller can convert");
+
+        // refund any bids
+        if (reserveAuction.bid > 0) {
+            _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid);
+        }
 
         delete editionOrTokenWithReserveAuctions[_id];
     }

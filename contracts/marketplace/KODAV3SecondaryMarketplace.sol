@@ -22,6 +22,9 @@ contract KODAV3SecondaryMarketplace is
     event SecondaryMarketplaceDeployed();
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
     event AdminUpdateSecondarySaleCommission(uint256 _platformSecondarySaleCommission);
+    event ConvertFromBuyNowToOffers(uint256 indexed _editionId, uint128 _startDate);
+    event ConvertSteppedAuctionToBuyNow(uint256 indexed _editionId, uint128 _listingPrice, uint128 _startDate);
+    event ReserveAuctionConvertedToOffers(uint256 indexed _editionId);
 
     struct Offer {
         uint256 offer;
@@ -169,6 +172,28 @@ contract KODAV3SecondaryMarketplace is
         emit TokenBidRejected(_tokenId, koda.ownerOf(_tokenId), offer.bidder, offer.offer);
     }
 
+    function convertReserveAuctionToBuyItNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        require(_listingPrice >= minBidAmount, "Listing price not enough");
+        _removeReserveAuctionListing(_tokenId);
+
+        editionOrTokenListings[_tokenId] = Listing(_listingPrice, _startDate, _msgSender());
+
+        emit ReserveAuctionConvertedToBuyItNow(_tokenId, _listingPrice, _startDate);
+    }
+
+    function convertReserveAuctionToOffers(uint256 _tokenId)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        _removeReserveAuctionListing(_tokenId);
+        emit ReserveAuctionConvertedToOffers(_tokenId);
+    }
+
     //////////////////////////////
     // Secondary sale "helpers" //
     //////////////////////////////
@@ -206,51 +231,6 @@ contract KODAV3SecondaryMarketplace is
         require(success, "Token payment failed");
     }
 
-    function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
-    public
-    // todo add to interface - override
-    whenNotPaused
-    nonReentrant {
-        ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_editionId];
-
-        require(reserveAuction.reservePrice > 0, "No active auction");
-        require(reserveAuction.bid < reserveAuction.reservePrice, "Can only convert before reserve met");
-        require(reserveAuction.seller == _msgSender(), "Not the seller");
-        require(_listingPrice >= minBidAmount, "Listing price not enough");
-
-        // refund any bids
-        if (reserveAuction.bid > 0) {
-            _refundBidder(_editionId, reserveAuction.bidder, reserveAuction.bid);
-        }
-
-        delete editionOrTokenWithReserveAuctions[_editionId];
-
-        editionOrTokenListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
-
-        emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
-    }
-
-    // todo convert straight to offers from and reserve
-
-    function emergencyExitBidFromReserveAuction(uint256 _tokenId)
-    public
-    override
-    whenNotPaused
-    nonReentrant {
-        bool isApprovalActiveForMarketplace = koda.isApprovedForAll(
-            editionOrTokenWithReserveAuctions[_tokenId].seller,
-            address(this)
-        );
-
-        // todo test on last case
-        require(
-            !isApprovalActiveForMarketplace || koda.ownerOf(_tokenId) != editionOrTokenWithReserveAuctions[_tokenId].seller,
-            "Bid cannot be withdrawn as reserve auction listing is valid"
-        );
-
-        _emergencyExitBidFromReserveAuction(_tokenId);
-    }
-
     // Admin Methods
 
     function updatePlatformSecondarySaleCommission(uint256 _platformSecondarySaleCommission) public onlyAdmin {
@@ -271,6 +251,15 @@ contract KODAV3SecondaryMarketplace is
 
     function _isReserveListingPermitted(uint256 _tokenId) internal override returns (bool) {
         return koda.ownerOf(_tokenId) == _msgSender();
+    }
+
+    function _hasReserveListingBeenInvalidated(uint256 _id) internal override returns (bool) {
+        bool isApprovalActiveForMarketplace = koda.isApprovedForAll(
+            editionOrTokenWithReserveAuctions[_id].seller,
+            address(this)
+        );
+
+        return !isApprovalActiveForMarketplace || koda.ownerOf(_id) != editionOrTokenWithReserveAuctions[_id].seller;
     }
 
     function _isBuyNowListingPermitted(uint256 _tokenId) internal override returns (bool) {
