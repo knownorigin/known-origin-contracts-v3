@@ -512,7 +512,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       it('Reverts when auction not in flight', async () => {
         await expectRevert(
           this.marketplace.updateReservePriceForReserveAuction(SECOND_TOKEN_ID, '2'),
-          "No reserve auction in flight"
+          "Not the seller"
         )
       })
 
@@ -779,13 +779,6 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
             "Only seller, bidder, contract or platform admin"
           )
         })
-      })
-
-      it('Reverts when no auction in flight', async () => {
-        await expectRevert(
-          this.marketplace.emergencyExitBidFromReserveAuction(SECOND_TOKEN_ID),
-          "No reserve auction in flight"
-        )
       })
 
       it('Reverts when no bid in flight', async () => {

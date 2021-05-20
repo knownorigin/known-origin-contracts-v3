@@ -149,7 +149,6 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
     nonReentrant {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
 
-        require(reserveAuction.reservePrice > 0, "No reserve auction in flight");
         require(reserveAuction.seller == _msgSender(), "Not the seller");
         require(reserveAuction.biddingEnd == 0, "Reserve countdown commenced");
         require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
@@ -171,7 +170,6 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
     nonReentrant {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
 
-        require(reserveAuction.reservePrice > 0, "No reserve auction in flight");
         require(reserveAuction.bid > 0, "No bid in flight");
         require(_hasReserveListingBeenInvalidated(_id), "Bid cannot be withdrawn as reserve auction listing is valid");
 
