@@ -962,10 +962,10 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       expect(await this.token.editionAdditionalMetaData(firstEditionTokenId)).to.be.equal('hello');
     });
 
-    it('should tokenAdditionalMetaData()', async () => {
+    it('should editionAdditionalMetaDataForToken()', async () => {
       await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
-      expect(await this.token.tokenAdditionalMetaData(firstEditionTokenId)).to.be.equal('hello');
+      expect(await this.token.editionAdditionalMetaDataForToken(firstEditionTokenId)).to.be.equal('hello');
     });
 
     it('revert if not creator', async () => {
@@ -991,6 +991,47 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
       await expectRevert(
         this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello again', {from: owner}),
+        'can only be set once'
+      );
+    });
+  });
+
+  describe('lockInAdditionalTokenMetaData()', async () => {
+    it('should lockInAdditionalMetaData()', async () => {
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
+      await this.token.lockInAdditionalTokenMetaData(firstEditionTokenId, 'hello', {from: owner});
+      expect(await this.token.sealedTokenMetaData(firstEditionTokenId)).to.be.equal('hello');
+    });
+
+    it('should editionAdditionalMetaData()', async () => {
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
+      await this.token.lockInAdditionalTokenMetaData(firstEditionTokenId, 'hello', {from: owner});
+      expect(await this.token.tokenAdditionalMetaData(firstEditionTokenId)).to.be.equal('hello');
+    });
+
+    it('revert if not creator', async () => {
+      const {logs} = await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
+      expectEvent.inLogs(logs, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: owner,
+        tokenId: firstEditionTokenId
+      });
+      await expectRevert(
+        this.token.lockInAdditionalTokenMetaData(firstEditionTokenId, 'hello', {from: collabDao}),
+        'Unable to set when not owner'
+      );
+    });
+
+    it('revert if set twice', async () => {
+      const {logs} = await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
+      expectEvent.inLogs(logs, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: owner,
+        tokenId: firstEditionTokenId
+      });
+      await this.token.lockInAdditionalTokenMetaData(firstEditionTokenId, 'hello', {from: owner});
+      await expectRevert(
+        this.token.lockInAdditionalTokenMetaData(firstEditionTokenId, 'hello again', {from: owner}),
         'can only be set once'
       );
     });
