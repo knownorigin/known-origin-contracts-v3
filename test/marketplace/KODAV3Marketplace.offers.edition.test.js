@@ -52,7 +52,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
   });
 
-  describe.skip('primary sale edition offers', async () => {
+  describe('primary sale edition offers', async () => {
 
     const _0_1_ETH = ether('0.1');
 
@@ -65,7 +65,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe.skip('enableEditionOffers()', async () => {
+    describe('enableEditionOffers()', async () => {
 
       it('reverts if caller does not have minter role', async () => {
 
@@ -74,12 +74,12 @@ contract('KODAV3Marketplace', function (accounts) {
         const start = now.add(duration);
         await expectRevert(
             this.marketplace.enableEditionOffers(firstEditionTokenId, start, {from: collectorA}),
-            "Caller not creator or contract"
+            "Caller not contract"
         );
 
       });
 
-      describe.skip('on success, with subsequent bids', async () => {
+      describe('on success, with subsequent bids', async () => {
 
         it('reverts when attempting to place a bid before start time', async () => {
 
@@ -87,7 +87,7 @@ contract('KODAV3Marketplace', function (accounts) {
           const duration = time.duration.days(1);
           const start = now.add(duration);
 
-          await this.marketplace.enableEditionOffers(firstEditionTokenId, start, {from: minter});
+          await this.marketplace.enableEditionOffers(firstEditionTokenId, start, {from: contract});
 
           await expectRevert(
               this.marketplace.placeEditionBid(firstEditionTokenId, {
@@ -105,7 +105,7 @@ contract('KODAV3Marketplace', function (accounts) {
           const duration = time.duration.days(1);
           const start = now.add(duration);
 
-          await this.marketplace.enableEditionOffers(firstEditionTokenId, start, {from: minter});
+          await this.marketplace.enableEditionOffers(firstEditionTokenId, start, {from: contract});
 
           // Back to the future...
           await time.increaseTo(start);
@@ -128,9 +128,18 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe.skip('placeEditionBid()', () => {
+    describe('placeEditionBid()', () => {
 
       const _0_5_ETH = ether('0.5');
+
+      it('Reverts when edition is listed', async () => {
+        await this.marketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, '0', {from: contract})
+
+        await expectRevert(
+          this.marketplace.placeEditionBid(firstEditionTokenId, {from: collectorB, value: _0_1_ETH}),
+          "Edition is listed"
+        );
+      })
 
       it('reverts if bid lower than minimum on first bid', async () => {
 
@@ -179,7 +188,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
       });
 
-      describe.skip('on success', () => {
+      describe('on success', () => {
 
         it('emits EditionBidPlaced event on successful bid', async () => {
 
@@ -286,7 +295,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe.skip('withdrawEditionBid()', () => {
+    describe('withdrawEditionBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -346,7 +355,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
       });
 
-      describe.skip('on success', () => {
+      describe('on success', () => {
 
         it('can withdraw bid after lockup period elapses', async () => {
 
@@ -469,15 +478,19 @@ contract('KODAV3Marketplace', function (accounts) {
           const edition = firstEditionTokenId;
 
           // all tokens bought whilst there is an offer
-          await this.marketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, '0', {from: contract});
+          await this.marketplace.enableEditionOffers(firstEditionTokenId, '0', {from: contract});
 
           // collector a bids
           await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
+          await this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter})
 
-          // collector b buys up all tokens
-          await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorB, value: _0_1_ETH});
-          await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorB, value: _0_1_ETH});
-          await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorB, value: _0_1_ETH});
+          await this.marketplace.placeEditionBid(edition, {from: collectorB, value: _0_5_ETH});
+          await this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter})
+
+          await this.marketplace.placeEditionBid(edition, {from: collectorB, value: _0_5_ETH});
+          await this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter})
+
+          await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
 
           await time.increase(time.duration.hours(LOCKUP_HOURS));
 
@@ -488,7 +501,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe.skip('rejectEditionBid()', () => {
+    describe('rejectEditionBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -529,22 +542,28 @@ contract('KODAV3Marketplace', function (accounts) {
 
       });
 
-      describe.skip('on success', () => {
+      describe('on success', () => {
 
         it('can reject bid if all tokens in an edition are sold out', async () => {
 
           const edition = firstEditionTokenId;
 
           // all tokens bought whilst there is an offer
-          await this.marketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, '0', {from: contract});
+          await this.marketplace.enableEditionOffers(firstEditionTokenId, '0', {from: contract});
+
+          await this.marketplace.placeEditionBid(edition, {from: collectorB, value: _0_1_ETH});
+          await this.marketplace.acceptEditionBid(edition, _0_1_ETH, {from: minter})
+
+          await this.marketplace.placeEditionBid(edition, {from: collectorB, value: _0_1_ETH});
+          await this.marketplace.acceptEditionBid(edition, _0_1_ETH, {from: minter})
+
+          await this.marketplace.placeEditionBid(edition, {from: collectorB, value: _0_1_ETH});
+          await this.marketplace.acceptEditionBid(edition, _0_1_ETH, {from: minter})
+
+          await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_1_ETH});
 
           // collector a bids
           await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
-
-          // collector b buys up all tokens
-          await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorB, value: _0_1_ETH});
-          await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorB, value: _0_1_ETH});
-          await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorB, value: _0_1_ETH});
 
           // withdraw bid
           await this.marketplace.rejectEditionBid(edition, {from: minter});
@@ -630,7 +649,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe.skip('acceptEditionBid()', () => {
+    describe('acceptEditionBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -676,15 +695,15 @@ contract('KODAV3Marketplace', function (accounts) {
         const edition = firstEditionTokenId;
 
         // offer 0.5 ETH for token (first bid)
-        await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
+        await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_1_ETH});
 
         await expectRevert(
-            this.marketplace.acceptEditionBid(firstEditionTokenId, _0_1_ETH, {from: minter}),
+            this.marketplace.acceptEditionBid(firstEditionTokenId, _0_5_ETH, {from: minter}),
             'Offer price has changed'
         );
       });
 
-      describe.skip('on success', () => {
+      describe('on success', () => {
 
         it('emits EditionBidAccepted event when owner accepts offer', async () => {
 
@@ -744,7 +763,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe.skip('adminRejectEditionBid()', () => {
+    describe('adminRejectEditionBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -785,7 +804,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
       });
 
-      describe.skip('on success', () => {
+      describe('on success', () => {
 
         it('emits EditionBidRejected event when creator rejects offer', async () => {
 
@@ -867,7 +886,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
-    describe.skip('buy when sales disabled', () => {
+    describe('buy when sales disabled', () => {
       const _0_1_ETH = ether('0.1');
 
       beforeEach(async () => {
@@ -878,10 +897,12 @@ contract('KODAV3Marketplace', function (accounts) {
         await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
 
         this.start = await time.latest();
-        await this.marketplace.listEdition(minter, firstEditionTokenId, _0_1_ETH, this.start, {from: contract});
+        await this.marketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, this.start, {from: contract});
       });
 
       it('Can buy a token until sales are disabled', async () => {
+        await this.marketplace.convertFromBuyNowToOffers(firstEditionTokenId, this.start, {from: minter})
+
         // collector A buys a token
         const edition = firstEditionTokenId;
 
@@ -910,17 +931,17 @@ contract('KODAV3Marketplace', function (accounts) {
       });
     })
 
-    describe.skip('convert to buy it now', () => {
-      describe.skip('when offers enabled', () => {
+    describe('convert to buy it now', () => {
+      describe('when offers enabled', () => {
         beforeEach(async () => {
           const now = await time.latest();
           const duration = time.duration.days(1);
           this.start = now.add(duration);
 
-          await this.marketplace.enableEditionOffers(firstEditionTokenId, this.start, {from: minter});
+          await this.marketplace.enableEditionOffers(firstEditionTokenId, this.start, {from: contract});
         })
 
-        describe.skip('when an offer is in flight', () => {
+        describe('when an offer is in flight', () => {
           it('can convert and refund', async () => {
             // place bid
             await time.increaseTo(this.start);
@@ -945,7 +966,7 @@ contract('KODAV3Marketplace', function (accounts) {
           })
         })
 
-        describe.skip('when no offer is in flight', () => {
+        describe('when no offer is in flight', () => {
           it('can convert', async () => {
             const price = ether('0.75')
             const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter})
@@ -963,8 +984,8 @@ contract('KODAV3Marketplace', function (accounts) {
         })
       })
 
-      describe.skip('when not listed (generally accepting bids)', () => {
-        describe.skip('with bid', () => {
+      describe('when not listed (generally accepting bids)', () => {
+        describe('with bid', () => {
           it('can convert and refund', async () => {
             // place bid
             await this.marketplace.placeEditionBid(firstEditionTokenId, {from: collectorA, value: MIN_BID})
@@ -988,7 +1009,7 @@ contract('KODAV3Marketplace', function (accounts) {
           })
         })
 
-        describe.skip('without bid', () => {
+        describe('without bid', () => {
           it('can convert', async () => {
             const price = ether('0.75')
             const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter})
@@ -1009,7 +1030,7 @@ contract('KODAV3Marketplace', function (accounts) {
       it('Reverts when not creator', async () => {
         await expectRevert(
           this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, '0', '0', {from: collectorA}),
-          "Only creator"
+          "Not creator"
         )
       })
 
@@ -1017,6 +1038,51 @@ contract('KODAV3Marketplace', function (accounts) {
         await expectRevert(
           this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, '0', '0', {from: minter}),
           "Listing price not enough"
+        )
+      })
+
+      it('Reverts when edition is listed - buy now', async () => {
+        await this.marketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, '0', {from: contract})
+        await expectRevert(
+          this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, _0_1_ETH, '0', {from: minter}),
+          "Edition is listed"
+        )
+      })
+
+      it('Reverts when edition is listed - stepped', async () => {
+        const latestBlockTime = await time.latest();
+
+        // list firstEdition for sale at 0.1 ETH per token, starting immediately
+        const start = latestBlockTime;
+        await this.marketplace.listSteppedEditionAuction(
+          minter,
+          firstEditionTokenId,
+          ether('1'),
+          _0_1_ETH,
+          start,
+          {from: contract}
+        );
+
+        await expectRevert(
+          this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, _0_1_ETH, '0', {from: minter}),
+          "Edition is listed"
+        )
+      })
+
+      it('Reverts when edition is listed - reserve', async () => {
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract});
+
+        await this.marketplace.listForReserveAuction(
+          minter,
+          secondEditionTokenId,
+          ether('1'),
+          '0',
+          {from: contract}
+        )
+
+        await expectRevert(
+          this.marketplace.convertOffersToBuyItNow(secondEditionTokenId, _0_1_ETH, '0', {from: minter}),
+          "Edition is listed"
         )
       })
     })

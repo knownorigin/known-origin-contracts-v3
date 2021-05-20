@@ -19,6 +19,8 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
   const FIRST_TOKEN_ID = STARTING_EDITION.addn(1000)
   const SECOND_TOKEN_ID = STARTING_EDITION.addn(2000)
 
+  const LOCKUP_HOURS = 6;
+
   beforeEach(async () => {
     const legacyAccessControls = await SelfServiceAccessControls.new();
     // setup access controls
@@ -46,8 +48,8 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  describe.skip('all tests', () => {
-    describe.skip('End to end reserve auctions', () => {
+  describe('all tests', () => {
+    describe('End to end reserve auctions', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -58,16 +60,16 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       it('Successfully results a full reserve auction with no start date', async () => {
         const reservePrice = ether('0.5')
 
-        const { receipt } = await this.marketplace.listTokenForReserveAuction(
+        const { receipt } = await this.marketplace.listForReserveAuction(
           minter,
           FIRST_TOKEN_ID,
           reservePrice,
           '0',
-          {from: contract}
+          {from: minter}
         )
 
-        await expectEvent(receipt, 'TokenListedForReserveAuction', {
-          _tokenId: FIRST_TOKEN_ID,
+        await expectEvent(receipt, 'ListedForReserveAuction', {
+          _id: FIRST_TOKEN_ID,
           _reservePrice: reservePrice,
           _startDate: '0'
         })
@@ -83,7 +85,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
 
         expect(await bidder1Tracker.delta()).to.be.bignumber.equal(ether('1'))
 
-        const reserveAuctionDetailsAfterBid = await this.marketplace.tokenWithReserveAuctions(FIRST_TOKEN_ID)
+        const reserveAuctionDetailsAfterBid = await this.marketplace.editionOrTokenWithReserveAuctions(FIRST_TOKEN_ID)
 
         expect(reserveAuctionDetailsAfterBid.bidder).to.be.equal(bidder2)
 
@@ -107,7 +109,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe.skip('listTokenForReserveAuction()', () => {
+    describe('listForReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -116,34 +118,50 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
 
       it('Reverts when reserve auction already in flight', async () => {
-        await this.marketplace.listTokenForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract})
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
 
         await expectRevert(
-          this.marketplace.listTokenForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract}),
-          "Auction already in flight"
-        )
-      })
-
-      it('Reverts for editions that are not 1 of 1', async () => {
-        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract})
-
-        expect(await this.token.getSizeOfEdition(SECOND_TOKEN_ID)).to.be.bignumber.equal('3')
-
-        await expectRevert(
-          this.marketplace.listTokenForReserveAuction(minter, SECOND_TOKEN_ID, ether('0.25'), '0', {from: contract}),
-          "Only 1 of 1 editions are supported"
+          this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter}),
+          "Listing not permitted"
         )
       })
 
       it('Reverts when reserve price is below min bid', async () => {
         await expectRevert(
-          this.marketplace.listTokenForReserveAuction(minter, FIRST_TOKEN_ID, '1', '0', {from: contract}),
+          this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, '1', '0', {from: minter}),
           "Reserve price must be at least min bid"
         )
       })
+
+      it('User can withdraw their bid if a token is listed for reserve auction', async () => {
+        const tokenBid = ether('0.2')
+        await this.marketplace.placeTokenBid(FIRST_TOKEN_ID, {from: bidder1, value: tokenBid});
+
+        const reservePrice = ether('0.5')
+        await this.marketplace.listForReserveAuction(
+          minter,
+          FIRST_TOKEN_ID,
+          reservePrice,
+          '0',
+          {from: minter}
+        )
+
+        // Back to the future...
+        await time.increase(time.duration.hours(LOCKUP_HOURS));
+
+        const bidderTracker = await balance.tracker(bidder1)
+
+        const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString());
+        const tx = await this.marketplace.withdrawTokenBid(FIRST_TOKEN_ID, {from: bidder1, gasPrice})
+
+        const gasUsed = new BN(tx.receipt.cumulativeGasUsed);
+        const txCost = gasUsed.mul(gasPrice);
+
+        expect(await bidderTracker.delta()).to.be.bignumber.equal(tokenBid.sub(txCost))
+      })
     })
 
-    describe.skip('placeBidOnReserveAuction()', () => {
+    describe('convertReserveAuctionToOffers()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -151,7 +169,58 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
 
         // list the token for reserve auction
-        await this.marketplace.listTokenForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract})
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
+
+        // mint another batch of tokens for further testing
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+      })
+
+      it('Converts to offers with no bid', async () => {
+        const now = await time.latest()
+
+        const {receipt} = await this.marketplace.convertReserveAuctionToOffers(FIRST_TOKEN_ID, {from: minter})
+        await expectEvent(receipt, 'ReserveAuctionConvertedToOffers', {
+          _tokenId: FIRST_TOKEN_ID
+        })
+
+        // cant place a bid
+        await expectRevert(
+          this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.2')}),
+          "Not set up for reserve auction"
+        )
+      })
+
+      it('Converts to offers with bid below reserve', async () => {
+        await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.2')})
+
+        const now = await time.latest()
+
+        const bidder1Tracker = await balance.tracker(bidder1)
+
+        const {receipt} = await this.marketplace.convertReserveAuctionToOffers(FIRST_TOKEN_ID, {from: minter})
+        await expectEvent(receipt, 'ReserveAuctionConvertedToOffers', {
+          _tokenId: FIRST_TOKEN_ID
+        })
+
+        expect(await bidder1Tracker.delta()).to.be.bignumber.equal(ether('0.2'))
+
+        // cant place a bid
+        await expectRevert(
+          this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.2')}),
+          "Not set up for reserve auction"
+        )
+      })
+    })
+
+    describe('placeBidOnReserveAuction()', () => {
+      beforeEach(async () => {
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // reserve is only for 1 of 1
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+
+        // list the token for reserve auction
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
 
         // mint another batch of tokens for further testing
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
@@ -161,7 +230,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         const bid = ether('0.5')
         await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: bid})
 
-        const reserveAuctionMetadataPostBid = await this.marketplace.tokenWithReserveAuctions(FIRST_TOKEN_ID)
+        const reserveAuctionMetadataPostBid = await this.marketplace.editionOrTokenWithReserveAuctions(FIRST_TOKEN_ID)
         const reserveAuctionBidExtensionWindow = await this.marketplace.reserveAuctionBidExtensionWindow()
 
         // place the time within the end window
@@ -170,14 +239,14 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         // bid again
         await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder2, value: bid.muln(2)})
 
-        const reserveAuctionMetadataPostBid2 = await this.marketplace.tokenWithReserveAuctions(FIRST_TOKEN_ID)
+        const reserveAuctionMetadataPostBid2 = await this.marketplace.editionOrTokenWithReserveAuctions(FIRST_TOKEN_ID)
         expect(reserveAuctionMetadataPostBid2.biddingEnd).to.be.bignumber.equal(reserveAuctionMetadataPostBid.biddingEnd.add(reserveAuctionBidExtensionWindow))
       })
 
       it('Reverts when token not set up for reserve auction', async () => {
         await expectRevert(
           this.marketplace.placeBidOnReserveAuction(SECOND_TOKEN_ID),
-          "Token not set up for reserve auction"
+          "Not set up for reserve auction"
         )
       })
 
@@ -185,11 +254,11 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         const currentTime = await time.latest()
         const _5_Mins_In_The_Future = currentTime.addn(5 * 60)
 
-        await this.marketplace.listTokenForReserveAuction(minter, SECOND_TOKEN_ID, ether('0.25'), _5_Mins_In_The_Future, {from: contract})
+        await this.marketplace.listForReserveAuction(minter, SECOND_TOKEN_ID, ether('0.25'), _5_Mins_In_The_Future, {from: minter})
 
         await expectRevert(
           this.marketplace.placeBidOnReserveAuction(SECOND_TOKEN_ID),
-          "Token not accepting bids yet"
+          "Not accepting bids yet"
         )
       })
 
@@ -217,17 +286,17 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: bid})
 
         // move beyond end
-        const {biddingEnd} = await this.marketplace.tokenWithReserveAuctions(FIRST_TOKEN_ID)
+        const {biddingEnd} = await this.marketplace.editionOrTokenWithReserveAuctions(FIRST_TOKEN_ID)
         await time.increaseTo(biddingEnd)
 
         await expectRevert(
           this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: bid.muln(2)}),
-          "Token is no longer accepting bids"
+          "No longer accepting bids"
         )
       })
     })
 
-    describe.skip('resultReserveAuction()', () => {
+    describe('resultReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -235,7 +304,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
 
         // list the token for reserve auction
-        await this.marketplace.listTokenForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract})
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
 
         // mint another batch of tokens for further testing
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
@@ -251,7 +320,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       it('Reverts when no bids received', async () => {
         await expectRevert(
           this.marketplace.resultReserveAuction(FIRST_TOKEN_ID),
-          "No bids received"
+          "Reserve not met"
         )
       })
 
@@ -273,29 +342,16 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         )
       })
 
-      it('Reverts when not authorised caller when resulting', async () => {
-        await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.5')})
-
-        const {biddingEnd} = await this.marketplace.tokenWithReserveAuctions(FIRST_TOKEN_ID)
-
-        await time.increaseTo(biddingEnd.addn(5))
-
-        await expectRevert(
-          this.marketplace.resultReserveAuction(FIRST_TOKEN_ID, {from: koCommission}),
-          "Only winner, seller, contract or admin can result"
-        )
-      })
-
       it('Can result as winner', async () => {
         await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.5')})
 
-        const {biddingEnd} = await this.marketplace.tokenWithReserveAuctions(FIRST_TOKEN_ID)
+        const {biddingEnd} = await this.marketplace.editionOrTokenWithReserveAuctions(FIRST_TOKEN_ID)
 
         await time.increaseTo(biddingEnd.addn(5))
 
         const {receipt} = await this.marketplace.resultReserveAuction(FIRST_TOKEN_ID, {from: bidder1})
         expectEvent(receipt, 'ReserveAuctionResulted', {
-          _tokenId: FIRST_TOKEN_ID,
+          _id: FIRST_TOKEN_ID,
           _finalPrice: ether('0.5'),
           _winner: bidder1,
           _resulter: bidder1
@@ -305,13 +361,13 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       it('Can result as seller', async () => {
         await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.5')})
 
-        const {biddingEnd} = await this.marketplace.tokenWithReserveAuctions(FIRST_TOKEN_ID)
+        const {biddingEnd} = await this.marketplace.editionOrTokenWithReserveAuctions(FIRST_TOKEN_ID)
 
         await time.increaseTo(biddingEnd.addn(5))
 
         const {receipt} = await this.marketplace.resultReserveAuction(FIRST_TOKEN_ID, {from: minter})
         expectEvent(receipt, 'ReserveAuctionResulted', {
-          _tokenId: FIRST_TOKEN_ID,
+          _id: FIRST_TOKEN_ID,
           _finalPrice: ether('0.5'),
           _winner: bidder1,
           _resulter: minter
@@ -321,13 +377,13 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       it('Can result as contract', async () => {
         await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.5')})
 
-        const {biddingEnd} = await this.marketplace.tokenWithReserveAuctions(FIRST_TOKEN_ID)
+        const {biddingEnd} = await this.marketplace.editionOrTokenWithReserveAuctions(FIRST_TOKEN_ID)
 
         await time.increaseTo(biddingEnd.addn(5))
 
         const {receipt} = await this.marketplace.resultReserveAuction(FIRST_TOKEN_ID, {from: contract})
         expectEvent(receipt, 'ReserveAuctionResulted', {
-          _tokenId: FIRST_TOKEN_ID,
+          _id: FIRST_TOKEN_ID,
           _finalPrice: ether('0.5'),
           _winner: bidder1,
           _resulter: contract
@@ -337,13 +393,13 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       it('Can result as admin', async () => {
         await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.5')})
 
-        const {biddingEnd} = await this.marketplace.tokenWithReserveAuctions(FIRST_TOKEN_ID)
+        const {biddingEnd} = await this.marketplace.editionOrTokenWithReserveAuctions(FIRST_TOKEN_ID)
 
         await time.increaseTo(biddingEnd.addn(5))
 
         const {receipt} = await this.marketplace.resultReserveAuction(FIRST_TOKEN_ID, {from: owner})
         expectEvent(receipt, 'ReserveAuctionResulted', {
-          _tokenId: FIRST_TOKEN_ID,
+          _id: FIRST_TOKEN_ID,
           _finalPrice: ether('0.5'),
           _winner: bidder1,
           _resulter: owner
@@ -351,7 +407,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe.skip('withdrawBidFromReserveAuction()', () => {
+    describe('withdrawBidFromReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -359,7 +415,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
 
         // list the token for reserve auction
-        await this.marketplace.listTokenForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract})
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
 
         // mint another batch of tokens for further testing
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
@@ -381,7 +437,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid.sub(txCost))
 
         expectEvent(receipt, 'BidWithdrawnFromReserveAuction', {
-          _tokenId: FIRST_TOKEN_ID,
+          _id: FIRST_TOKEN_ID,
           _bidder: bidder1,
           _bid: bid
         })
@@ -413,7 +469,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe.skip('updateReservePriceForReserveAuction()', () => {
+    describe('updateReservePriceForReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -421,7 +477,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
 
         // list the token for reserve auction
-        await this.marketplace.listTokenForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract})
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
 
         // mint another batch of tokens for further testing
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
@@ -433,15 +489,30 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
 
         const {
           reservePrice
-        } = await this.marketplace.tokenWithReserveAuctions(FIRST_TOKEN_ID)
+        } = await this.marketplace.editionOrTokenWithReserveAuctions(FIRST_TOKEN_ID)
 
         expect(reservePrice).to.be.bignumber.equal(newReserve)
+      })
+
+      it('When reserve is set below current bid, then 24h countdown triggered', async () => {
+        await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.1')})
+
+        const newReserve = ether('0.075')
+        await this.marketplace.updateReservePriceForReserveAuction(FIRST_TOKEN_ID, newReserve, {from: minter})
+
+        const {
+          reservePrice,
+          biddingEnd
+        } = await this.marketplace.editionOrTokenWithReserveAuctions(FIRST_TOKEN_ID)
+
+        expect(reservePrice).to.be.bignumber.equal(newReserve)
+        expect(biddingEnd).to.be.bignumber.gt('0')
       })
 
       it('Reverts when auction not in flight', async () => {
         await expectRevert(
           this.marketplace.updateReservePriceForReserveAuction(SECOND_TOKEN_ID, '2'),
-          "No reserve auction in flight"
+          "Not the seller"
         )
       })
 
@@ -457,7 +528,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
 
         await expectRevert(
           this.marketplace.updateReservePriceForReserveAuction(FIRST_TOKEN_ID, '2', {from: minter}),
-          "Due to the active bid the reserve cannot be adjusted"
+          "Reserve countdown commenced"
         )
       })
 
@@ -469,7 +540,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe.skip('convertReserveAuctionToBuyItNow()', () => {
+    describe('convertReserveAuctionToBuyItNow()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -477,7 +548,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
 
         // list the token for reserve auction
-        await this.marketplace.listTokenForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: contract})
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
 
         // mint another batch of tokens for further testing
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
@@ -488,7 +559,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
 
         const {receipt} = await this.marketplace.convertReserveAuctionToBuyItNow(FIRST_TOKEN_ID, ether('0.1'), now, {from: minter})
         await expectEvent(receipt, 'ReserveAuctionConvertedToBuyItNow', {
-          _tokenId: FIRST_TOKEN_ID,
+          _id: FIRST_TOKEN_ID,
           _listingPrice: ether('0.1'),
           _startDate: now
         })
@@ -496,11 +567,11 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         // cant place a bid
         await expectRevert(
           this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.2')}),
-          "Token not set up for reserve auction"
+          "Not set up for reserve auction"
         )
 
         // but can buy the token
-        await this.marketplace.buyToken(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.1')})
+        await this.marketplace.buyEditionToken(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.1')})
 
         expect(await this.token.ownerOf(FIRST_TOKEN_ID)).to.be.equal(bidder1)
       })
@@ -514,7 +585,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
 
         const {receipt} = await this.marketplace.convertReserveAuctionToBuyItNow(FIRST_TOKEN_ID, ether('0.1'), now, {from: minter})
         await expectEvent(receipt, 'ReserveAuctionConvertedToBuyItNow', {
-          _tokenId: FIRST_TOKEN_ID,
+          _id: FIRST_TOKEN_ID,
           _listingPrice: ether('0.1'),
           _startDate: now
         })
@@ -524,18 +595,18 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         // cant place a bid
         await expectRevert(
           this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.2')}),
-          "Token not set up for reserve auction"
+          "Not set up for reserve auction"
         )
 
         // but can buy the token
-        await this.marketplace.buyToken(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.1')})
+        await this.marketplace.buyEditionToken(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.1')})
 
         expect(await this.token.ownerOf(FIRST_TOKEN_ID)).to.be.equal(bidder1)
       })
 
       it('Reverts when no active auction in flight', async () => {
         await expectRevert(
-          this.marketplace.convertReserveAuctionToBuyItNow(SECOND_TOKEN_ID, '0', '0'),
+          this.marketplace.convertReserveAuctionToBuyItNow(SECOND_TOKEN_ID, ether('0.25'), '0'),
           "No active auction"
         )
       })
@@ -544,15 +615,15 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
         await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('0.5')})
 
         await expectRevert(
-          this.marketplace.convertReserveAuctionToBuyItNow(FIRST_TOKEN_ID, '0', '0'),
+          this.marketplace.convertReserveAuctionToBuyItNow(FIRST_TOKEN_ID, ether('0.25'), '0'),
           "Can only convert before reserve met"
         )
       })
 
       it('Reverts when not the seller', async () => {
         await expectRevert(
-          this.marketplace.convertReserveAuctionToBuyItNow(FIRST_TOKEN_ID, '0', '0', {from: bidder1}),
-          "Not the seller"
+          this.marketplace.convertReserveAuctionToBuyItNow(FIRST_TOKEN_ID, ether('0.25'), '0', {from: bidder1}),
+          "Only the seller can convert"
         )
       })
 
@@ -564,7 +635,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe.skip('updateReserveAuctionBidExtensionWindow()', () => {
+    describe('updateReserveAuctionBidExtensionWindow()', () => {
       const one_minute = new BN('60');
 
       it('updates the reserve auction extension window as admin', async () => {
@@ -583,7 +654,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe.skip('updateReserveAuctionLengthOnceReserveMet()', () => {
+    describe('updateReserveAuctionLengthOnceReserveMet()', () => {
       const one_minute = new BN('60');
 
       it('updates the reserve auction length as admin', async () => {
@@ -602,7 +673,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe.skip('updatePlatformSecondarySaleCommission()', () => {
+    describe('updatePlatformSecondarySaleCommission()', () => {
       const new_commission = new BN('1550000');
 
       it('updates the reserve auction length as admin', async () => {
@@ -621,95 +692,101 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
       })
     })
 
-    describe.skip('updateModulo()', () => {
-      const new_modulo = new BN('10000');
+    describe('emergencyExitBidFromReserveAuction()', () => {
+      beforeEach(async () => {
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
-      it('updates the reserve auction length as admin', async () => {
-        const {receipt} = await this.marketplace.updateModulo(new_modulo, {from: owner})
+        // reserve is only for 1 of 1
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
 
-        await expectEvent(receipt, 'AdminUpdateModulo', {
-          _modulo: new_modulo
+        // list the token for reserve auction
+        await this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, ether('0.25'), '0', {from: minter})
+
+        // mint another batch of tokens for further testing
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+      })
+
+      describe('when bid placed', () => {
+        const bid = ether('0.5')
+
+        beforeEach(async () => {
+          await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: bid})
+        })
+
+        describe('As seller', () => {
+          it('Can emergency exit if approval removed', async () => {
+            await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+            const bidder1Tracker = await balance.tracker(bidder1)
+
+            await this.marketplace.emergencyExitBidFromReserveAuction(FIRST_TOKEN_ID, {from: minter})
+
+            expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
+          })
+        })
+
+        describe('As bidder', () => {
+          it('Can emergency exit if approval removed', async () => {
+            await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+            const bidder1Tracker = await balance.tracker(bidder1)
+
+            const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString())
+            const tx = await this.marketplace.emergencyExitBidFromReserveAuction(FIRST_TOKEN_ID, {from: bidder1, gasPrice})
+
+            const gasUsed = new BN( tx.receipt.cumulativeGasUsed );
+            const txCost = gasUsed.mul(gasPrice);
+            expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid.sub(txCost))
+          })
+        })
+
+        describe('As contract', () => {
+          it('Can emergency exit if approval removed', async () => {
+            await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+            const bidder1Tracker = await balance.tracker(bidder1)
+
+            await this.marketplace.emergencyExitBidFromReserveAuction(FIRST_TOKEN_ID, {from: contract})
+
+            expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
+          })
+        })
+
+        describe('As platform admin', () => {
+          it('Can emergency exit if approval removed', async () => {
+            await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+            const bidder1Tracker = await balance.tracker(bidder1)
+
+            await this.marketplace.emergencyExitBidFromReserveAuction(FIRST_TOKEN_ID, {from: owner})
+
+            expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
+          })
+        })
+
+        it('Reverts when listing is still valid', async () => {
+          await expectRevert(
+            this.marketplace.emergencyExitBidFromReserveAuction(FIRST_TOKEN_ID),
+            "Bid cannot be withdrawn as reserve auction listing is valid"
+          )
+        })
+
+        it('Reverts when not on approved list of callers', async () => {
+          await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+          await expectRevert(
+            this.marketplace.emergencyExitBidFromReserveAuction(FIRST_TOKEN_ID, {from: koCommission}),
+            "Only seller, bidder, contract or platform admin"
+          )
         })
       })
 
-      it('Reverts when not admin', async () => {
+      it('Reverts when no bid in flight', async () => {
+        await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
         await expectRevert(
-          this.marketplace.updateModulo(new_modulo, {from: bidder1}),
-          "Caller not admin"
-        )
-      })
-    })
-
-    describe.skip('updateMinBidAmount()', () => {
-      const new_min_bid = ether('0.3');
-
-      it('updates the reserve auction length as admin', async () => {
-        const {receipt} = await this.marketplace.updateMinBidAmount(new_min_bid, {from: owner})
-
-        await expectEvent(receipt, 'AdminUpdateMinBidAmount', {
-          _minBidAmount: new_min_bid
-        })
-      })
-
-      it('Reverts when not admin', async () => {
-        await expectRevert(
-          this.marketplace.updateMinBidAmount(new_min_bid, {from: bidder1}),
-          "Caller not admin"
-        )
-      })
-    })
-
-    describe.skip('updateAccessControls()', () => {
-      it('updates the reserve auction length as admin', async () => {
-        const {receipt} = await this.marketplace.updateAccessControls(newAccessControls, {from: owner})
-
-        await expectEvent(receipt, 'AdminUpdateAccessControls', {
-          _oldAddress: this.accessControls.address,
-          _newAddress: newAccessControls
-        })
-      })
-
-      it('Reverts when not admin', async () => {
-        await expectRevert(
-          this.marketplace.updateAccessControls(newAccessControls, {from: bidder1}),
-          "Caller not admin"
-        )
-      })
-    })
-
-    describe.skip('updateBidLockupPeriod()', () => {
-      const new_lock_up = ether((6 * 60).toString());
-
-      it('updates the reserve auction length as admin', async () => {
-        const {receipt} = await this.marketplace.updateBidLockupPeriod(new_lock_up, {from: owner})
-
-        await expectEvent(receipt, 'AdminUpdateBidLockupPeriod', {
-          _bidLockupPeriod: new_lock_up
-        })
-      })
-
-      it('Reverts when not admin', async () => {
-        await expectRevert(
-          this.marketplace.updateBidLockupPeriod(new_lock_up, {from: bidder1}),
-          "Caller not admin"
-        )
-      })
-    })
-
-    describe.skip('updatePlatformAccount()', () => {
-      it('updates the reserve auction length as admin', async () => {
-        const {receipt} = await this.marketplace.updatePlatformAccount(owner, {from: owner})
-
-        await expectEvent(receipt, 'AdminUpdatePlatformAccount', {
-          _oldAddress: koCommission,
-          _newAddress: owner
-        })
-      })
-
-      it('Reverts when not admin', async () => {
-        await expectRevert(
-          this.marketplace.updatePlatformAccount(owner, {from: bidder1}),
-          "Caller not admin"
+          this.marketplace.emergencyExitBidFromReserveAuction(FIRST_TOKEN_ID),
+          "No bid in flight"
         )
       })
     })

@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.3;
 
-interface IEditionBuyNowMarketplace {
-    event EditionListed(uint256 indexed _editionId, uint256 _price, uint256 _startDate);
-    event EditionPriceChanged(uint256 indexed _editionId, uint256 _price);
-    event EditionDeListed(uint256 indexed _editionId);
-    event EditionPurchased(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price);
+interface IBuyNowMarketplace {
+    event ListedForBuyNow(uint256 indexed _id, uint256 _price, uint256 _startDate);
+    event BuyNowPriceChanged(uint256 indexed _id, uint256 _price);
+    event BuyNowDeListed(uint256 indexed _id);
+    event BuyNowPurchased(uint256 indexed _tokenId, address indexed _buyer, uint256 _price);
 
-    function listEdition(address _creator, uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
+    function listForBuyNow(address _creator, uint256 _id, uint128 _listingPrice, uint128 _startDate) external;
 
-    function buyEditionToken(uint256 _editionId) external payable;
+    function buyEditionToken(uint256 _id) external payable;
 
-    function buyEditionTokenFor(uint256 _editionId, address _recipient) external payable;
+    function buyEditionTokenFor(uint256 _id, address _recipient) external payable;
 
-    function setEditionPriceListing(uint256 _editionId, uint128 _listingPrice) external;
+    function setBuyNowPriceListing(uint256 _editionId, uint128 _listingPrice) external;
 }
 
 interface IEditionOffersMarketplace {
@@ -46,37 +46,45 @@ interface IEditionSteppedMarketplace {
 
     function buyNextStep(uint256 _editionId) external payable;
 
-    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice) external;
+    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
+    function convertSteppedAuctionToOffers(uint256 _editionId, uint128 _startDate) external;
 
     function updateSteppedAuction(uint256 _editionId, uint128 _basePrice, uint128 _stepPrice) external;
 }
 
 interface IReserveAuctionMarketplace {
-    event EditionListedForReserveAuction(uint256 indexed _editionId, uint256 _reservePrice, uint128 _startDate);
-    event BidPlacedOnReserveAuction(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
-    event ReserveAuctionResulted(uint256 indexed _editionId, uint256 _finalPrice, address indexed _winner, address indexed _resulter);
-    event BidWithdrawnFromReserveAuction(uint256 _editionId, address indexed _bidder, uint128 _bid);
-    event EmergencyBidWithdrawFromReserveAuction(uint256 _editionId, address indexed _bidder, uint128 _bid);
-    event ReservePriceUpdated(uint256 indexed _editionId, uint256 _reservePrice);
-    event ReserveAuctionConvertedToBuyItNow(uint256 indexed _editionId, uint128 _listingPrice, uint128 _startDate);
+    event ListedForReserveAuction(uint256 indexed _id, uint256 _reservePrice, uint128 _startDate);
+    event BidPlacedOnReserveAuction(uint256 indexed _id, address indexed _bidder, uint256 _amount);
+    event ReserveAuctionResulted(uint256 indexed _id, uint256 _finalPrice, address indexed _winner, address indexed _resulter);
+    event BidWithdrawnFromReserveAuction(uint256 _id, address indexed _bidder, uint128 _bid);
+    event ReservePriceUpdated(uint256 indexed _id, uint256 _reservePrice);
+    event ReserveAuctionConvertedToBuyItNow(uint256 indexed _id, uint128 _listingPrice, uint128 _startDate);
+    event EmergencyBidWithdrawFromReserveAuction(uint256 indexed _id, address _bidder, uint128 _bid);
 
-    function listEditionForReserveAuction(address _creator, uint256 _editionId, uint128 _reservePrice, uint128 _startDate) external;
-    function placeBidOnReserveAuction(uint256 _editionId) external payable;
-    function resultReserveAuction(uint256 _editionId) external;
-    function withdrawBidFromReserveAuction(uint256 _editionId) external;
-    function emergencyExitBidFromReserveAuction(uint256 _editionId) external;
-    function updateReservePriceForReserveAuction(uint256 _editionId, uint128 _reservePrice) external;
-    function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
+    function placeBidOnReserveAuction(uint256 _id) external payable;
+    function listForReserveAuction(address _creator, uint256 _id, uint128 _reservePrice, uint128 _startDate) external;
+    function resultReserveAuction(uint256 _id) external;
+    function withdrawBidFromReserveAuction(uint256 _id) external;
+    function updateReservePriceForReserveAuction(uint256 _id, uint128 _reservePrice) external;
+    function emergencyExitBidFromReserveAuction(uint256 _id) external;
 }
 
-interface IKODAV3PrimarySaleMarketplace is IEditionBuyNowMarketplace, IEditionSteppedMarketplace, IEditionOffersMarketplace, IReserveAuctionMarketplace {
-    // combo
+interface IKODAV3PrimarySaleMarketplace is IEditionSteppedMarketplace, IEditionOffersMarketplace {
+    function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
+    function convertReserveAuctionToOffers(uint256 _editionId, uint128 _startDate) external;
 }
 
 interface ITokenBuyNowMarketplace {
-    event TokenListed(uint256 indexed _tokenId, address indexed _seller, uint256 _price);
     event TokenDeListed(uint256 indexed _tokenId);
-    event TokenPurchased(uint256 indexed _tokenId, address indexed _buyer, address indexed _seller, uint256 _price);
+
+    function delistToken(uint256 _tokenId) external;
+}
+
+interface ITokenOffersMarketplace {
+    event TokenBidPlaced(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
+    event TokenBidAccepted(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
+    event TokenBidRejected(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
+    event TokenBidWithdrawn(uint256 indexed _tokenId, address indexed _bidder);
 
     function acceptTokenBid(uint256 _tokenId, uint256 _offerPrice) external;
 
@@ -87,36 +95,11 @@ interface ITokenBuyNowMarketplace {
     function placeTokenBid(uint256 _tokenId) external payable;
 }
 
-interface ITokenOffersMarketplace {
-    event TokenBidPlaced(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
-    event TokenBidAccepted(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
-    event TokenBidRejected(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
-    event TokenBidWithdrawn(uint256 indexed _tokenId, address indexed _bidder);
-
-    function listToken(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) external;
-
-    function delistToken(uint256 _tokenId) external;
-
-    function buyToken(uint256 _tokenId) external payable;
-
-    function buyTokenFor(uint256 _tokenId, address _recipient) external payable;}
-
-interface IReserveAuctionSecondaryMarketplace {
-    event TokenListedForReserveAuction(uint256 indexed _tokenId, uint256 _reservePrice, uint128 _startDate);
-    event BidPlacedOnReserveAuction(uint256 indexed _tokenId, address indexed _bidder, uint256 _amount);
-    event ReserveAuctionResulted(uint256 indexed _tokenId, uint256 _finalPrice, address indexed _winner, address indexed _resulter);
-    event BidWithdrawnFromReserveAuction(uint256 _tokenId, address indexed _bidder, uint128 _bid);
-    event ReservePriceUpdated(uint256 indexed _tokenId, uint256 _reservePrice);
-    event ReserveAuctionConvertedToBuyItNow(uint256 indexed _tokenId, uint128 _listingPrice, uint128 _startDate);
-
-    function placeBidOnReserveAuction(uint256 _tokenId) external payable;
-    function listTokenForReserveAuction(address _creator, uint256 _tokenId, uint128 _reservePrice, uint128 _startDate) external;
-    function resultReserveAuction(uint256 _tokenId) external;
-    function withdrawBidFromReserveAuction(uint256 _tokenId) external;
-    function updateReservePriceForReserveAuction(uint256 _tokenId, uint128 _reservePrice) external;
-    function convertReserveAuctionToBuyItNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) external;
+interface IBuyNowSecondaryMarketplace {
+    function listTokenForBuyNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) external;
 }
 
-interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffersMarketplace, IReserveAuctionSecondaryMarketplace {
-    // combo
+interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffersMarketplace, IBuyNowSecondaryMarketplace {
+    function convertReserveAuctionToBuyItNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) external;
+    function convertReserveAuctionToOffers(uint256 _tokenId) external;
 }

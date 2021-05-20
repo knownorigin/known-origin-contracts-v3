@@ -19,6 +19,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
   const LOCKUP_HOURS = 6;
 
   const firstTokenId = new BN('11000');
+  const secondEditionTokenId = new BN('12000');
+  const thirdEditionTokenId = new BN('13000');
 
   beforeEach(async () => {
     const legacyAccessControls = await SelfServiceAccessControls.new();
@@ -51,9 +53,9 @@ contract('KODAV3Marketplace token bids', function (accounts) {
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  describe.skip('secondary sale token offers', async () => {
+  describe('secondary sale token offers', async () => {
 
-    describe.skip('placeTokenBid()', () => {
+    describe('placeTokenBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -65,7 +67,36 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         // create 3 tokens to the minter
         await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
 
+
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract});
+
       });
+
+      it('Reverts if edition is listed for buy now', async () => {
+        await this.marketplace.listForBuyNow(minter, firstTokenId, ether('0.1'), '0', {from: minter})
+
+        await expectRevert(
+          this.marketplace.placeTokenBid(firstTokenId, {from: collectorB, value: ether('1')}),
+          "Token is listed"
+        )
+      })
+
+      it('Reverts if edition is listed for reserve auction', async () => {
+        const reservePrice = ether('0.5')
+
+        await this.marketplace.listForReserveAuction(
+          minter,
+          secondEditionTokenId,
+          reservePrice,
+          '0',
+          {from: minter}
+        )
+
+        await expectRevert(
+          this.marketplace.placeTokenBid(secondEditionTokenId, {from: collectorB, value: ether('1')}),
+          "Token is listed"
+        )
+      })
 
       it('reverts if bid lower than minimum on first bid', async () => {
 
@@ -114,7 +145,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
       });
 
-      describe.skip('on success', () => {
+      describe('on success', () => {
 
         it('emits TokenBidPlaced event on successful bid', async () => {
 
@@ -226,7 +257,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
     });
 
-    describe.skip('withdrawTokenBid()', () => {
+    describe('withdrawTokenBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -261,7 +292,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         // collector A attempts to withdraw bid when none exists
         await expectRevert(
           this.marketplace.withdrawTokenBid(token, {from: collectorA}),
-          'No open bid'
+          'Not bidder'
         );
 
       });
@@ -281,7 +312,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
       });
 
-      describe.skip('on success', () => {
+      describe('on success', () => {
 
         it('can withdraw bid after lockup period elapses', async () => {
 
@@ -394,7 +425,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
           // attempt to withdraw bid again
           await expectRevert(
             this.marketplace.withdrawTokenBid(token, {from: collectorA}),
-            'No open bid'
+            'Not bidder'
           );
 
         });
@@ -403,7 +434,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
     });
 
-    describe.skip('rejectTokenBid()', () => {
+    describe('rejectTokenBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -444,7 +475,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
       });
 
-      describe.skip('on success', () => {
+      describe('on success', () => {
 
         it('emits TokenBidRejected event when owner rejects offer', async () => {
 
@@ -528,7 +559,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
     });
 
-    describe.skip('acceptTokenBid()', () => {
+    describe('acceptTokenBid()', () => {
 
       const _0_5_ETH = ether('0.5');
       const _0_1_ETH = ether('0.1');
@@ -575,15 +606,15 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         const token = firstTokenId;
 
         // offer 0.5 ETH for token (first bid)
-        await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
+        await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_1_ETH});
 
         await expectRevert(
-          this.marketplace.acceptTokenBid(token, _0_1_ETH, {from: minter}),
+          this.marketplace.acceptTokenBid(token, _0_5_ETH, {from: minter}),
           'Offer price has changed'
         );
       });
 
-      describe.skip('on success', () => {
+      describe('on success', () => {
 
         it('emits TokenBidAccepted event when owner accepts offer', async () => {
 
@@ -644,7 +675,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
     });
 
-    describe.skip('adminRejectTokenBid()', () => {
+    describe('adminRejectTokenBid()', () => {
 
       const _0_5_ETH = ether('0.5');
 
@@ -684,7 +715,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
 
       });
 
-      describe.skip('on success', () => {
+      describe('on success', () => {
 
         it('emits TokenBidRejected event when owner rejects offer', async () => {
 

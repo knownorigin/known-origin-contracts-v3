@@ -46,7 +46,7 @@ contract('KODAV3PrimaryMarketplace pausable', function (accounts) {
 
   });
 
-  describe.skip('pause() & unpause()', async () => {
+  describe('pause() & unpause()', async () => {
 
     it('can be paused and unpaused by admin', async () => {
       let receipt = await this.marketplace.pause({from: admin});
