@@ -22,6 +22,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     event EditionURIUpdated(uint256 indexed _editionId);
     event EditionSalesDisabledToggled(uint256 indexed _editionId, bool _oldValue, bool _newValue);
     event SealedEditionMetaDataSet(uint256 indexed _editionId);
+    event SealedTokenMetaDataSet(uint256 indexed _tokenId);
     event AdditionalEditionUnlockableSet(uint256 indexed _editionId);
     event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
     event AdminTokenUriResolverSet(address indexed _tokenUriResolver);
@@ -67,6 +68,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     /// @notice Optional one time use storage slot for additional edition metadata
     mapping(uint256 => string) public sealedEditionMetaData;
+
+    /// @notice Optional one time use storage slot for additional token metadata
+    mapping(uint256 => string) public sealedTokenMetaData;
 
     /// @notice Optional storage slot for additional unlockable content
     mapping(uint256 => string) public additionalEditionUnlockableSlot;
@@ -222,6 +226,11 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     /// @notice Additional metadata string for a token
     function tokenAdditionalMetaData(uint256 _tokenId) public view returns (string memory) {
+        return sealedTokenMetaData[_tokenId];
+    }
+
+    /// @notice Additional metadata string for an edition given a token ID
+    function editionAdditionalMetaDataForToken(uint256 _tokenId) public view returns (string memory) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         return sealedEditionMetaData[editionId];
     }
@@ -772,4 +781,11 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         emit AdditionalEditionUnlockableSet(_editionId);
     }
 
+    /// @notice Optional metadata storage slot which allows a token owner to set an additional metadata blob on the token
+    function lockInAdditionalTokenMetaData(uint256 _tokenId, string calldata _metadata) external {
+        require(_msgSender() == ownerOf(_tokenId), "Unable to set when not owner");
+        require(bytes(sealedTokenMetaData[_tokenId]).length == 0, "can only be set once");
+        sealedTokenMetaData[_tokenId] = _metadata;
+        emit SealedTokenMetaDataSet(_tokenId);
+    }
 }
