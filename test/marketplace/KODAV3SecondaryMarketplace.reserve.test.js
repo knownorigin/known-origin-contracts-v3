@@ -19,6 +19,8 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
   const FIRST_TOKEN_ID = STARTING_EDITION.addn(1000)
   const SECOND_TOKEN_ID = STARTING_EDITION.addn(2000)
 
+  const LOCKUP_HOURS = 6;
+
   beforeEach(async () => {
     const legacyAccessControls = await SelfServiceAccessControls.new();
     // setup access controls
@@ -46,7 +48,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  describe.only('all tests', () => {
+  describe('all tests', () => {
     describe('End to end reserve auctions', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
@@ -129,6 +131,33 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
           this.marketplace.listForReserveAuction(minter, FIRST_TOKEN_ID, '1', '0', {from: minter}),
           "Reserve price must be at least min bid"
         )
+      })
+
+      it('User can withdraw their bid if a token is listed for reserve auction', async () => {
+        const tokenBid = ether('0.2')
+        await this.marketplace.placeTokenBid(FIRST_TOKEN_ID, {from: bidder1, value: tokenBid});
+
+        const reservePrice = ether('0.5')
+        await this.marketplace.listForReserveAuction(
+          minter,
+          FIRST_TOKEN_ID,
+          reservePrice,
+          '0',
+          {from: minter}
+        )
+
+        // Back to the future...
+        await time.increase(time.duration.hours(LOCKUP_HOURS));
+
+        const bidderTracker = await balance.tracker(bidder1)
+
+        const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString());
+        const tx = await this.marketplace.withdrawTokenBid(FIRST_TOKEN_ID, {from: bidder1, gasPrice})
+
+        const gasUsed = new BN(tx.receipt.cumulativeGasUsed);
+        const txCost = gasUsed.mul(gasPrice);
+
+        expect(await bidderTracker.delta()).to.be.bignumber.equal(tokenBid.sub(txCost))
       })
     })
 

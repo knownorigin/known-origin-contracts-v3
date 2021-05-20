@@ -139,7 +139,7 @@ contract('MinterFactory', function (accounts) {
     });
 
     it('edition listed', async () => {
-      const {seller: _seller, price: _listingPrice, start: _startDate} = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
+      const {seller: _seller, price: _listingPrice, startDate: _startDate} = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
       expect(_seller).to.equal(artist, 'Failed edition details edition validation');
       expect(_startDate).to.bignumber.equal(this.startDate.toString(), 'Failed edition details size validation');
       expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
@@ -181,7 +181,7 @@ contract('MinterFactory', function (accounts) {
     });
 
     it('edition listed', async () => {
-      const {seller: _seller, price: _listingPrice, start: _startDate} = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
+      const {seller: _seller, price: _listingPrice, startDate: _startDate} = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
       expect(_seller).to.equal(artist, 'Failed edition details edition validation');
       expect(_startDate).to.bignumber.equal(this.startDate.toString(), 'Failed edition details size validation');
       expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
@@ -249,7 +249,7 @@ contract('MinterFactory', function (accounts) {
     });
 
     it('edition listed', async () => {
-      const {seller: _seller, price: _listingPrice, start: _startDate} = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
+      const {seller: _seller, price: _listingPrice, startDate: _startDate} = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
       expect(_seller).to.equal(artist, 'Failed edition details edition validation');
       expect(_startDate).to.bignumber.equal(this.startDate.toString(), 'Failed edition details size validation');
       expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');

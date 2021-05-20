@@ -29,6 +29,8 @@ contract('KODAV3Marketplace', function (accounts) {
   const secondEditionTokenId = new BN('12000');
   const thirdEditionTokenId = new BN('13000');
 
+  const LOCKUP_HOURS = 6;
+
   beforeEach(async () => {
     const legacyAccessControls = await SelfServiceAccessControls.new();
     // setup access controls
@@ -58,7 +60,7 @@ contract('KODAV3Marketplace', function (accounts) {
     this.secondarySaleRoyalty = await this.marketplace.secondarySaleRoyalty();
   });
 
-  describe.only('secondary sale token listing', async () => {
+  describe('secondary sale token listing', async () => {
     describe('listTokenForBuyNow()', () => {
 
       const _0_1_ETH = ether('0.1');
@@ -89,6 +91,26 @@ contract('KODAV3Marketplace', function (accounts) {
           this.marketplace.listTokenForBuyNow(firstEditionTokenId, _0_1_ETH, '0', {from: collectorA}),
           "Listing is not permitted"
         )
+      })
+
+      it('User can withdraw their bid if a token is listed for buy now', async () => {
+        const tokenBid = ether('0.2')
+        await this.marketplace.placeTokenBid(firstEditionTokenId, {from: collectorA, value: tokenBid});
+
+        await this.marketplace.listTokenForBuyNow(firstEditionTokenId, _0_1_ETH, '0', {from: collectorA})
+
+        // Back to the future...
+        await time.increase(time.duration.hours(LOCKUP_HOURS));
+
+        const bidderTracker = await balance.tracker(collectorA)
+
+        const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString());
+        const tx = await this.marketplace.withdrawTokenBid(firstEditionTokenId, {from: collectorA, gasPrice})
+
+        const gasUsed = new BN(tx.receipt.cumulativeGasUsed);
+        const txCost = gasUsed.mul(gasPrice);
+
+        expect(await bidderTracker.delta()).to.be.bignumber.equal(tokenBid.sub(txCost))
       })
 
       it('can list token', async () => {

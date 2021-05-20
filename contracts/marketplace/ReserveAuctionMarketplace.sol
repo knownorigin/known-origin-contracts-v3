@@ -43,20 +43,13 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         require(_isReserveListingPermitted(_id), "Reserve listing not permitted");
         require(_reservePrice >= minBidAmount, "Reserve price must be at least min bid");
 
-        // TODO Test scenarios
-        // Scenario 1:
-        //  - enabled for offers
-        //  - offer is made
-        //  - seller then converts to reserve
-        //  - can the original bidder get their money back, what are our options?
-
         editionOrTokenWithReserveAuctions[_id] = ReserveAuction({
-        seller : _creator,
-        bidder : address(0),
-        reservePrice : _reservePrice,
-        startDate : _startDate,
-        biddingEnd : 0,
-        bid : 0
+            seller : _creator,
+            bidder : address(0),
+            reservePrice : _reservePrice,
+            startDate : _startDate,
+            biddingEnd : 0,
+            bid : 0
         });
 
         emit ListedForReserveAuction(_id, _reservePrice, _startDate);

@@ -46,7 +46,7 @@ contract('KODAV3SecondaryMarketplace', function (accounts) {
 
   });
 
-  describe.only('pause() & unpause()', async () => {
+  describe('pause() & unpause()', async () => {
 
     it('can be paused and unpaused by admin', async () => {
       let receipt = await this.marketplace.pause({from: admin});
@@ -82,7 +82,7 @@ contract('KODAV3SecondaryMarketplace', function (accounts) {
     });
   });
 
-  describe.only('updateSecondaryRoyalty()', () => {
+  describe('updateSecondaryRoyalty()', () => {
     it('can update as admin', async () => {
       const newCommission = new BN('1350000')
       const {receipt} = await this.marketplace.updateSecondaryRoyalty(newCommission, {from: owner})
