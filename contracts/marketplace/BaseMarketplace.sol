@@ -20,8 +20,8 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     event AdminRecoverERC20(IERC20 indexed token, address indexed recipient, uint256 amount);
     event AdminRecoverETH(address payable indexed recipient, uint256 amount);
 
-    event BidderRefunded(uint256 _id, address _bidder, uint256 bid);
-    event BidRefundFailed(uint256 _id, address _bidder, uint256 bid);
+    event BidderRefunded(uint256 indexed _id, address indexed _bidder, uint256 bid);
+    event BidRefundFailed(uint256 indexed _id, address indexed _bidder, uint256 bid);
 
     // Only a whitelisted smart contract in the access controls contract
     modifier onlyContract() {
