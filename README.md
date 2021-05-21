@@ -16,16 +16,16 @@
 
 ### KODA V3
 
-* `Rinkeby` - `0xaB257dEE4143740054AB276B8132bC15FdEDbd0C` (DO NOT VERIFY YET)
+* `Rinkeby` - `0x2B356d6Da0EBDE6f7BD436f977A303E550E756B1` (DO NOT VERIFY YET)
 
 ### Primary V3 Marketplace
 
-* `Rinkeby` - `0x8e8636B52a558D0B8e67CD86a68b041C346CAd10`
+* `Rinkeby` - `0x8a9b9d6952d49cFb4C045D8a619a573dcd7b622A`
 
 ### Secondary V3 Marketplace
 
-* `Rinkeby` - `0x9fc50A4879a5Ecf05b72f4797b4c05e8f1Ff1431`
+* `Rinkeby` - `0xeb76528A2C67F824052a7E57B5F8c93E52326691`
 
 ### Minting Factory
 
-* `Rinkeby` - `0x60B9F7a4810C7e0c836c7B98c090abd81a395EA3` (verified)
+* `Rinkeby` - `0x994f65E79fda9468a749d51C3a86B11a825eA8aA`
