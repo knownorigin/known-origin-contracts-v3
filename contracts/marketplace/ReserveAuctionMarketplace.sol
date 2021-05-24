@@ -70,9 +70,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         // if we are near the end, we have bids, then extend the bidding end
         bool isCountDownTriggered = reserveAuction.biddingEnd > 0;
 
-        // FIXME probably don't get this - but should it be "msg.value >= reserveAuction.reservePrice"
-
-        if (reserveAuction.bid + msg.value >= reserveAuction.reservePrice && !isCountDownTriggered) {
+        if (msg.value >= reserveAuction.reservePrice && !isCountDownTriggered) {
             reserveAuction.biddingEnd = uint128(block.timestamp) + reserveAuctionLengthOnceReserveMet;
         }
         else if (isCountDownTriggered) {
