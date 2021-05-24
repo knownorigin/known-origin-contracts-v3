@@ -25,6 +25,7 @@ contract KODAV3SecondaryMarketplace is
     event ConvertFromBuyNowToOffers(uint256 indexed _tokenId, uint128 _startDate);
     event ReserveAuctionConvertedToOffers(uint256 indexed _tokenId);
 
+    // FIXME use bid terminology
     struct Offer {
         uint256 offer;
         address bidder;
@@ -75,7 +76,7 @@ contract KODAV3SecondaryMarketplace is
     override
     whenNotPaused
     nonReentrant {
-        require(!_isTokenListed(_tokenId), "Token is listed");
+        require(!_isTokenListed(_tokenId), "Token is listed"); // FIXME should be be Token is not listed?
 
         // Check for highest offer
         Offer storage offer = tokenOffers[_tokenId];
@@ -171,6 +172,7 @@ contract KODAV3SecondaryMarketplace is
         emit TokenBidRejected(_tokenId, koda.ownerOf(_tokenId), offer.bidder, offer.offer);
     }
 
+    // FIXME should these be in ReserveAuctionMarketplace?
     function convertReserveAuctionToBuyItNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate)
     public
     override
@@ -184,6 +186,7 @@ contract KODAV3SecondaryMarketplace is
         emit ReserveAuctionConvertedToBuyItNow(_tokenId, _listingPrice, _startDate);
     }
 
+    // FIXME should these be in ReserveAuctionMarketplace?
     function convertReserveAuctionToOffers(uint256 _tokenId)
     public
     override
@@ -214,7 +217,7 @@ contract KODAV3SecondaryMarketplace is
 
     function handleSecondarySaleFunds(address _seller, address _royaltyRecipient, uint256 _paymentAmount)
     internal
-    returns (uint256 creatorRoyalties){
+    returns (uint256 creatorRoyalties) {
         // pay royalties
         creatorRoyalties = (_paymentAmount / modulo) * secondarySaleRoyalty;
         (bool creatorSuccess,) = _royaltyRecipient.call{value : creatorRoyalties}("");
@@ -275,7 +278,7 @@ contract KODAV3SecondaryMarketplace is
         return _tokenId;
     }
 
-    // as offers are always possible, we wont count it as a listing
+    // as offers are always possible, we will not count it as a listing
     function _isTokenListed(uint256 _tokenId) internal view returns (bool) {
         if (editionOrTokenListings[_tokenId].seller != address(0)) {
             return true;

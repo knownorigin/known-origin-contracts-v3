@@ -69,6 +69,9 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         // If the reserve has been met, then bidding will end in 24 hours
         // if we are near the end, we have bids, then extend the bidding end
         bool isCountDownTriggered = reserveAuction.biddingEnd > 0;
+
+        // FIXME probably don't get this - but should it be "msg.value >= reserveAuction.reservePrice"
+
         if (reserveAuction.bid + msg.value >= reserveAuction.reservePrice && !isCountDownTriggered) {
             reserveAuction.biddingEnd = uint128(block.timestamp) + reserveAuctionLengthOnceReserveMet;
         }
@@ -108,7 +111,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         require(reserveAuction.bid >= reserveAuction.reservePrice, "Reserve not met");
         require(block.timestamp > reserveAuction.biddingEnd, "Bidding has not yet ended");
 
-        // N:B. anyone can result the action as only the winner and seller are compensated
+        // N.B. anyone can result the action as only the winner and seller are compensated
 
         address winner = reserveAuction.bidder;
         address seller = reserveAuction.seller;
@@ -152,6 +155,8 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         require(reserveAuction.seller == _msgSender(), "Not the seller");
         require(reserveAuction.biddingEnd == 0, "Reserve countdown commenced");
         require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
+
+        // FIXME this is a bit weird - can an artist even accept a bid under reserve - why would anyone do it?
 
         // Trigger countdown if new reserve price is greater than any current bids
         if (reserveAuction.bid >= _reservePrice) {

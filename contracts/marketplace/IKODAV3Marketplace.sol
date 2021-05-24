@@ -2,6 +2,9 @@
 pragma solidity 0.8.3;
 
 interface IBuyNowMarketplace {
+
+    // FIXME what's the difference between _id, _tokenId, and _editionId - is _id generic?
+
     event ListedForBuyNow(uint256 indexed _id, uint256 _price, uint256 _startDate);
     event BuyNowPriceChanged(uint256 indexed _id, uint256 _price);
     event BuyNowDeListed(uint256 indexed _id);

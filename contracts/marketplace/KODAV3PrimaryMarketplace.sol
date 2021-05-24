@@ -34,6 +34,7 @@ contract KODAV3PrimaryMarketplace is
     }
 
     // Offer / Bid definition placed on an edition
+    // FIXME worth standardising to Bid instead of Offer?
     struct Offer {
         uint256 offer;
         address bidder;
@@ -45,7 +46,7 @@ contract KODAV3PrimaryMarketplace is
         uint128 basePrice;
         uint128 stepPrice;
         uint128 startDate;
-        address seller;
+        address seller;  // FIXME creator?
         uint16 currentStep;
     }
 
@@ -116,7 +117,7 @@ contract KODAV3PrimaryMarketplace is
         // Honor start date if set
         uint256 startDate = editionOffersStartDate[_editionId];
         if (startDate > 0) {
-            require(block.timestamp >= startDate, "Not yet accepting offers");
+            require(block.timestamp >= startDate, "Not yet accepting offers"); // FIXME use bids instead of offers generally?
 
             // elapsed, so free storage
             delete editionOffersStartDate[_editionId];
@@ -284,9 +285,8 @@ contract KODAV3PrimaryMarketplace is
         uint256 tokenId = _facilitateNextPrimarySale(_editionId, expectedPrice, _msgSender(), true);
 
         // Bump the current step
-        uint16 step = steppedAuction.currentStep;
-
         // no safemath for uint16
+        uint16 step = steppedAuction.currentStep;
         steppedAuction.currentStep = step + 1;
 
         // send back excess if supplied - will allow UX flow of setting max price to pay
@@ -298,6 +298,8 @@ contract KODAV3PrimaryMarketplace is
         emit EditionSteppedSaleBuy(_editionId, tokenId, _msgSender(), expectedPrice, step);
     }
 
+    // FIXME can this be done at any point?
+    // FIXME seems weird to be able to re-set another start-date once already on sale?
     // creates an exit from a step if required but forces a buy now price
     function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
     public
@@ -318,6 +320,7 @@ contract KODAV3PrimaryMarketplace is
         delete editionStep[_editionId];
     }
 
+    // FIXME seems weird to be able to re-set another start-date once already on sale?
     function convertSteppedAuctionToOffers(uint256 _editionId, uint128 _startDate)
     public
     override
@@ -358,6 +361,7 @@ contract KODAV3PrimaryMarketplace is
         emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
     }
 
+    // FIXME seems weird to be able to re-set another start-date once already on sale?
     function convertReserveAuctionToOffers(uint256 _editionId, uint128 _startDate)
     public
     override
@@ -428,14 +432,16 @@ contract KODAV3PrimaryMarketplace is
             ? koda.facilitateReversePrimarySale(_editionId)
             : koda.facilitateNextPrimarySale(_editionId);
 
+        // FIXME the ordering of creator, receiver - and receiver, creator switches - bit tricky
+
         // split money
         _handleEditionSaleFunds(_editionId, creator, receiver, _paymentAmount);
 
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, _buyer, tokenId);
 
-        // N:B. open offers are left once sold out for the bidder to withdraw or the artist to reject
-
+        // FIXME I don't understand this comment?
+        // N.B. open offers are left once sold out for the bidder to withdraw or the artist to reject
         return tokenId;
     }
 
@@ -462,7 +468,7 @@ contract KODAV3PrimaryMarketplace is
         require(success, "Edition payment failed");
     }
 
-    // as offers are always possible, we wont count it as a listing
+    // as offers are always possible, we will not count it as a listing
     function _isEditionListed(uint256 _editionId) internal view returns (bool) {
         if (editionOrTokenListings[_editionId].seller != address(0)) {
             return true;

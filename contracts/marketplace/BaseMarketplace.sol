@@ -70,9 +70,9 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     }
 
     function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {
-        require(_accessControls.hasAdminRole(_msgSender()), "Sender must have admin role in new contract");
-        emit AdminUpdateAccessControls(accessControls, _accessControls);
+        require(_accessControls.hasAdminRole(_msgSender()), "Sender must have admin role in new contract"); // FIXME double admin check
         accessControls = _accessControls;
+        emit AdminUpdateAccessControls(accessControls, _accessControls);
     }
 
     function updateModulo(uint256 _modulo) public onlyAdmin {

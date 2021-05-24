@@ -32,7 +32,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
         emit ListedForBuyNow(_id, _listingPrice, _startDate);
     }
 
-    // Buy an token from the edition on the primary market
+    // Buy a token from the edition on the primary market
     function buyEditionToken(uint256 _id)
     public
     override
@@ -42,7 +42,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
         _facilitateBuyNow(_id, _msgSender());
     }
 
-    // Buy an token from the edition on the primary market, ability to define the recipient
+    // Buy a token from the edition on the primary market, ability to define the recipient
     function buyEditionTokenFor(uint256 _id, address _recipient)
     public
     override
@@ -62,7 +62,6 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
         // Set price
         editionOrTokenListings[_id].price = _listingPrice;
 
-        // Emit event
         emit BuyNowPriceChanged(_id, _listingPrice);
     }
 
