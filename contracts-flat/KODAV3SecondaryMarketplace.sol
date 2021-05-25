@@ -1,43 +1,109 @@
-// File: @openzeppelin/contracts/utils/Context.sol
+// File: contracts/marketplace/IKODAV3Marketplace.sol
 
 // SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.0;
-
-/*
- * @dev Provides information about the current execution context, including the
- * sender of the transaction and its data. While these are generally available
- * via msg.sender and msg.data, they should not be accessed in such a direct
- * manner, since when dealing with meta-transactions the account sending and
- * paying for execution may not be the actual sender (as far as an application
- * is concerned).
- *
- * This contract is only required for intermediate, library-like contracts.
- */
-abstract contract Context {
-    function _msgSender() internal view virtual returns (address) {
-        return msg.sender;
-    }
-
-    function _msgData() internal view virtual returns (bytes calldata) {
-        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
-        return msg.data;
-    }
-}
-
-// File: contracts/core/IKODAV3Minter.sol
-
-// SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.3;
 
-interface IKODAV3Minter {
+interface IBuyNowMarketplace {
+    event ListedForBuyNow(uint256 indexed _id, uint256 _price, uint256 _startDate);
+    event BuyNowPriceChanged(uint256 indexed _id, uint256 _price);
+    event BuyNowDeListed(uint256 indexed _id);
+    event BuyNowPurchased(uint256 indexed _tokenId, address indexed _buyer, uint256 _price);
 
-    function mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri) external returns (uint256 _editionId);
+    function listForBuyNow(address _creator, uint256 _id, uint128 _listingPrice, uint128 _startDate) external;
 
-    function mintBatchEditionAndComposeERC20s(uint96 _editionSize, address _to, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts) external returns (uint256 _editionId);
+    function buyEditionToken(uint256 _id) external payable;
 
-    function mintConsecutiveBatchEdition(uint96 _editionSize, address _to, string calldata _uri) external returns (uint256 _editionId);
+    function buyEditionTokenFor(uint256 _id, address _recipient) external payable;
+
+    function setBuyNowPriceListing(uint256 _editionId, uint128 _listingPrice) external;
+}
+
+interface IEditionOffersMarketplace {
+    event EditionAcceptingOffer(uint256 indexed _editionId, uint128 _startDate);
+    event EditionBidPlaced(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
+    event EditionBidWithdrawn(uint256 indexed _editionId, address indexed _bidder);
+    event EditionBidAccepted(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _bidder, uint256 _amount);
+    event EditionBidRejected(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
+    event EditionConvertedFromOffersToBuyItNow(uint256 indexed _editionId, uint128 _price, uint128 _startDate);
+
+    function enableEditionOffers(uint256 _editionId, uint128 _startDate) external;
+
+    function placeEditionBid(uint256 _editionId) external payable;
+
+    function withdrawEditionBid(uint256 _editionId) external;
+
+    function rejectEditionBid(uint256 _editionId) external;
+
+    function acceptEditionBid(uint256 _editionId, uint256 _offerPrice) external;
+
+    function convertOffersToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
+}
+
+interface IEditionSteppedMarketplace {
+    event EditionSteppedSaleListed(uint256 indexed _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate);
+    event EditionSteppedSaleBuy(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price, uint16 _currentStep);
+    event EditionSteppedAuctionUpdated(uint256 indexed _editionId, uint128 _basePrice, uint128 _stepPrice);
+
+    function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate) external;
+
+    function buyNextStep(uint256 _editionId) external payable;
+
+    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
+    function convertSteppedAuctionToOffers(uint256 _editionId, uint128 _startDate) external;
+
+    function updateSteppedAuction(uint256 _editionId, uint128 _basePrice, uint128 _stepPrice) external;
+}
+
+interface IReserveAuctionMarketplace {
+    event ListedForReserveAuction(uint256 indexed _id, uint256 _reservePrice, uint128 _startDate);
+    event BidPlacedOnReserveAuction(uint256 indexed _id, address indexed _bidder, uint256 _amount);
+    event ReserveAuctionResulted(uint256 indexed _id, uint256 _finalPrice, address indexed _winner, address indexed _resulter);
+    event BidWithdrawnFromReserveAuction(uint256 _id, address indexed _bidder, uint128 _bid);
+    event ReservePriceUpdated(uint256 indexed _id, uint256 _reservePrice);
+    event ReserveAuctionConvertedToBuyItNow(uint256 indexed _id, uint128 _listingPrice, uint128 _startDate);
+    event EmergencyBidWithdrawFromReserveAuction(uint256 indexed _id, address _bidder, uint128 _bid);
+
+    function placeBidOnReserveAuction(uint256 _id) external payable;
+    function listForReserveAuction(address _creator, uint256 _id, uint128 _reservePrice, uint128 _startDate) external;
+    function resultReserveAuction(uint256 _id) external;
+    function withdrawBidFromReserveAuction(uint256 _id) external;
+    function updateReservePriceForReserveAuction(uint256 _id, uint128 _reservePrice) external;
+    function emergencyExitBidFromReserveAuction(uint256 _id) external;
+}
+
+interface IKODAV3PrimarySaleMarketplace is IEditionSteppedMarketplace, IEditionOffersMarketplace {
+    function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
+    function convertReserveAuctionToOffers(uint256 _editionId, uint128 _startDate) external;
+}
+
+interface ITokenBuyNowMarketplace {
+    event TokenDeListed(uint256 indexed _tokenId);
+
+    function delistToken(uint256 _tokenId) external;
+}
+
+interface ITokenOffersMarketplace {
+    event TokenBidPlaced(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
+    event TokenBidAccepted(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
+    event TokenBidRejected(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
+    event TokenBidWithdrawn(uint256 indexed _tokenId, address indexed _bidder);
+
+    function acceptTokenBid(uint256 _tokenId, uint256 _offerPrice) external;
+
+    function rejectTokenBid(uint256 _tokenId) external;
+
+    function withdrawTokenBid(uint256 _tokenId) external;
+
+    function placeTokenBid(uint256 _tokenId) external payable;
+}
+
+interface IBuyNowSecondaryMarketplace {
+    function listTokenForBuyNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) external;
+}
+
+interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffersMarketplace, IBuyNowSecondaryMarketplace {
+    function convertReserveAuctionToBuyItNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) external;
+    function convertReserveAuctionToOffers(uint256 _tokenId) external;
 }
 
 // File: contracts/access/IKOAccessControlsLookup.sol
@@ -379,114 +445,6 @@ IERC2981  // Royalties
     function hadPrimarySaleOfToken(uint256 _tokenId) external view returns (bool);
 }
 
-// File: contracts/marketplace/IKODAV3Marketplace.sol
-
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.3;
-
-interface IBuyNowMarketplace {
-    event ListedForBuyNow(uint256 indexed _id, uint256 _price, uint256 _startDate);
-    event BuyNowPriceChanged(uint256 indexed _id, uint256 _price);
-    event BuyNowDeListed(uint256 indexed _id);
-    event BuyNowPurchased(uint256 indexed _tokenId, address indexed _buyer, uint256 _price);
-
-    function listForBuyNow(address _creator, uint256 _id, uint128 _listingPrice, uint128 _startDate) external;
-
-    function buyEditionToken(uint256 _id) external payable;
-
-    function buyEditionTokenFor(uint256 _id, address _recipient) external payable;
-
-    function setBuyNowPriceListing(uint256 _editionId, uint128 _listingPrice) external;
-}
-
-interface IEditionOffersMarketplace {
-    event EditionAcceptingOffer(uint256 indexed _editionId, uint128 _startDate);
-    event EditionBidPlaced(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
-    event EditionBidWithdrawn(uint256 indexed _editionId, address indexed _bidder);
-    event EditionBidAccepted(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _bidder, uint256 _amount);
-    event EditionBidRejected(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
-    event EditionConvertedFromOffersToBuyItNow(uint256 indexed _editionId, uint128 _price, uint128 _startDate);
-
-    function enableEditionOffers(uint256 _editionId, uint128 _startDate) external;
-
-    function placeEditionBid(uint256 _editionId) external payable;
-
-    function withdrawEditionBid(uint256 _editionId) external;
-
-    function rejectEditionBid(uint256 _editionId) external;
-
-    function acceptEditionBid(uint256 _editionId, uint256 _offerPrice) external;
-
-    function convertOffersToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
-}
-
-interface IEditionSteppedMarketplace {
-    event EditionSteppedSaleListed(uint256 indexed _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate);
-    event EditionSteppedSaleBuy(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price, uint16 _currentStep);
-    event EditionSteppedAuctionUpdated(uint256 indexed _editionId, uint128 _basePrice, uint128 _stepPrice);
-
-    function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate) external;
-
-    function buyNextStep(uint256 _editionId) external payable;
-
-    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
-    function convertSteppedAuctionToOffers(uint256 _editionId, uint128 _startDate) external;
-
-    function updateSteppedAuction(uint256 _editionId, uint128 _basePrice, uint128 _stepPrice) external;
-}
-
-interface IReserveAuctionMarketplace {
-    event ListedForReserveAuction(uint256 indexed _id, uint256 _reservePrice, uint128 _startDate);
-    event BidPlacedOnReserveAuction(uint256 indexed _id, address indexed _bidder, uint256 _amount);
-    event ReserveAuctionResulted(uint256 indexed _id, uint256 _finalPrice, address indexed _winner, address indexed _resulter);
-    event BidWithdrawnFromReserveAuction(uint256 _id, address indexed _bidder, uint128 _bid);
-    event ReservePriceUpdated(uint256 indexed _id, uint256 _reservePrice);
-    event ReserveAuctionConvertedToBuyItNow(uint256 indexed _id, uint128 _listingPrice, uint128 _startDate);
-    event EmergencyBidWithdrawFromReserveAuction(uint256 indexed _id, address _bidder, uint128 _bid);
-
-    function placeBidOnReserveAuction(uint256 _id) external payable;
-    function listForReserveAuction(address _creator, uint256 _id, uint128 _reservePrice, uint128 _startDate) external;
-    function resultReserveAuction(uint256 _id) external;
-    function withdrawBidFromReserveAuction(uint256 _id) external;
-    function updateReservePriceForReserveAuction(uint256 _id, uint128 _reservePrice) external;
-    function emergencyExitBidFromReserveAuction(uint256 _id) external;
-}
-
-interface IKODAV3PrimarySaleMarketplace is IEditionSteppedMarketplace, IEditionOffersMarketplace {
-    function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
-    function convertReserveAuctionToOffers(uint256 _editionId, uint128 _startDate) external;
-}
-
-interface ITokenBuyNowMarketplace {
-    event TokenDeListed(uint256 indexed _tokenId);
-
-    function delistToken(uint256 _tokenId) external;
-}
-
-interface ITokenOffersMarketplace {
-    event TokenBidPlaced(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
-    event TokenBidAccepted(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
-    event TokenBidRejected(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
-    event TokenBidWithdrawn(uint256 indexed _tokenId, address indexed _bidder);
-
-    function acceptTokenBid(uint256 _tokenId, uint256 _offerPrice) external;
-
-    function rejectTokenBid(uint256 _tokenId) external;
-
-    function withdrawTokenBid(uint256 _tokenId) external;
-
-    function placeTokenBid(uint256 _tokenId) external payable;
-}
-
-interface IBuyNowSecondaryMarketplace {
-    function listTokenForBuyNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) external;
-}
-
-interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffersMarketplace, IBuyNowSecondaryMarketplace {
-    function convertReserveAuctionToBuyItNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) external;
-    function convertReserveAuctionToOffers(uint256 _tokenId) external;
-}
-
 // File: @openzeppelin/contracts/security/ReentrancyGuard.sol
 
 // SPDX-License-Identifier: MIT
@@ -549,6 +507,33 @@ abstract contract ReentrancyGuard {
         // By storing the original value once again, a refund is triggered (see
         // https://eips.ethereum.org/EIPS/eip-2200)
         _status = _NOT_ENTERED;
+    }
+}
+
+// File: @openzeppelin/contracts/utils/Context.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+/*
+ * @dev Provides information about the current execution context, including the
+ * sender of the transaction and its data. While these are generally available
+ * via msg.sender and msg.data, they should not be accessed in such a direct
+ * manner, since when dealing with meta-transactions the account sending and
+ * paying for execution may not be the actual sender (as far as an application
+ * is concerned).
+ *
+ * This contract is only required for intermediate, library-like contracts.
+ */
+abstract contract Context {
+    function _msgSender() internal view virtual returns (address) {
+        return msg.sender;
+    }
+
+    function _msgData() internal view virtual returns (bytes calldata) {
+        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
+        return msg.data;
     }
 }
 
@@ -1163,7 +1148,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
     }
 }
 
-// File: contracts/marketplace/KODAV3PrimaryMarketplace.sol
+// File: contracts/marketplace/KODAV3SecondaryMarketplace.sol
 
 // SPDX-License-Identifier: MIT
 
@@ -1175,398 +1160,247 @@ pragma solidity 0.8.3;
 
 
 
-/// @title KnownOrigin Primary Marketplace for all V3 tokens
-/// @notice The following listing types are supported: Buy now, Stepped, Reserve and Offers
+/// @title KnownOrigin Secondary Marketplace for all V3 tokens
+/// @notice The following listing types are supported: Buy now, Reserve and Offers
 /// @dev The contract is pausable and has reentrancy guards
 /// @author KnownOrigin Labs
-contract KODAV3PrimaryMarketplace is
-    IKODAV3PrimarySaleMarketplace,
+contract KODAV3SecondaryMarketplace is
+    IKODAV3SecondarySaleMarketplace,
     BaseMarketplace,
-    ReserveAuctionMarketplace,
-    BuyNowMarketplace {
+    BuyNowMarketplace,
+    ReserveAuctionMarketplace {
 
-    event PrimaryMarketplaceDeployed();
-    event AdminSetKoCommissionOverrideForCreator(address indexed _creator, uint256 _koCommission);
-    event AdminSetKoCommissionOverrideForEdition(uint256 indexed _editionId, uint256 _koCommission);
-    event ConvertFromBuyNowToOffers(uint256 indexed _editionId, uint128 _startDate);
-    event ConvertSteppedAuctionToBuyNow(uint256 indexed _editionId, uint128 _listingPrice, uint128 _startDate);
-    event ReserveAuctionConvertedToOffers(uint256 indexed _editionId, uint128 _startDate);
+    event SecondaryMarketplaceDeployed();
+    event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
+    event AdminUpdateSecondarySaleCommission(uint256 _platformSecondarySaleCommission);
+    event ConvertFromBuyNowToOffers(uint256 indexed _tokenId, uint128 _startDate);
+    event ReserveAuctionConvertedToOffers(uint256 indexed _tokenId);
 
-    // KO Commission override definition for a given creator
-    struct KOCommissionOverride {
-        bool active;
-        uint256 koCommission;
-    }
-
-    // Offer / Bid definition placed on an edition
     struct Offer {
         uint256 offer;
         address bidder;
         uint256 lockupUntil;
     }
 
-    // Stepped auction definition
-    struct Stepped {
-        uint128 basePrice;
-        uint128 stepPrice;
-        uint128 startDate;
-        address seller;
-        uint16 currentStep;
-    }
+    // Token ID to Offer mapping
+    mapping(uint256 => Offer) public tokenOffers;
 
-    /// @notice Edition ID -> KO commission override set by admin
-    mapping(uint256 => KOCommissionOverride) public koCommissionOverrideForEditions;
+    // Secondary sale commission
+    uint256 public secondarySaleRoyalty = 12_50000; // 12.5%
 
-    /// @notice primary sale creator -> KO commission override set by admin
-    mapping(address => KOCommissionOverride) public koCommissionOverrideForCreators;
-
-    /// @notice Edition ID to Offer mapping
-    mapping(uint256 => Offer) public editionOffers;
-
-    /// @notice Edition ID to StartDate
-    mapping(uint256 => uint256) public editionOffersStartDate;
-
-    /// @notice Edition ID to stepped auction
-    mapping(uint256 => Stepped) public editionStep;
-
-    /// @notice KO commission on every sale
-    uint256 public platformPrimarySaleCommission = 15_00000;  // 15.00000%
+    uint256 public platformSecondarySaleCommission = 2_50000;  // 2.50000%
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
     BaseMarketplace(_accessControls, _koda, _platformAccount) {
-        emit PrimaryMarketplaceDeployed();
+        emit SecondaryMarketplaceDeployed();
     }
 
-    // convert from a "buy now" listing and converting to "accepting offers" with an optional start date
-    function convertFromBuyNowToOffers(uint256 _editionId, uint128 _startDate)
+    function listTokenForBuyNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate)
     public
+    override
     whenNotPaused {
-        require(editionOrTokenListings[_editionId].seller == _msgSender(), "Only seller can convert");
-
-        // clear listing
-        delete editionOrTokenListings[_editionId];
-
-        // set the start date for the offer (optional)
-        editionOffersStartDate[_editionId] = _startDate;
-
-        // Emit event
-        emit ConvertFromBuyNowToOffers(_editionId, _startDate);
+        listForBuyNow(_msgSender(), _tokenId, _listingPrice, _startDate);
     }
 
-    // Primary "offers" sale flow
-
-    function enableEditionOffers(uint256 _editionId, uint128 _startDate)
-    external
-    override
-    whenNotPaused
-    onlyContract {
-        // Set the start date if one supplied
-        editionOffersStartDate[_editionId] = _startDate;
-
-        // Emit event
-        emit EditionAcceptingOffer(_editionId, _startDate);
-    }
-
-    function placeEditionBid(uint256 _editionId)
+    function delistToken(uint256 _tokenId)
     public
     override
+    whenNotPaused {
+        // check listing found
+        require(editionOrTokenListings[_tokenId].seller != address(0), "No listing found");
+
+        // check owner is caller
+        require(koda.ownerOf(_tokenId) == _msgSender(), "Not token owner");
+
+        // remove the listing
+        delete editionOrTokenListings[_tokenId];
+
+        emit TokenDeListed(_tokenId);
+    }
+
+    // Secondary sale "offer" flow
+
+    function placeTokenBid(uint256 _tokenId)
+    public
     payable
+    override
     whenNotPaused
     nonReentrant {
-        require(!_isEditionListed(_editionId), "Edition is listed");
+        require(!_isTokenListed(_tokenId), "Token is listed");
 
-        Offer storage offer = editionOffers[_editionId];
+        // Check for highest offer
+        Offer storage offer = tokenOffers[_tokenId];
         require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
-
-        // Honor start date if set
-        uint256 startDate = editionOffersStartDate[_editionId];
-        if (startDate > 0) {
-            require(block.timestamp >= startDate, "Not yet accepting offers");
-
-            // elapsed, so free storage
-            delete editionOffersStartDate[_editionId];
-        }
 
         // send money back to top bidder if existing offer found
         if (offer.offer > 0) {
-            _refundBidder(_editionId, offer.bidder, offer.offer);
+            _refundBidder(_tokenId, offer.bidder, offer.offer);
         }
 
         // setup offer
-        editionOffers[_editionId] = Offer(msg.value, _msgSender(), _getLockupTime());
+        tokenOffers[_tokenId] = Offer(msg.value, _msgSender(), _getLockupTime());
 
-        emit EditionBidPlaced(_editionId, _msgSender(), msg.value);
+        emit TokenBidPlaced(_tokenId, koda.ownerOf(_tokenId), _msgSender(), msg.value);
     }
 
-    function withdrawEditionBid(uint256 _editionId)
+    function withdrawTokenBid(uint256 _tokenId)
     public
     override
     whenNotPaused
     nonReentrant {
-        Offer storage offer = editionOffers[_editionId];
-        require(offer.offer > 0, "No open bid");
-        require(offer.bidder == _msgSender(), "Not the top bidder");
+        Offer storage offer = tokenOffers[_tokenId];
+
+        // caller must be bidder
+        require(offer.bidder == _msgSender(), "Not bidder");
+
+        // cannot withdraw before lockup period elapses
         require(block.timestamp >= offer.lockupUntil, "Bid lockup not elapsed");
 
         // send money back to top bidder
-        _refundBidder(_editionId, offer.bidder, offer.offer);
-
-        // emit event
-        emit EditionBidWithdrawn(_editionId, _msgSender());
+        _refundBidder(_tokenId, offer.bidder, offer.offer);
 
         // delete offer
-        delete editionOffers[_editionId];
+        delete tokenOffers[_tokenId];
+
+        emit TokenBidWithdrawn(_tokenId, _msgSender());
     }
 
-    function rejectEditionBid(uint256 _editionId)
+    function rejectTokenBid(uint256 _tokenId)
     public
     override
     whenNotPaused
     nonReentrant {
-        Offer storage offer = editionOffers[_editionId];
+        Offer memory offer = tokenOffers[_tokenId];
         require(offer.bidder != address(0), "No open bid");
-        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Caller not the creator");
+
+        address currentOwner = koda.ownerOf(_tokenId);
+        require(currentOwner == _msgSender(), "Not current owner");
 
         // send money back to top bidder
-        _refundBidder(_editionId, offer.bidder, offer.offer);
-
-        // emit event
-        emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
+        _refundBidder(_tokenId, offer.bidder, offer.offer);
 
         // delete offer
-        delete editionOffers[_editionId];
+        delete tokenOffers[_tokenId];
+
+        emit TokenBidRejected(_tokenId, currentOwner, offer.bidder, offer.offer);
     }
 
-    function acceptEditionBid(uint256 _editionId, uint256 _offerPrice)
+    function acceptTokenBid(uint256 _tokenId, uint256 _offerPrice)
     public
     override
     whenNotPaused
     nonReentrant {
-        Offer storage offer = editionOffers[_editionId];
+        Offer memory offer = tokenOffers[_tokenId];
         require(offer.bidder != address(0), "No open bid");
         require(offer.offer >= _offerPrice, "Offer price has changed");
-        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
 
-        // get a new token from the edition to transfer ownership
-        uint256 tokenId = _facilitateNextPrimarySale(_editionId, offer.offer, offer.bidder, false);
+        address currentOwner = koda.ownerOf(_tokenId);
+        require(currentOwner == _msgSender(), "Not current owner");
 
-        // emit event
-        emit EditionBidAccepted(_editionId, tokenId, offer.bidder, offer.offer);
+        _facilitateSecondarySale(_tokenId, offer.offer, currentOwner, offer.bidder);
 
         // clear open offer
-        delete editionOffers[_editionId];
+        delete tokenOffers[_tokenId];
+
+        emit TokenBidAccepted(_tokenId, currentOwner, offer.bidder, offer.offer);
     }
 
     // emergency admin "reject" button for stuck bids
-    function adminRejectEditionBid(uint256 _editionId) public onlyAdmin {
-        Offer storage offer = editionOffers[_editionId];
+    function adminRejectTokenBid(uint256 _tokenId)
+    public
+    nonReentrant
+    onlyAdmin {
+        Offer memory offer = tokenOffers[_tokenId];
         require(offer.bidder != address(0), "No open bid");
 
         // send money back to top bidder
-        _refundBidderIgnoreError(_editionId, offer.bidder, offer.offer);
-
-        emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
+        _refundBidderIgnoreError(_tokenId, offer.bidder, offer.offer);
 
         // delete offer
-        delete editionOffers[_editionId];
+        delete tokenOffers[_tokenId];
+
+        emit TokenBidRejected(_tokenId, koda.ownerOf(_tokenId), offer.bidder, offer.offer);
     }
 
-    function convertOffersToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
-    public
-    override
-    whenNotPaused
-    nonReentrant {
-        require(!_isEditionListed(_editionId), "Edition is listed");
-        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
-        require(_listingPrice >= minBidAmount, "Listing price not enough");
-
-        // send money back to top bidder if existing offer found
-        Offer storage offer = editionOffers[_editionId];
-        if (offer.offer > 0) {
-            _refundBidder(_editionId, offer.bidder, offer.offer);
-        }
-
-        // delete offer
-        delete editionOffers[_editionId];
-
-        // delete rest of offer information
-        delete editionOffersStartDate[_editionId];
-
-        // Store listing data
-        editionOrTokenListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
-
-        emit EditionConvertedFromOffersToBuyItNow(_editionId, _listingPrice, _startDate);
-    }
-
-    // Primary sale "stepped pricing" flow
-    function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate)
-    public
-    override
-    whenNotPaused
-    onlyContract {
-        require(_basePrice >= minBidAmount, "Base price not enough");
-
-        // Store listing data
-        editionStep[_editionId] = Stepped(
-            _basePrice,
-            _stepPrice,
-            _startDate,
-            _creator,
-            uint16(0)
-        );
-
-        emit EditionSteppedSaleListed(_editionId, _basePrice, _stepPrice, _startDate);
-    }
-
-    function updateSteppedAuction(uint256 _editionId, uint128 _basePrice, uint128 _stepPrice)
-    public
-    override
-    whenNotPaused {
-        Stepped storage steppedAuction = editionStep[_editionId];
-        require(steppedAuction.seller == _msgSender(), "Only seller");
-        require(steppedAuction.currentStep == 0, "Only when no sales");
-        require(_basePrice >= minBidAmount, "Base price not enough");
-
-        steppedAuction.basePrice = _basePrice;
-        steppedAuction.stepPrice = _stepPrice;
-
-        emit EditionSteppedAuctionUpdated(_editionId, _basePrice, _stepPrice);
-    }
-
-    function buyNextStep(uint256 _editionId)
-    public
-    override
-    payable
-    whenNotPaused
-    nonReentrant {
-        Stepped storage steppedAuction = editionStep[_editionId];
-        require(steppedAuction.seller != address(0), "Edition not listed for stepped auction");
-        require(steppedAuction.startDate <= block.timestamp, "Not started yet");
-
-        uint256 expectedPrice = _getNextEditionSteppedPrice(_editionId);
-        require(msg.value >= expectedPrice, "Expected price not met");
-
-        uint256 tokenId = _facilitateNextPrimarySale(_editionId, expectedPrice, _msgSender(), true);
-
-        // Bump the current step
-        uint16 step = steppedAuction.currentStep;
-
-        // no safemath for uint16
-        steppedAuction.currentStep = step + 1;
-
-        // send back excess if supplied - will allow UX flow of setting max price to pay
-        if (msg.value > expectedPrice) {
-            (bool success,) = _msgSender().call{value : msg.value - expectedPrice}("");
-            require(success, "failed to send overspend back");
-        }
-
-        emit EditionSteppedSaleBuy(_editionId, tokenId, _msgSender(), expectedPrice, step);
-    }
-
-    // creates an exit from a step if required but forces a buy now price
-    function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
-    public
-    override
-    nonReentrant
-    whenNotPaused {
-        Stepped storage steppedAuction = editionStep[_editionId];
-        require(_listingPrice >= minBidAmount, "List price not enough");
-        require(steppedAuction.seller == _msgSender(), "Only seller can convert");
-
-        // Store listing data
-        editionOrTokenListings[_editionId] = Listing(_listingPrice, _startDate, steppedAuction.seller);
-
-        // emit event
-        emit ConvertSteppedAuctionToBuyNow(_editionId, _listingPrice, _startDate);
-
-        // Clear up the step logic
-        delete editionStep[_editionId];
-    }
-
-    function convertSteppedAuctionToOffers(uint256 _editionId, uint128 _startDate)
-    public
-    override
-    whenNotPaused {
-        Stepped storage steppedAuction = editionStep[_editionId];
-        require(steppedAuction.seller == _msgSender(), "Only seller can convert");
-
-        // set the start date for the offer (optional)
-        editionOffersStartDate[_editionId] = _startDate;
-
-        // Clear up the step logic
-        delete editionStep[_editionId];
-
-        emit ConvertFromBuyNowToOffers(_editionId, _startDate);
-    }
-
-    // Get the next
-    function getNextEditionSteppedPrice(uint256 _editionId) public view returns (uint256 price) {
-        price = _getNextEditionSteppedPrice(_editionId);
-    }
-
-    function _getNextEditionSteppedPrice(uint256 _editionId) internal view returns (uint256 price) {
-        Stepped storage steppedAuction = editionStep[_editionId];
-        uint256 stepAmount = uint256(steppedAuction.stepPrice) * uint256(steppedAuction.currentStep);
-        price = uint256(steppedAuction.basePrice) + stepAmount;
-    }
-
-    function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate)
+    function convertReserveAuctionToBuyItNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate)
     public
     override
     whenNotPaused
     nonReentrant {
         require(_listingPrice >= minBidAmount, "Listing price not enough");
-        _removeReserveAuctionListing(_editionId);
+        _removeReserveAuctionListing(_tokenId);
 
-        editionOrTokenListings[_editionId] = Listing(_listingPrice, _startDate, _msgSender());
+        editionOrTokenListings[_tokenId] = Listing(_listingPrice, _startDate, _msgSender());
 
-        emit ReserveAuctionConvertedToBuyItNow(_editionId, _listingPrice, _startDate);
+        emit ReserveAuctionConvertedToBuyItNow(_tokenId, _listingPrice, _startDate);
     }
 
-    function convertReserveAuctionToOffers(uint256 _editionId, uint128 _startDate)
+    function convertReserveAuctionToOffers(uint256 _tokenId)
     public
     override
     whenNotPaused
     nonReentrant {
-        _removeReserveAuctionListing(_editionId);
-
-        // set the start date for the offer (optional)
-        editionOffersStartDate[_editionId] = _startDate;
-
-        emit ReserveAuctionConvertedToOffers(_editionId, _startDate);
+        _removeReserveAuctionListing(_tokenId);
+        emit ReserveAuctionConvertedToOffers(_tokenId);
     }
 
-    // admin
+    //////////////////////////////
+    // Secondary sale "helpers" //
+    //////////////////////////////
 
-    function updatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission) public onlyAdmin {
-        platformPrimarySaleCommission = _platformPrimarySaleCommission;
-        emit AdminUpdatePlatformPrimarySaleCommission(_platformPrimarySaleCommission);
+    function _facilitateSecondarySale(uint256 _tokenId, uint256 _paymentAmount, address _seller, address _buyer) internal {
+        (address royaltyRecipient,) = koda.royaltyInfo(_tokenId);
+
+        // split money
+        uint256 creatorRoyalties = handleSecondarySaleFunds(_seller, royaltyRecipient, _paymentAmount);
+
+        // N:B. open offers are left for the bidder to withdraw or the new token owner to reject/accept
+
+        // send token to buyer
+        koda.safeTransferFrom(_seller, _buyer, _tokenId);
+
+        // fire royalties callback event
+        koda.receivedRoyalties(royaltyRecipient, _buyer, _tokenId, address(0), creatorRoyalties);
     }
 
-    function setKoCommissionOverrideForCreator(address _creator, bool _active, uint256 _koCommission) public onlyAdmin {
-        KOCommissionOverride storage koCommissionOverride = koCommissionOverrideForCreators[_creator];
-        koCommissionOverride.active = _active;
-        koCommissionOverride.koCommission = _koCommission;
+    function handleSecondarySaleFunds(address _seller, address _royaltyRecipient, uint256 _paymentAmount)
+    internal
+    returns (uint256 creatorRoyalties){
+        // pay royalties
+        creatorRoyalties = (_paymentAmount / modulo) * secondarySaleRoyalty;
+        (bool creatorSuccess,) = _royaltyRecipient.call{value : creatorRoyalties}("");
+        require(creatorSuccess, "Token payment failed");
 
-        emit AdminSetKoCommissionOverrideForCreator(_creator, _koCommission);
+        // pay platform fee
+        uint256 koCommission = (_paymentAmount / modulo) * platformSecondarySaleCommission;
+        (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
+        require(koCommissionSuccess, "Token commission payment failed");
+
+        // pay seller
+        (bool success,) = _seller.call{value : _paymentAmount - creatorRoyalties - koCommission}("");
+        require(success, "Token payment failed");
     }
 
-    function setKoCommissionOverrideForEdition(uint256 _editionId, bool _active, uint256 _koCommission) public onlyAdmin {
-        KOCommissionOverride storage koCommissionOverride = koCommissionOverrideForEditions[_editionId];
-        koCommissionOverride.active = _active;
-        koCommissionOverride.koCommission = _koCommission;
+    // Admin Methods
 
-        emit AdminSetKoCommissionOverrideForEdition(_editionId, _koCommission);
+    function updatePlatformSecondarySaleCommission(uint256 _platformSecondarySaleCommission) public onlyAdmin {
+        platformSecondarySaleCommission = _platformSecondarySaleCommission;
+        emit AdminUpdateSecondarySaleCommission(_platformSecondarySaleCommission);
+    }
+
+    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) public onlyAdmin {
+        secondarySaleRoyalty = _secondarySaleRoyalty;
+        emit AdminUpdateSecondaryRoyalty(_secondarySaleRoyalty);
     }
 
     // internal
 
-    function _isListingPermitted(uint256 _editionId) internal override returns (bool) {
-        return !_isEditionListed(_editionId);
+    function _isListingPermitted(uint256 _tokenId) internal override returns (bool) {
+        return !_isTokenListed(_tokenId);
     }
 
-    function _isReserveListingPermitted(uint256 _editionId) internal override returns (bool) {
-        return koda.getSizeOfEdition(_editionId) == 1 && accessControls.hasContractRole(_msgSender());
+    function _isReserveListingPermitted(uint256 _tokenId) internal override returns (bool) {
+        return koda.ownerOf(_tokenId) == _msgSender();
     }
 
     function _hasReserveListingBeenInvalidated(uint256 _id) internal override returns (bool) {
@@ -1575,300 +1409,33 @@ contract KODAV3PrimaryMarketplace is
             address(this)
         );
 
-        return !isApprovalActiveForMarketplace || koda.isSalesDisabledOrSoldOut(_id);
+        return !isApprovalActiveForMarketplace || koda.ownerOf(_id) != editionOrTokenWithReserveAuctions[_id].seller;
     }
 
-    function _isBuyNowListingPermitted(uint256) internal override returns (bool) {
-        return accessControls.hasContractRole(_msgSender());
+    function _isBuyNowListingPermitted(uint256 _tokenId) internal override returns (bool) {
+        return koda.ownerOf(_tokenId) == _msgSender();
     }
 
-    function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller) internal override returns (uint256) {
-        return _facilitateNextPrimarySale(_id, _paymentAmount, _buyer, false);
-    }
-
-    function _facilitateNextPrimarySale(uint256 _editionId, uint256 _paymentAmount, address _buyer, bool _reverse) internal returns (uint256) {
-        // for stepped sales, should they be sold in reverse order ie. 10...1 and not 1...10?
-        // get next token to sell along with the royalties recipient and the original creator
-        (address receiver, address creator, uint256 tokenId) = _reverse
-            ? koda.facilitateReversePrimarySale(_editionId)
-            : koda.facilitateNextPrimarySale(_editionId);
-
-        // split money
-        _handleEditionSaleFunds(_editionId, creator, receiver, _paymentAmount);
-
-        // send token to buyer (assumes approval has been made, if not then this will fail)
-        koda.safeTransferFrom(creator, _buyer, tokenId);
-
-        // N:B. open offers are left once sold out for the bidder to withdraw or the artist to reject
-
-        return tokenId;
-    }
-
-    function _handleEditionSaleFunds(uint256 _editionId, address _creator, address _receiver, uint256 _paymentAmount) internal {
-        uint256 primarySaleCommission;
-
-        if (koCommissionOverrideForEditions[_editionId].active) {
-            primarySaleCommission = koCommissionOverrideForEditions[_editionId].koCommission;
-        }
-        else if (koCommissionOverrideForCreators[_creator].active) {
-            primarySaleCommission = koCommissionOverrideForCreators[_creator].koCommission;
-        }
-        else {
-            primarySaleCommission = platformPrimarySaleCommission;
-        }
-
-        uint256 koCommission = (_paymentAmount / modulo) * primarySaleCommission;
-        if (koCommission > 0) {
-            (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
-            require(koCommissionSuccess, "Edition commission payment failed");
-        }
-
-        (bool success,) = _receiver.call{value : _paymentAmount - koCommission}("");
-        require(success, "Edition payment failed");
+    function _processSale(
+        uint256 _tokenId,
+        uint256 _paymentAmount,
+        address _buyer,
+        address _seller
+    ) internal override returns (uint256) {
+        _facilitateSecondarySale(_tokenId, _paymentAmount, _seller, _buyer);
+        return _tokenId;
     }
 
     // as offers are always possible, we wont count it as a listing
-    function _isEditionListed(uint256 _editionId) internal view returns (bool) {
-        if (editionOrTokenListings[_editionId].seller != address(0)) {
+    function _isTokenListed(uint256 _tokenId) internal view returns (bool) {
+        if (editionOrTokenListings[_tokenId].seller != address(0)) {
             return true;
         }
 
-        if (editionStep[_editionId].seller != address(0)) {
-            return true;
-        }
-
-        if (editionOrTokenWithReserveAuctions[_editionId].seller != address(0)) {
+        if (editionOrTokenWithReserveAuctions[_tokenId].seller != address(0)) {
             return true;
         }
 
         return false;
     }
-}
-
-// File: contracts/minter/MintingFactory.sol
-
-// SPDX-License-Identifier: MIT
-
-pragma solidity 0.8.3;
-
-
-
-
-
-contract MintingFactory is Context {
-
-    event EditionMintedAndListed(uint256 indexed _editionId, SaleType _saleType);
-
-    event MintingFactoryCreated();
-    event AdminMintingPeriodChanged(uint256 _mintingPeriod);
-    event AdminMaxMintsInPeriodChanged(uint256 _maxMintsInPeriod);
-    event AdminFrequencyOverrideChanged(address _account, bool _override);
-
-    IKOAccessControlsLookup public accessControls;
-
-    IKODAV3Minter public koda;
-
-    KODAV3PrimaryMarketplace public marketplace;
-
-    modifier canMintAgain(){
-        require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
-        _;
-    }
-
-    // Minting allowance period
-    uint256 public mintingPeriod = 30 days;
-
-    // Limit of mints with in the period
-    uint256 public maxMintsInPeriod = 15;
-
-    // Frequency override list for users - you can temporarily add in address which disables the freeze time check
-    mapping(address => bool) public frequencyOverride;
-
-    struct MintingPeriod {
-        uint128 mints;
-        uint128 firstMintInPeriod;
-    }
-
-    // How many mints within the current minting period
-    mapping(address => MintingPeriod) mintingPeriodConfig;
-
-    enum SaleType {
-        BUY_NOW, OFFERS, STEPPED, RESERVE
-    }
-
-    constructor(
-        IKOAccessControlsLookup _accessControls,
-        IKODAV3Minter _koda,
-        KODAV3PrimaryMarketplace _marketplace
-    ) {
-        accessControls = _accessControls;
-        koda = _koda;
-        marketplace = _marketplace;
-
-        emit MintingFactoryCreated();
-    }
-
-    function mintToken(
-        SaleType _saleType,
-        uint128 _startDate,
-        uint128 _basePrice,
-        uint128 _stepPrice,
-        string calldata _uri,
-        uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof
-    ) canMintAgain external {
-        require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
-
-        // Make tokens & edition
-        uint256 editionId = koda.mintBatchEdition(1, _msgSender(), _uri);
-
-        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
-        _recordSuccessfulMint(_msgSender());
-    }
-
-    function mintBatchEdition(
-        SaleType _saleType,
-        uint96 _editionSize,
-        uint128 _startDate,
-        uint128 _basePrice,
-        uint128 _stepPrice,
-        string calldata _uri,
-        uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof
-    ) canMintAgain external {
-        require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
-
-        // Make tokens & edition
-        uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
-
-        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
-        _recordSuccessfulMint(_msgSender());
-    }
-
-    function mintBatchEditionAndComposeERC20s(
-        SaleType _saleType,
-        uint128[] calldata _config,
-        string calldata _uri,
-        address[] calldata _erc20s,
-        uint256[] calldata _amounts,
-        bytes32[] calldata _merkleProof
-    ) canMintAgain external {
-        require(accessControls.isVerifiedArtist(_config[0], _msgSender(), _merkleProof), "Caller must have minter role");
-
-        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint96(_config[1]), _msgSender(), _uri, _erc20s, _amounts);
-
-        _setupSalesMechanic(editionId, _saleType, _config[2], _config[3], _config[4]);
-        _recordSuccessfulMint(_msgSender());
-    }
-
-    function mintConsecutiveBatchEdition(
-        SaleType _saleType,
-        uint96 _editionSize,
-        uint128 _startDate,
-        uint128 _basePrice,
-        uint128 _stepPrice,
-        string calldata _uri,
-        uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof
-    ) canMintAgain external {
-        require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
-
-        // Make tokens & edition
-        uint256 editionId = koda.mintConsecutiveBatchEdition(_editionSize, _msgSender(), _uri);
-
-        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
-        _recordSuccessfulMint(_msgSender());
-    }
-
-    function _setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
-        if (SaleType.BUY_NOW == _saleType) {
-            marketplace.listForBuyNow(_msgSender(), _editionId, _basePrice, _startDate);
-        }
-        else if (SaleType.STEPPED == _saleType) {
-            marketplace.listSteppedEditionAuction(_msgSender(), _editionId, _basePrice, _stepPrice, _startDate);
-        }
-        else if (SaleType.OFFERS == _saleType) {
-            marketplace.enableEditionOffers(_editionId, _startDate);
-        } else if (SaleType.RESERVE == _saleType) {
-            // use base price for reserve price
-            marketplace.listForReserveAuction(_msgSender(), _editionId, _basePrice, _startDate);
-        }
-
-        emit EditionMintedAndListed(_editionId, _saleType);
-    }
-
-    /// Internal helpers
-
-    function _canCreateNewEdition(address _account) internal view returns (bool) {
-        // if frequency is overridden then assume they can mint
-        if (frequencyOverride[_account]) {
-            return true;
-        }
-
-        // if within the period range, check remaining allowance
-        if (_getNow() <= mintingPeriodConfig[_account].firstMintInPeriod + mintingPeriod) {
-            return mintingPeriodConfig[_account].mints < maxMintsInPeriod;
-        }
-
-        // if period expired - can mint another one
-        return true;
-    }
-
-    function _recordSuccessfulMint(address _account) internal {
-        MintingPeriod storage period = mintingPeriodConfig[_account];
-
-        uint256 endOfCurrentMintingPeriodLimit = period.firstMintInPeriod + mintingPeriod;
-
-        // if first time use, set the first timestamp to be now abd start counting
-        if (period.firstMintInPeriod == 0) {
-            period.firstMintInPeriod = _getNow();
-            period.mints = period.mints + 1;
-        }
-        // if still within the minting period, record the new mint
-        else if (_getNow() <= endOfCurrentMintingPeriodLimit) {
-            period.mints = period.mints + 1;
-        }
-        // if we are outside of the window reset the limit and record a new single mint
-        else if (endOfCurrentMintingPeriodLimit < _getNow()) {
-            period.mints = 1;
-            period.firstMintInPeriod = _getNow();
-        }
-    }
-
-    function _getNow() internal virtual view returns (uint128) {
-        return uint128(block.timestamp);
-    }
-
-    /// Public helpers
-
-    function canCreateNewEdition(address _account) public view returns (bool) {
-        return _canCreateNewEdition(_account);
-    }
-
-    function currentMintConfig(address _account) public view returns (uint128 mints, uint128 firstMintInPeriod) {
-        MintingPeriod memory config = mintingPeriodConfig[_account];
-        return (
-        config.mints,
-        config.firstMintInPeriod
-        );
-    }
-
-    function setFrequencyOverride(address _account, bool _override) external {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
-        frequencyOverride[_account] = _override;
-        emit AdminFrequencyOverrideChanged(_account, _override);
-    }
-
-    function setMintingPeriod(uint256 _mintingPeriod) public {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
-        mintingPeriod = _mintingPeriod;
-        emit AdminMintingPeriodChanged(_mintingPeriod);
-    }
-
-    function setMaxMintsInPeriod(uint256 _maxMintsInPeriod) public {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
-        maxMintsInPeriod = _maxMintsInPeriod;
-        emit AdminMaxMintsInPeriodChanged(_maxMintsInPeriod);
-    }
-
 }

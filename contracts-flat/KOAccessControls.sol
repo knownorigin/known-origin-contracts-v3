@@ -27,7 +27,7 @@ abstract contract Context {
 
 // File: @openzeppelin/contracts/utils/introspection/IERC165.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -54,7 +54,7 @@ interface IERC165 {
 
 // File: @openzeppelin/contracts/utils/introspection/ERC165.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -84,7 +84,7 @@ abstract contract ERC165 is IERC165 {
 
 // File: @openzeppelin/contracts/access/AccessControl.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -299,7 +299,7 @@ abstract contract AccessControl is Context, IAccessControl, ERC165 {
 
 // File: @openzeppelin/contracts/utils/cryptography/MerkleProof.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -335,7 +335,7 @@ library MerkleProof {
 
 // File: contracts/access/IKOAccessControlsLookup.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.3;
 
@@ -353,7 +353,7 @@ interface IKOAccessControlsLookup {
 
 // File: contracts/access/legacy/ISelfServiceAccessControls.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.3;
 
 interface ISelfServiceAccessControls {
@@ -364,7 +364,7 @@ interface ISelfServiceAccessControls {
 
 // File: contracts/access/KOAccessControls.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.3;
 
