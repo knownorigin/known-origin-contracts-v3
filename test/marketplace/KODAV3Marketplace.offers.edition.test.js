@@ -52,7 +52,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
   });
 
-  describe('primary sale edition offers', async () => {
+  describe.only('primary sale edition offers', async () => {
 
     const _0_1_ETH = ether('0.1');
 

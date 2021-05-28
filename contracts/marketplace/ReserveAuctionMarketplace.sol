@@ -66,9 +66,12 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         require(block.timestamp >= reserveAuction.startDate, "Not accepting bids yet");
         require(msg.value >= reserveAuction.bid + minBidAmount, "You have not exceeded previous bid by min bid amount");
 
+        uint128 originalBiddingEnd = reserveAuction.biddingEnd;
+
         // If the reserve has been met, then bidding will end in 24 hours
         // if we are near the end, we have bids, then extend the bidding end
-        bool isCountDownTriggered = reserveAuction.biddingEnd > 0;
+        bool isCountDownTriggered = originalBiddingEnd > 0;
+
         if (reserveAuction.bid + msg.value >= reserveAuction.reservePrice && !isCountDownTriggered) {
             reserveAuction.biddingEnd = uint128(block.timestamp) + reserveAuctionLengthOnceReserveMet;
         }
@@ -76,9 +79,8 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
             // if a bid has been placed, then we will have a bidding end timestamp
             // and we need to ensure no one can bid beyond this
-            require(block.timestamp < reserveAuction.biddingEnd, "No longer accepting bids");
-
-            uint128 secondsUntilBiddingEnd = reserveAuction.biddingEnd - uint128(block.timestamp);
+            require(block.timestamp < originalBiddingEnd, "No longer accepting bids");
+            uint128 secondsUntilBiddingEnd = originalBiddingEnd - uint128(block.timestamp);
 
             // If bid received with in the extension window, extend bidding end
             if (secondsUntilBiddingEnd <= reserveAuctionBidExtensionWindow) {
@@ -88,13 +90,13 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
         // if someone else has previously bid, there is a bid we need to refund
         if (reserveAuction.bid > 0) {
-            _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid);
+            _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid, _msgSender(), msg.value);
         }
 
         reserveAuction.bid = uint128(msg.value);
         reserveAuction.bidder = _msgSender();
 
-        emit BidPlacedOnReserveAuction(_id, _msgSender(), msg.value);
+        emit BidPlacedOnReserveAuction(_id, reserveAuction.seller, _msgSender(), msg.value, originalBiddingEnd, reserveAuction.biddingEnd);
     }
 
     function resultReserveAuction(uint256 _id)
@@ -117,7 +119,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
         _processSale(_id, winningBid, winner, seller);
 
-        emit ReserveAuctionResulted(_id, winningBid, winner, _msgSender());
+        emit ReserveAuctionResulted(_id, winningBid, seller, winner, _msgSender());
     }
 
     // Only permit bid withdrawals if reserve not met
@@ -133,7 +135,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         require(reserveAuction.bidder == _msgSender(), "Only the bidder can withdraw their bid");
 
         uint256 bidToRefund = reserveAuction.bid;
-        _refundBidder(_id, reserveAuction.bidder, bidToRefund);
+        _refundBidder(_id, reserveAuction.bidder, bidToRefund, address(0), 0);
 
         reserveAuction.bidder = address(0);
         reserveAuction.bid = 0;
@@ -181,7 +183,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         );
         // external call done last as a gas optimisation i.e. it wont be called if isSeller || isBidder is true
 
-        _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid);
+        _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid, address(0), 0);
 
         emit EmergencyBidWithdrawFromReserveAuction(_id, reserveAuction.bidder, reserveAuction.bid);
 
@@ -211,7 +213,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
         // refund any bids
         if (reserveAuction.bid > 0) {
-            _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid);
+            _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid, address(0), 0);
         }
 
         delete editionOrTokenWithReserveAuctions[_id];

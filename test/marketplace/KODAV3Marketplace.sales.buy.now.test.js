@@ -202,7 +202,7 @@ contract('KODAV3Marketplace', function (accounts) {
   //   });
   // });
 
-  describe('primary sale edition listing', async () => {
+  describe.only('primary sale edition listing', async () => {
 
     beforeEach(async () => {
       // Ensure owner is approved as this will fail if not

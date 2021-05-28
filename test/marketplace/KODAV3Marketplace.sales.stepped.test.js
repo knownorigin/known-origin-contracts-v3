@@ -57,7 +57,7 @@ contract('KODAV3Marketplace', function (accounts) {
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  describe("stepped auctions", () => {
+  describe.only("stepped auctions", () => {
 
     describe("listSteppedEditionAuction()", () => {
 

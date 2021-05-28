@@ -2,10 +2,10 @@
 pragma solidity 0.8.3;
 
 interface IBuyNowMarketplace {
-    event ListedForBuyNow(uint256 indexed _id, uint256 _price, uint256 _startDate);
+    event ListedForBuyNow(uint256 indexed _id, uint256 _price, address _currentOwner, uint256 _startDate);
     event BuyNowPriceChanged(uint256 indexed _id, uint256 _price);
     event BuyNowDeListed(uint256 indexed _id);
-    event BuyNowPurchased(uint256 indexed _tokenId, address indexed _buyer, uint256 _price);
+    event BuyNowPurchased(uint256 indexed _tokenId, address _buyer, address _currentOwner, uint256 _price);
 
     function listForBuyNow(address _creator, uint256 _id, uint128 _listingPrice, uint128 _startDate) external;
 
@@ -18,11 +18,11 @@ interface IBuyNowMarketplace {
 
 interface IEditionOffersMarketplace {
     event EditionAcceptingOffer(uint256 indexed _editionId, uint128 _startDate);
-    event EditionBidPlaced(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
-    event EditionBidWithdrawn(uint256 indexed _editionId, address indexed _bidder);
-    event EditionBidAccepted(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _bidder, uint256 _amount);
-    event EditionBidRejected(uint256 indexed _editionId, address indexed _bidder, uint256 _amount);
-    event EditionConvertedFromOffersToBuyItNow(uint256 indexed _editionId, uint128 _price, uint128 _startDate);
+    event EditionBidPlaced(uint256 indexed _editionId, address _bidder, uint256 _amount);
+    event EditionBidWithdrawn(uint256 indexed _editionId, address _bidder);
+    event EditionBidAccepted(uint256 indexed _editionId, uint256 indexed _tokenId, address _bidder, uint256 _amount);
+    event EditionBidRejected(uint256 indexed _editionId, address _bidder, uint256 _amount);
+    event EditionConvertedFromOffersToBuyItNow(uint256 _editionId, uint128 _price, uint128 _startDate);
 
     function enableEditionOffers(uint256 _editionId, uint128 _startDate) external;
 
@@ -39,7 +39,7 @@ interface IEditionOffersMarketplace {
 
 interface IEditionSteppedMarketplace {
     event EditionSteppedSaleListed(uint256 indexed _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate);
-    event EditionSteppedSaleBuy(uint256 indexed _editionId, uint256 indexed _tokenId, address indexed _buyer, uint256 _price, uint16 _currentStep);
+    event EditionSteppedSaleBuy(uint256 indexed _editionId, uint256 indexed _tokenId, address _buyer, uint256 _price, uint16 _currentStep);
     event EditionSteppedAuctionUpdated(uint256 indexed _editionId, uint128 _basePrice, uint128 _stepPrice);
 
     function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate) external;
@@ -54,9 +54,9 @@ interface IEditionSteppedMarketplace {
 
 interface IReserveAuctionMarketplace {
     event ListedForReserveAuction(uint256 indexed _id, uint256 _reservePrice, uint128 _startDate);
-    event BidPlacedOnReserveAuction(uint256 indexed _id, address indexed _bidder, uint256 _amount);
-    event ReserveAuctionResulted(uint256 indexed _id, uint256 _finalPrice, address indexed _winner, address indexed _resulter);
-    event BidWithdrawnFromReserveAuction(uint256 _id, address indexed _bidder, uint128 _bid);
+    event BidPlacedOnReserveAuction(uint256 indexed _id, address _currentOwner, address _bidder, uint256 _amount, uint256 _originalBiddingEnd, uint256 _currentBiddingEnd);
+    event ReserveAuctionResulted(uint256 indexed _id, uint256 _finalPrice, address _currentOwner, address _winner, address _resulter);
+    event BidWithdrawnFromReserveAuction(uint256 _id, address _bidder, uint128 _bid);
     event ReservePriceUpdated(uint256 indexed _id, uint256 _reservePrice);
     event ReserveAuctionConvertedToBuyItNow(uint256 indexed _id, uint128 _listingPrice, uint128 _startDate);
     event EmergencyBidWithdrawFromReserveAuction(uint256 indexed _id, address _bidder, uint128 _bid);
@@ -81,10 +81,10 @@ interface ITokenBuyNowMarketplace {
 }
 
 interface ITokenOffersMarketplace {
-    event TokenBidPlaced(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
-    event TokenBidAccepted(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
-    event TokenBidRejected(uint256 indexed _tokenId, address indexed _currentOwner, address indexed _bidder, uint256 _amount);
-    event TokenBidWithdrawn(uint256 indexed _tokenId, address indexed _bidder);
+    event TokenBidPlaced(uint256 indexed _tokenId, address _currentOwner, address _bidder, uint256 _amount);
+    event TokenBidAccepted(uint256 indexed _tokenId, address _currentOwner, address _bidder, uint256 _amount);
+    event TokenBidRejected(uint256 indexed _tokenId, address _currentOwner, address _bidder, uint256 _amount);
+    event TokenBidWithdrawn(uint256 indexed _tokenId, address _bidder);
 
     function acceptTokenBid(uint256 _tokenId, uint256 _offerPrice) external;
 

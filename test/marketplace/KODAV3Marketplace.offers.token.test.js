@@ -53,7 +53,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  describe('secondary sale token offers', async () => {
+  describe.only('secondary sale token offers', async () => {
 
     describe('placeTokenBid()', () => {
 

@@ -21,6 +21,7 @@ contract MintingFactory is Context {
 
     IKODAV3Minter public koda;
 
+    // TODO can we make a interface for all of primary ?
     KODAV3PrimaryMarketplace public marketplace;
 
     modifier canMintAgain(){

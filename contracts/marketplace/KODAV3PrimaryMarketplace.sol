@@ -15,10 +15,10 @@ import {BaseMarketplace} from "./BaseMarketplace.sol";
 /// @dev The contract is pausable and has reentrancy guards
 /// @author KnownOrigin Labs
 contract KODAV3PrimaryMarketplace is
-    IKODAV3PrimarySaleMarketplace,
-    BaseMarketplace,
-    ReserveAuctionMarketplace,
-    BuyNowMarketplace {
+IKODAV3PrimarySaleMarketplace,
+BaseMarketplace,
+ReserveAuctionMarketplace,
+BuyNowMarketplace {
 
     event PrimaryMarketplaceDeployed();
     event AdminSetKoCommissionOverrideForCreator(address indexed _creator, uint256 _koCommission);
@@ -124,7 +124,7 @@ contract KODAV3PrimaryMarketplace is
 
         // send money back to top bidder if existing offer found
         if (offer.offer > 0) {
-            _refundBidder(_editionId, offer.bidder, offer.offer);
+            _refundBidder(_editionId, offer.bidder, offer.offer, _msgSender(), msg.value);
         }
 
         // setup offer
@@ -144,7 +144,7 @@ contract KODAV3PrimaryMarketplace is
         require(block.timestamp >= offer.lockupUntil, "Bid lockup not elapsed");
 
         // send money back to top bidder
-        _refundBidder(_editionId, offer.bidder, offer.offer);
+        _refundBidder(_editionId, offer.bidder, offer.offer, address(0), 0);
 
         // emit event
         emit EditionBidWithdrawn(_editionId, _msgSender());
@@ -163,7 +163,7 @@ contract KODAV3PrimaryMarketplace is
         require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Caller not the creator");
 
         // send money back to top bidder
-        _refundBidder(_editionId, offer.bidder, offer.offer);
+        _refundBidder(_editionId, offer.bidder, offer.offer, address(0), 0);
 
         // emit event
         emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
@@ -218,7 +218,7 @@ contract KODAV3PrimaryMarketplace is
         // send money back to top bidder if existing offer found
         Offer storage offer = editionOffers[_editionId];
         if (offer.offer > 0) {
-            _refundBidder(_editionId, offer.bidder, offer.offer);
+            _refundBidder(_editionId, offer.bidder, offer.offer, address(0), 0);
         }
 
         // delete offer
@@ -425,8 +425,8 @@ contract KODAV3PrimaryMarketplace is
         // for stepped sales, should they be sold in reverse order ie. 10...1 and not 1...10?
         // get next token to sell along with the royalties recipient and the original creator
         (address receiver, address creator, uint256 tokenId) = _reverse
-            ? koda.facilitateReversePrimarySale(_editionId)
-            : koda.facilitateNextPrimarySale(_editionId);
+        ? koda.facilitateReversePrimarySale(_editionId)
+        : koda.facilitateNextPrimarySale(_editionId);
 
         // split money
         _handleEditionSaleFunds(_editionId, creator, receiver, _paymentAmount);
