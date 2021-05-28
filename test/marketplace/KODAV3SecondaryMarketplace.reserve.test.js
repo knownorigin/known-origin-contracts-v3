@@ -48,7 +48,7 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
     this.minBidAmount = await this.marketplace.minBidAmount();
   });
 
-  describe.only('all tests', () => {
+  describe('all tests', () => {
     describe('End to end reserve auctions', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});

@@ -60,7 +60,7 @@ contract('KODAV3Marketplace', function (accounts) {
     this.secondarySaleRoyalty = await this.marketplace.secondarySaleRoyalty();
   });
 
-  describe.only('secondary sale token listing', async () => {
+  describe('secondary sale token listing', async () => {
     describe('listTokenForBuyNow()', () => {
 
       const _0_1_ETH = ether('0.1');

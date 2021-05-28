@@ -50,7 +50,7 @@ contract('KODAV3PrimaryMarketplace', function (accounts) {
 
   });
 
-  describe.only('commission override', () => {
+  describe('commission override', () => {
     const commissionOverride = new BN('4000000')
 
     describe('setKoCommissionOverrideForCreator()', () => {

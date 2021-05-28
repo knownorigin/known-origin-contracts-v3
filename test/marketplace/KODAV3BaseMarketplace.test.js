@@ -56,7 +56,7 @@ contract('KODAV3BaseMarketplace', function (accounts) {
     this.erc20Token = await MockERC20.new({from: owner})
   });
 
-  describe.only('all tests', () => {
+  describe('all tests', () => {
     describe('recoverERC20', () => {
       const _0_1_Tokens = ether('0.1')
 
