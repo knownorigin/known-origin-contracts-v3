@@ -11,7 +11,7 @@ const {parseBalanceMap} = require('../utils/parse-balance-map');
 const {buildArtistMerkleInput} = require('../utils/merkle-tools');
 
 contract('KOAccessControls merkle proof tests', function (accounts) {
-  const [deployer, artist1, artist2, artist3] = accounts;
+  const [deployer, artist1, artist2, artist3, proxy] = accounts;
 
   beforeEach(async () => {
     // setup access controls
@@ -109,4 +109,32 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
     });
   });
 
+  describe.only('verifiedArtistProxy - success', async () => {
+    it('should assert enabled verified artist to set proxy', async () => {
+      expect(await this.accessControls.artistProxy(artist1)).to.be.equal(ZERO_ADDRESS);
+
+      await this.accessControls.setVerifiedArtistProxy(
+        proxy,
+        this.merkleProof.claims[artist1].index,
+        this.merkleProof.claims[artist1].proof,
+        {from: artist1}
+      );
+
+      expect(await this.accessControls.artistProxy(artist1)).to.be.equal(proxy);
+      expect(await this.accessControls.artistProxy(artist2)).to.be.equal(ZERO_ADDRESS);
+    });
+
+    it('should assert isVerifiedArtistProxy', async () => {
+      expect(await this.accessControls.isVerifiedArtistProxy(artist1, {from:proxy})).to.be.equal(false);
+
+      await this.accessControls.setVerifiedArtistProxy(
+        proxy,
+        this.merkleProof.claims[artist1].index,
+        this.merkleProof.claims[artist1].proof,
+        {from: artist1}
+      );
+
+      expect(await this.accessControls.isVerifiedArtistProxy(artist1, {from:proxy})).to.be.equal(true);
+    });
+  });
 });

@@ -14,6 +14,8 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
     event AdminUpdateArtistAccessMerkleRoot(bytes32 _artistAccessMerkleRoot);
     event AdminUpdateArtistAccessMerkleRootIpfsHash(string _artistAccessMerkleRootIpfsHash);
 
+    event AddedArtistProxy(address _artist, address _proxy);
+
     bytes32 public constant CONTRACT_ROLE = keccak256("CONTRACT_ROLE");
 
     ISelfServiceAccessControls public legacyMintingAccess;
@@ -23,6 +25,9 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
 
     // A publicly hosted ipfs payload holding the merkle proofs
     string public artistAccessMerkleRootIpfsHash;
+
+    /// Allow an artist to set a single account to act on their behalf
+    mapping(address => address) public artistProxy;
 
     constructor(ISelfServiceAccessControls _legacyMintingAccess) {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -37,6 +42,26 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
         // assume balance of 1 for enabled artists
         bytes32 node = keccak256(abi.encodePacked(index, account, uint256(1)));
         return MerkleProof.verify(merkleProof, artistAccessMerkleRoot, node);
+    }
+
+    //////////////////////
+    // artist proxy //
+    /////////////////////
+
+    function setVerifiedArtistProxy(
+        address _address,
+        uint256 _merkleIndex,
+        bytes32[] calldata _merkleProof
+    )  external  {
+        require(isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
+
+        artistProxy[_msgSender()] = _address;
+
+        emit AddedArtistProxy(_msgSender(), _address);
+    }
+
+    function isVerifiedArtistProxy(address _account) public override view returns (bool) {
+        return artistProxy[_account] == _msgSender();
     }
 
     /////////////

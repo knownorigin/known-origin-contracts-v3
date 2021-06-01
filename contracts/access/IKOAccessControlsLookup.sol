@@ -7,6 +7,8 @@ interface IKOAccessControlsLookup {
 
     function isVerifiedArtist(uint256 index, address account, bytes32[] calldata merkleProof) external view returns (bool);
 
+    function isVerifiedArtistProxy(address account) external view returns (bool);
+
     function hasLegacyMinterRole(address _address) external view returns (bool);
 
     function hasContractRole(address _address) external view returns (bool);
