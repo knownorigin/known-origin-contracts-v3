@@ -336,6 +336,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
         expectEvent(receipt, 'ReserveAuctionResulted', {
           _id: EDITION_ONE_ID,
           _finalPrice: ether('0.5'),
+          _currentOwner: minter,
           _winner: bidder1,
           _resulter: bidder1
         })
@@ -353,7 +354,8 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
           _id: EDITION_ONE_ID,
           _finalPrice: ether('0.5'),
           _winner: bidder1,
-          _resulter: minter
+          _resulter: minter,
+          _currentOwner: minter
         })
       })
 
@@ -369,7 +371,8 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
           _id: EDITION_ONE_ID,
           _finalPrice: ether('0.5'),
           _winner: bidder1,
-          _resulter: contract
+          _resulter: contract,
+          _currentOwner: minter
         })
       })
 
@@ -385,7 +388,8 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
           _id: EDITION_ONE_ID,
           _finalPrice: ether('0.5'),
           _winner: bidder1,
-          _resulter: owner
+          _resulter: owner,
+          _currentOwner: minter
         })
       })
     })

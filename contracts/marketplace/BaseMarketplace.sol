@@ -20,8 +20,8 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     event AdminRecoverERC20(IERC20 indexed token, address indexed recipient, uint256 amount);
     event AdminRecoverETH(address payable indexed recipient, uint256 amount);
 
-    event BidderRefunded(uint256 indexed _id, address indexed _bidder, uint256 bid);
-    event BidRefundFailed(uint256 indexed _id, address indexed _bidder, uint256 bid);
+    event BidderRefunded(uint256 indexed _id, address _bidder, uint256 bid, address _newBidder, uint256 _newOffer);
+    event BidRefundFailed(uint256 indexed _id, address _bidder, uint256 bid);
 
     // Only a whitelisted smart contract in the access controls contract
     modifier onlyContract() {
@@ -107,10 +107,10 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         lockupUntil = block.timestamp + bidLockupPeriod;
     }
 
-    function _refundBidder(uint256 _id, address _receiver, uint256 _paymentAmount) internal {
+    function _refundBidder(uint256 _id, address _receiver, uint256 _paymentAmount, address _newBidder, uint256 _newOffer) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
         require(success, "ETH refund failed");
-        emit BidderRefunded(_id, _receiver, _paymentAmount);
+        emit BidderRefunded(_id, _receiver, _paymentAmount, _newBidder, _newOffer);
     }
 
     function _refundBidderIgnoreError(uint256 _id, address _receiver, uint256 _paymentAmount) internal {
@@ -118,7 +118,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         if (!success) {
             emit BidRefundFailed(_id, _receiver, _paymentAmount);
         } else {
-            emit BidderRefunded(_id, _receiver, _paymentAmount);
+            emit BidderRefunded(_id, _receiver, _paymentAmount, address(0), 0);
         }
     }
 

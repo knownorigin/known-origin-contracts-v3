@@ -354,7 +354,8 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
           _id: FIRST_TOKEN_ID,
           _finalPrice: ether('0.5'),
           _winner: bidder1,
-          _resulter: bidder1
+          _resulter: bidder1,
+          _currentOwner: minter
         })
       })
 
@@ -370,7 +371,8 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
           _id: FIRST_TOKEN_ID,
           _finalPrice: ether('0.5'),
           _winner: bidder1,
-          _resulter: minter
+          _resulter: minter,
+          _currentOwner: minter
         })
       })
 
@@ -386,7 +388,8 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
           _id: FIRST_TOKEN_ID,
           _finalPrice: ether('0.5'),
           _winner: bidder1,
-          _resulter: contract
+          _resulter: contract,
+          _currentOwner: minter
         })
       })
 
@@ -402,7 +405,8 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
           _id: FIRST_TOKEN_ID,
           _finalPrice: ether('0.5'),
           _winner: bidder1,
-          _resulter: owner
+          _resulter: owner,
+          _currentOwner: minter
         })
       })
     })

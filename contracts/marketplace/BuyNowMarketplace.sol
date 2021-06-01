@@ -29,7 +29,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
         // Store listing data
         editionOrTokenListings[_id] = Listing(_listingPrice, _startDate, _seller);
 
-        emit ListedForBuyNow(_id, _listingPrice, _startDate);
+        emit ListedForBuyNow(_id, _listingPrice, _seller, _startDate);
     }
 
     // Buy an token from the edition on the primary market
@@ -74,7 +74,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
 
         uint256 tokenId = _processSale(_id, msg.value, _recipient, listing.seller);
 
-        emit BuyNowPurchased(tokenId, _recipient, msg.value);
+        emit BuyNowPurchased(tokenId, _recipient, listing.seller, msg.value);
     }
 
     function _isBuyNowListingPermitted(uint256 _id) internal virtual returns (bool);
