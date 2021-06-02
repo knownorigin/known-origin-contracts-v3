@@ -6,12 +6,14 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC2309} from "./IERC2309.sol";
 import {IERC2981} from "./IERC2981.sol";
+import {IHasSecondarySaleFees} from "./IHasSecondarySaleFees.sol";
 
 interface IKODAV3 is
 IERC165, // Contract introspection
 IERC721, // NFTs
 IERC2309, // Consecutive batch mint
-IERC2981  // Royalties
+IERC2981,  // Royalties
+IHasSecondarySaleFees // rariable / foundation royalties
 {
     // edition utils
 

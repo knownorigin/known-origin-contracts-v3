@@ -531,6 +531,85 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
   });
 
+  describe.only('getFeeRecipients() and getFeeBps()', async () => {
+
+    describe('with proxy', async () => {
+      beforeEach(async () => {
+
+
+        // 12.5% to 5 dp is 1250000
+        // 12.5% basis points is 1250
+        this.royaltiesRegistryProxy = await SimpleIERC2981.new(
+          [firstEditionTokenId, secondEditionTokenId],
+          [collabDao, collectorB],
+          [1250000, 1000000],
+          {from: owner}
+        );
+
+        // Create token V3
+        this.tokenWithRoyaltyProxy = await KnownOriginDigitalAssetV3.new(
+          this.accessControls.address,
+          this.royaltiesRegistryProxy.address,
+          STARTING_EDITION,
+          {from: owner}
+        );
+
+        // Set contract roles
+        await this.accessControls.grantRole(this.CONTRACT_ROLE, this.tokenWithRoyaltyProxy.address, {from: owner});
+
+        expect(await this.tokenWithRoyaltyProxy.royaltyRegistryActive()).to.be.equal(true);
+        expect(await this.tokenWithRoyaltyProxy.royaltiesRegistryProxy()).to.be.equal(this.royaltiesRegistryProxy.address);
+      });
+
+      it('getFeeRecipients() and getFeeBps()', async () => {
+        this.receipt = await this.tokenWithRoyaltyProxy.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
+        expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+          from: ZERO_ADDRESS,
+          to: collectorA,
+          tokenId: firstEditionTokenId
+        });
+
+        let resRecip = await this.tokenWithRoyaltyProxy.getFeeRecipients.call(firstEditionTokenId);
+        expect(resRecip.length).to.be.equal(1);
+        expect(resRecip[0]).to.be.equal(collabDao);
+
+        let resFees = await this.tokenWithRoyaltyProxy.getFeeBps.call(firstEditionTokenId);
+        expect(resFees.length).to.be.equal(1);
+        expect(resFees[0]).to.be.bignumber.equal('1250');
+
+        await this.tokenWithRoyaltyProxy.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
+
+        resRecip = await this.tokenWithRoyaltyProxy.getFeeRecipients.call(secondEditionTokenId);
+        expect(resRecip.length).to.be.equal(1);
+        expect(resRecip[0]).to.be.equal(collectorB);
+
+        resFees = await this.tokenWithRoyaltyProxy.getFeeBps.call(secondEditionTokenId);
+        expect(resFees.length).to.be.equal(1);
+        expect(resFees[0]).to.be.bignumber.equal('1000'); // 10%
+      });
+    });
+
+    describe('without proxy', async () => {
+
+      it('getFeeRecipients() and getFeeBps()', async () => {
+        this.receipt = await this.token.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
+        expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+          from: ZERO_ADDRESS,
+          to: collectorA,
+          tokenId: firstEditionTokenId
+        });
+
+        let resRecip = await this.token.getFeeRecipients.call(firstEditionTokenId);
+        expect(resRecip.length).to.be.equal(1);
+        expect(resRecip[0]).to.be.equal(collectorA);
+
+        resFees = await this.tokenWithRoyaltyProxy.getFeeBps.call(firstEditionTokenId);
+        expect(resFees.length).to.be.equal(1);
+        expect(resFees[0]).to.be.bignumber.equal('1250'); // 12.5% - industry leading!
+      });
+    });
+  });
+
   describe('facilitateNextPrimarySale()', async () => {
 
     describe('with proxy', async () => {

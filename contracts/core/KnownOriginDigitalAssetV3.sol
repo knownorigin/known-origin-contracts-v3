@@ -97,6 +97,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
         // INTERFACE_ID_ERC721ROYALTIES
         _registerInterface(0x4b7f2c2d);
+
+        // _INTERFACE_ID_FEES
+        _registerInterface(0xb7799584);
     }
 
     /// @notice Mints batches of tokens emitting multiple Transfer events
@@ -341,15 +344,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return _editionFromTokenId(_tokenId);
     }
 
-    //////////////
-    // ERC-2981 //
-    //////////////
-
-    // Abstract away token royalty registry, proxy through to the implementation
-    function royaltyInfo(uint256 _tokenId)
-    external
-    override
-    returns (address receiver, uint256 amount) {
+    function _royaltyInfo(uint256 _tokenId) internal returns (address receiver, uint256 amount) {
         uint256 editionId = _editionFromTokenId(_tokenId);
 
         // If we have a registry and its defined, use it
@@ -360,6 +355,18 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         }
 
         return (_getCreatorOfEdition(editionId), secondarySaleRoyalty);
+    }
+
+    //////////////
+    // ERC-2981 //
+    //////////////
+
+    // Abstract away token royalty registry, proxy through to the implementation
+    function royaltyInfo(uint256 _tokenId)
+    external
+    override
+    returns (address receiver, uint256 amount) {
+        return _royaltyInfo(_tokenId);
     }
 
     // Expanded method at edition level and expanding on the funds receiver and the creator
@@ -395,6 +402,24 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     external
     override {
         emit ReceivedRoyalties(_royaltyRecipient, _buyer, _tokenId, _tokenPaid, _amount);
+    }
+
+    //////////////////////////////
+    // Has Secondary Sale Fees //
+    ////////////////////////////
+
+    function getFeeRecipients(uint256 _tokenId) external override returns (address payable[] memory) {
+        address payable[] memory feeRecipients = new address payable[](1);
+        (address _receiver, uint256 _amount) = _royaltyInfo(_tokenId);
+        feeRecipients[0] = payable(_receiver);
+        return feeRecipients;
+    }
+
+    function getFeeBps(uint256 _tokenId) external override returns (uint[] memory) {
+        uint[] memory feeBps = new uint[](1);
+        (address _receiver, uint256 _amount) = _royaltyInfo(_tokenId);
+        feeBps[0] = uint(_amount) / 1000; // convert to basis points
+        return feeBps;
     }
 
     ////////////////////////////////////
