@@ -78,6 +78,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /// @notice Allows a creator to disable sales of their edition or they can ask KnownOrigin to do this
     mapping(uint256 => bool) public editionSalesDisabled;
 
+    /// @notice Basis points conversion modulo
+    uint256 public basisPointsModulo = 1000;
+
     constructor(
         IKOAccessControlsLookup _accessControls,
         IERC2981 _royaltiesRegistryProxy,
@@ -418,7 +421,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     function getFeeBps(uint256 _tokenId) external override returns (uint[] memory) {
         uint[] memory feeBps = new uint[](1);
         (address _receiver, uint256 _amount) = _royaltyInfo(_tokenId);
-        feeBps[0] = uint(_amount) / 1000; // convert to basis points
+        feeBps[0] = uint(_amount) / basisPointsModulo; // convert to basis points
         return feeBps;
     }
 
@@ -785,6 +788,10 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     function setTokenUriResolver(ITokenUriResolver _tokenUriResolver) onlyAdmin public {
         tokenUriResolver = _tokenUriResolver;
         emit AdminTokenUriResolverSet(address(_tokenUriResolver));
+    }
+
+    function updateBasisPointsModulo(uint256 _newModulo) onlyAdmin public {
+        basisPointsModulo = _newModulo;
     }
 
     ///////////////////////
