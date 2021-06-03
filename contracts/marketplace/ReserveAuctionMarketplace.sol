@@ -151,7 +151,12 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
     nonReentrant {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
 
-        require(reserveAuction.seller == _msgSender(), "Not the seller");
+        require(
+            reserveAuction.seller == _msgSender()
+            || accessControls.isVerifiedArtistProxy(reserveAuction.seller, _msgSender()),
+            "Not the seller"
+        );
+
         require(reserveAuction.biddingEnd == 0, "Reserve countdown commenced");
         require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
 
@@ -178,7 +183,8 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         bool isSeller = reserveAuction.seller == _msgSender();
         bool isBidder = reserveAuction.bidder == _msgSender();
         require(
-            isSeller || isBidder || accessControls.hasContractOrAdminRole(_msgSender()),
+            isSeller || isBidder || accessControls.isVerifiedArtistProxy(reserveAuction.seller, _msgSender())
+            || accessControls.hasContractOrAdminRole(_msgSender()),
             "Only seller, bidder, contract or platform admin"
         );
         // external call done last as a gas optimisation i.e. it wont be called if isSeller || isBidder is true
