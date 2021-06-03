@@ -38,10 +38,10 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
     // Merkle Magic //
     //////////////////
 
-    function isVerifiedArtist(uint256 index, address account, bytes32[] calldata merkleProof) public override view returns (bool) {
+    function isVerifiedArtist(uint256 _index, address _account, bytes32[] calldata _merkleProof) public override view returns (bool) {
         // assume balance of 1 for enabled artists
-        bytes32 node = keccak256(abi.encodePacked(index, account, uint256(1)));
-        return MerkleProof.verify(merkleProof, artistAccessMerkleRoot, node);
+        bytes32 node = keccak256(abi.encodePacked(_index, _account, uint256(1)));
+        return MerkleProof.verify(_merkleProof, artistAccessMerkleRoot, node);
     }
 
     //////////////////////
@@ -60,8 +60,8 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
         emit AddedArtistProxy(_msgSender(), _address);
     }
 
-    function isVerifiedArtistProxy(address _account) public override view returns (bool) {
-        return artistProxy[_account] == _msgSender();
+    function isVerifiedArtistProxy(address _artist, address _proxy) public override view returns (bool) {
+        return artistProxy[_artist] == _proxy;
     }
 
     /////////////

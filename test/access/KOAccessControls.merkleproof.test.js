@@ -109,7 +109,7 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
     });
   });
 
-  describe.only('verifiedArtistProxy - success', async () => {
+  describe('verifiedArtistProxy - success', async () => {
     it('should assert enabled verified artist to set proxy', async () => {
       expect(await this.accessControls.artistProxy(artist1)).to.be.equal(ZERO_ADDRESS);
 
@@ -125,7 +125,7 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
     });
 
     it('should assert isVerifiedArtistProxy', async () => {
-      expect(await this.accessControls.isVerifiedArtistProxy(artist1, {from:proxy})).to.be.equal(false);
+      expect(await this.accessControls.isVerifiedArtistProxy(artist1, proxy)).to.be.equal(false);
 
       await this.accessControls.setVerifiedArtistProxy(
         proxy,
@@ -134,7 +134,7 @@ contract('KOAccessControls merkle proof tests', function (accounts) {
         {from: artist1}
       );
 
-      expect(await this.accessControls.isVerifiedArtistProxy(artist1, {from:proxy})).to.be.equal(true);
+      expect(await this.accessControls.isVerifiedArtistProxy(artist1, proxy)).to.be.equal(true);
     });
   });
 });

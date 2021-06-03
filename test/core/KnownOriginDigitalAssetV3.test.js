@@ -531,7 +531,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
   });
 
-  describe.only('getFeeRecipients() and getFeeBps()', async () => {
+  describe('getFeeRecipients() and getFeeBps()', async () => {
 
     describe('with proxy', async () => {
       beforeEach(async () => {
