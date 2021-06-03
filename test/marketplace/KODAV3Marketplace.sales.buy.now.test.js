@@ -9,10 +9,16 @@ const KODAV3Marketplace = artifacts.require('KODAV3PrimaryMarketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
+const {parseBalanceMap} = require('../utils/parse-balance-map');
+
+const {buildArtistMerkleInput} = require('../utils/merkle-tools');
+
 const {validateEditionAndToken} = require('../test-helpers');
 
 contract('KODAV3Marketplace', function (accounts) {
-  const [owner, minter, anotherMinter, koCommission, contract, collectorA, collectorB, collectorC, collectorD] = accounts;
+  const [
+    owner, minter, anotherMinter, koCommission, contract, collectorA, collectorB, collectorC, collectorD, proxy
+  ] = accounts;
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
@@ -32,6 +38,11 @@ contract('KODAV3Marketplace', function (accounts) {
     const legacyAccessControls = await SelfServiceAccessControls.new();
     // setup access controls
     this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
+
+    this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, minter));
+
+    // set the root hash
+    await this.accessControls.updateArtistMerkleRoot(this.merkleProof.merkleRoot, {from: owner});
 
     // grab the roles
     this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
@@ -267,7 +278,7 @@ contract('KODAV3Marketplace', function (accounts) {
           );
         });
 
-        it('can change if caller is a contract', async () => {
+        it('can change if caller is edition creator', async () => {
           const receipt = await this.marketplace.setBuyNowPriceListing(firstEditionTokenId, _0_2_ETH, {from: minter});
 
           const {price} = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
@@ -279,8 +290,15 @@ contract('KODAV3Marketplace', function (accounts) {
           });
         });
 
-        it('can change if caller is a edition creator', async () => {
-          await this.marketplace.setBuyNowPriceListing(firstEditionTokenId, _0_3_ETH, {from: minter});
+        it('can change if caller is an approved proxy', async () => {
+          await this.accessControls.setVerifiedArtistProxy(
+            proxy,
+            this.merkleProof.claims[minter].index,
+            this.merkleProof.claims[minter].proof,
+            {from: minter}
+          );
+
+          await this.marketplace.setBuyNowPriceListing(firstEditionTokenId, _0_3_ETH, {from: proxy});
 
           const {price} = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
           expect(price).to.be.bignumber.equal(_0_3_ETH);
@@ -498,6 +516,34 @@ contract('KODAV3Marketplace', function (accounts) {
       it('once converted, listing is removed and offers enabled and event emitted', async () => {
         const start = await time.latest();
         const receipt = await this.marketplace.convertFromBuyNowToOffers(firstEditionTokenId, start, {from: minter});
+
+        // emits event
+        expectEvent(receipt, 'ConvertFromBuyNowToOffers', {
+          _editionId: firstEditionTokenId,
+          _startDate: start
+        });
+
+        // start date is set
+        const startDate = await this.marketplace.editionOffersStartDate(firstEditionTokenId);
+        expect(startDate).to.be.bignumber.equal(start);
+
+        // listing is clear
+        const listing = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
+        expect(listing.seller).to.be.equal(ZERO_ADDRESS);
+        expect(listing.price).to.be.bignumber.equal(ZERO);
+        expect(listing.startDate).to.be.bignumber.equal(ZERO);
+      });
+
+      it('once converted as proxy, listing is removed and offers enabled and event emitted', async () => {
+        await this.accessControls.setVerifiedArtistProxy(
+          proxy,
+          this.merkleProof.claims[minter].index,
+          this.merkleProof.claims[minter].proof,
+          {from: minter}
+        );
+
+        const start = await time.latest();
+        const receipt = await this.marketplace.convertFromBuyNowToOffers(firstEditionTokenId, start, {from: proxy});
 
         // emits event
         expectEvent(receipt, 'ConvertFromBuyNowToOffers', {
