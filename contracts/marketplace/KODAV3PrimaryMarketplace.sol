@@ -76,7 +76,11 @@ BuyNowMarketplace {
     function convertFromBuyNowToOffers(uint256 _editionId, uint128 _startDate)
     public
     whenNotPaused {
-        require(editionOrTokenListings[_editionId].seller == _msgSender(), "Only seller can convert");
+        require(
+            editionOrTokenListings[_editionId].seller == _msgSender()
+            || accessControls.isVerifiedArtistProxy(editionOrTokenListings[_editionId].seller, _msgSender()),
+            "Only seller can convert"
+        );
 
         // clear listing
         delete editionOrTokenListings[_editionId];
@@ -160,7 +164,13 @@ BuyNowMarketplace {
     nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
-        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Caller not the creator");
+
+        address creatorOfEdition = koda.getCreatorOfEdition(_editionId);
+        require(
+            creatorOfEdition == _msgSender()
+            || accessControls.isVerifiedArtistProxy(creatorOfEdition, _msgSender()),
+            "Caller not the creator"
+        );
 
         // send money back to top bidder
         _refundBidder(_editionId, offer.bidder, offer.offer, address(0), 0);
@@ -180,7 +190,13 @@ BuyNowMarketplace {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
         require(offer.offer >= _offerPrice, "Offer price has changed");
-        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
+
+        address creatorOfEdition = koda.getCreatorOfEdition(_editionId);
+        require(
+            creatorOfEdition == _msgSender()
+            || accessControls.isVerifiedArtistProxy(creatorOfEdition, _msgSender()),
+            "Not creator"
+        );
 
         // get a new token from the edition to transfer ownership
         uint256 tokenId = _facilitateNextPrimarySale(_editionId, offer.offer, offer.bidder, false);
@@ -212,7 +228,14 @@ BuyNowMarketplace {
     whenNotPaused
     nonReentrant {
         require(!_isEditionListed(_editionId), "Edition is listed");
-        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
+
+        address creatorOfEdition = koda.getCreatorOfEdition(_editionId);
+        require(
+            creatorOfEdition == _msgSender()
+            || accessControls.isVerifiedArtistProxy(creatorOfEdition, _msgSender()),
+            "Not creator"
+        );
+
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         // send money back to top bidder if existing offer found
@@ -258,7 +281,13 @@ BuyNowMarketplace {
     override
     whenNotPaused {
         Stepped storage steppedAuction = editionStep[_editionId];
-        require(steppedAuction.seller == _msgSender(), "Only seller");
+
+        require(
+            steppedAuction.seller == _msgSender()
+            || accessControls.isVerifiedArtistProxy(steppedAuction.seller, _msgSender()),
+            "Only seller"
+        );
+
         require(steppedAuction.currentStep == 0, "Only when no sales");
         require(_basePrice >= minBidAmount, "Base price not enough");
 
@@ -306,7 +335,12 @@ BuyNowMarketplace {
     whenNotPaused {
         Stepped storage steppedAuction = editionStep[_editionId];
         require(_listingPrice >= minBidAmount, "List price not enough");
-        require(steppedAuction.seller == _msgSender(), "Only seller can convert");
+
+        require(
+            steppedAuction.seller == _msgSender()
+            || accessControls.isVerifiedArtistProxy(steppedAuction.seller, _msgSender()),
+            "Only seller can convert"
+        );
 
         // Store listing data
         editionOrTokenListings[_editionId] = Listing(_listingPrice, _startDate, steppedAuction.seller);
@@ -323,7 +357,12 @@ BuyNowMarketplace {
     override
     whenNotPaused {
         Stepped storage steppedAuction = editionStep[_editionId];
-        require(steppedAuction.seller == _msgSender(), "Only seller can convert");
+
+        require(
+            steppedAuction.seller == _msgSender()
+            || accessControls.isVerifiedArtistProxy(steppedAuction.seller, _msgSender()),
+            "Only seller can convert"
+        );
 
         // set the start date for the offer (optional)
         editionOffersStartDate[_editionId] = _startDate;

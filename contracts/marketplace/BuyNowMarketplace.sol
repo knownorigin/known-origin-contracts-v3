@@ -57,7 +57,11 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
     public
     override
     whenNotPaused {
-        require(editionOrTokenListings[_id].seller == _msgSender(), "Only seller can change price");
+        require(
+            editionOrTokenListings[_id].seller == _msgSender()
+            || accessControls.isVerifiedArtistProxy(editionOrTokenListings[_id].seller, _msgSender()),
+            "Only seller can change price"
+        );
 
         // Set price
         editionOrTokenListings[_id].price = _listingPrice;

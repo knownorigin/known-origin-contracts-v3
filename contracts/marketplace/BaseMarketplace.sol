@@ -25,14 +25,22 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
 
     // Only a whitelisted smart contract in the access controls contract
     modifier onlyContract() {
-        require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
+        _onlyContract();
         _;
+    }
+
+    function _onlyContract() private {
+        require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
     }
 
     // Only admin defined in the access controls contract
     modifier onlyAdmin() {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
+        _onlyAdmin();
         _;
+    }
+
+    function _onlyAdmin() private {
+        require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
     }
 
     /// @notice Address of the access control contract

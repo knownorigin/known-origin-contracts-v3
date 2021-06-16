@@ -5,13 +5,17 @@ const web3 = require('web3');
 const {ether} = require("@openzeppelin/test-helpers");
 const {expect} = require('chai');
 
+const {parseBalanceMap} = require('../utils/parse-balance-map');
+
+const {buildArtistMerkleInput} = require('../utils/merkle-tools');
+
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KODAV3Marketplace = artifacts.require('KODAV3PrimaryMarketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
 contract('KODAV3Marketplace', function (accounts) {
-  const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD] = accounts;
+  const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD, proxy] = accounts;
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
@@ -34,6 +38,11 @@ contract('KODAV3Marketplace', function (accounts) {
     const legacyAccessControls = await SelfServiceAccessControls.new();
     // setup access controls
     this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
+
+    this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, minter));
+
+    // set the root hash
+    await this.accessControls.updateArtistMerkleRoot(this.merkleProof.merkleRoot, {from: owner});
 
     // grab the roles
     this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
@@ -507,7 +516,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
       context("on successful conversion", () => {
 
-        it('emits an ListedForBuyNow event', async () => {
+        it('emits an ConvertSteppedAuctionToBuyNow event', async () => {
 
           const edition = firstEditionTokenId;
           const listingPrice = _1_ETH;
@@ -518,6 +527,33 @@ contract('KODAV3Marketplace', function (accounts) {
               listingPrice,
               0,
               {from: minter}
+          );
+
+          expectEvent(receipt, 'ConvertSteppedAuctionToBuyNow', {
+            _editionId: edition,
+            _listingPrice: _1_ETH,
+            _startDate: ZERO
+          });
+
+        });
+
+        it('emits an ConvertSteppedAuctionToBuyNow event for proxy', async () => {
+          await this.accessControls.setVerifiedArtistProxy(
+            proxy,
+            this.merkleProof.claims[minter].index,
+            this.merkleProof.claims[minter].proof,
+            {from: minter}
+          );
+
+          const edition = firstEditionTokenId;
+          const listingPrice = _1_ETH;
+
+          // seller converts to listed edition
+          const receipt = await this.marketplace.convertSteppedAuctionToListing(
+            edition,
+            listingPrice,
+            0,
+            {from: proxy}
           );
 
           expectEvent(receipt, 'ConvertSteppedAuctionToBuyNow', {
@@ -607,6 +643,29 @@ contract('KODAV3Marketplace', function (accounts) {
         });
       })
 
+      it('Can convert to offers as proxy', async () => {
+        const edition = firstEditionTokenId;
+
+        await this.accessControls.setVerifiedArtistProxy(
+          proxy,
+          this.merkleProof.claims[minter].index,
+          this.merkleProof.claims[minter].proof,
+          {from: minter}
+        );
+
+        // seller converts to listed edition
+        const receipt = await this.marketplace.convertSteppedAuctionToOffers(
+          edition,
+          0,
+          {from: proxy}
+        );
+
+        expectEvent(receipt, 'ConvertFromBuyNowToOffers', {
+          _editionId: edition,
+          _startDate: ZERO
+        });
+      })
+
       it('Reverts if not seller', async () => {
         await expectRevert(
           this.marketplace.convertSteppedAuctionToOffers(
@@ -646,6 +705,30 @@ contract('KODAV3Marketplace', function (accounts) {
 
       it('Can update the stepped auction before the first sale', async () => {
         const {receipt} = await this.marketplace.updateSteppedAuction(firstEditionTokenId, _1_5_ETH, _0_0_0_1_ETH, {from: minter})
+        await expectEvent(receipt, 'EditionSteppedAuctionUpdated', {
+          _editionId: firstEditionTokenId,
+          _basePrice: _1_5_ETH,
+          _stepPrice: _0_0_0_1_ETH
+        })
+
+        await this.marketplace.buyNextStep(firstEditionTokenId, {
+          from: collectorA,
+          value: _1_5_ETH
+        });
+
+        const token1 = new BN(firstEditionTokenId).add(ONE).add(ONE);
+        expect(await this.token.ownerOf(token1)).to.be.equal(collectorA)
+      })
+
+      it('Can update the stepped auction before the first sale as proxy', async () => {
+        await this.accessControls.setVerifiedArtistProxy(
+          proxy,
+          this.merkleProof.claims[minter].index,
+          this.merkleProof.claims[minter].proof,
+          {from: minter}
+        );
+
+        const {receipt} = await this.marketplace.updateSteppedAuction(firstEditionTokenId, _1_5_ETH, _0_0_0_1_ETH, {from: proxy})
         await expectEvent(receipt, 'EditionSteppedAuctionUpdated', {
           _editionId: firstEditionTokenId,
           _basePrice: _1_5_ETH,

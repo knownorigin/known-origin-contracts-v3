@@ -19,13 +19,21 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
 
     modifier onlyContract(){
-        require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
+        _onlyContract();
         _;
     }
 
+    function _onlyContract() private {
+        require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
+    }
+
     modifier onlyAdmin(){
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+        _onlyAdmin();
         _;
+    }
+
+    function _onlyAdmin() private {
+        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
     }
 
     IKOAccessControlsLookup public accessControls;

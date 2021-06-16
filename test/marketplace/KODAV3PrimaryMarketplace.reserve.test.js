@@ -5,13 +5,17 @@ const web3 = require('web3');
 const {ether} = require("@openzeppelin/test-helpers");
 const {expect} = require('chai');
 
+const {parseBalanceMap} = require('../utils/parse-balance-map');
+
+const {buildArtistMerkleInput} = require('../utils/merkle-tools');
+
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KODAV3Marketplace = artifacts.require('KODAV3PrimaryMarketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
 contract('KODAV3Marketplace reserve auction tests', function (accounts) {
-  const [owner, minter, koCommission, contract, bidder1, bidder2, newAccessControls] = accounts
+  const [owner, minter, koCommission, contract, bidder1, bidder2, proxy] = accounts
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
@@ -23,6 +27,11 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
     const legacyAccessControls = await SelfServiceAccessControls.new();
     // setup access controls
     this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
+
+    this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, minter));
+
+    // set the root hash
+    await this.accessControls.updateArtistMerkleRoot(this.merkleProof.merkleRoot, {from: owner});
 
     // grab the roles
     this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
@@ -481,6 +490,24 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
         expect(reservePrice).to.be.bignumber.equal(newReserve)
       })
 
+      it('Can update reserve before any bids received as proxy', async () => {
+        await this.accessControls.setVerifiedArtistProxy(
+          proxy,
+          this.merkleProof.claims[minter].index,
+          this.merkleProof.claims[minter].proof,
+          {from: minter}
+        );
+
+        const newReserve = ether('0.6')
+        await this.marketplace.updateReservePriceForReserveAuction(EDITION_ONE_ID, newReserve, {from: proxy})
+
+        const {
+          reservePrice
+        } = await this.marketplace.editionOrTokenWithReserveAuctions(EDITION_ONE_ID)
+
+        expect(reservePrice).to.be.bignumber.equal(newReserve)
+      })
+
       it('Reverts when auction not in flight', async () => {
         await expectRevert(
           this.marketplace.updateReservePriceForReserveAuction(EDITION_TWO_ID, '2'),
@@ -698,6 +725,42 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
             const bidder1Tracker = await balance.tracker(bidder1)
 
             await this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID, {from: minter})
+
+            expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
+          })
+        })
+
+        describe('As sellers proxy', () => {
+          it('Can emergency exit if approval removed', async () => {
+            await this.token.setApprovalForAll(this.marketplace.address, false, {from: minter})
+
+            const bidder1Tracker = await balance.tracker(bidder1)
+
+            await this.accessControls.setVerifiedArtistProxy(
+              proxy,
+              this.merkleProof.claims[minter].index,
+              this.merkleProof.claims[minter].proof,
+              {from: minter}
+            );
+
+            await this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID, {from: proxy})
+
+            expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
+          })
+
+          it('Can emergency exit if sales disabled for edition', async () => {
+            await this.token.toggleEditionSalesDisabled(EDITION_ONE_ID, {from: minter})
+
+            const bidder1Tracker = await balance.tracker(bidder1)
+
+            await this.accessControls.setVerifiedArtistProxy(
+              proxy,
+              this.merkleProof.claims[minter].index,
+              this.merkleProof.claims[minter].proof,
+              {from: minter}
+            );
+
+            await this.marketplace.emergencyExitBidFromReserveAuction(EDITION_ONE_ID, {from: proxy})
 
             expect(await bidder1Tracker.delta()).to.be.bignumber.equal(bid)
           })

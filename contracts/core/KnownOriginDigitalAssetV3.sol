@@ -78,6 +78,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /// @notice Allows a creator to disable sales of their edition or they can ask KnownOrigin to do this
     mapping(uint256 => bool) public editionSalesDisabled;
 
+    /// @notice Basis points conversion modulo
+    uint256 public basisPointsModulo = 1000;
+
     constructor(
         IKOAccessControlsLookup _accessControls,
         IERC2981 _royaltiesRegistryProxy,
@@ -97,6 +100,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
         // INTERFACE_ID_ERC721ROYALTIES
         _registerInterface(0x4b7f2c2d);
+
+        // _INTERFACE_ID_FEES
+        _registerInterface(0xb7799584);
     }
 
     /// @notice Mints batches of tokens emitting multiple Transfer events
@@ -341,15 +347,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return _editionFromTokenId(_tokenId);
     }
 
-    //////////////
-    // ERC-2981 //
-    //////////////
-
-    // Abstract away token royalty registry, proxy through to the implementation
-    function royaltyInfo(uint256 _tokenId)
-    external
-    override
-    returns (address receiver, uint256 amount) {
+    function _royaltyInfo(uint256 _tokenId) internal returns (address receiver, uint256 amount) {
         uint256 editionId = _editionFromTokenId(_tokenId);
 
         // If we have a registry and its defined, use it
@@ -360,6 +358,18 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         }
 
         return (_getCreatorOfEdition(editionId), secondarySaleRoyalty);
+    }
+
+    //////////////
+    // ERC-2981 //
+    //////////////
+
+    // Abstract away token royalty registry, proxy through to the implementation
+    function royaltyInfo(uint256 _tokenId)
+    external
+    override
+    returns (address receiver, uint256 amount) {
+        return _royaltyInfo(_tokenId);
     }
 
     // Expanded method at edition level and expanding on the funds receiver and the creator
@@ -395,6 +405,24 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     external
     override {
         emit ReceivedRoyalties(_royaltyRecipient, _buyer, _tokenId, _tokenPaid, _amount);
+    }
+
+    //////////////////////////////
+    // Has Secondary Sale Fees //
+    ////////////////////////////
+
+    function getFeeRecipients(uint256 _tokenId) external override returns (address payable[] memory) {
+        address payable[] memory feeRecipients = new address payable[](1);
+        (address _receiver, uint256 _amount) = _royaltyInfo(_tokenId);
+        feeRecipients[0] = payable(_receiver);
+        return feeRecipients;
+    }
+
+    function getFeeBps(uint256 _tokenId) external override returns (uint[] memory) {
+        uint[] memory feeBps = new uint[](1);
+        (address _receiver, uint256 _amount) = _royaltyInfo(_tokenId);
+        feeBps[0] = uint(_amount) / basisPointsModulo; // convert to basis points
+        return feeBps;
     }
 
     ////////////////////////////////////
@@ -762,13 +790,22 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         emit AdminTokenUriResolverSet(address(_tokenUriResolver));
     }
 
+    function updateBasisPointsModulo(uint256 _newModulo) onlyAdmin public {
+        basisPointsModulo = _newModulo;
+    }
+
     ///////////////////////
     // Creator functions //
     ///////////////////////
 
     /// @notice Optional metadata storage slot which allows the creator to set an additional metadata blob on the edition
     function lockInAdditionalMetaData(uint256 _editionId, string calldata _metadata) external {
-        require(_msgSender() == getCreatorOfEdition(_editionId), "Unable to set when not creator");
+        address creator = getCreatorOfEdition(_editionId);
+        require(
+            _msgSender() == creator || accessControls.isVerifiedArtistProxy(creator, _msgSender()),
+            "Unable to set when not creator"
+        );
+
         require(bytes(sealedEditionMetaData[_editionId]).length == 0, "can only be set once");
         sealedEditionMetaData[_editionId] = _metadata;
         emit SealedEditionMetaDataSet(_editionId);
@@ -776,7 +813,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     /// @notice Optional storage slot which allows the creator to set an additional unlockable blob on the edition
     function lockInUnlockableContent(uint256 _editionId, string calldata _content) external {
-        require(_msgSender() == getCreatorOfEdition(_editionId), "Unable to set when not creator");
+        address creator = getCreatorOfEdition(_editionId);
+        require(
+            _msgSender() == creator || accessControls.isVerifiedArtistProxy(creator, _msgSender()),
+            "Unable to set when not creator"
+        );
+
         additionalEditionUnlockableSlot[_editionId] = _content;
         emit AdditionalEditionUnlockableSet(_editionId);
     }

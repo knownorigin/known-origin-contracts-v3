@@ -12,8 +12,12 @@ const SimpleIERC2981 = artifacts.require('SimpleIERC2981');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 const MockERC20 = artifacts.require('MockERC20');
 
+const {parseBalanceMap} = require('../utils/parse-balance-map');
+
+const {buildArtistMerkleInput} = require('../utils/merkle-tools');
+
 contract('KnownOriginDigitalAssetV3 test', function (accounts) {
-  const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD, collabDao] = accounts;
+  const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD, collabDao, proxy] = accounts;
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
@@ -31,6 +35,11 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     const legacyAccessControls = await SelfServiceAccessControls.new();
     // setup access controls
     this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
+
+    this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, owner));
+
+    // set the root hash
+    await this.accessControls.updateArtistMerkleRoot(this.merkleProof.merkleRoot, {from: owner});
 
     // grab the roles
     this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
@@ -531,6 +540,85 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
   });
 
+  describe('getFeeRecipients() and getFeeBps()', async () => {
+
+    describe('with proxy', async () => {
+      beforeEach(async () => {
+
+
+        // 12.5% to 5 dp is 1250000
+        // 12.5% basis points is 1250
+        this.royaltiesRegistryProxy = await SimpleIERC2981.new(
+          [firstEditionTokenId, secondEditionTokenId],
+          [collabDao, collectorB],
+          [1250000, 1000000],
+          {from: owner}
+        );
+
+        // Create token V3
+        this.tokenWithRoyaltyProxy = await KnownOriginDigitalAssetV3.new(
+          this.accessControls.address,
+          this.royaltiesRegistryProxy.address,
+          STARTING_EDITION,
+          {from: owner}
+        );
+
+        // Set contract roles
+        await this.accessControls.grantRole(this.CONTRACT_ROLE, this.tokenWithRoyaltyProxy.address, {from: owner});
+
+        expect(await this.tokenWithRoyaltyProxy.royaltyRegistryActive()).to.be.equal(true);
+        expect(await this.tokenWithRoyaltyProxy.royaltiesRegistryProxy()).to.be.equal(this.royaltiesRegistryProxy.address);
+      });
+
+      it('getFeeRecipients() and getFeeBps()', async () => {
+        this.receipt = await this.tokenWithRoyaltyProxy.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
+        expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+          from: ZERO_ADDRESS,
+          to: collectorA,
+          tokenId: firstEditionTokenId
+        });
+
+        let resRecip = await this.tokenWithRoyaltyProxy.getFeeRecipients.call(firstEditionTokenId);
+        expect(resRecip.length).to.be.equal(1);
+        expect(resRecip[0]).to.be.equal(collabDao);
+
+        let resFees = await this.tokenWithRoyaltyProxy.getFeeBps.call(firstEditionTokenId);
+        expect(resFees.length).to.be.equal(1);
+        expect(resFees[0]).to.be.bignumber.equal('1250');
+
+        await this.tokenWithRoyaltyProxy.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
+
+        resRecip = await this.tokenWithRoyaltyProxy.getFeeRecipients.call(secondEditionTokenId);
+        expect(resRecip.length).to.be.equal(1);
+        expect(resRecip[0]).to.be.equal(collectorB);
+
+        resFees = await this.tokenWithRoyaltyProxy.getFeeBps.call(secondEditionTokenId);
+        expect(resFees.length).to.be.equal(1);
+        expect(resFees[0]).to.be.bignumber.equal('1000'); // 10%
+      });
+    });
+
+    describe('without proxy', async () => {
+
+      it('getFeeRecipients() and getFeeBps()', async () => {
+        this.receipt = await this.token.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
+        expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+          from: ZERO_ADDRESS,
+          to: collectorA,
+          tokenId: firstEditionTokenId
+        });
+
+        let resRecip = await this.token.getFeeRecipients.call(firstEditionTokenId);
+        expect(resRecip.length).to.be.equal(1);
+        expect(resRecip[0]).to.be.equal(collectorA);
+
+        resFees = await this.tokenWithRoyaltyProxy.getFeeBps.call(firstEditionTokenId);
+        expect(resFees.length).to.be.equal(1);
+        expect(resFees[0]).to.be.bignumber.equal('1250'); // 12.5% - industry leading!
+      });
+    });
+  });
+
   describe('facilitateNextPrimarySale()', async () => {
 
     describe('with proxy', async () => {
@@ -950,6 +1038,19 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
   });
 
   describe('lockInAdditionalMetaData()', async () => {
+    it('should allow proxy to set', async () => {
+      await this.accessControls.setVerifiedArtistProxy(
+        proxy,
+        this.merkleProof.claims[owner].index,
+        this.merkleProof.claims[owner].proof,
+        {from: owner}
+      );
+
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
+      await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: proxy});
+      expect(await this.token.sealedEditionMetaData(firstEditionTokenId)).to.be.equal('hello');
+    })
+
     it('should lockInAdditionalMetaData()', async () => {
       await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
@@ -1447,6 +1548,25 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       const content = 'random'
       const {receipt} = await this.token.lockInUnlockableContent(firstEditionTokenId, content, {from: owner})
+      await expectEvent(receipt, 'AdditionalEditionUnlockableSet', {
+        _editionId: firstEditionTokenId
+      })
+
+      expect(await this.token.additionalEditionUnlockableSlot(firstEditionTokenId)).to.be.equal(content)
+    })
+
+    it('can call as proxy', async () => {
+      await this.accessControls.setVerifiedArtistProxy(
+        proxy,
+        this.merkleProof.claims[owner].index,
+        this.merkleProof.claims[owner].proof,
+        {from: owner}
+      );
+
+      await this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: contract})
+
+      const content = 'random'
+      const {receipt} = await this.token.lockInUnlockableContent(firstEditionTokenId, content, {from: proxy})
       await expectEvent(receipt, 'AdditionalEditionUnlockableSet', {
         _editionId: firstEditionTokenId
       })
