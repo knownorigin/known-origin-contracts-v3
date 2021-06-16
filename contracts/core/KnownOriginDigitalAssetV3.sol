@@ -800,7 +800,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     /// @notice Optional metadata storage slot which allows the creator to set an additional metadata blob on the edition
     function lockInAdditionalMetaData(uint256 _editionId, string calldata _metadata) external {
-        require(_msgSender() == getCreatorOfEdition(_editionId), "Unable to set when not creator");
+        address creator = getCreatorOfEdition(_editionId);
+        require(
+            _msgSender() == creator || accessControls.isVerifiedArtistProxy(creator, _msgSender()),
+            "Unable to set when not creator"
+        );
+
         require(bytes(sealedEditionMetaData[_editionId]).length == 0, "can only be set once");
         sealedEditionMetaData[_editionId] = _metadata;
         emit SealedEditionMetaDataSet(_editionId);
@@ -808,7 +813,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     /// @notice Optional storage slot which allows the creator to set an additional unlockable blob on the edition
     function lockInUnlockableContent(uint256 _editionId, string calldata _content) external {
-        require(_msgSender() == getCreatorOfEdition(_editionId), "Unable to set when not creator");
+        address creator = getCreatorOfEdition(_editionId);
+        require(
+            _msgSender() == creator || accessControls.isVerifiedArtistProxy(creator, _msgSender()),
+            "Unable to set when not creator"
+        );
+
         additionalEditionUnlockableSlot[_editionId] = _content;
         emit AdditionalEditionUnlockableSet(_editionId);
     }
