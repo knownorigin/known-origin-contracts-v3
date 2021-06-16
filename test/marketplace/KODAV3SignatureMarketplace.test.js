@@ -78,7 +78,7 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
     ))
   })
 
-  describe('isListingValid()', () => {
+  describe.skip('isListingValid()', () => {
     it('Returns true for a valid listing', async () => {
       expect(await this.marketplace.getChainId()).to.be.bignumber.equal("31337");
 
@@ -122,8 +122,8 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
     })
   })
 
-  describe('buyEditionToken()', () => {
-    describe('ETH listings', () => {
+  describe.skip('buyEditionToken()', () => {
+    describe.skip('ETH listings', () => {
       beforeEach(async () => {
         const price = ether('1')
         this.artistSignature = await createSignatureListing(
@@ -288,7 +288,7 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
       })
     })
 
-    describe('ERC20 listings', () => {
+    describe.skip('ERC20 listings', () => {
       beforeEach(async () => {
         this.mockERC20 = await MockERC20.new({from: owner})
 

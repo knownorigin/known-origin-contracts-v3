@@ -16,18 +16,26 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
     event AdminEditionReported(uint256 indexed _editionId, bool indexed _reported);
     event AdminArtistAccountReported(address indexed _account, bool indexed _reported);
+    event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
 
     modifier onlyContract(){
-        require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
+        _onlyContract();
         _;
+    }
+
+    function _onlyContract() private {
+        require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
     }
 
     modifier onlyAdmin(){
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+        _onlyAdmin();
         _;
     }
 
-    // TODO add admin setter (with event)
+    function _onlyAdmin() private {
+        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+    }
+
     IKOAccessControlsLookup public accessControls;
 
     // A onchain reference to editions which have been reported for some infringement purposes to KO
@@ -53,17 +61,20 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
         emit AdminArtistAccountReported(_account, _reported);
     }
 
-    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) public onlyAdmin {
+    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) onlyAdmin public {
         secondarySaleRoyalty = _secondarySaleRoyalty;
         emit AdminUpdateSecondaryRoyalty(_secondarySaleRoyalty);
     }
 
-    /// @dev Allows for the ability to extract stuck ERC20 tokens
-    /// @dev Only callable from admin
-    function withdrawStuckTokens(address _tokenAddress, uint256 _amount, address _withdrawalAccount) public {
-        require(accessControls.hasContractOrAdminRole(_msgSender()), "Caller must have contract or admin role");
-        //IERC20(_tokenAddress).approve(address(this), _amount);
-        IERC20(_tokenAddress).transfer(_withdrawalAccount, _amount);
+    function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {
+        require(_accessControls.hasAdminRole(_msgSender()), "Sender must have admin role in new contract");
+        emit AdminUpdateAccessControls(accessControls, _accessControls);
+        accessControls = _accessControls;
     }
 
+    /// @dev Allows for the ability to extract stuck ERC20 tokens
+    /// @dev Only callable from admin
+    function withdrawStuckTokens(address _tokenAddress, uint256 _amount, address _withdrawalAccount) onlyAdmin public {
+        IERC20(_tokenAddress).transfer(_withdrawalAccount, _amount);
+    }
 }

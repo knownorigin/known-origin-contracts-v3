@@ -7,13 +7,17 @@ const {expect} = require('chai');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
-const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
-
+const KODAV3Marketplace = artifacts.require('KODAV3PrimaryMarketplace');
+const SimpleIERC2981 = artifacts.require('SimpleIERC2981');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 const MockERC20 = artifacts.require('MockERC20');
 
+const {parseBalanceMap} = require('../utils/parse-balance-map');
+
+const {buildArtistMerkleInput} = require('../utils/merkle-tools');
+
 contract('KnownOriginDigitalAssetV3 test', function (accounts) {
-  const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD, collabDao] = accounts;
+  const [owner, minter, koCommission, contract, collectorA, collectorB, collectorC, collectorD, collabDao, proxy] = accounts;
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
@@ -31,6 +35,11 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     const legacyAccessControls = await SelfServiceAccessControls.new();
     // setup access controls
     this.accessControls = await KOAccessControls.new(legacyAccessControls.address, {from: owner});
+
+    this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, owner));
+
+    // set the root hash
+    await this.accessControls.updateArtistMerkleRoot(this.merkleProof.merkleRoot, {from: owner});
 
     // grab the roles
     this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
@@ -450,7 +459,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
         });
 
         let res = await this.token.royaltyInfo.call(firstEditionTokenId);
-        expect(res.receiver).to.be.equal(collectorA); 
+        expect(res.receiver).to.be.equal(collectorA);
         expect(res.amount).to.be.bignumber.equal(this.secondarySaleRoyalty);
       });
 
@@ -463,13 +472,92 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
         });
 
         let res = await this.token.royaltyAndCreatorInfo.call(firstEditionTokenId);
-        expect(res.receiver).to.be.equal(collectorA); 
+        expect(res.receiver).to.be.equal(collectorA);
         expect(res.creator).to.be.equal(collectorA);
         expect(res.amount).to.be.bignumber.equal(this.secondarySaleRoyalty);
 
       });
     });
-    
+
+  });
+
+  describe('getFeeRecipients() and getFeeBps()', async () => {
+
+    describe('with proxy', async () => {
+      beforeEach(async () => {
+
+
+        // 12.5% to 5 dp is 1250000
+        // 12.5% basis points is 1250
+        this.royaltiesRegistryProxy = await SimpleIERC2981.new(
+          [firstEditionTokenId, secondEditionTokenId],
+          [collabDao, collectorB],
+          [1250000, 1000000],
+          {from: owner}
+        );
+
+        // Create token V3
+        this.tokenWithRoyaltyProxy = await KnownOriginDigitalAssetV3.new(
+          this.accessControls.address,
+          this.royaltiesRegistryProxy.address,
+          STARTING_EDITION,
+          {from: owner}
+        );
+
+        // Set contract roles
+        await this.accessControls.grantRole(this.CONTRACT_ROLE, this.tokenWithRoyaltyProxy.address, {from: owner});
+
+        expect(await this.tokenWithRoyaltyProxy.royaltyRegistryActive()).to.be.equal(true);
+        expect(await this.tokenWithRoyaltyProxy.royaltiesRegistryProxy()).to.be.equal(this.royaltiesRegistryProxy.address);
+      });
+
+      it('getFeeRecipients() and getFeeBps()', async () => {
+        this.receipt = await this.tokenWithRoyaltyProxy.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
+        expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+          from: ZERO_ADDRESS,
+          to: collectorA,
+          tokenId: firstEditionTokenId
+        });
+
+        let resRecip = await this.tokenWithRoyaltyProxy.getFeeRecipients.call(firstEditionTokenId);
+        expect(resRecip.length).to.be.equal(1);
+        expect(resRecip[0]).to.be.equal(collabDao);
+
+        let resFees = await this.tokenWithRoyaltyProxy.getFeeBps.call(firstEditionTokenId);
+        expect(resFees.length).to.be.equal(1);
+        expect(resFees[0]).to.be.bignumber.equal('1250');
+
+        await this.tokenWithRoyaltyProxy.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
+
+        resRecip = await this.tokenWithRoyaltyProxy.getFeeRecipients.call(secondEditionTokenId);
+        expect(resRecip.length).to.be.equal(1);
+        expect(resRecip[0]).to.be.equal(collectorB);
+
+        resFees = await this.tokenWithRoyaltyProxy.getFeeBps.call(secondEditionTokenId);
+        expect(resFees.length).to.be.equal(1);
+        expect(resFees[0]).to.be.bignumber.equal('1000'); // 10%
+      });
+    });
+
+    describe('without proxy', async () => {
+
+      it('getFeeRecipients() and getFeeBps()', async () => {
+        this.receipt = await this.token.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
+        expectEvent.inLogs(this.receipt.logs, 'Transfer', {
+          from: ZERO_ADDRESS,
+          to: collectorA,
+          tokenId: firstEditionTokenId
+        });
+
+        let resRecip = await this.token.getFeeRecipients.call(firstEditionTokenId);
+        expect(resRecip.length).to.be.equal(1);
+        expect(resRecip[0]).to.be.equal(collectorA);
+
+        resFees = await this.tokenWithRoyaltyProxy.getFeeBps.call(firstEditionTokenId);
+        expect(resFees.length).to.be.equal(1);
+        expect(resFees[0]).to.be.bignumber.equal('1250'); // 12.5% - industry leading!
+      });
+    });
   });
 
   describe('facilitateNextPrimarySale()', async () => {
@@ -537,17 +625,17 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
 
       let tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId); 
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId);
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA});
 
       tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE)); 
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE));
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId.add(ONE), {from: collectorA});
 
       tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE).add(ONE)); 
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE).add(ONE));
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId.add(ONE).add(ONE), {from: collectorA});
 
@@ -569,17 +657,17 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
 
       let tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId); 
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId);
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA});
 
       tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE)); 
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE));
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId.add(ONE), {from: collectorA});
 
       tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE).add(ONE)); 
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE).add(ONE));
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId.add(ONE).add(ONE), {from: collectorA});
     });
@@ -600,12 +688,12 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
 
       let tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId); 
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId);
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA});
 
       tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE)); 
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE));
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId.add(ONE), {from: collectorA});
 
@@ -673,7 +761,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
 
       let tokenId = await this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId); 
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId);
     });
 
     it('batch mint', async () => {
@@ -852,10 +940,23 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
   });
 
   describe('lockInAdditionalMetaData()', async () => {
+    it('should allow proxy to set', async () => {
+      await this.accessControls.setVerifiedArtistProxy(
+        proxy,
+        this.merkleProof.claims[owner].index,
+        this.merkleProof.claims[owner].proof,
+        {from: owner}
+      );
+
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
+      await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: proxy});
+      expect(await this.token.sealedEditionMetaData(firstEditionTokenId)).to.be.equal('hello');
+    })
+
     it('should lockInAdditionalMetaData()', async () => {
       await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
-      expect(await this.token.additionalEditionMetaData(firstEditionTokenId)).to.be.equal('hello');
+      expect(await this.token.sealedEditionMetaData(firstEditionTokenId)).to.be.equal('hello');
     });
 
     it('should editionAdditionalMetaData()', async () => {
@@ -864,10 +965,10 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       expect(await this.token.editionAdditionalMetaData(firstEditionTokenId)).to.be.equal('hello');
     });
 
-    it('should tokenAdditionalMetaData()', async () => {
+    it('should editionAdditionalMetaDataForToken()', async () => {
       await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
-      expect(await this.token.tokenAdditionalMetaData(firstEditionTokenId)).to.be.equal('hello');
+      expect(await this.token.editionAdditionalMetaDataForToken(firstEditionTokenId)).to.be.equal('hello');
     });
 
     it('revert if not creator', async () => {
@@ -879,7 +980,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
       await expectRevert(
         this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: collabDao}),
-        'unable to set when not creator'
+        'Unable to set when not creator'
       );
     });
 
@@ -893,6 +994,47 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
       await expectRevert(
         this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello again', {from: owner}),
+        'can only be set once'
+      );
+    });
+  });
+
+  describe('lockInAdditionalTokenMetaData()', async () => {
+    it('should lockInAdditionalMetaData()', async () => {
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
+      await this.token.lockInAdditionalTokenMetaData(firstEditionTokenId, 'hello', {from: owner});
+      expect(await this.token.sealedTokenMetaData(firstEditionTokenId)).to.be.equal('hello');
+    });
+
+    it('should editionAdditionalMetaData()', async () => {
+      await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
+      await this.token.lockInAdditionalTokenMetaData(firstEditionTokenId, 'hello', {from: owner});
+      expect(await this.token.tokenAdditionalMetaData(firstEditionTokenId)).to.be.equal('hello');
+    });
+
+    it('revert if not creator', async () => {
+      const {logs} = await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
+      expectEvent.inLogs(logs, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: owner,
+        tokenId: firstEditionTokenId
+      });
+      await expectRevert(
+        this.token.lockInAdditionalTokenMetaData(firstEditionTokenId, 'hello', {from: collabDao}),
+        'Unable to set when not owner'
+      );
+    });
+
+    it('revert if set twice', async () => {
+      const {logs} = await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
+      expectEvent.inLogs(logs, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: owner,
+        tokenId: firstEditionTokenId
+      });
+      await this.token.lockInAdditionalTokenMetaData(firstEditionTokenId, 'hello', {from: owner});
+      await expectRevert(
+        this.token.lockInAdditionalTokenMetaData(firstEditionTokenId, 'hello again', {from: owner}),
         'can only be set once'
       );
     });
@@ -1102,7 +1244,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('reverts if not admin', async () => {
       await expectRevert(
         this.token.withdrawStuckTokens(this.token.address, '1000', minter, {from: collectorA}),
-        'Caller must have contract or admin role'
+        'Caller must have admin role'
       );
     });
   });
@@ -1150,5 +1292,195 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     });
   });
 
+  describe('getAllUnsoldTokenIdsForEdition() and transfering to the dead address', () => {
+    const editionSize = 50
+    const edition2Size = 100
 
+    beforeEach(async () => {
+      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract})
+      await this.token.mintBatchEdition(edition2Size, owner, TOKEN_URI, {from: contract})
+    })
+
+    it('Returns the correct list of unsold tokens when no tokens sold for first edition', async () => {
+      const expectedTokenIdsFirstEdition = Array(editionSize).fill(0).map((val, idx) => (11000 + idx).toString())
+
+      const unsoldTokenIdsFirstEdition = (await this.token.getAllUnsoldTokenIdsForEdition(firstEditionTokenId)).map(unsoldTokenId => unsoldTokenId.toString())
+
+      expect(unsoldTokenIdsFirstEdition).to.be.deep.equal(expectedTokenIdsFirstEdition)
+    })
+
+    it('Returns the correct list of unsold tokens when no tokens sold for second edition', async () => {
+      const expectedTokenIdsSecondEdition = Array(edition2Size).fill(0).map((val, idx) => (12000 + idx).toString())
+
+      const unsoldTokenIdsSecondEdition = (await this.token.getAllUnsoldTokenIdsForEdition(secondEditionTokenId)).map(unsoldTokenId => unsoldTokenId.toString())
+
+      expect(unsoldTokenIdsSecondEdition).to.be.deep.equal(expectedTokenIdsSecondEdition)
+    })
+
+    it('Transfers all unsold tokens to the dead address', async () => {
+      await this.token.batchTransferFrom(owner, '0x000000000000000000000000000000000000dEaD', await this.token.getAllUnsoldTokenIdsForEdition(firstEditionTokenId), {from: owner})
+    })
+  })
+
+  describe('hasMadePrimarySale()', () => {
+    const editionSize = 10
+
+    beforeEach(async () => {
+      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract})
+    })
+
+    it('Should return false when no tokens in edition sold', async () => {
+      const hasMadePrimarySale = await this.token.hasMadePrimarySale(firstEditionTokenId)
+      expect(hasMadePrimarySale).to.be.false
+    })
+
+    it('Returns true when at least 1 token in edition is sold', async () => {
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner})
+
+      const hasMadePrimarySale = await this.token.hasMadePrimarySale(firstEditionTokenId)
+      expect(hasMadePrimarySale).to.be.true
+    })
+  })
+
+  describe('updateURIIfNoSaleMade()', () => {
+    const editionSize = 10
+
+    beforeEach(async () => {
+      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract})
+    })
+
+    it('Updated the URI when primary sale not made on edition', async () => {
+      const uri = 'random'
+      const { receipt } = await this.token.updateURIIfNoSaleMade(firstEditionTokenId, uri, {from: owner})
+
+      await expectEvent(receipt, 'EditionURIUpdated', {
+        _editionId: firstEditionTokenId
+      })
+
+      expect(await this.token.tokenURI(firstEditionTokenId)).to.be.equal(uri)
+    })
+
+    it('Reverts when edition does not exist', async () => {
+      await expectRevert(
+        this.token.updateURIIfNoSaleMade(secondEditionTokenId, 'random', {from: owner}),
+        "Not creator"
+      )
+    })
+
+    it('Reverts when not creator of edition', async () => {
+      await expectRevert(
+        this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: contract}),
+        "Not creator"
+      )
+    })
+
+    it('Reverts when edition has had a primary sale', async () => {
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner})
+
+      await expectRevert(
+        this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: owner}),
+        "Edition has had primary sale"
+      )
+    })
+  })
+
+  describe('toggleEditionSalesDisabled()', () => {
+    const editionSize = 10
+
+    beforeEach(async () => {
+      await this.token.mintBatchEdition(editionSize, minter, TOKEN_URI, {from: contract})
+    })
+
+    it('Flips the toggle if creator', async () => {
+      const {receipt} = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: minter})
+
+      await expectEvent(receipt, 'EditionSalesDisabledToggled', {
+        _editionId: firstEditionTokenId,
+        _oldValue: false,
+        _newValue: true
+      })
+    })
+
+    it('Flips the toggle if admin', async () => {
+      const {receipt} = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: owner})
+
+      await expectEvent(receipt, 'EditionSalesDisabledToggled', {
+        _editionId: firstEditionTokenId,
+        _oldValue: false,
+        _newValue: true
+      })
+    })
+
+    it('Can flip the toggle off after turning on', async () => {
+      const tx1 = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: owner})
+
+      await expectEvent(tx1.receipt, 'EditionSalesDisabledToggled', {
+        _editionId: firstEditionTokenId,
+        _oldValue: false,
+        _newValue: true
+      })
+
+      const tx2 = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: owner})
+
+      await expectEvent(tx2.receipt, 'EditionSalesDisabledToggled', {
+        _editionId: firstEditionTokenId,
+        _oldValue: true,
+        _newValue: false
+      })
+    })
+
+    it('Reverts when edition does not exist', async () => {
+      await expectRevert(
+        this.token.toggleEditionSalesDisabled(secondEditionTokenId, {from: owner}),
+        "Edition does not exist"
+      )
+    })
+
+    it('Reverts when not creator or platform', async () => {
+      await expectRevert(
+        this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: collectorA}),
+        "Only creator or platform admin"
+      )
+    })
+  })
+
+  describe('lockInUnlockableContent()', () => {
+    it('Can call as creator', async () => {
+      await this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: contract})
+
+      const content = 'random'
+      const {receipt} = await this.token.lockInUnlockableContent(firstEditionTokenId, content, {from: owner})
+      await expectEvent(receipt, 'AdditionalEditionUnlockableSet', {
+        _editionId: firstEditionTokenId
+      })
+
+      expect(await this.token.additionalEditionUnlockableSlot(firstEditionTokenId)).to.be.equal(content)
+    })
+
+    it('can call as proxy', async () => {
+      await this.accessControls.setVerifiedArtistProxy(
+        proxy,
+        this.merkleProof.claims[owner].index,
+        this.merkleProof.claims[owner].proof,
+        {from: owner}
+      );
+
+      await this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: contract})
+
+      const content = 'random'
+      const {receipt} = await this.token.lockInUnlockableContent(firstEditionTokenId, content, {from: proxy})
+      await expectEvent(receipt, 'AdditionalEditionUnlockableSet', {
+        _editionId: firstEditionTokenId
+      })
+
+      expect(await this.token.additionalEditionUnlockableSlot(firstEditionTokenId)).to.be.equal(content)
+    })
+
+    it('Reverts when not creator', async () => {
+      await expectRevert(
+        this.token.lockInUnlockableContent(firstEditionTokenId, 'collector a is the best', {from: collectorA}),
+        "Unable to set when not creator"
+      )
+    })
+  })
 });

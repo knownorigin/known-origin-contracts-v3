@@ -6,12 +6,14 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC2309} from "./IERC2309.sol";
 import {IERC2981} from "./IERC2981.sol";
+import {IHasSecondarySaleFees} from "./IHasSecondarySaleFees.sol";
 
 interface IKODAV3 is
 IERC165, // Contract introspection
 IERC721, // NFTs
 IERC2309, // Consecutive batch mint
-IERC2981  // Royalties
+IERC2981,  // Royalties
+IHasSecondarySaleFees // rariable / foundation royalties
 {
     // edition utils
 
@@ -19,13 +21,15 @@ IERC2981  // Royalties
 
     function getCreatorOfToken(uint256 _tokenId) external view returns (address _originalCreator);
 
-    function tokenCreator(uint256 _tokenId) external view returns (address _originalCreator);
-
     function getSizeOfEdition(uint256 _editionId) external view returns (uint256 _size);
 
     function getEditionSizeOfToken(uint256 _tokenId) external view returns (uint256 _size);
 
     function editionExists(uint256 _editionId) external view returns (bool);
+
+    function isEditionSalesDisabled(uint256 _editionId) external view returns (bool);
+
+    function isSalesDisabledOrSoldOut(uint256 _editionId) external view returns (bool);
 
     function maxTokenIdOfEdition(uint256 _editionId) external view returns (uint256 _tokenId);
 
@@ -39,10 +43,18 @@ IERC2981  // Royalties
     function facilitateNextPrimarySale(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _tokenId);
 
     // Utility method to get all data needed for the next primary sale, high token ID to low
-    function facilitateReveresPrimarySale(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _tokenId);
+    function facilitateReversePrimarySale(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _tokenId);
 
     // Expanded royalty method for the edition, not token
     function royaltyAndCreatorInfo(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _amount);
+
+    function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external;
+
+    function hasMadePrimarySale(uint256 _editionId) external view returns (bool);
+
+    function isEditionSoldOut(uint256 _editionId) external view returns (bool);
+
+    function toggleEditionSalesDisabled(uint256 _editionId) external;
 
     // token utils
 

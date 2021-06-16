@@ -5,7 +5,7 @@ const {ether} = require('@openzeppelin/test-helpers');
 const {expect} = require('chai');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
-const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
+const KODAV3Marketplace = artifacts.require('KODAV3SecondaryMarketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
@@ -19,6 +19,8 @@ contract('KODAV3Marketplace token bids', function (accounts) {
   const LOCKUP_HOURS = 6;
 
   const firstTokenId = new BN('11000');
+  const secondEditionTokenId = new BN('12000');
+  const thirdEditionTokenId = new BN('13000');
 
   beforeEach(async () => {
     const legacyAccessControls = await SelfServiceAccessControls.new();
@@ -65,7 +67,36 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         // create 3 tokens to the minter
         await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
 
+
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract});
+
       });
+
+      it('Reverts if edition is listed for buy now', async () => {
+        await this.marketplace.listForBuyNow(minter, firstTokenId, ether('0.1'), '0', {from: minter})
+
+        await expectRevert(
+          this.marketplace.placeTokenBid(firstTokenId, {from: collectorB, value: ether('1')}),
+          "Token is listed"
+        )
+      })
+
+      it('Reverts if edition is listed for reserve auction', async () => {
+        const reservePrice = ether('0.5')
+
+        await this.marketplace.listForReserveAuction(
+          minter,
+          secondEditionTokenId,
+          reservePrice,
+          '0',
+          {from: minter}
+        )
+
+        await expectRevert(
+          this.marketplace.placeTokenBid(secondEditionTokenId, {from: collectorB, value: ether('1')}),
+          "Token is listed"
+        )
+      })
 
       it('reverts if bid lower than minimum on first bid', async () => {
 
@@ -261,7 +292,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         // collector A attempts to withdraw bid when none exists
         await expectRevert(
           this.marketplace.withdrawTokenBid(token, {from: collectorA}),
-          'No open bid'
+          'Not bidder'
         );
 
       });
@@ -394,7 +425,7 @@ contract('KODAV3Marketplace token bids', function (accounts) {
           // attempt to withdraw bid again
           await expectRevert(
             this.marketplace.withdrawTokenBid(token, {from: collectorA}),
-            'No open bid'
+            'Not bidder'
           );
 
         });
@@ -575,10 +606,10 @@ contract('KODAV3Marketplace token bids', function (accounts) {
         const token = firstTokenId;
 
         // offer 0.5 ETH for token (first bid)
-        await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
+        await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_1_ETH});
 
         await expectRevert(
-          this.marketplace.acceptTokenBid(token, _0_1_ETH, {from: minter}),
+          this.marketplace.acceptTokenBid(token, _0_5_ETH, {from: minter}),
           'Offer price has changed'
         );
       });

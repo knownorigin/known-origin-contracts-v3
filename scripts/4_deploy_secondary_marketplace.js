@@ -8,7 +8,7 @@ const v3_data = require('./data/v3_data');
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  console.log('Deploying marketplace with the account:', await deployer.getAddress());
+  console.log('Deploying secondary marketplace with the account:', await deployer.getAddress());
 
   const {name: network} = hre.network;
   console.log(`Running on network [${network}]`);
@@ -38,12 +38,13 @@ async function main() {
 
   // Deploying the marketplace
 
-  const KODAV3Marketplace = await ethers.getContractFactory('KODAV3Marketplace');
+  const KODAV3Marketplace = await ethers.getContractFactory('KODAV3SecondaryMarketplace');
   const marketplace = await KODAV3Marketplace.deploy(
     accessControlsDeployment.address,
     kodaV3Deployment.address,
     commissionAccount
   );
+
   await marketplace.deployed();
   console.log('Marketplace deployed at', marketplace.address);
 

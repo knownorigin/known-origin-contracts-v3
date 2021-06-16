@@ -5,11 +5,14 @@ pragma solidity 0.8.3;
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
 import {IKODAV3Minter} from "../core/IKODAV3Minter.sol";
-import {IKODAV3PrimarySaleMarketplace} from "../marketplace/IKODAV3Marketplace.sol";
+import {KODAV3PrimaryMarketplace} from "../marketplace/KODAV3PrimaryMarketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 
 contract MintingFactory is Context {
 
+    event EditionMintedAndListed(uint256 indexed _editionId, SaleType _saleType);
+
+    event MintingFactoryCreated();
     event AdminMintingPeriodChanged(uint256 _mintingPeriod);
     event AdminMaxMintsInPeriodChanged(uint256 _maxMintsInPeriod);
     event AdminFrequencyOverrideChanged(address _account, bool _override);
@@ -18,7 +21,7 @@ contract MintingFactory is Context {
 
     IKODAV3Minter public koda;
 
-    IKODAV3PrimarySaleMarketplace public marketplace;
+    KODAV3PrimaryMarketplace public marketplace;
 
     modifier canMintAgain(){
         require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
@@ -43,17 +46,19 @@ contract MintingFactory is Context {
     mapping(address => MintingPeriod) mintingPeriodConfig;
 
     enum SaleType {
-        BUY_NOW, OFFERS, STEPPED
+        BUY_NOW, OFFERS, STEPPED, RESERVE
     }
 
     constructor(
         IKOAccessControlsLookup _accessControls,
         IKODAV3Minter _koda,
-        IKODAV3PrimarySaleMarketplace _marketplace
+        KODAV3PrimaryMarketplace _marketplace
     ) {
         accessControls = _accessControls;
         koda = _koda;
         marketplace = _marketplace;
+
+        emit MintingFactoryCreated();
     }
 
     function mintToken(
@@ -70,7 +75,25 @@ contract MintingFactory is Context {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(1, _msgSender(), _uri);
 
-        setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_msgSender());
+    }
+
+    function mintTokenAsProxy(
+        address _creator,
+        SaleType _saleType,
+        uint128 _startDate,
+        uint128 _basePrice,
+        uint128 _stepPrice,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintBatchEdition(1, _creator, _uri);
+
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_creator);
     }
 
     function mintBatchEdition(
@@ -88,11 +111,37 @@ contract MintingFactory is Context {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
 
-        setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_msgSender());
+    }
+
+    function mintBatchEditionAsProxy(
+        address _creator,
+        SaleType _saleType,
+        uint96 _editionSize,
+        uint128 _startDate,
+        uint128 _basePrice,
+        uint128 _stepPrice,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintBatchEdition(_editionSize, _creator, _uri);
+
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_creator);
     }
 
     function mintBatchEditionAndComposeERC20s(
         SaleType _saleType,
+        // --- _config array (expected length of 5) ---
+        // Index 0 - Merkle Index
+        // Index 1 - Edition size
+        // Index 2 - Start Date
+        // Index 3 - Base price
+        // Index 4 - Step price
+        // ---------------------------------------------
         uint128[] calldata _config,
         string calldata _uri,
         address[] calldata _erc20s,
@@ -100,10 +149,35 @@ contract MintingFactory is Context {
         bytes32[] calldata _merkleProof
     ) canMintAgain external {
         require(accessControls.isVerifiedArtist(_config[0], _msgSender(), _merkleProof), "Caller must have minter role");
+        require(_config.length == 5, "Config must consist of 5 elements in the array");
 
         uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint96(_config[1]), _msgSender(), _uri, _erc20s, _amounts);
 
-        setupSalesMechanic(editionId, _saleType, _config[2], _config[3], _config[4]);
+        _setupSalesMechanic(editionId, _saleType, _config[2], _config[3], _config[4]);
+        _recordSuccessfulMint(_msgSender());
+    }
+
+    function mintBatchEditionAndComposeERC20sAsProxy(
+        address _creator,
+        SaleType _saleType,
+        // --- _config array (expected length of 4) ---
+        // Index 0 - Edition size
+        // Index 1 - Start Date
+        // Index 2 - Base price
+        // Index 3 - Step price
+        // ---------------------------------------------
+        uint128[] calldata _config,
+        string calldata _uri,
+        address[] calldata _erc20s,
+        uint256[] calldata _amounts
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+        require(_config.length == 4, "Config must consist of 4 elements in the array");
+
+        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint96(_config[0]), _creator, _uri, _erc20s, _amounts);
+
+        _setupSalesMechanic(editionId, _saleType, _config[1], _config[2], _config[3]);
+        _recordSuccessfulMint(_creator);
     }
 
     function mintConsecutiveBatchEdition(
@@ -121,21 +195,43 @@ contract MintingFactory is Context {
         // Make tokens & edition
         uint256 editionId = koda.mintConsecutiveBatchEdition(_editionSize, _msgSender(), _uri);
 
-        setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_msgSender());
     }
 
-    function setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
+    function mintConsecutiveBatchEditionAsProxy(
+        address _creator,
+        SaleType _saleType,
+        uint96 _editionSize,
+        uint128 _startDate,
+        uint128 _basePrice,
+        uint128 _stepPrice,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintConsecutiveBatchEdition(_editionSize, _creator, _uri);
+
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_creator);
+    }
+
+    function _setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
         if (SaleType.BUY_NOW == _saleType) {
-            marketplace.listEdition(_msgSender(), _editionId, _basePrice, _startDate);
+            marketplace.listForBuyNow(_msgSender(), _editionId, _basePrice, _startDate);
         }
         else if (SaleType.STEPPED == _saleType) {
             marketplace.listSteppedEditionAuction(_msgSender(), _editionId, _basePrice, _stepPrice, _startDate);
         }
         else if (SaleType.OFFERS == _saleType) {
             marketplace.enableEditionOffers(_editionId, _startDate);
+        } else if (SaleType.RESERVE == _saleType) {
+            // use base price for reserve price
+            marketplace.listForReserveAuction(_msgSender(), _editionId, _basePrice, _startDate);
         }
 
-        _recordSuccessfulMint(_msgSender());
+        emit EditionMintedAndListed(_editionId, _saleType);
     }
 
     /// Internal helpers

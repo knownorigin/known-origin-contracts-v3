@@ -27,14 +27,12 @@ interface ERC998ERC20TopDownEnumerable {
     function erc20ContractByIndex(uint256 _tokenId, uint256 _index) external view returns (address);
 }
 
+/// @notice ERC998 ERC721 > ERC20 Top Down implementation
 abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDownEnumerable, ReentrancyGuard, Context {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     event ContractWhitelisted(address indexed contractAddress);
     event WhitelistRemoved(address indexed contractAddress);
-    event MaxERC20sPerNFTUpdated(uint256 old, uint256 newValue);
-
-    uint256 public maxERC20sPerNFT = 3;
 
     // Edition ID -> ERC20 contract -> Balance of ERC20 for every token in Edition
     mapping(uint256 => mapping(address => uint256)) public editionTokenERC20Balances;
@@ -54,6 +52,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     // ERC20 contract -> whether it is allowed to be wrapped within any token
     mapping(address => bool) public whitelistedContracts;
 
+    /// @notice the ERC20 balance of a NFT token given an ERC20 token address
     function balanceOfERC20(uint256 _tokenId, address _erc20Contract) public override view returns (uint256) {
         IKODAV3 koda = IKODAV3(address(this));
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
@@ -66,6 +65,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         return tokenEditionBalance + ERC20Balances[_tokenId][_erc20Contract];
     }
 
+    /// @notice Transfer out an ERC20 from an NFT
     function transferERC20(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) external override nonReentrant {
         _prepareERC20LikeTransfer(_tokenId, _to, _erc20Contract, _value);
 
@@ -74,10 +74,10 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         emit TransferERC20(_tokenId, _to, _erc20Contract, _value);
     }
 
+    /// @notice An NFT token owner (or approved) can compose multiple ERC20s in their NFT as long as the ERC20 is whitelisted
     function getERC20s(address _from, uint256[] calldata _tokenIds, address _erc20Contract, uint256 _totalValue) external {
         uint256 totalTokens = _tokenIds.length;
-        require(totalTokens > 0, "Empty array");
-        require(_totalValue > 0, "Total value cannot be zero");
+        require(totalTokens > 0 && _totalValue > 0, "Empty values provided");
 
         uint256 valuePerToken = _totalValue / totalTokens;
         for (uint i = 0; i < totalTokens; i++) {
@@ -85,8 +85,9 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         }
     }
 
+    /// @notice A NFT token owner (or approved address) can compose any ERC20 in their NFT as long as it is whitelisted
     function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) public override nonReentrant {
-        require(_value > 0, "getERC20: Value cannot be zero");
+        require(_value > 0, "Value cannot be zero");
 
         address spender = _msgSender();
         IERC721 self = IERC721(address(this));
@@ -96,20 +97,17 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
             owner == spender
             || self.isApprovedForAll(owner, spender)
             || self.getApproved(_tokenId) == spender,
-            "getERC20: Only token owner"
+            "Only token owner"
         );
-        require(_from == _msgSender(), "getERC20: ERC20 owner must be the token owner");
-        require(whitelistedContracts[_erc20Contract], "getERC20: Specified contract not whitelisted");
+        require(_from == _msgSender(), "ERC20 owner must be the token owner");
+        require(whitelistedContracts[_erc20Contract], "Specified contract not whitelisted");
 
         IKODAV3 koda = IKODAV3(address(this));
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[editionId].contains(_erc20Contract);
         bool nftAlreadyContainsERC20 = ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract);
-        require(
-            nftAlreadyContainsERC20 || editionAlreadyContainsERC20 || totalERC20Contracts(_tokenId) < maxERC20sPerNFT,
-            "getERC20: Token limit for number of unique ERC20s reached"
-        );
 
+        // does not already contain _erc20Contract
         if (!editionAlreadyContainsERC20 && !nftAlreadyContainsERC20) {
             ERC20sEmbeddedInNft[_tokenId].add(_erc20Contract);
         }
@@ -117,7 +115,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract] + _value;
 
         IERC20 token = IERC20(_erc20Contract);
-        require(token.allowance(_from, address(this)) >= _value, "getERC20: Amount exceeds allowance");
+        require(token.allowance(_from, address(this)) >= _value, "Amount exceeds allowance");
 
         token.transferFrom(_from, address(this), _value);
 
@@ -125,13 +123,11 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function _composeERC20IntoEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) internal nonReentrant {
-        require(_value > 0, "_composeERC20IntoEdition: Value cannot be zero");
-
-        require(whitelistedContracts[_erc20Contract], "_composeERC20IntoEdition: Specified contract not whitelisted");
+        require(_value > 0, "Value cannot be zero");
+        require(whitelistedContracts[_erc20Contract], "Specified contract not whitelisted");
 
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract);
-        require(!editionAlreadyContainsERC20, "_composeERC20IntoEdition: Edition already contains ERC20");
-        require(ERC20sEmbeddedInEdition[_editionId].length() < maxERC20sPerNFT, "_composeERC20IntoEdition: ERC20 limit exceeded");
+        require(!editionAlreadyContainsERC20, "Edition already contains ERC20");
 
         ERC20sEmbeddedInEdition[_editionId].add(_erc20Contract);
         editionTokenERC20Balances[_editionId][_erc20Contract] = editionTokenERC20Balances[_editionId][_erc20Contract] + _value;
@@ -165,14 +161,13 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
     function removeWhitelistForERC20(address _address) virtual public;
 
-    function updateMaxERC20sPerNFT(uint256 _max) virtual public;
-
     /// --- Internal ----
 
     function _prepareERC20LikeTransfer(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) private {
+        // To avoid stack too deep, do input checks within this scope
         {
-            require(_value > 0, "_prepareERC20LikeTransfer: Value cannot be zero");
-            require(_to != address(0), "_prepareERC20LikeTransfer: To cannot be zero address");
+            require(_value > 0, "Value cannot be zero");
+            require(_to != address(0), "To cannot be zero address");
 
             IERC721 self = IERC721(address(this));
 
@@ -181,24 +176,27 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
                 owner == _msgSender()
                 || self.isApprovedForAll(owner, _msgSender())
                 || self.getApproved(_tokenId) == _msgSender(),
-                "_prepareERC20LikeTransfer: Not owner"
+                "Not owner"
             );
         }
 
+        // Check that the NFT contains the ERC20
         bool nftContainsERC20 = ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract);
 
         IKODAV3 koda = IKODAV3(address(this));
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
         bool editionContainsERC20 = ERC20sEmbeddedInEdition[editionId].contains(_erc20Contract);
-        require(nftContainsERC20 || editionContainsERC20, "_prepareERC20LikeTransfer: No such ERC20 wrapped in token");
+        require(nftContainsERC20 || editionContainsERC20, "No such ERC20 wrapped in token");
 
-        require(balanceOfERC20(_tokenId, _erc20Contract) >= _value, "_prepareERC20LikeTransfer: Transfer amount exceeds balance");
+        // Check there is enough balance to transfer out
+        require(balanceOfERC20(_tokenId, _erc20Contract) >= _value, "Transfer amount exceeds balance");
 
         uint256 editionSize = koda.getSizeOfEdition(editionId);
         uint256 tokenInitialBalance = editionTokenERC20Balances[editionId][_erc20Contract] / editionSize;
         uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId];
         uint256 editionTokenBalance = tokenInitialBalance - spentTokens;
 
+        // Check whether the value can be fully transfered from the edition balance, token balance or both balances
         if (editionTokenBalance >= _value) {
             editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId] = spentTokens + _value;
         } else if (ERC20Balances[_tokenId][_erc20Contract] >= _value) {
@@ -210,10 +208,12 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
             ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract] - amountOfTokensToSpendFromTokenBalance;
         }
 
+        // The ERC20 is no longer composed within the token if the balance falls to zero
         if (nftContainsERC20 && ERC20Balances[_tokenId][_erc20Contract] == 0) {
             ERC20sEmbeddedInNft[_tokenId].remove(_erc20Contract);
         }
 
+        // If all tokens in an edition have spent their ERC20 balance, then we can remove the link
         if (editionContainsERC20) {
             uint256 allTokensInEditionERC20Balance;
             for (uint i = 0; i < editionSize; i++) {
@@ -227,19 +227,16 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         }
     }
 
+    // Whitelist an ERC20 token for composing
     function _whitelistERC20(address _erc20) internal {
         whitelistedContracts[_erc20] = true;
         emit ContractWhitelisted(_erc20);
     }
 
+    // Remove an ERC20 token from the whitelist
     // note: this will not brick NFTs that have this token. Just stops people adding new balances
     function _removeWhitelistERC20(address _erc20) internal {
         whitelistedContracts[_erc20] = false;
         emit WhitelistRemoved(_erc20);
-    }
-
-    function _updateMaxERC20sPerNFT(uint256 _max) internal {
-        emit MaxERC20sPerNFTUpdated(maxERC20sPerNFT, _max);
-        maxERC20sPerNFT = _max;
     }
 }
