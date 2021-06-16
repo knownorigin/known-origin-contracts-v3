@@ -17,7 +17,7 @@ const {parseBalanceMap} = require('../utils/parse-balance-map');
 const {buildArtistMerkleInput} = require('../utils/merkle-tools');
 
 contract('MinterFactory', function (accounts) {
-  const [superAdmin, admin, deployer, koCommission, artist, anotherArtist] = accounts;
+  const [superAdmin, admin, deployer, koCommission, artist, anotherArtist, proxy] = accounts;
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
@@ -145,6 +145,101 @@ contract('MinterFactory', function (accounts) {
       expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
     });
   });
+
+  describe('minting as proxy', () => {
+    beforeEach(async () => {
+      await this.accessControls.setVerifiedArtistProxy(
+        proxy,
+        this.merkleProof.claims[artist].index,
+        this.merkleProof.claims[artist].proof,
+        {from: artist}
+      );
+    })
+
+    it('can mint token as proxy', async () => {
+      this.startDate = Date.now();
+
+      const receipt = await this.factory.mintTokenAsProxy(
+        artist,
+        SaleType.BUY_NOW,
+        this.startDate,
+        ETH_ONE,
+        0,
+        TOKEN_URI,
+        {from: proxy}
+      );
+
+      await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: artist,
+        tokenId: firstEditionTokenId
+      });
+    })
+
+    it('can mint batch edition as proxy', async () => {
+      this.startDate = Date.now();
+      const receipt = await this.factory.mintBatchEditionAsProxy(
+        artist,
+        SaleType.BUY_NOW,
+        '10',
+        this.startDate,
+        ETH_ONE,
+        0,
+        TOKEN_URI,
+        {from: proxy}
+      );
+
+      await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: artist,
+        tokenId: firstEditionTokenId
+      });
+    })
+
+    it('can mint cosecutive batch as proxy', async () => {
+      this.startDate = Date.now();
+      const receipt = await this.factory.mintConsecutiveBatchEditionAsProxy(
+        artist,
+        SaleType.BUY_NOW,
+        '10',
+        this.startDate,
+        ETH_ONE,
+        0,
+        TOKEN_URI,
+        {from: proxy}
+      );
+
+      const start = firstEditionTokenId.toNumber();
+      const end = start + parseInt('10');
+      await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'ConsecutiveTransfer', {
+        fromAddress: ZERO_ADDRESS,
+        toAddress: artist,
+        fromTokenId: start.toString(),
+        toTokenId: end.toString()
+      });
+    })
+
+    it('can mint and compose as proxy', async () => {
+      this.startDate = Date.now();
+
+      await this.erc20Token1.approve(this.token.address, ether('1000'), {from: artist});
+
+      await this.factory.mintBatchEditionAndComposeERC20sAsProxy(
+        artist,
+        SaleType.BUY_NOW,
+        [
+          '10',
+          this.startDate,
+          ETH_ONE,
+          0
+        ],
+        TOKEN_URI,
+        [this.erc20Token1.address],
+        [ether('1000')],
+        {from: proxy}
+      );
+    })
+  })
 
   describe('mintBatchEdition() - Buy Now - edition size 10', () => {
 
@@ -284,7 +379,7 @@ contract('MinterFactory', function (accounts) {
   });
 
   //Error: Returned values aren't valid, did it run Out of Gas? You might also see this error if you are not using the correct ABI for the contract you are retrieving data from, requesting data from a block number that does not exist, or querying a node which is not fully synced.
-  describe.skip('mintBatchEditionAndComposeERC20s()', () => {
+  describe('mintBatchEditionAndComposeERC20s()', () => {
     const editionSize = new BN('10');
 
     beforeEach(async () => {
@@ -307,12 +402,6 @@ contract('MinterFactory', function (accounts) {
         this.artistProof,
         {from: artist}
       );
-
-      await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
-        from: ZERO_ADDRESS,
-        to: artist,
-        tokenId: firstEditionTokenId
-      });
     });
 
     it('edition created', async () => {
