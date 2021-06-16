@@ -79,6 +79,23 @@ contract MintingFactory is Context {
         _recordSuccessfulMint(_msgSender());
     }
 
+    function mintTokenAsProxy(
+        address _creator,
+        SaleType _saleType,
+        uint128 _startDate,
+        uint128 _basePrice,
+        uint128 _stepPrice,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintBatchEdition(1, _creator, _uri);
+
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_creator);
+    }
+
     function mintBatchEdition(
         SaleType _saleType,
         uint96 _editionSize,
@@ -98,8 +115,33 @@ contract MintingFactory is Context {
         _recordSuccessfulMint(_msgSender());
     }
 
+    function mintBatchEditionAsProxy(
+        address _creator,
+        SaleType _saleType,
+        uint96 _editionSize,
+        uint128 _startDate,
+        uint128 _basePrice,
+        uint128 _stepPrice,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintBatchEdition(_editionSize, _creator, _uri);
+
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_creator);
+    }
+
     function mintBatchEditionAndComposeERC20s(
         SaleType _saleType,
+        // --- _config array (expected length of 5) ---
+        // Index 0 - Merkle Index
+        // Index 1 - Edition size
+        // Index 2 - Start Date
+        // Index 3 - Base price
+        // Index 4 - Step price
+        // ---------------------------------------------
         uint128[] calldata _config,
         string calldata _uri,
         address[] calldata _erc20s,
@@ -107,11 +149,35 @@ contract MintingFactory is Context {
         bytes32[] calldata _merkleProof
     ) canMintAgain external {
         require(accessControls.isVerifiedArtist(_config[0], _msgSender(), _merkleProof), "Caller must have minter role");
+        require(_config.length == 5, "Config must consist of 5 elements in the array");
 
         uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint96(_config[1]), _msgSender(), _uri, _erc20s, _amounts);
 
         _setupSalesMechanic(editionId, _saleType, _config[2], _config[3], _config[4]);
         _recordSuccessfulMint(_msgSender());
+    }
+
+    function mintBatchEditionAndComposeERC20sAsProxy(
+        address _creator,
+        SaleType _saleType,
+        // --- _config array (expected length of 4) ---
+        // Index 0 - Edition size
+        // Index 1 - Start Date
+        // Index 2 - Base price
+        // Index 3 - Step price
+        // ---------------------------------------------
+        uint128[] calldata _config,
+        string calldata _uri,
+        address[] calldata _erc20s,
+        uint256[] calldata _amounts
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+        require(_config.length == 4, "Config must consist of 4 elements in the array");
+
+        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint96(_config[0]), _creator, _uri, _erc20s, _amounts);
+
+        _setupSalesMechanic(editionId, _saleType, _config[1], _config[2], _config[3]);
+        _recordSuccessfulMint(_creator);
     }
 
     function mintConsecutiveBatchEdition(
@@ -131,6 +197,24 @@ contract MintingFactory is Context {
 
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_msgSender());
+    }
+
+    function mintConsecutiveBatchEditionAsProxy(
+        address _creator,
+        SaleType _saleType,
+        uint96 _editionSize,
+        uint128 _startDate,
+        uint128 _basePrice,
+        uint128 _stepPrice,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintConsecutiveBatchEdition(_editionSize, _creator, _uri);
+
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_creator);
     }
 
     function _setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
