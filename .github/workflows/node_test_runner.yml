@@ -10,9 +10,12 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      NODE_OPTIONS: '--max_old_space_size=4096'
+
     strategy:
       matrix:
-        node-version: [ 10.x ]
+        node-version: [ 12.x ]
 
     steps:
       - uses: actions/checkout@v1

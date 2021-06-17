@@ -10,7 +10,7 @@
   "scripts": {
     "compile": "npx hardhat compile --show-stack-traces",
     "coverage": "npx hardhat coverage",
-    "test": "NODE_OPTIONS=\"--max-old-space-size=4096\" npx hardhat test",
+    "test": "npx hardhat test",
     "contract-size": "npx hardhat size-contracts",
     "gas": "REPORT_GAS=true npx hardhat test"
   },
