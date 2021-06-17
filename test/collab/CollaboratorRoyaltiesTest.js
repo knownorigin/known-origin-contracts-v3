@@ -78,7 +78,7 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
   });
 
-  describe.only('Implementation', () => {
+  describe('Implementation', () => {
 
     context('RoyaltyImplV1: Funds Receiver Implementation', async () => {
 
@@ -210,7 +210,7 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
   });
 
-  describe.only('CollabRoyaltiesRegistry', () => {
+  describe('CollabRoyaltiesRegistry', () => {
 
     context('setKoda()', async () => {
 
@@ -553,7 +553,7 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
   });
 
-  describe.only('Funds Handler Proxy', () => {
+  describe('Funds Handler Proxy', () => {
 
     beforeEach(async () => {
 
@@ -687,7 +687,7 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
   });
 
-  describe.only('Marketplace Secondary Sales', () => {
+  describe('Marketplace Secondary Sales', () => {
 
     let secondaryMarketplace
 
