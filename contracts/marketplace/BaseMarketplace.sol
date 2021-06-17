@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
@@ -17,11 +17,11 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     event AdminUpdatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission);
     event AdminUpdateBidLockupPeriod(uint256 _bidLockupPeriod);
     event AdminUpdatePlatformAccount(address indexed _oldAddress, address indexed _newAddress);
-    event AdminRecoverERC20(IERC20 indexed token, address indexed recipient, uint256 amount);
-    event AdminRecoverETH(address payable indexed recipient, uint256 amount);
+    event AdminRecoverERC20(IERC20 indexed _token, address indexed _recipient, uint256 _amount);
+    event AdminRecoverETH(address payable indexed _recipient, uint256 _amount);
 
-    event BidderRefunded(uint256 indexed _id, address _bidder, uint256 bid, address _newBidder, uint256 _newOffer);
-    event BidRefundFailed(uint256 indexed _id, address _bidder, uint256 bid);
+    event BidderRefunded(uint256 indexed _id, address _bidder, uint256 _bid, address _newBidder, uint256 _newOffer);
+    event BidRefundFailed(uint256 indexed _id, address _bidder, uint256 _bid);
 
     // Only a whitelisted smart contract in the access controls contract
     modifier onlyContract() {

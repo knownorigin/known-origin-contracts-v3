@@ -59,7 +59,6 @@ contract('MinterFactory', function (accounts) {
 
     // composable
     this.erc20Token1 = await MockERC20.new({from: deployer});
-    await this.token.whitelistERC20(this.erc20Token1.address, {from: deployer});
 
     await this.erc20Token1.transfer(artist, ether('1000'), {from: deployer});
 

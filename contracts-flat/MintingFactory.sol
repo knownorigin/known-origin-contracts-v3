@@ -29,7 +29,7 @@ abstract contract Context {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 interface IKODAV3Minter {
 
@@ -44,12 +44,14 @@ interface IKODAV3Minter {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 interface IKOAccessControlsLookup {
     function hasAdminRole(address _address) external view returns (bool);
 
-    function isVerifiedArtist(uint256 index, address account, bytes32[] calldata merkleProof) external view returns (bool);
+    function isVerifiedArtist(uint256 _index, address _account, bytes32[] calldata _merkleProof) external view returns (bool);
+
+    function isVerifiedArtistProxy(address _artist, address _proxy) external view returns (bool);
 
     function hasLegacyMinterRole(address _address) external view returns (bool);
 
@@ -220,7 +222,7 @@ interface IERC721 is IERC165 {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 /**
   @title ERC-2309: ERC-721 Batch Mint Extension
@@ -249,7 +251,7 @@ interface IERC2309 {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 
 // This is purely an extension for the KO platform
@@ -311,11 +313,37 @@ interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
     function receivedRoyalties(address _royaltyRecipient, address _buyer, uint256 _tokenId, address _tokenPaid, uint256 _amount) external;
 }
 
+// File: contracts/core/IHasSecondarySaleFees.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.5;
+
+
+interface IHasSecondarySaleFees is IERC165 {
+    event SecondarySaleFees(uint256 tokenId, address[] recipients, uint[] bps);
+
+    /*
+     * bytes4(keccak256('getFeeBps(uint256)')) == 0x0ebd4c7f
+     * bytes4(keccak256('getFeeRecipients(uint256)')) == 0xb9c4d9fb
+     *
+     * => 0x0ebd4c7f ^ 0xb9c4d9fb == 0xb7799584
+     */
+//    bytes4 private constant _INTERFACE_ID_FEES = 0xb7799584;
+//    constructor() public {
+//        _registerInterface(_INTERFACE_ID_FEES);
+//    }
+
+    function getFeeRecipients(uint256 id) external returns (address payable[] memory);
+    function getFeeBps(uint256 id) external returns (uint[] memory);
+}
+
 // File: contracts/core/IKODAV3.sol
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
+
 
 
 
@@ -325,7 +353,8 @@ interface IKODAV3 is
 IERC165, // Contract introspection
 IERC721, // NFTs
 IERC2309, // Consecutive batch mint
-IERC2981  // Royalties
+IERC2981,  // Royalties
+IHasSecondarySaleFees // rariable / foundation royalties
 {
     // edition utils
 
@@ -382,7 +411,7 @@ IERC2981  // Royalties
 // File: contracts/marketplace/IKODAV3Marketplace.sol
 
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 interface IBuyNowMarketplace {
     event ListedForBuyNow(uint256 indexed _id, uint256 _price, address _currentOwner, uint256 _startDate);
@@ -728,7 +757,7 @@ interface IERC20 {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 
 
@@ -743,22 +772,30 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     event AdminUpdatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission);
     event AdminUpdateBidLockupPeriod(uint256 _bidLockupPeriod);
     event AdminUpdatePlatformAccount(address indexed _oldAddress, address indexed _newAddress);
-    event AdminRecoverERC20(IERC20 indexed token, address indexed recipient, uint256 amount);
-    event AdminRecoverETH(address payable indexed recipient, uint256 amount);
+    event AdminRecoverERC20(IERC20 indexed _token, address indexed _recipient, uint256 _amount);
+    event AdminRecoverETH(address payable indexed _recipient, uint256 _amount);
 
-    event BidderRefunded(uint256 indexed _id, address _bidder, uint256 bid, address _newBidder, uint256 _newOffer);
-    event BidRefundFailed(uint256 indexed _id, address _bidder, uint256 bid);
+    event BidderRefunded(uint256 indexed _id, address _bidder, uint256 _bid, address _newBidder, uint256 _newOffer);
+    event BidRefundFailed(uint256 indexed _id, address _bidder, uint256 _bid);
 
     // Only a whitelisted smart contract in the access controls contract
     modifier onlyContract() {
-        require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
+        _onlyContract();
         _;
+    }
+
+    function _onlyContract() private {
+        require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
     }
 
     // Only admin defined in the access controls contract
     modifier onlyAdmin() {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
+        _onlyAdmin();
         _;
+    }
+
+    function _onlyAdmin() private {
+        require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
     }
 
     /// @notice Address of the access control contract
@@ -864,7 +901,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 
 
@@ -920,7 +957,11 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
     public
     override
     whenNotPaused {
-        require(editionOrTokenListings[_id].seller == _msgSender(), "Only seller can change price");
+        require(
+            editionOrTokenListings[_id].seller == _msgSender()
+            || accessControls.isVerifiedArtistProxy(editionOrTokenListings[_id].seller, _msgSender()),
+            "Only seller can change price"
+        );
 
         // Set price
         editionOrTokenListings[_id].price = _listingPrice;
@@ -947,7 +988,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 
 
@@ -1096,7 +1137,12 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
     nonReentrant {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
 
-        require(reserveAuction.seller == _msgSender(), "Not the seller");
+        require(
+            reserveAuction.seller == _msgSender()
+            || accessControls.isVerifiedArtistProxy(reserveAuction.seller, _msgSender()),
+            "Not the seller"
+        );
+
         require(reserveAuction.biddingEnd == 0, "Reserve countdown commenced");
         require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
 
@@ -1123,7 +1169,8 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         bool isSeller = reserveAuction.seller == _msgSender();
         bool isBidder = reserveAuction.bidder == _msgSender();
         require(
-            isSeller || isBidder || accessControls.hasContractOrAdminRole(_msgSender()),
+            isSeller || isBidder || accessControls.isVerifiedArtistProxy(reserveAuction.seller, _msgSender())
+            || accessControls.hasContractOrAdminRole(_msgSender()),
             "Only seller, bidder, contract or platform admin"
         );
         // external call done last as a gas optimisation i.e. it wont be called if isSeller || isBidder is true
@@ -1169,7 +1216,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 
 
@@ -1243,7 +1290,11 @@ BuyNowMarketplace {
     function convertFromBuyNowToOffers(uint256 _editionId, uint128 _startDate)
     public
     whenNotPaused {
-        require(editionOrTokenListings[_editionId].seller == _msgSender(), "Only seller can convert");
+        require(
+            editionOrTokenListings[_editionId].seller == _msgSender()
+            || accessControls.isVerifiedArtistProxy(editionOrTokenListings[_editionId].seller, _msgSender()),
+            "Only seller can convert"
+        );
 
         // clear listing
         delete editionOrTokenListings[_editionId];
@@ -1327,7 +1378,13 @@ BuyNowMarketplace {
     nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
-        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Caller not the creator");
+
+        address creatorOfEdition = koda.getCreatorOfEdition(_editionId);
+        require(
+            creatorOfEdition == _msgSender()
+            || accessControls.isVerifiedArtistProxy(creatorOfEdition, _msgSender()),
+            "Caller not the creator"
+        );
 
         // send money back to top bidder
         _refundBidder(_editionId, offer.bidder, offer.offer, address(0), 0);
@@ -1347,7 +1404,13 @@ BuyNowMarketplace {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
         require(offer.offer >= _offerPrice, "Offer price has changed");
-        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
+
+        address creatorOfEdition = koda.getCreatorOfEdition(_editionId);
+        require(
+            creatorOfEdition == _msgSender()
+            || accessControls.isVerifiedArtistProxy(creatorOfEdition, _msgSender()),
+            "Not creator"
+        );
 
         // get a new token from the edition to transfer ownership
         uint256 tokenId = _facilitateNextPrimarySale(_editionId, offer.offer, offer.bidder, false);
@@ -1379,7 +1442,14 @@ BuyNowMarketplace {
     whenNotPaused
     nonReentrant {
         require(!_isEditionListed(_editionId), "Edition is listed");
-        require(koda.getCreatorOfEdition(_editionId) == _msgSender(), "Not creator");
+
+        address creatorOfEdition = koda.getCreatorOfEdition(_editionId);
+        require(
+            creatorOfEdition == _msgSender()
+            || accessControls.isVerifiedArtistProxy(creatorOfEdition, _msgSender()),
+            "Not creator"
+        );
+
         require(_listingPrice >= minBidAmount, "Listing price not enough");
 
         // send money back to top bidder if existing offer found
@@ -1425,7 +1495,13 @@ BuyNowMarketplace {
     override
     whenNotPaused {
         Stepped storage steppedAuction = editionStep[_editionId];
-        require(steppedAuction.seller == _msgSender(), "Only seller");
+
+        require(
+            steppedAuction.seller == _msgSender()
+            || accessControls.isVerifiedArtistProxy(steppedAuction.seller, _msgSender()),
+            "Only seller"
+        );
+
         require(steppedAuction.currentStep == 0, "Only when no sales");
         require(_basePrice >= minBidAmount, "Base price not enough");
 
@@ -1473,7 +1549,12 @@ BuyNowMarketplace {
     whenNotPaused {
         Stepped storage steppedAuction = editionStep[_editionId];
         require(_listingPrice >= minBidAmount, "List price not enough");
-        require(steppedAuction.seller == _msgSender(), "Only seller can convert");
+
+        require(
+            steppedAuction.seller == _msgSender()
+            || accessControls.isVerifiedArtistProxy(steppedAuction.seller, _msgSender()),
+            "Only seller can convert"
+        );
 
         // Store listing data
         editionOrTokenListings[_editionId] = Listing(_listingPrice, _startDate, steppedAuction.seller);
@@ -1490,7 +1571,12 @@ BuyNowMarketplace {
     override
     whenNotPaused {
         Stepped storage steppedAuction = editionStep[_editionId];
-        require(steppedAuction.seller == _msgSender(), "Only seller can convert");
+
+        require(
+            steppedAuction.seller == _msgSender()
+            || accessControls.isVerifiedArtistProxy(steppedAuction.seller, _msgSender()),
+            "Only seller can convert"
+        );
 
         // set the start date for the offer (optional)
         editionOffersStartDate[_editionId] = _startDate;
@@ -1651,7 +1737,7 @@ BuyNowMarketplace {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 
 
@@ -1670,7 +1756,6 @@ contract MintingFactory is Context {
 
     IKODAV3Minter public koda;
 
-    // TODO can we make a interface for all of primary ?
     KODAV3PrimaryMarketplace public marketplace;
 
     modifier canMintAgain(){
@@ -1729,6 +1814,23 @@ contract MintingFactory is Context {
         _recordSuccessfulMint(_msgSender());
     }
 
+    function mintTokenAsProxy(
+        address _creator,
+        SaleType _saleType,
+        uint128 _startDate,
+        uint128 _basePrice,
+        uint128 _stepPrice,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintBatchEdition(1, _creator, _uri);
+
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_creator);
+    }
+
     function mintBatchEdition(
         SaleType _saleType,
         uint96 _editionSize,
@@ -1748,8 +1850,33 @@ contract MintingFactory is Context {
         _recordSuccessfulMint(_msgSender());
     }
 
+    function mintBatchEditionAsProxy(
+        address _creator,
+        SaleType _saleType,
+        uint96 _editionSize,
+        uint128 _startDate,
+        uint128 _basePrice,
+        uint128 _stepPrice,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintBatchEdition(_editionSize, _creator, _uri);
+
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_creator);
+    }
+
     function mintBatchEditionAndComposeERC20s(
         SaleType _saleType,
+        // --- _config array (expected length of 5) ---
+        // Index 0 - Merkle Index
+        // Index 1 - Edition size
+        // Index 2 - Start Date
+        // Index 3 - Base price
+        // Index 4 - Step price
+        // ---------------------------------------------
         uint128[] calldata _config,
         string calldata _uri,
         address[] calldata _erc20s,
@@ -1757,11 +1884,35 @@ contract MintingFactory is Context {
         bytes32[] calldata _merkleProof
     ) canMintAgain external {
         require(accessControls.isVerifiedArtist(_config[0], _msgSender(), _merkleProof), "Caller must have minter role");
+        require(_config.length == 5, "Config must consist of 5 elements in the array");
 
         uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint96(_config[1]), _msgSender(), _uri, _erc20s, _amounts);
 
         _setupSalesMechanic(editionId, _saleType, _config[2], _config[3], _config[4]);
         _recordSuccessfulMint(_msgSender());
+    }
+
+    function mintBatchEditionAndComposeERC20sAsProxy(
+        address _creator,
+        SaleType _saleType,
+        // --- _config array (expected length of 4) ---
+        // Index 0 - Edition size
+        // Index 1 - Start Date
+        // Index 2 - Base price
+        // Index 3 - Step price
+        // ---------------------------------------------
+        uint128[] calldata _config,
+        string calldata _uri,
+        address[] calldata _erc20s,
+        uint256[] calldata _amounts
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+        require(_config.length == 4, "Config must consist of 4 elements in the array");
+
+        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint96(_config[0]), _creator, _uri, _erc20s, _amounts);
+
+        _setupSalesMechanic(editionId, _saleType, _config[1], _config[2], _config[3]);
+        _recordSuccessfulMint(_creator);
     }
 
     function mintConsecutiveBatchEdition(
@@ -1781,6 +1932,24 @@ contract MintingFactory is Context {
 
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_msgSender());
+    }
+
+    function mintConsecutiveBatchEditionAsProxy(
+        address _creator,
+        SaleType _saleType,
+        uint96 _editionSize,
+        uint128 _startDate,
+        uint128 _basePrice,
+        uint128 _stepPrice,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintConsecutiveBatchEdition(_editionSize, _creator, _uri);
+
+        _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
+        _recordSuccessfulMint(_creator);
     }
 
     function _setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 import "../collaborators/handlers/FundsSplitter.sol";
 import "../collaborators/handlers/FundsReceiver.sol";
