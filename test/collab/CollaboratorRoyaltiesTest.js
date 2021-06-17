@@ -381,17 +381,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
       context('setupRoyalty()', async () => {
 
-        it('reverts if any recipient address is a contract', async () => {
-
-          const BAD_RECIPIENTS = [artist1, artist2, token.address];
-
-          expectRevert(
-              royaltiesRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, BAD_RECIPIENTS, SPLITS_3, {from: contract}),
-              "Recipients may not be contracts"
-          );
-
-        });
-
         it('reverts if recipient list contains fewer than 2 addresses', async () => {
 
           const BAD_RECIPIENTS = [artist1];

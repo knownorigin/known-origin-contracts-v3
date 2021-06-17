@@ -147,11 +147,6 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExt
         // Recipient and splits array lengths must match
         require(_recipients.length == _splits.length, "Recipients and splits lengths must match");
 
-        // Ensure each collaborator is not a contract
-        for (uint256 i = 0; i < _recipients.length; i++) {
-            require(!Address.isContract(_recipients[i]), "Recipients may not be contracts");
-        }
-
         // Get the specified funds handler
         address handler = handlers[_handlerName];
 
