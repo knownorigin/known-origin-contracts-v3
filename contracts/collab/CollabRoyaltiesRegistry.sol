@@ -14,18 +14,16 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExt
 
     IKODAV3 public koda;
     IKOAccessControlsLookup public accessControls;
-    mapping(string => address) public handlers;
+    mapping(address => bool) public isHandlerWhitelisted;
     mapping(uint256 => address) public proxies;
-    uint256 public proxyCount = 0;
-    uint256 public handlerCount = 0;
     uint256 public royaltyAmount = 12_50000; // 12.5% as represented in eip-2981
 
     // Events
     event KODASet(address koda);
     event AccessControlsSet(address accessControls);
     event RoyaltyAmountSet(uint256 royaltyAmount);
-    event HandlerAdded(string name, address handler);
-    event RoyaltySetup(uint256 indexed editionId, string handlerName, address handler, address[] recipients, uint256[] splits);
+    event HandlerAdded(address handler);
+    event RoyaltySetup(uint256 indexed editionId, address handler, address proxy, address[] recipients, uint256[] splits);
     event RoyaltySetupReused(uint256 indexed editionId, address indexed handler);
 
     // Modifiers
@@ -36,6 +34,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExt
         );
         _;
     }
+
     modifier onlyAdmin() {
         require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
         _;
@@ -91,21 +90,18 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExt
     }
 
     // Add a named funds handler
-    function addHandler(string memory _name, address _handler)
+    function addHandler(address _handler)
     external
     onlyAdmin() {
 
         // Revert if handler exists with given name
-        require(handlers[_name] == address(0), "Handler name already registered");
+        require(isHandlerWhitelisted[_handler] == false, "Handler name already registered");
 
         // Store the beacon address by name
-        handlers[_name] = _handler;
-
-        // Increment handler count
-        handlerCount++;
+        isHandlerWhitelisted[_handler] = true;
 
         // Emit event
-        emit HandlerAdded(_name, _handler);
+        emit HandlerAdded(_handler);
     }
 
     // Reuse the funds handler proxy from a previous collaboration
@@ -131,7 +127,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExt
     }
 
     // Sets up a funds handler proxy
-    function setupRoyalty(uint256 _editionId, string memory _handlerName, address[] calldata _recipients, uint256[] calldata _splits)
+    function setupRoyalty(uint256 _editionId, address _handler, address[] calldata _recipients, uint256[] calldata _splits)
     external
     payable
     whenNotPaused
@@ -147,11 +143,10 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExt
         // Recipient and splits array lengths must match
         require(_recipients.length == _splits.length, "Recipients and splits lengths must match");
 
-        // Get the specified funds handler
-        address handler = handlers[_handlerName];
+        require(isHandlerWhitelisted[_handler], "Handler is not whitelisted");
 
         // Clone funds handler as Minimal Proxy
-        proxy = Clones.clone(handler);
+        proxy = Clones.clone(_handler);
 
         // Initialize proxy
         ICollabFundsHandler(proxy).init(_recipients, _splits);
@@ -162,11 +157,8 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExt
         // Store address of proxy by edition id
         proxies[_editionId] = proxy;
 
-        // Increment proxy count
-        proxyCount++;
-
         // Emit event
-        emit RoyaltySetup(_editionId, _handlerName, proxy, _recipients, _splits);
+        emit RoyaltySetup(_editionId, _handler, proxy, _recipients, _splits);
     }
 
     // Gets the funds handler proxy address and royalty amount for given edition id

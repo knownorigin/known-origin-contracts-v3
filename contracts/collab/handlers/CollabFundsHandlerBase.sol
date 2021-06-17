@@ -10,7 +10,6 @@ abstract contract CollabFundsHandlerBase is ICollabFundsHandler {
     uint256 internal constant SCALE_FACTOR = 100000;
 
     // State
-    bool internal _notEntered = true;
     bool internal locked = false;
     address[] public recipients;
     uint256[] public splits;

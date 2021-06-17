@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface ICollabFundsDrainable {
 
-    event FundsDrained(uint256 total, address[] recipients, uint256[] amounts);
+    event FundsDrained(uint256 total, address[] recipients, uint256[] amounts, address erc20);
 
     function drain() external;
 

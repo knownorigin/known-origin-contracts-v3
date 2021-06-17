@@ -307,7 +307,7 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
       it('reverts if called by non-admin address', async () => {
 
         expectRevert(
-            royaltiesRegistry.addHandler(FUNDS_HANDLER_V1, royaltyImplV1.address, {from: artist1}),
+            royaltiesRegistry.addHandler(royaltyImplV1.address, {from: artist1}),
             "Caller not admin"
         );
 
@@ -315,11 +315,11 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
       it('reverts if funds handler name already registered', async () => {
 
-        await royaltiesRegistry.addHandler(FUNDS_HANDLER_V1, royaltyImplV1.address, {from: admin});
+        await royaltiesRegistry.addHandler(royaltyImplV1.address, {from: admin});
 
         expectRevert(
             royaltiesRegistry.addHandler(
-                FUNDS_HANDLER_V1, royaltyImplV1.address, {from: admin}),
+                royaltyImplV1.address, {from: admin}),
             "Handler name already registered"
         );
 
@@ -327,16 +327,8 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
       it('emits HandlerAdded event on success', async () => {
 
-        const receipt = await royaltiesRegistry.addHandler(FUNDS_HANDLER_V1, royaltyImplV1.address, {from: admin});
-        expectEvent(receipt, 'HandlerAdded', {name: FUNDS_HANDLER_V1, handler: royaltyImplV1.address});
-
-      });
-
-      it('handlerCount incremented on success', async () => {
-
-        await royaltiesRegistry.addHandler(FUNDS_HANDLER_V1, royaltyImplV1.address, {from: admin});
-
-        expect(await royaltiesRegistry.handlerCount()).to.be.bignumber.eq('1');
+        const receipt = await royaltiesRegistry.addHandler(royaltyImplV1.address, {from: admin});
+        expectEvent(receipt, 'HandlerAdded', {handler: royaltyImplV1.address});
 
       });
 
@@ -372,7 +364,7 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
       beforeEach(async () => {
 
-        await royaltiesRegistry.addHandler(FUNDS_HANDLER_V1, royaltyImplV1.address, {from: admin});
+        await royaltiesRegistry.addHandler(royaltyImplV1.address, {from: admin});
 
         // create edition for for artist 1
         await token.mintBatchEdition(3, artist1, TOKEN_URI, {from: contract});
@@ -409,20 +401,20 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
         it('reverts if edition has already been setup', async () => {
 
-          await royaltiesRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract})
+          await royaltiesRegistry.setupRoyalty(EDITION_ID, royaltyImplV1.address, RECIPIENTS_3, SPLITS_3, {from: contract})
 
           expectRevert(
-              royaltiesRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract}),
+              royaltiesRegistry.setupRoyalty(EDITION_ID, royaltyImplV1.address, RECIPIENTS_3, SPLITS_3, {from: contract}),
               "Edition already setup"
           );
 
         });
 
         it('emits RoyaltySetup event on success', async () => {
-          const receipt = await royaltiesRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+          const receipt = await royaltiesRegistry.setupRoyalty(EDITION_ID, royaltyImplV1.address, RECIPIENTS_3, SPLITS_3, {from: contract});
           expectEvent(receipt, 'RoyaltySetup', {
             editionId: EDITION_ID,
-            handlerName: FUNDS_HANDLER_V1,
+            handler: royaltyImplV1.address,
             recipients: RECIPIENTS_3,
             //splits: SPLITS_3
             // FIXME: throws "expected event argument 'splits' to have value 50000,25000,25000 but got 50000,25000,25000"
@@ -436,10 +428,10 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
         beforeEach(async () => {
 
           // Get the proxy address with a static call
-          proxyAddr = await royaltiesRegistry.setupRoyalty.call(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+          proxyAddr = await royaltiesRegistry.setupRoyalty.call(EDITION_ID, royaltyImplV1.address, RECIPIENTS_3, SPLITS_3, {from: contract});
 
           // Actually deploy the Proxy
-          await royaltiesRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+          await royaltiesRegistry.setupRoyalty(EDITION_ID, royaltyImplV1.address, RECIPIENTS_3, SPLITS_3, {from: contract});
 
         });
 
@@ -568,7 +560,7 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
       // ------------------------
       // Add handlers to registry
       // ------------------------
-      await royaltiesRegistry.addHandler(FUNDS_HANDLER_V1, royaltyImplV1.address, {from: admin});
+      await royaltiesRegistry.addHandler(royaltyImplV1.address, {from: admin});
 
     });
 
@@ -579,10 +571,10 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
         beforeEach(async () => {
 
           // Get the proxy address with a static call
-          proxyAddr = await royaltiesRegistry.setupRoyalty.call(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+          proxyAddr = await royaltiesRegistry.setupRoyalty.call(EDITION_ID, royaltyImplV1.address, RECIPIENTS_3, SPLITS_3, {from: contract});
 
           // Actually deploy the Proxy
-          await royaltiesRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+          await royaltiesRegistry.setupRoyalty(EDITION_ID, royaltyImplV1.address, RECIPIENTS_3, SPLITS_3, {from: contract});
 
           // Get an ethers contract representation
           const [deployerAcct] = await ethers.getSigners();
@@ -629,10 +621,10 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
         beforeEach(async () => {
 
           // Get the proxy address with a static call
-          const proxyAddr1 = await royaltiesRegistry.setupRoyalty.call(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+          const proxyAddr1 = await royaltiesRegistry.setupRoyalty.call(EDITION_ID, royaltyImplV1.address, RECIPIENTS_3, SPLITS_3, {from: contract});
 
           // Actually deploy the Proxy
-          await royaltiesRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+          await royaltiesRegistry.setupRoyalty(EDITION_ID, royaltyImplV1.address, RECIPIENTS_3, SPLITS_3, {from: contract});
 
           // Get an ethers contract representation
           [deployerAcct] = await ethers.getSigners();
@@ -643,10 +635,10 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
           );
 
           // Get the proxy address with a static call
-          const proxyAddr2 = await royaltiesRegistry.setupRoyalty.call(EDITION_ID_2, FUNDS_HANDLER_V1, RECIPIENTS_2, SPLITS_2, {from: contract});
+          const proxyAddr2 = await royaltiesRegistry.setupRoyalty.call(EDITION_ID_2, royaltyImplV1.address, RECIPIENTS_2, SPLITS_2, {from: contract});
 
           // Actually deploy the Proxy
-          await royaltiesRegistry.setupRoyalty(EDITION_ID_2, FUNDS_HANDLER_V1, RECIPIENTS_2, SPLITS_2, {from: contract});
+          await royaltiesRegistry.setupRoyalty(EDITION_ID_2, royaltyImplV1.address, RECIPIENTS_2, SPLITS_2, {from: contract});
 
           // Get an ethers contract representation
           [deployerAcct] = await ethers.getSigners();
@@ -709,7 +701,7 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
       await accessControls.grantRole(CONTRACT_ROLE, secondaryMarketplace.address, {from: owner});
 
       // Add funds handler to registry
-      await royaltiesRegistry.addHandler(FUNDS_HANDLER_V1, royaltyImplV1.address, {from: admin});
+      await royaltiesRegistry.addHandler(royaltyImplV1.address, {from: admin});
 
       // Ensure marketplace is approved
       await token.setApprovalForAll(marketplace.address, true, {from: artist1});
@@ -720,7 +712,7 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
       expect(await royaltiesRegistry.hasRoyalties(EDITION_ID_2)).to.be.false;
 
       // Setup royalty
-      await royaltiesRegistry.setupRoyalty(EDITION_ID_2, FUNDS_HANDLER_V1, RECIPIENTS_3, SPLITS_3, {from: contract});
+      await royaltiesRegistry.setupRoyalty(EDITION_ID_2, royaltyImplV1.address, RECIPIENTS_3, SPLITS_3, {from: contract});
       proxyAddr = await royaltiesRegistry.getProxy(EDITION_ID_2);
       expect(await royaltiesRegistry.hasRoyalties(EDITION_ID_2)).to.be.true;
 
