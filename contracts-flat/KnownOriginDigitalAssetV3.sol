@@ -318,12 +318,14 @@ library Address {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 interface IKOAccessControlsLookup {
     function hasAdminRole(address _address) external view returns (bool);
 
-    function isVerifiedArtist(uint256 index, address account, bytes32[] calldata merkleProof) external view returns (bool);
+    function isVerifiedArtist(uint256 _index, address _account, bytes32[] calldata _merkleProof) external view returns (bool);
+
+    function isVerifiedArtistProxy(address _artist, address _proxy) external view returns (bool);
 
     function hasLegacyMinterRole(address _address) external view returns (bool);
 
@@ -336,7 +338,7 @@ interface IKOAccessControlsLookup {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 
 // This is purely an extension for the KO platform
@@ -402,7 +404,7 @@ interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 interface IKODAV3Minter {
 
@@ -417,7 +419,7 @@ interface IKODAV3Minter {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 
 interface ITokenUriResolver {
@@ -1034,7 +1036,7 @@ abstract contract Context {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 /**
   @title ERC-2309: ERC-721 Batch Mint Extension
@@ -1059,11 +1061,37 @@ interface IERC2309 {
     event ConsecutiveTransfer(uint256 indexed fromTokenId, uint256 toTokenId, address indexed fromAddress, address indexed toAddress);
 }
 
+// File: contracts/core/IHasSecondarySaleFees.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.5;
+
+
+interface IHasSecondarySaleFees is IERC165 {
+    event SecondarySaleFees(uint256 tokenId, address[] recipients, uint[] bps);
+
+    /*
+     * bytes4(keccak256('getFeeBps(uint256)')) == 0x0ebd4c7f
+     * bytes4(keccak256('getFeeRecipients(uint256)')) == 0xb9c4d9fb
+     *
+     * => 0x0ebd4c7f ^ 0xb9c4d9fb == 0xb7799584
+     */
+//    bytes4 private constant _INTERFACE_ID_FEES = 0xb7799584;
+//    constructor() public {
+//        _registerInterface(_INTERFACE_ID_FEES);
+//    }
+
+    function getFeeRecipients(uint256 id) external returns (address payable[] memory);
+    function getFeeBps(uint256 id) external returns (uint[] memory);
+}
+
 // File: contracts/core/IKODAV3.sol
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
+
 
 
 
@@ -1073,7 +1101,8 @@ interface IKODAV3 is
 IERC165, // Contract introspection
 IERC721, // NFTs
 IERC2309, // Consecutive batch mint
-IERC2981  // Royalties
+IERC2981,  // Royalties
+IHasSecondarySaleFees // rariable / foundation royalties
 {
     // edition utils
 
@@ -1131,7 +1160,7 @@ IERC2981  // Royalties
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 
 
@@ -1161,9 +1190,6 @@ interface ERC998ERC20TopDownEnumerable {
 abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDownEnumerable, ReentrancyGuard, Context {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    event ContractWhitelisted(address indexed contractAddress);
-    event WhitelistRemoved(address indexed contractAddress);
-
     // Edition ID -> ERC20 contract -> Balance of ERC20 for every token in Edition
     mapping(uint256 => mapping(address => uint256)) public editionTokenERC20Balances;
 
@@ -1178,9 +1204,6 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
     // Token ID -> ERC20 contract -> balance of ERC20 owned by token
     mapping(uint256 => mapping(address => uint256)) public ERC20Balances;
-
-    // ERC20 contract -> whether it is allowed to be wrapped within any token
-    mapping(address => bool) public whitelistedContracts;
 
     /// @notice the ERC20 balance of a NFT token given an ERC20 token address
     function balanceOfERC20(uint256 _tokenId, address _erc20Contract) public override view returns (uint256) {
@@ -1224,13 +1247,10 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
         address owner = self.ownerOf(_tokenId);
         require(
-            owner == spender
-            || self.isApprovedForAll(owner, spender)
-            || self.getApproved(_tokenId) == spender,
+            owner == spender || self.isApprovedForAll(owner, spender) || self.getApproved(_tokenId) == spender,
             "Only token owner"
         );
         require(_from == _msgSender(), "ERC20 owner must be the token owner");
-        require(whitelistedContracts[_erc20Contract], "Specified contract not whitelisted");
 
         IKODAV3 koda = IKODAV3(address(this));
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
@@ -1254,7 +1274,6 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
     function _composeERC20IntoEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) internal nonReentrant {
         require(_value > 0, "Value cannot be zero");
-        require(whitelistedContracts[_erc20Contract], "Specified contract not whitelisted");
 
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract);
         require(!editionAlreadyContainsERC20, "Edition already contains ERC20");
@@ -1284,13 +1303,6 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         return ERC20sEmbeddedInNft[_tokenId].at(_index);
     }
 
-    /// --- Admin ----
-    // To be overriden by implementing class
-
-    function whitelistERC20(address _address) virtual public;
-
-    function removeWhitelistForERC20(address _address) virtual public;
-
     /// --- Internal ----
 
     function _prepareERC20LikeTransfer(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) private {
@@ -1303,9 +1315,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
             address owner = self.ownerOf(_tokenId);
             require(
-                owner == _msgSender()
-                || self.isApprovedForAll(owner, _msgSender())
-                || self.getApproved(_tokenId) == _msgSender(),
+                owner == _msgSender() || self.isApprovedForAll(owner, _msgSender()) || self.getApproved(_tokenId) == _msgSender(),
                 "Not owner"
             );
         }
@@ -1356,26 +1366,13 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
             }
         }
     }
-
-    // Whitelist an ERC20 token for composing
-    function _whitelistERC20(address _erc20) internal {
-        whitelistedContracts[_erc20] = true;
-        emit ContractWhitelisted(_erc20);
-    }
-
-    // Remove an ERC20 token from the whitelist
-    // note: this will not brick NFTs that have this token. Just stops people adding new balances
-    function _removeWhitelistERC20(address _erc20) internal {
-        whitelistedContracts[_erc20] = false;
-        emit WhitelistRemoved(_erc20);
-    }
 }
 
 // File: contracts/core/Konstants.sol
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 contract Konstants {
 
@@ -1395,7 +1392,7 @@ contract Konstants {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 
 
@@ -1412,13 +1409,21 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
 
     modifier onlyContract(){
-        require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
+        _onlyContract();
         _;
     }
 
+    function _onlyContract() private {
+        require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
+    }
+
     modifier onlyAdmin(){
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+        _onlyAdmin();
         _;
+    }
+
+    function _onlyAdmin() private {
+        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
     }
 
     IKOAccessControlsLookup public accessControls;
@@ -1468,7 +1473,7 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 
 
@@ -1543,6 +1548,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /// @notice Allows a creator to disable sales of their edition or they can ask KnownOrigin to do this
     mapping(uint256 => bool) public editionSalesDisabled;
 
+    /// @notice Basis points conversion modulo
+    uint256 public basisPointsModulo = 1000;
+
     constructor(
         IKOAccessControlsLookup _accessControls,
         IERC2981 _royaltiesRegistryProxy,
@@ -1562,6 +1570,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
         // INTERFACE_ID_ERC721ROYALTIES
         _registerInterface(0x4b7f2c2d);
+
+        // _INTERFACE_ID_FEES
+        _registerInterface(0xb7799584);
     }
 
     /// @notice Mints batches of tokens emitting multiple Transfer events
@@ -1806,15 +1817,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return _editionFromTokenId(_tokenId);
     }
 
-    //////////////
-    // ERC-2981 //
-    //////////////
-
-    // Abstract away token royalty registry, proxy through to the implementation
-    function royaltyInfo(uint256 _tokenId)
-    external
-    override
-    returns (address receiver, uint256 amount) {
+    function _royaltyInfo(uint256 _tokenId) internal returns (address receiver, uint256 amount) {
         uint256 editionId = _editionFromTokenId(_tokenId);
 
         // If we have a registry and its defined, use it
@@ -1825,6 +1828,18 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         }
 
         return (_getCreatorOfEdition(editionId), secondarySaleRoyalty);
+    }
+
+    //////////////
+    // ERC-2981 //
+    //////////////
+
+    // Abstract away token royalty registry, proxy through to the implementation
+    function royaltyInfo(uint256 _tokenId)
+    external
+    override
+    returns (address receiver, uint256 amount) {
+        return _royaltyInfo(_tokenId);
     }
 
     // Expanded method at edition level and expanding on the funds receiver and the creator
@@ -1860,6 +1875,24 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     external
     override {
         emit ReceivedRoyalties(_royaltyRecipient, _buyer, _tokenId, _tokenPaid, _amount);
+    }
+
+    //////////////////////////////
+    // Has Secondary Sale Fees //
+    ////////////////////////////
+
+    function getFeeRecipients(uint256 _tokenId) external override returns (address payable[] memory) {
+        address payable[] memory feeRecipients = new address payable[](1);
+        (address _receiver, uint256 _amount) = _royaltyInfo(_tokenId);
+        feeRecipients[0] = payable(_receiver);
+        return feeRecipients;
+    }
+
+    function getFeeBps(uint256 _tokenId) external override returns (uint[] memory) {
+        uint[] memory feeBps = new uint[](1);
+        (address _receiver, uint256 _amount) = _royaltyInfo(_tokenId);
+        feeBps[0] = uint(_amount) / basisPointsModulo; // convert to basis points
+        return feeBps;
     }
 
     ////////////////////////////////////
@@ -2209,14 +2242,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     // Admin functions //
     /////////////////////
 
-    function whitelistERC20(address _address) override onlyAdmin public {
-        _whitelistERC20(_address);
-    }
-
-    function removeWhitelistForERC20(address _address) override onlyAdmin public {
-        _removeWhitelistERC20(_address);
-    }
-
     function setRoyaltiesRegistryProxy(IERC2981 _royaltiesRegistryProxy) onlyAdmin public {
         royaltiesRegistryProxy = _royaltiesRegistryProxy;
         emit AdminRoyaltiesRegistryProxySet(address(_royaltiesRegistryProxy));
@@ -2227,13 +2252,22 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         emit AdminTokenUriResolverSet(address(_tokenUriResolver));
     }
 
+    function updateBasisPointsModulo(uint256 _newModulo) onlyAdmin public {
+        basisPointsModulo = _newModulo;
+    }
+
     ///////////////////////
     // Creator functions //
     ///////////////////////
 
     /// @notice Optional metadata storage slot which allows the creator to set an additional metadata blob on the edition
     function lockInAdditionalMetaData(uint256 _editionId, string calldata _metadata) external {
-        require(_msgSender() == getCreatorOfEdition(_editionId), "Unable to set when not creator");
+        address creator = getCreatorOfEdition(_editionId);
+        require(
+            _msgSender() == creator || accessControls.isVerifiedArtistProxy(creator, _msgSender()),
+            "Unable to set when not creator"
+        );
+
         require(bytes(sealedEditionMetaData[_editionId]).length == 0, "can only be set once");
         sealedEditionMetaData[_editionId] = _metadata;
         emit SealedEditionMetaDataSet(_editionId);
@@ -2241,7 +2275,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     /// @notice Optional storage slot which allows the creator to set an additional unlockable blob on the edition
     function lockInUnlockableContent(uint256 _editionId, string calldata _content) external {
-        require(_msgSender() == getCreatorOfEdition(_editionId), "Unable to set when not creator");
+        address creator = getCreatorOfEdition(_editionId);
+        require(
+            _msgSender() == creator || accessControls.isVerifiedArtistProxy(creator, _msgSender()),
+            "Unable to set when not creator"
+        );
+
         additionalEditionUnlockableSlot[_editionId] = _content;
         emit AdditionalEditionUnlockableSet(_editionId);
     }

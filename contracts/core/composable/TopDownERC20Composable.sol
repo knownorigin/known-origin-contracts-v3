@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -31,9 +31,6 @@ interface ERC998ERC20TopDownEnumerable {
 abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDownEnumerable, ReentrancyGuard, Context {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    event ContractWhitelisted(address indexed contractAddress);
-    event WhitelistRemoved(address indexed contractAddress);
-
     // Edition ID -> ERC20 contract -> Balance of ERC20 for every token in Edition
     mapping(uint256 => mapping(address => uint256)) public editionTokenERC20Balances;
 
@@ -48,9 +45,6 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
     // Token ID -> ERC20 contract -> balance of ERC20 owned by token
     mapping(uint256 => mapping(address => uint256)) public ERC20Balances;
-
-    // ERC20 contract -> whether it is allowed to be wrapped within any token
-    mapping(address => bool) public whitelistedContracts;
 
     /// @notice the ERC20 balance of a NFT token given an ERC20 token address
     function balanceOfERC20(uint256 _tokenId, address _erc20Contract) public override view returns (uint256) {
@@ -74,7 +68,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         emit TransferERC20(_tokenId, _to, _erc20Contract, _value);
     }
 
-    /// @notice An NFT token owner (or approved) can compose multiple ERC20s in their NFT as long as the ERC20 is whitelisted
+    /// @notice An NFT token owner (or approved) can compose multiple ERC20s in their NFT
     function getERC20s(address _from, uint256[] calldata _tokenIds, address _erc20Contract, uint256 _totalValue) external {
         uint256 totalTokens = _tokenIds.length;
         require(totalTokens > 0 && _totalValue > 0, "Empty values provided");
@@ -85,7 +79,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         }
     }
 
-    /// @notice A NFT token owner (or approved address) can compose any ERC20 in their NFT as long as it is whitelisted
+    /// @notice A NFT token owner (or approved address) can compose any ERC20 in their NFT
     function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) public override nonReentrant {
         require(_value > 0, "Value cannot be zero");
 
@@ -94,13 +88,10 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
         address owner = self.ownerOf(_tokenId);
         require(
-            owner == spender
-            || self.isApprovedForAll(owner, spender)
-            || self.getApproved(_tokenId) == spender,
+            owner == spender || self.isApprovedForAll(owner, spender) || self.getApproved(_tokenId) == spender,
             "Only token owner"
         );
         require(_from == _msgSender(), "ERC20 owner must be the token owner");
-        require(whitelistedContracts[_erc20Contract], "Specified contract not whitelisted");
 
         IKODAV3 koda = IKODAV3(address(this));
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
@@ -124,7 +115,6 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
     function _composeERC20IntoEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) internal nonReentrant {
         require(_value > 0, "Value cannot be zero");
-        require(whitelistedContracts[_erc20Contract], "Specified contract not whitelisted");
 
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract);
         require(!editionAlreadyContainsERC20, "Edition already contains ERC20");
@@ -154,13 +144,6 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         return ERC20sEmbeddedInNft[_tokenId].at(_index);
     }
 
-    /// --- Admin ----
-    // To be overriden by implementing class
-
-    function whitelistERC20(address _address) virtual public;
-
-    function removeWhitelistForERC20(address _address) virtual public;
-
     /// --- Internal ----
 
     function _prepareERC20LikeTransfer(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) private {
@@ -173,9 +156,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
             address owner = self.ownerOf(_tokenId);
             require(
-                owner == _msgSender()
-                || self.isApprovedForAll(owner, _msgSender())
-                || self.getApproved(_tokenId) == _msgSender(),
+                owner == _msgSender() || self.isApprovedForAll(owner, _msgSender()) || self.getApproved(_tokenId) == _msgSender(),
                 "Not owner"
             );
         }
@@ -196,7 +177,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         uint256 spentTokens = editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId];
         uint256 editionTokenBalance = tokenInitialBalance - spentTokens;
 
-        // Check whether the value can be fully transfered from the edition balance, token balance or both balances
+        // Check whether the value can be fully transferred from the edition balance, token balance or both balances
         if (editionTokenBalance >= _value) {
             editionTokenERC20TransferAmounts[editionId][_erc20Contract][_tokenId] = spentTokens + _value;
         } else if (ERC20Balances[_tokenId][_erc20Contract] >= _value) {
@@ -225,18 +206,5 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
                 ERC20sEmbeddedInEdition[editionId].remove(_erc20Contract);
             }
         }
-    }
-
-    // Whitelist an ERC20 token for composing
-    function _whitelistERC20(address _erc20) internal {
-        whitelistedContracts[_erc20] = true;
-        emit ContractWhitelisted(_erc20);
-    }
-
-    // Remove an ERC20 token from the whitelist
-    // note: this will not brick NFTs that have this token. Just stops people adding new balances
-    function _removeWhitelistERC20(address _erc20) internal {
-        whitelistedContracts[_erc20] = false;
-        emit WhitelistRemoved(_erc20);
     }
 }

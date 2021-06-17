@@ -4,7 +4,7 @@
 
 // File: @openzeppelin/contracts/math/Math.sol
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 /**
  * @dev Standard math utilities missing in the Solidity language.
