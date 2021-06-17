@@ -4,7 +4,8 @@ const {expect} = require('chai');
 const hre = require('hardhat');
 const ethers = hre.ethers;
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
-const KODAV3Marketplace = artifacts.require('KODAV3Marketplace');
+const KODAV3Marketplace = artifacts.require('KODAV3PrimaryMarketplace');
+const KODAV3SecondaryMarketplace = artifacts.require('KODAV3SecondaryMarketplace');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 const RoyaltiesRegistry = artifacts.require('CollabRoyaltiesRegistry');
@@ -707,11 +708,16 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
   describe('Marketplace Secondary Sales', () => {
 
+    let secondaryMarketplace
+
     beforeEach(async () => {
 
       // Create marketplace and enable in whitelist
       marketplace = await KODAV3Marketplace.new(accessControls.address, token.address, koCommission, {from: owner});
       await accessControls.grantRole(CONTRACT_ROLE, marketplace.address, {from: owner});
+
+      secondaryMarketplace = await KODAV3SecondaryMarketplace.new(accessControls.address, token.address, koCommission, {from: owner});
+      await accessControls.grantRole(CONTRACT_ROLE, secondaryMarketplace.address, {from: owner});
 
       // Add funds handler to registry
       await royaltiesRegistry.addHandler(FUNDS_HANDLER_V1, royaltyImplV1.address, {from: admin});
@@ -741,7 +747,7 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
       );
 
       // List edition - primary sale
-      await marketplace.listEdition(artist1, EDITION_ID_2, _0_5_ETH, await time.latest(), {from: contract});
+      await marketplace.listForBuyNow(artist1, EDITION_ID_2, _0_5_ETH, await time.latest(), {from: contract});
 
       // Do primary sale of a token to CollectorA
       await marketplace.buyEditionToken(EDITION_ID_2, {from: collectorA, value: _0_5_ETH});
@@ -761,25 +767,25 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
     it('sends royalties to funds handler on accepted token bid', async () => {
 
       // CollectorB offers 0.5 ETH for token
-      await marketplace.placeTokenBid(EDITION_ID_2, {from: collectorB, value: _0_5_ETH});
+      await secondaryMarketplace.placeTokenBid(EDITION_ID_2, {from: collectorB, value: _0_5_ETH});
 
       // CollectorA has to approve the marketplace
-      await token.setApprovalForAll(marketplace.address, true, {from: collectorA});
+      await token.setApprovalForAll(secondaryMarketplace.address, true, {from: collectorA});
 
       contractTracker = await balance.tracker(proxyAddr);
-      let platformAccountTracker = await balance.tracker(await marketplace.platformAccount());
+      let platformAccountTracker = await balance.tracker(await secondaryMarketplace.platformAccount());
       let collectorATracker = await balance.tracker(collectorA);
 
       // CollectorA accepts bid
       const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString());
-      const receipt = await marketplace.acceptTokenBid(EDITION_ID_2, _0_5_ETH, {from: collectorA, gasPrice});
+      const receipt = await secondaryMarketplace.acceptTokenBid(EDITION_ID_2, _0_5_ETH, {from: collectorA, gasPrice});
 
       // Determine the gas cost associated with the transaction
       const gasUsed = new BN( receipt.receipt.cumulativeGasUsed );
       const txCost = gasUsed.mul(gasPrice);
 
       const expectedArtistRoyalties = new BN(_0_5_ETH)
-        .div(await marketplace.modulo())
+        .div(await secondaryMarketplace.modulo())
         .mul(await royaltiesRegistry.royaltyAmount());
 
       // Check royalties recipient gets 12.5%
@@ -788,8 +794,8 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
       );
 
       const expectedPlatformCommission = new BN(_0_5_ETH)
-        .div(await marketplace.modulo())
-        .mul(await marketplace.platformSecondarySaleCommission());
+        .div(await secondaryMarketplace.modulo())
+        .mul(await secondaryMarketplace.platformSecondarySaleCommission());
 
       // check platform gets 2.5%
       expect(await platformAccountTracker.delta()).to.be.bignumber.equal(
@@ -811,10 +817,10 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
     it('funds can be drained from handler after accepted token bid', async () => {
 
       // CollectorB offers 0.5 ETH for token
-      await marketplace.placeTokenBid(EDITION_ID_2, {from: collectorB, value: _0_5_ETH});
+      await secondaryMarketplace.placeTokenBid(EDITION_ID_2, {from: collectorB, value: _0_5_ETH});
 
       // CollectorA has to approve the marketplace
-      await token.setApprovalForAll(marketplace.address, true, {from: collectorA});
+      await token.setApprovalForAll(secondaryMarketplace.address, true, {from: collectorA});
 
       // Create balance trackers
       contractTracker = await balance.tracker(proxyAddr);
@@ -822,19 +828,19 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
       // CollectorA accepts bid
       const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString());
-      const receipt = await marketplace.acceptTokenBid(EDITION_ID_2, _0_5_ETH, {from: collectorA, gasPrice});
+      const receipt = await secondaryMarketplace.acceptTokenBid(EDITION_ID_2, _0_5_ETH, {from: collectorA, gasPrice});
 
       // Determine the gas cost associated with the transaction
       const gasUsed = new BN( receipt.receipt.cumulativeGasUsed );
       const txCost = gasUsed.mul(gasPrice);
 
       const expectedArtistRoyalties = new BN(_0_5_ETH)
-          .div(await marketplace.modulo())
+          .div(await secondaryMarketplace.modulo())
           .mul(await royaltiesRegistry.royaltyAmount());
 
       const expectedPlatformCommission = new BN(_0_5_ETH)
-          .div(await marketplace.modulo())
-          .mul(await marketplace.platformSecondarySaleCommission());
+          .div(await secondaryMarketplace.modulo())
+          .mul(await secondaryMarketplace.platformSecondarySaleCommission());
 
       const expectedSellerValue = new BN(_0_5_ETH)
           .sub(txCost)
