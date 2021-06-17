@@ -27,7 +27,7 @@ abstract contract Context {
 
 // File: contracts/core/IKODAV3Minter.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -42,7 +42,7 @@ interface IKODAV3Minter {
 
 // File: contracts/access/IKOAccessControlsLookup.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -62,7 +62,7 @@ interface IKOAccessControlsLookup {
 
 // File: @openzeppelin/contracts/utils/introspection/IERC165.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -89,7 +89,7 @@ interface IERC165 {
 
 // File: @openzeppelin/contracts/token/ERC721/IERC721.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -220,7 +220,7 @@ interface IERC721 is IERC165 {
 
 // File: contracts/core/IERC2309.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -249,7 +249,7 @@ interface IERC2309 {
 
 // File: contracts/core/IERC2981.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -315,7 +315,7 @@ interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
 
 // File: contracts/core/IHasSecondarySaleFees.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -340,7 +340,7 @@ interface IHasSecondarySaleFees is IERC165 {
 
 // File: contracts/core/IKODAV3.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -410,7 +410,7 @@ IHasSecondarySaleFees // rariable / foundation royalties
 
 // File: contracts/marketplace/IKODAV3Marketplace.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.5;
 
 interface IBuyNowMarketplace {
@@ -518,7 +518,7 @@ interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffe
 
 // File: @openzeppelin/contracts/security/ReentrancyGuard.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -583,7 +583,7 @@ abstract contract ReentrancyGuard {
 
 // File: @openzeppelin/contracts/security/Pausable.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -675,7 +675,7 @@ abstract contract Pausable is Context {
 
 // File: @openzeppelin/contracts/token/ERC20/IERC20.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -755,7 +755,7 @@ interface IERC20 {
 
 // File: contracts/marketplace/BaseMarketplace.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -899,7 +899,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
 
 // File: contracts/marketplace/BuyNowMarketplace.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -986,7 +986,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
 
 // File: contracts/marketplace/ReserveAuctionMarketplace.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -1214,7 +1214,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
 // File: contracts/marketplace/KODAV3PrimaryMarketplace.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -1735,7 +1735,7 @@ BuyNowMarketplace {
 
 // File: contracts/minter/MintingFactory.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 

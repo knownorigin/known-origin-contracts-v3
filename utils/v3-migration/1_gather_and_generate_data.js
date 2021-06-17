@@ -7,6 +7,8 @@ const axios = require('axios');
 
   const {data: allArtists} = await axios.get('https://us-central1-known-origin-io.cloudfunctions.net/main/api/artist/collective');
 
+  // TODO This should also check if enabled on the old contract as well
+
   // Generate raw data
   const allActiveEnabledArtists = _.chain(allArtists)
     .filter({enabled: true})

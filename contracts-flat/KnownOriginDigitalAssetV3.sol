@@ -27,7 +27,7 @@ interface IERC165 {
 
 // File: @openzeppelin/contracts/utils/introspection/ERC165.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -57,7 +57,7 @@ abstract contract ERC165 is IERC165 {
 
 // File: @openzeppelin/contracts/utils/introspection/ERC165Storage.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -100,7 +100,7 @@ abstract contract ERC165Storage is ERC165 {
 
 // File: @openzeppelin/contracts/token/ERC721/IERC721Receiver.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -124,7 +124,7 @@ interface IERC721Receiver {
 
 // File: @openzeppelin/contracts/utils/Address.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -316,7 +316,7 @@ library Address {
 
 // File: contracts/access/IKOAccessControlsLookup.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -336,7 +336,7 @@ interface IKOAccessControlsLookup {
 
 // File: contracts/core/IERC2981.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -402,7 +402,7 @@ interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
 
 // File: contracts/core/IKODAV3Minter.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -417,7 +417,7 @@ interface IKODAV3Minter {
 
 // File: contracts/programmable/ITokenUriResolver.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -431,7 +431,7 @@ interface ITokenUriResolver {
 
 // File: @openzeppelin/contracts/token/ERC20/IERC20.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -511,7 +511,7 @@ interface IERC20 {
 
 // File: @openzeppelin/contracts/token/ERC721/IERC721.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -642,7 +642,7 @@ interface IERC721 is IERC165 {
 
 // File: @openzeppelin/contracts/utils/structs/EnumerableSet.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -942,7 +942,7 @@ library EnumerableSet {
 
 // File: @openzeppelin/contracts/security/ReentrancyGuard.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -1007,7 +1007,7 @@ abstract contract ReentrancyGuard {
 
 // File: @openzeppelin/contracts/utils/Context.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -1034,7 +1034,7 @@ abstract contract Context {
 
 // File: contracts/core/IERC2309.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -1063,7 +1063,7 @@ interface IERC2309 {
 
 // File: contracts/core/IHasSecondarySaleFees.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -1088,7 +1088,7 @@ interface IHasSecondarySaleFees is IERC165 {
 
 // File: contracts/core/IKODAV3.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -1158,7 +1158,7 @@ IHasSecondarySaleFees // rariable / foundation royalties
 
 // File: contracts/core/composable/TopDownERC20Composable.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -1370,7 +1370,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
 // File: contracts/core/Konstants.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -1390,7 +1390,7 @@ contract Konstants {
 
 // File: contracts/core/BaseKoda.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 
@@ -1471,7 +1471,7 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
 
 // File: contracts/core/KnownOriginDigitalAssetV3.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.5;
 

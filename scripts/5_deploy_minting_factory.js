@@ -31,7 +31,7 @@ async function main() {
   );
   prompt(`Found KODA V3 NFT [${kodaV3Deployment.address}] for network [${network}] - click enter to continue ... ?`);
 
-  const marketplaceAddress = prompt('Marketplace address? ');
+  const marketplaceAddress = prompt('Primary Marketplace address? ');
   const marketplaceAddressDeployment = new ethers.Contract(
     marketplaceAddress,
     KODAV3Marketplace.abi,

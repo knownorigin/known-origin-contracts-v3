@@ -39,7 +39,16 @@ async function main() {
   await accessControls.grantRole(DEFAULT_ADMIN_ROLE, legacyAdminAccount);
   console.log(`Granted Admin role to legacy account [${legacyAdminAccount}]`);
 
+  const {root, ipfsHash} = v3_data.artistMerkelData;
+  console.log(`Setting artist minting merkel proof data`, {root, ipfsHash});
+
+  prompt(`Are you sure this looks correct? - hit enter to continue`);
+
+  await accessControls.updateArtistMerkleRoot(root);
+  await accessControls.updateArtistMerkleRootIpfsHash(ipfsHash);
+
   console.log('Finished!');
+  console.log('AccessControls deployed at', accessControls.address);
 }
 
 main()
