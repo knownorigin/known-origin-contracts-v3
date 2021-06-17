@@ -13,6 +13,10 @@ import "./ICollabFundsDrainable.sol";
  */
 contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollabFundsDrainable {
 
+    uint256 public totalEthReceived;
+    uint256 public totalEthPaid;
+    mapping(address => uint256) public ethPaidToCollaborator;
+
     // split current contract balance among recipients
     function drain() public nonReentrant override {
 
@@ -20,27 +24,94 @@ contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollab
         uint256 balance = address(this).balance;
         require(balance > 0, "No funds to drain");
 
+        uint256 outstandingEthOwedToCollaborators = totalEthReceived - totalEthPaid;
+        if (balance > outstandingEthOwedToCollaborators) {
+            // when outstandingEthOwedToCollaborators is > 0 it means that ETH is owed to some collaborators (those who have not drawn down).
+            // If balance is greater than outstandingEthOwedToCollaborators then the balance has grown since a collaborator has drawn down so increase total ETH received.
+            // Otherwise, if ETH owed is zero, then we have simply received a new balance
+            totalEthReceived += balance - outstandingEthOwedToCollaborators;
+        }
+        // note with the above we do not have to increase total received in the case balance is equal to what we owe collaborators
+
         uint256[] memory shares = new uint256[](recipients.length);
 
         // Calculate and send share for each recipient
-        uint256 singleUnitOfValue = balance / SCALE_FACTOR;
+        uint256 singleUnitOfValue = totalEthReceived / SCALE_FACTOR;
         uint256 sumPaidOut;
         for (uint256 i = 0; i < recipients.length; i++) {
+            address recipient = recipients[i];
             shares[i] = singleUnitOfValue * splits[i];
 
             // Deal with the first recipient later (see comment below)
             if (i != 0) {
-                payable(recipients[i]).call{value: shares[i]}("");
-            }
+                uint256 amountOwedToCollaborator = shares[i] - ethPaidToCollaborator[recipient];
+                if (amountOwedToCollaborator > 0) {
+                    ethPaidToCollaborator[recipient] += amountOwedToCollaborator;
+                    payable(recipient).call{value: amountOwedToCollaborator}("");
 
-            sumPaidOut += shares[i];
+                    sumPaidOut += amountOwedToCollaborator;
+                }
+            }
         }
 
         // The first recipient is a special address as it receives any dust left over from splitting up the funds
-        uint256 remainingBalance = balance - sumPaidOut; // Either going to be a zero or non-zero value
-        payable(recipients[0]).call{value: remainingBalance + shares[0]}("");
+        address firstRecipient = recipients[0];
+        uint256 amountOwedToCollaborator = shares[0] - ethPaidToCollaborator[firstRecipient];
+        sumPaidOut += amountOwedToCollaborator;
+
+        // now check for dust i.e. remainingBalance
+        uint256 remainingBalance = totalEthReceived - sumPaidOut; // Either going to be a zero or non-zero value
+        sumPaidOut += remainingBalance; // dust increases pay out for all recipients
+
+        // increase amount owed to collaborator
+        amountOwedToCollaborator += remainingBalance;
+
+        if (amountOwedToCollaborator > 0) {
+            ethPaidToCollaborator[firstRecipient] += amountOwedToCollaborator;
+            payable(firstRecipient).call{value: amountOwedToCollaborator}("");
+        }
+
+        totalEthPaid += sumPaidOut;
 
         emit FundsDrained(balance, recipients, shares, address(0));
+    }
+
+    // todo add to interface
+    function drainMyShare() public nonReentrant {
+        // Check that there are funds to drain
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No funds to drain");
+
+        uint256 outstandingEthOwedToCollaborators = totalEthReceived - totalEthPaid;
+        if (balance > outstandingEthOwedToCollaborators) {
+            // when outstandingEthOwedToCollaborators is > 0 it means that ETH is owed to some collaborators (those who have not drawn down).
+            // If balance is greater than outstandingEthOwedToCollaborators then the balance has grown since a collaborator has drawn down so increase total ETH received.
+            // Otherwise, if ETH owed is zero, then we have simply received a new balance
+            totalEthReceived += balance - outstandingEthOwedToCollaborators;
+        }
+        // note with the above we do not have to increase total received in the case balance is equal to what we owe collaborators
+
+        address recipient;
+        uint256 recipientIndex;
+        for(uint i = 0; i < recipients.length; i++) {
+            address _recipient = recipients[i];
+            if (_recipient == msg.sender) {
+                recipient = msg.sender;
+                recipientIndex = i;
+                break;
+            }
+        }
+        require(recipient != address(0), "Nice try but you are not a collaborator");
+
+        uint256 singleUnitOfValue = totalEthReceived / SCALE_FACTOR;
+        uint256 share = singleUnitOfValue * splits[recipientIndex];
+        uint256 amountOwed = share - ethPaidToCollaborator[recipient];
+        if (amountOwed > 0) {
+            ethPaidToCollaborator[recipient] = amountOwed;
+            totalEthPaid += amountOwed;
+            payable(recipient).call{value: amountOwed}("");
+            // todo - emit event here
+        }
     }
 
     function drainERC20(IERC20 token) public nonReentrant override {
