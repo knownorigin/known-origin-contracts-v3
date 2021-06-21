@@ -69,6 +69,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /// @notice Optional one time use storage slot for additional edition metadata
     mapping(uint256 => string) public sealedEditionMetaData;
 
+    // TODO update to use newer OS standards for permanent metadata with event - https://docs.opensea.io/docs/metadata-standards?s=03#section-ipfs-and-arweave-uris
     /// @notice Optional one time use storage slot for additional token metadata
     mapping(uint256 => string) public sealedTokenMetaData;
 
