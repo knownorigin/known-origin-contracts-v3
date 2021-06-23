@@ -91,12 +91,6 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     this.erc20Token3 = await MockERC20.new({from: owner})
     this.erc20Token4 = await MockERC20.new({from: owner})
     this.erc20Token5 = await MockERC20.new({from: owner})
-
-    // whitelist the ERC20s in order to allow them to be wrapped
-    await this.token.whitelistERC20(this.erc20Token1.address);
-    await this.token.whitelistERC20(this.erc20Token2.address);
-    await this.token.whitelistERC20(this.erc20Token3.address);
-    await this.token.whitelistERC20(this.erc20Token4.address);
   });
 
   describe('Tokens only', () => {
@@ -495,19 +489,6 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
         )
       })
 
-      it('Reverts when erc20 is not whitelisted', async () => {
-        await expectRevert(
-          mintEditionAndComposeERC20(
-            this.erc20Token5,
-            ONE_THOUSAND_TOKENS,
-            this.token,
-            owner,
-            contract
-          ),
-          "Specified contract not whitelisted"
-        )
-      })
-
       it('Reverts when trying to wrap the same ERC20 twice instead of specifying larger value', async () => {
         await expectRevert(
           mintEditionAndComposeERC20s(
@@ -520,16 +501,6 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           "Edition already contains ERC20"
         )
       })
-    })
-  })
-
-  describe('removeWhitelistForERC20()', () => {
-    it('As admin can remove whitelist', async () => {
-      expect(await this.token.whitelistedContracts(this.erc20Token1.address)).to.be.true
-
-      await this.token.removeWhitelistForERC20(this.erc20Token1.address)
-
-      expect(await this.token.whitelistedContracts(this.erc20Token1.address)).to.be.false
     })
   })
 
@@ -576,19 +547,6 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           {from: owner}
         ),
         "ERC20 owner must be the token owner"
-      )
-    })
-
-    it('Reverts when ERC20 is not whitelisted', async () => {
-      await expectRevert(
-        this.token.getERC20(
-          owner,
-          firstEditionTokenId,
-          this.erc20Token5.address,
-          ONE_THOUSAND_TOKENS,
-          {from: owner}
-        ),
-        "Specified contract not whitelisted"
       )
     })
 

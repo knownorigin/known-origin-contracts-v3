@@ -77,8 +77,8 @@ contract('KODAV3BaseMarketplace', function (accounts) {
         )
 
         await expectEvent(receipt, 'AdminRecoverERC20', {
-          recipient: admin,
-          amount: _0_1_Tokens
+          _recipient: admin,
+          _amount: _0_1_Tokens
         })
 
         expect(await this.erc20Token.balanceOf(admin)).to.be.bignumber.equal(_0_1_Tokens)
@@ -111,8 +111,8 @@ contract('KODAV3BaseMarketplace', function (accounts) {
 
         const {receipt} = await this.marketplace.recoverStuckETH(admin, _0_5_ETH, {from: owner})
         await expectEvent(receipt, 'AdminRecoverETH', {
-          recipient: admin,
-          amount: _0_5_ETH
+          _recipient: admin,
+          _amount: _0_5_ETH
         })
 
         expect(await adminBalTracker.delta()).to.be.bignumber.equal(_0_5_ETH)

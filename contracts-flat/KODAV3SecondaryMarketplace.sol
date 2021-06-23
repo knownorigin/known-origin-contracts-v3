@@ -1,7 +1,8 @@
 // File: contracts/marketplace/IKODAV3Marketplace.sol
 
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.3;
+
+pragma solidity 0.8.5;
 
 interface IBuyNowMarketplace {
     event ListedForBuyNow(uint256 indexed _id, uint256 _price, address _currentOwner, uint256 _startDate);
@@ -108,14 +109,16 @@ interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffe
 
 // File: contracts/access/IKOAccessControlsLookup.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+
+pragma solidity 0.8.5;
 
 interface IKOAccessControlsLookup {
     function hasAdminRole(address _address) external view returns (bool);
 
-    function isVerifiedArtist(uint256 index, address account, bytes32[] calldata merkleProof) external view returns (bool);
+    function isVerifiedArtist(uint256 _index, address _account, bytes32[] calldata _merkleProof) external view returns (bool);
+
+    function isVerifiedArtistProxy(address _artist, address _proxy) external view returns (bool);
 
     function hasLegacyMinterRole(address _address) external view returns (bool);
 
@@ -126,7 +129,7 @@ interface IKOAccessControlsLookup {
 
 // File: @openzeppelin/contracts/utils/introspection/IERC165.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -153,7 +156,7 @@ interface IERC165 {
 
 // File: @openzeppelin/contracts/token/ERC721/IERC721.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -284,9 +287,9 @@ interface IERC721 is IERC165 {
 
 // File: contracts/core/IERC2309.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+
+pragma solidity 0.8.5;
 
 /**
   @title ERC-2309: ERC-721 Batch Mint Extension
@@ -313,9 +316,9 @@ interface IERC2309 {
 
 // File: contracts/core/IERC2981.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+
+pragma solidity 0.8.5;
 
 
 // This is purely an extension for the KO platform
@@ -377,11 +380,37 @@ interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
     function receivedRoyalties(address _royaltyRecipient, address _buyer, uint256 _tokenId, address _tokenPaid, uint256 _amount) external;
 }
 
+// File: contracts/core/IHasSecondarySaleFees.sol
+
+
+
+pragma solidity 0.8.5;
+
+
+interface IHasSecondarySaleFees is IERC165 {
+    event SecondarySaleFees(uint256 tokenId, address[] recipients, uint[] bps);
+
+    /*
+     * bytes4(keccak256('getFeeBps(uint256)')) == 0x0ebd4c7f
+     * bytes4(keccak256('getFeeRecipients(uint256)')) == 0xb9c4d9fb
+     *
+     * => 0x0ebd4c7f ^ 0xb9c4d9fb == 0xb7799584
+     */
+//    bytes4 private constant _INTERFACE_ID_FEES = 0xb7799584;
+//    constructor() public {
+//        _registerInterface(_INTERFACE_ID_FEES);
+//    }
+
+    function getFeeRecipients(uint256 id) external returns (address payable[] memory);
+    function getFeeBps(uint256 id) external returns (uint[] memory);
+}
+
 // File: contracts/core/IKODAV3.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+
+pragma solidity 0.8.5;
+
 
 
 
@@ -391,7 +420,8 @@ interface IKODAV3 is
 IERC165, // Contract introspection
 IERC721, // NFTs
 IERC2309, // Consecutive batch mint
-IERC2981  // Royalties
+IERC2981,  // Royalties
+IHasSecondarySaleFees // rariable / foundation royalties
 {
     // edition utils
 
@@ -447,7 +477,7 @@ IERC2981  // Royalties
 
 // File: @openzeppelin/contracts/security/ReentrancyGuard.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -512,7 +542,7 @@ abstract contract ReentrancyGuard {
 
 // File: @openzeppelin/contracts/utils/Context.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -539,7 +569,7 @@ abstract contract Context {
 
 // File: @openzeppelin/contracts/security/Pausable.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -631,7 +661,7 @@ abstract contract Pausable is Context {
 
 // File: @openzeppelin/contracts/token/ERC20/IERC20.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -711,9 +741,9 @@ interface IERC20 {
 
 // File: contracts/marketplace/BaseMarketplace.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+
+pragma solidity 0.8.5;
 
 
 
@@ -728,22 +758,30 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     event AdminUpdatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission);
     event AdminUpdateBidLockupPeriod(uint256 _bidLockupPeriod);
     event AdminUpdatePlatformAccount(address indexed _oldAddress, address indexed _newAddress);
-    event AdminRecoverERC20(IERC20 indexed token, address indexed recipient, uint256 amount);
-    event AdminRecoverETH(address payable indexed recipient, uint256 amount);
+    event AdminRecoverERC20(IERC20 indexed _token, address indexed _recipient, uint256 _amount);
+    event AdminRecoverETH(address payable indexed _recipient, uint256 _amount);
 
-    event BidderRefunded(uint256 indexed _id, address _bidder, uint256 bid, address _newBidder, uint256 _newOffer);
-    event BidRefundFailed(uint256 indexed _id, address _bidder, uint256 bid);
+    event BidderRefunded(uint256 indexed _id, address _bidder, uint256 _bid, address _newBidder, uint256 _newOffer);
+    event BidRefundFailed(uint256 indexed _id, address _bidder, uint256 _bid);
 
     // Only a whitelisted smart contract in the access controls contract
     modifier onlyContract() {
-        require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
+        _onlyContract();
         _;
+    }
+
+    function _onlyContract() private {
+        require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
     }
 
     // Only admin defined in the access controls contract
     modifier onlyAdmin() {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
+        _onlyAdmin();
         _;
+    }
+
+    function _onlyAdmin() private {
+        require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
     }
 
     /// @notice Address of the access control contract
@@ -847,9 +885,9 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
 
 // File: contracts/marketplace/BuyNowMarketplace.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+
+pragma solidity 0.8.5;
 
 
 
@@ -905,7 +943,11 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
     public
     override
     whenNotPaused {
-        require(editionOrTokenListings[_id].seller == _msgSender(), "Only seller can change price");
+        require(
+            editionOrTokenListings[_id].seller == _msgSender()
+            || accessControls.isVerifiedArtistProxy(editionOrTokenListings[_id].seller, _msgSender()),
+            "Only seller can change price"
+        );
 
         // Set price
         editionOrTokenListings[_id].price = _listingPrice;
@@ -930,9 +972,9 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
 
 // File: contracts/marketplace/ReserveAuctionMarketplace.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+
+pragma solidity 0.8.5;
 
 
 
@@ -1081,7 +1123,12 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
     nonReentrant {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
 
-        require(reserveAuction.seller == _msgSender(), "Not the seller");
+        require(
+            reserveAuction.seller == _msgSender()
+            || accessControls.isVerifiedArtistProxy(reserveAuction.seller, _msgSender()),
+            "Not the seller"
+        );
+
         require(reserveAuction.biddingEnd == 0, "Reserve countdown commenced");
         require(_reservePrice >= minBidAmount, "Reserve must be at least min bid");
 
@@ -1108,7 +1155,8 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         bool isSeller = reserveAuction.seller == _msgSender();
         bool isBidder = reserveAuction.bidder == _msgSender();
         require(
-            isSeller || isBidder || accessControls.hasContractOrAdminRole(_msgSender()),
+            isSeller || isBidder || accessControls.isVerifiedArtistProxy(reserveAuction.seller, _msgSender())
+            || accessControls.hasContractOrAdminRole(_msgSender()),
             "Only seller, bidder, contract or platform admin"
         );
         // external call done last as a gas optimisation i.e. it wont be called if isSeller || isBidder is true
@@ -1152,9 +1200,9 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
 // File: contracts/marketplace/KODAV3SecondaryMarketplace.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+
+pragma solidity 0.8.5;
 
 
 

@@ -27,7 +27,7 @@ abstract contract Context {
 
 // File: @openzeppelin/contracts/utils/Strings.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -97,7 +97,7 @@ library Strings {
 
 // File: @openzeppelin/contracts/utils/introspection/IERC165.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -124,7 +124,7 @@ interface IERC165 {
 
 // File: @openzeppelin/contracts/utils/introspection/ERC165.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -154,7 +154,7 @@ abstract contract ERC165 is IERC165 {
 
 // File: @openzeppelin/contracts/access/AccessControl.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -399,7 +399,7 @@ abstract contract AccessControl is Context, IAccessControl, ERC165 {
 
 // File: @openzeppelin/contracts/utils/cryptography/MerkleProof.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -441,14 +441,16 @@ library MerkleProof {
 
 // File: contracts/access/IKOAccessControlsLookup.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+
+pragma solidity 0.8.5;
 
 interface IKOAccessControlsLookup {
     function hasAdminRole(address _address) external view returns (bool);
 
-    function isVerifiedArtist(uint256 index, address account, bytes32[] calldata merkleProof) external view returns (bool);
+    function isVerifiedArtist(uint256 _index, address _account, bytes32[] calldata _merkleProof) external view returns (bool);
+
+    function isVerifiedArtistProxy(address _artist, address _proxy) external view returns (bool);
 
     function hasLegacyMinterRole(address _address) external view returns (bool);
 
@@ -459,8 +461,8 @@ interface IKOAccessControlsLookup {
 
 // File: contracts/access/legacy/ISelfServiceAccessControls.sol
 
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.3;
+
+pragma solidity 0.8.5;
 
 interface ISelfServiceAccessControls {
 
@@ -470,9 +472,9 @@ interface ISelfServiceAccessControls {
 
 // File: contracts/access/KOAccessControls.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+
+pragma solidity 0.8.5;
 
 
 
@@ -484,6 +486,8 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
     event AdminUpdateArtistAccessMerkleRoot(bytes32 _artistAccessMerkleRoot);
     event AdminUpdateArtistAccessMerkleRootIpfsHash(string _artistAccessMerkleRootIpfsHash);
 
+    event AddedArtistProxy(address _artist, address _proxy);
+
     bytes32 public constant CONTRACT_ROLE = keccak256("CONTRACT_ROLE");
 
     ISelfServiceAccessControls public legacyMintingAccess;
@@ -494,6 +498,9 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
     // A publicly hosted ipfs payload holding the merkle proofs
     string public artistAccessMerkleRootIpfsHash;
 
+    /// Allow an artist to set a single account to act on their behalf
+    mapping(address => address) public artistProxy;
+
     constructor(ISelfServiceAccessControls _legacyMintingAccess) {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         legacyMintingAccess = _legacyMintingAccess;
@@ -503,10 +510,30 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
     // Merkle Magic //
     //////////////////
 
-    function isVerifiedArtist(uint256 index, address account, bytes32[] calldata merkleProof) public override view returns (bool) {
+    function isVerifiedArtist(uint256 _index, address _account, bytes32[] calldata _merkleProof) public override view returns (bool) {
         // assume balance of 1 for enabled artists
-        bytes32 node = keccak256(abi.encodePacked(index, account, uint256(1)));
-        return MerkleProof.verify(merkleProof, artistAccessMerkleRoot, node);
+        bytes32 node = keccak256(abi.encodePacked(_index, _account, uint256(1)));
+        return MerkleProof.verify(_merkleProof, artistAccessMerkleRoot, node);
+    }
+
+    //////////////////////
+    // artist proxy //
+    /////////////////////
+
+    function setVerifiedArtistProxy(
+        address _address,
+        uint256 _merkleIndex,
+        bytes32[] calldata _merkleProof
+    )  external  {
+        require(isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
+
+        artistProxy[_msgSender()] = _address;
+
+        emit AddedArtistProxy(_msgSender(), _address);
+    }
+
+    function isVerifiedArtistProxy(address _artist, address _proxy) public override view returns (bool) {
+        return artistProxy[_artist] == _proxy;
     }
 
     /////////////

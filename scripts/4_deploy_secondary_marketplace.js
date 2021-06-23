@@ -46,7 +46,7 @@ async function main() {
   );
 
   await marketplace.deployed();
-  console.log('Marketplace deployed at', marketplace.address);
+  console.log('Secondary Marketplace deployed at', marketplace.address);
 
   const CONTRACT_ROLE = await accessControlsDeployment.CONTRACT_ROLE();
   await accessControlsDeployment.grantRole(CONTRACT_ROLE, marketplace.address);

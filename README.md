@@ -10,22 +10,30 @@
 
 ## Deployments
 
+### How to?
+
+Use `hardhat` deploy for - see `/scripts` folder for more info e.g.
+
+`npx hardhat run --network rinkeby scripts/X_my_script.js`
+
+To verify also try hardhat but this sometimes fails, and you need to use the flat contracts.
+
 ### AccessControls
 
-* `Rinkeby` - `0x224aab6dbc8d8ee00f98e070dfed92b946208c6d` (verified)
+* `Rinkeby` - `0xB078C9E804cAcBD4C20161FB7F3af464dE960349` (verified)
 
 ### KODA V3
 
-* `Rinkeby` - `0x2B356d6Da0EBDE6f7BD436f977A303E550E756B1` (DO NOT VERIFY YET)
+* `Rinkeby` - `0xf59DfBE431DE93E725AeF35aFf3EB4A0EF819aF2` (DO NOT VERIFY YET)
 
 ### Primary V3 Marketplace
 
-* `Rinkeby` - `0x8a9b9d6952d49cFb4C045D8a619a573dcd7b622A`
+* `Rinkeby` - `0x69FbdaDB09961F530C6209e7758eCA54FA635804` (verified)
 
 ### Secondary V3 Marketplace
 
-* `Rinkeby` - `0xeb76528A2C67F824052a7E57B5F8c93E52326691`
+* `Rinkeby` - `0x0E70f22F6333B08C9fb5044C65C5937420E72739` (verified)
 
 ### Minting Factory
 
-* `Rinkeby` - `0x994f65E79fda9468a749d51C3a86B11a825eA8aA`
+* `Rinkeby` - `0x17fcD33fc32352FB15f46d66CE909C3DA815D657` (verified)

@@ -1,7 +1,7 @@
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 import {ERC165Storage} from "@openzeppelin/contracts/utils/introspection/ERC165Storage.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -69,6 +69,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /// @notice Optional one time use storage slot for additional edition metadata
     mapping(uint256 => string) public sealedEditionMetaData;
 
+    // TODO update to use newer OS standards for permanent metadata with event - https://docs.opensea.io/docs/metadata-standards?s=03#section-ipfs-and-arweave-uris
     /// @notice Optional one time use storage slot for additional token metadata
     mapping(uint256 => string) public sealedTokenMetaData;
 
@@ -775,14 +776,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /////////////////////
     // Admin functions //
     /////////////////////
-
-    function whitelistERC20(address _address) override onlyAdmin public {
-        _whitelistERC20(_address);
-    }
-
-    function removeWhitelistForERC20(address _address) override onlyAdmin public {
-        _removeWhitelistERC20(_address);
-    }
 
     function setRoyaltiesRegistryProxy(IERC2981 _royaltiesRegistryProxy) onlyAdmin public {
         royaltiesRegistryProxy = _royaltiesRegistryProxy;
