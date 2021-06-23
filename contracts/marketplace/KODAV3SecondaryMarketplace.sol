@@ -131,6 +131,8 @@ contract KODAV3SecondaryMarketplace is
         address currentOwner = koda.ownerOf(_tokenId);
         require(currentOwner == _msgSender(), "Not current owner");
 
+        require(!_isTokenListed(_tokenId), "The token is listed so cannot accept an edition bid");
+
         _facilitateSecondarySale(_tokenId, offer.offer, currentOwner, offer.bidder);
 
         // clear open offer

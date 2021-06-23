@@ -104,7 +104,7 @@ interface IEditionOffersSecondaryMarketplace {
     event EditionBidWithdrawn(uint256 indexed _editionId, address _bidder);
     event EditionBidAccepted(uint256 indexed _tokenId, address _currentOwner, address _bidder, uint256 _amount);
 
-    function placeEditionBid(uint256 _editionId) external;
+    function placeEditionBid(uint256 _editionId) external payable;
 
     function withdrawEditionBid(uint256 _editionId) external;
 
