@@ -32,7 +32,10 @@ contract KODAV3SecondaryMarketplace is
     }
 
     // Token ID to Offer mapping
-    mapping(uint256 => Offer) public tokenOffers;
+    mapping(uint256 => Offer) public tokenBids;
+
+    // Edition ID to Offer (an offer on any token in an edition)
+    mapping(uint256 => Offer) public editionBids;
 
     // Secondary sale commission
     uint256 public secondarySaleRoyalty = 12_50000; // 12.5%
@@ -69,6 +72,73 @@ contract KODAV3SecondaryMarketplace is
 
     // Secondary sale "offer" flow
 
+    function placeEditionBid(uint256 _editionId)
+    public
+    payable
+    override
+    whenNotPaused
+    nonReentrant {
+        require(koda.editionExists(_editionId), "Edition does not exist");
+
+        // Check for highest offer
+        Offer storage offer = editionBids[_editionId];
+        require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
+
+        // send money back to top bidder if existing offer found
+        if (offer.offer > 0) {
+            _refundBidder(_editionId, offer.bidder, offer.offer, _msgSender(), msg.value);
+        }
+
+        // setup offer
+        editionBids[_editionId] = Offer(msg.value, _msgSender(), _getLockupTime());
+
+        emit EditionBidPlaced(_editionId, _msgSender(), msg.value);
+    }
+
+    function withdrawEditionBid(uint256 _editionId)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        Offer storage offer = editionBids[_editionId];
+
+        // caller must be bidder
+        require(offer.bidder == _msgSender(), "Not bidder");
+
+        // cannot withdraw before lockup period elapses
+        require(block.timestamp >= offer.lockupUntil, "Bid lockup not elapsed");
+
+        // send money back to top bidder
+        _refundBidder(_editionId, offer.bidder, offer.offer, address(0), 0);
+
+        // delete offer
+        delete editionBids[_editionId];
+
+        emit EditionBidWithdrawn(_editionId, _msgSender());
+    }
+
+    function acceptEditionBid(uint256 _tokenId, uint256 _offerPrice)
+    public
+    override
+    whenNotPaused
+    nonReentrant {
+        uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+
+        Offer memory offer = editionBids[editionId];
+        require(offer.bidder != address(0), "No open bid");
+        require(offer.offer >= _offerPrice, "Offer price has changed");
+
+        address currentOwner = koda.ownerOf(_tokenId);
+        require(currentOwner == _msgSender(), "Not current owner");
+
+        _facilitateSecondarySale(_tokenId, offer.offer, currentOwner, offer.bidder);
+
+        // clear open offer
+        delete editionBids[editionId];
+
+        emit EditionBidAccepted(_tokenId, currentOwner, offer.bidder, offer.offer);
+    }
+
     function placeTokenBid(uint256 _tokenId)
     public
     payable
@@ -78,7 +148,7 @@ contract KODAV3SecondaryMarketplace is
         require(!_isTokenListed(_tokenId), "Token is listed");
 
         // Check for highest offer
-        Offer storage offer = tokenOffers[_tokenId];
+        Offer storage offer = tokenBids[_tokenId];
         require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
 
         // send money back to top bidder if existing offer found
@@ -87,7 +157,7 @@ contract KODAV3SecondaryMarketplace is
         }
 
         // setup offer
-        tokenOffers[_tokenId] = Offer(msg.value, _msgSender(), _getLockupTime());
+        tokenBids[_tokenId] = Offer(msg.value, _msgSender(), _getLockupTime());
 
         emit TokenBidPlaced(_tokenId, koda.ownerOf(_tokenId), _msgSender(), msg.value);
     }
@@ -97,7 +167,7 @@ contract KODAV3SecondaryMarketplace is
     override
     whenNotPaused
     nonReentrant {
-        Offer storage offer = tokenOffers[_tokenId];
+        Offer storage offer = tokenBids[_tokenId];
 
         // caller must be bidder
         require(offer.bidder == _msgSender(), "Not bidder");
@@ -109,7 +179,7 @@ contract KODAV3SecondaryMarketplace is
         _refundBidder(_tokenId, offer.bidder, offer.offer, address(0), 0);
 
         // delete offer
-        delete tokenOffers[_tokenId];
+        delete tokenBids[_tokenId];
 
         emit TokenBidWithdrawn(_tokenId, _msgSender());
     }
@@ -119,7 +189,7 @@ contract KODAV3SecondaryMarketplace is
     override
     whenNotPaused
     nonReentrant {
-        Offer memory offer = tokenOffers[_tokenId];
+        Offer memory offer = tokenBids[_tokenId];
         require(offer.bidder != address(0), "No open bid");
 
         address currentOwner = koda.ownerOf(_tokenId);
@@ -129,7 +199,7 @@ contract KODAV3SecondaryMarketplace is
         _refundBidder(_tokenId, offer.bidder, offer.offer, address(0), 0);
 
         // delete offer
-        delete tokenOffers[_tokenId];
+        delete tokenBids[_tokenId];
 
         emit TokenBidRejected(_tokenId, currentOwner, offer.bidder, offer.offer);
     }
@@ -139,7 +209,7 @@ contract KODAV3SecondaryMarketplace is
     override
     whenNotPaused
     nonReentrant {
-        Offer memory offer = tokenOffers[_tokenId];
+        Offer memory offer = tokenBids[_tokenId];
         require(offer.bidder != address(0), "No open bid");
         require(offer.offer >= _offerPrice, "Offer price has changed");
 
@@ -149,7 +219,7 @@ contract KODAV3SecondaryMarketplace is
         _facilitateSecondarySale(_tokenId, offer.offer, currentOwner, offer.bidder);
 
         // clear open offer
-        delete tokenOffers[_tokenId];
+        delete tokenBids[_tokenId];
 
         emit TokenBidAccepted(_tokenId, currentOwner, offer.bidder, offer.offer);
     }
@@ -159,14 +229,14 @@ contract KODAV3SecondaryMarketplace is
     public
     nonReentrant
     onlyAdmin {
-        Offer memory offer = tokenOffers[_tokenId];
+        Offer memory offer = tokenBids[_tokenId];
         require(offer.bidder != address(0), "No open bid");
 
         // send money back to top bidder
         _refundBidderIgnoreError(_tokenId, offer.bidder, offer.offer);
 
         // delete offer
-        delete tokenOffers[_tokenId];
+        delete tokenBids[_tokenId];
 
         emit TokenBidRejected(_tokenId, koda.ownerOf(_tokenId), offer.bidder, offer.offer);
     }

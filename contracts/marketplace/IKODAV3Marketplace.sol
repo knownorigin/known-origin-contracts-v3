@@ -99,7 +99,19 @@ interface IBuyNowSecondaryMarketplace {
     function listTokenForBuyNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) external;
 }
 
-interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffersMarketplace, IBuyNowSecondaryMarketplace {
+interface IEditionOffersSecondaryMarketplace {
+    event EditionBidPlaced(uint256 indexed _editionId, address indexed _bidder, uint256 _bid);
+    event EditionBidWithdrawn(uint256 indexed _editionId, address _bidder);
+    event EditionBidAccepted(uint256 indexed _tokenId, address _currentOwner, address _bidder, uint256 _amount);
+
+    function placeEditionBid(uint256 _editionId) external;
+
+    function withdrawEditionBid(uint256 _editionId) external;
+
+    function acceptEditionBid(uint256 _tokenId, uint256 _offerPrice) external;
+}
+
+interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffersMarketplace, IEditionOffersSecondaryMarketplace, IBuyNowSecondaryMarketplace {
     function convertReserveAuctionToBuyItNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) external;
     function convertReserveAuctionToOffers(uint256 _tokenId) external;
 }
