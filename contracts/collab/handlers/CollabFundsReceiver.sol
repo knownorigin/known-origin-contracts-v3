@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.5;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
@@ -10,6 +10,8 @@ import "./ICollabFundsDrainable.sol";
 
 /**
  * Allows funds to be split using a pull pattern, holding a balance until drained
+ *
+ * Supports claiming/draining all balances at one as well as claiming individual shares
  */
 contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollabFundsDrainable {
 
@@ -47,7 +49,7 @@ contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollab
                 uint256 amountOwedToCollaborator = shares[i] - ethPaidToCollaborator[recipient];
                 if (amountOwedToCollaborator > 0) {
                     ethPaidToCollaborator[recipient] += amountOwedToCollaborator;
-                    payable(recipient).call{value: amountOwedToCollaborator}("");
+                    payable(recipient).call{value : amountOwedToCollaborator}("");
 
                     sumPaidOut += amountOwedToCollaborator;
                 }
@@ -60,15 +62,17 @@ contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollab
         sumPaidOut += amountOwedToCollaborator;
 
         // now check for dust i.e. remainingBalance
-        uint256 remainingBalance = totalEthReceived - sumPaidOut; // Either going to be a zero or non-zero value
-        sumPaidOut += remainingBalance; // dust increases pay out for all recipients
+        uint256 remainingBalance = totalEthReceived - sumPaidOut;
+        // Either going to be a zero or non-zero value
+        sumPaidOut += remainingBalance;
+        // dust increases pay out for all recipients
 
         // increase amount owed to collaborator
         amountOwedToCollaborator += remainingBalance;
 
         if (amountOwedToCollaborator > 0) {
             ethPaidToCollaborator[firstRecipient] += amountOwedToCollaborator;
-            payable(firstRecipient).call{value: amountOwedToCollaborator}("");
+            payable(firstRecipient).call{value : amountOwedToCollaborator}("");
         }
 
         totalEthPaid += sumPaidOut;
@@ -93,7 +97,7 @@ contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollab
 
         address recipient;
         uint256 recipientIndex;
-        for(uint i = 0; i < recipients.length; i++) {
+        for (uint i = 0; i < recipients.length; i++) {
             address _recipient = recipients[i];
             if (_recipient == msg.sender) {
                 recipient = msg.sender;
@@ -109,7 +113,7 @@ contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollab
         if (amountOwed > 0) {
             ethPaidToCollaborator[recipient] = amountOwed;
             totalEthPaid += amountOwed;
-            payable(recipient).call{value: amountOwed}("");
+            payable(recipient).call{value : amountOwed}("");
             // todo - emit event here
         }
     }
@@ -137,7 +141,8 @@ contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollab
         }
 
         // The first recipient is a special address as it receives any dust left over from splitting up the funds
-        uint256 remainingBalance = balance - sumPaidOut; // Either going to be a zero or non-zero value
+        uint256 remainingBalance = balance - sumPaidOut;
+        // Either going to be a zero or non-zero value
         token.transfer(recipients[0], remainingBalance + shares[0]);
 
         emit FundsDrained(balance, recipients, shares, address(token));

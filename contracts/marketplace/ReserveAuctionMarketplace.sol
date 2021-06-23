@@ -44,12 +44,12 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         require(_reservePrice >= minBidAmount, "Reserve price must be at least min bid");
 
         editionOrTokenWithReserveAuctions[_id] = ReserveAuction({
-            seller : _creator,
-            bidder : address(0),
-            reservePrice : _reservePrice,
-            startDate : _startDate,
-            biddingEnd : 0,
-            bid : 0
+        seller : _creator,
+        bidder : address(0),
+        reservePrice : _reservePrice,
+        startDate : _startDate,
+        biddingEnd : 0,
+        bid : 0
         });
 
         emit ListedForReserveAuction(_id, _reservePrice, _startDate);

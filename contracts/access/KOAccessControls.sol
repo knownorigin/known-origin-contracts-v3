@@ -52,7 +52,7 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
         address _address,
         uint256 _merkleIndex,
         bytes32[] calldata _merkleProof
-    )  external  {
+    ) external {
         require(isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
         artistProxy[_msgSender()] = _address;

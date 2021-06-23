@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.5;
@@ -14,9 +13,15 @@ import {ITokenUriResolver} from "../programmable/ITokenUriResolver.sol";
 import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 import {BaseKoda} from "./BaseKoda.sol";
 
-/// @title A 721 compliant contract which has a focus on being GAS efficient
-/// @author KnownOrigin Labs
-/// @notice The NFT supports the ERC998 ERC20 composable standard
+/// @title A ERC-721 compliant contract which has a focus on being GAS efficient along with being able to support
+//// both unique tokens and multi-editions sharing common traits but of limited supply
+///
+/// @author KnownOrigin Labs - https://knownorigin.io/
+///
+/// @notice The NFT supports a range of standards such as:
+/// @notice EIP-2981 Royalties Standard
+/// @notice EIP-2309 Consecutive batch mint
+/// @notice ERC-998 Top-down ERC-20 composable
 contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165Storage, IKODAV3Minter {
 
     event EditionURIUpdated(uint256 indexed _editionId);
@@ -69,16 +74,16 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /// @notice Optional one time use storage slot for additional edition metadata
     mapping(uint256 => string) public sealedEditionMetaData;
 
-    // TODO update to use newer OS standards for permanent metadata with event - https://docs.opensea.io/docs/metadata-standards?s=03#section-ipfs-and-arweave-uris
-    /// @notice Optional one time use storage slot for additional token metadata
+    /// @notice Optional one time use storage slot for additional token metadata such ass peramweb metadata
     mapping(uint256 => string) public sealedTokenMetaData;
 
     /// @notice Optional storage slot for additional unlockable content
     mapping(uint256 => string) public additionalEditionUnlockableSlot;
 
-    /// @notice Allows a creator to disable sales of their edition or they can ask KnownOrigin to do this
+    /// @notice Allows a creator to disable sales of their edition
     mapping(uint256 => bool) public editionSalesDisabled;
 
+    // TODO check this as it is out of sync with KO basis points modulo - if so rename
     /// @notice Basis points conversion modulo
     uint256 public basisPointsModulo = 1000;
 
@@ -99,7 +104,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         // INTERFACE_ID_ERC721_METADATA
         _registerInterface(0x5b5e139f);
 
-        // INTERFACE_ID_ERC721ROYALTIES
+        // INTERFACE_ID_NFT_ROYALTIES
         _registerInterface(0x4b7f2c2d);
 
         // _INTERFACE_ID_FEES
@@ -353,16 +358,12 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
         // If we have a registry and its defined, use it
         if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(editionId)) {
-
             (receiver, amount) = royaltiesRegistryProxy.royaltyInfo(editionId);
-
         } else {
-
+            // Fall back to KO defaults
             receiver = _getCreatorOfEdition(editionId);
             amount = secondarySaleRoyalty;
-
         }
-
     }
 
     //////////////
@@ -426,7 +427,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     function getFeeBps(uint256 _tokenId) external override returns (uint[] memory) {
         uint[] memory feeBps = new uint[](1);
         (address _receiver, uint256 _amount) = _royaltyInfo(_tokenId);
-        feeBps[0] = uint(_amount) / basisPointsModulo; // convert to basis points
+        feeBps[0] = uint(_amount) / basisPointsModulo;
+        // convert to basis points
         return feeBps;
     }
 

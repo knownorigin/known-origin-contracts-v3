@@ -14,10 +14,10 @@ import {BaseMarketplace} from "./BaseMarketplace.sol";
 /// @dev The contract is pausable and has reentrancy guards
 /// @author KnownOrigin Labs
 contract KODAV3SecondaryMarketplace is
-    IKODAV3SecondarySaleMarketplace,
-    BaseMarketplace,
-    BuyNowMarketplace,
-    ReserveAuctionMarketplace {
+IKODAV3SecondarySaleMarketplace,
+BaseMarketplace,
+BuyNowMarketplace,
+ReserveAuctionMarketplace {
 
     event SecondaryMarketplaceDeployed();
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
