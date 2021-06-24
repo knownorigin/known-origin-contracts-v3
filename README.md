@@ -19,8 +19,8 @@
 ### Extras
 
 * `GAS` report can be found [here](./gas-report-output.md) and generated on demand via `npm run gas`
-* Code coverage generation via `npm run coverage`
-* Contract size report via `npm run contract-size`
+* Code coverage generation via `npm run coverage` output in `./coverage` folder
+* Contract size report found [here](./contract-size.md) or generated on demand via `npm run contract-size`
 
 ## Deployments
 
