@@ -77,7 +77,13 @@ contract TokenRoyaltiesRegistry is ERC165, ITokenRoyaltiesRegistry, Ownable {
     // ERC 2981 PROXY //
     ////////////////////
 
-    function royaltyInfo(uint256 _tokenId) external view override returns (address receiver, uint256 amount) {
+    function royaltyInfo(
+        uint256 _tokenId,
+        uint256 _value
+    ) external override returns (
+        address _receiver,
+        uint256 _royaltyAmount
+    ) {
         // Royalties can be optional
         if (!royaltiesSet[_tokenId]) {
             return (address(0), 0);
@@ -155,12 +161,6 @@ contract TokenRoyaltiesRegistry is ERC165, ITokenRoyaltiesRegistry, Ownable {
         recipients : _recipients,
         splits : _splits
         });
-    }
-
-    function receivedRoyalties(address _royaltyRecipient, address _buyer, uint256 _tokenId, address _tokenPaid, uint256 _amount)
-    external
-    override {
-        emit ReceivedRoyalties(_royaltyRecipient, _buyer, _tokenId, _tokenPaid, _amount);
     }
 
     ///////////////////////////////

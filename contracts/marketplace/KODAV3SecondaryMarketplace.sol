@@ -270,26 +270,25 @@ ReserveAuctionMarketplace {
     //////////////////////////////
 
     function _facilitateSecondarySale(uint256 _tokenId, uint256 _paymentAmount, address _seller, address _buyer) internal {
-        (address royaltyRecipient,) = koda.royaltyInfo(_tokenId);
+        (address royaltyRecipient, uint256 _royaltyAmount) = koda.royaltyInfo(_tokenId, _paymentAmount);
 
         // split money
-        uint256 creatorRoyalties = handleSecondarySaleFunds(_seller, royaltyRecipient, _paymentAmount);
+        handleSecondarySaleFunds(_seller, royaltyRecipient, _paymentAmount, _royaltyAmount);
 
         // N:B. open offers are left for the bidder to withdraw or the new token owner to reject/accept
 
         // send token to buyer
         koda.safeTransferFrom(_seller, _buyer, _tokenId);
-
-        // fire royalties callback event
-        koda.receivedRoyalties(royaltyRecipient, _buyer, _tokenId, address(0), creatorRoyalties);
     }
 
-    function handleSecondarySaleFunds(address _seller, address _royaltyRecipient, uint256 _paymentAmount)
-    internal
-    returns (uint256 creatorRoyalties){
+    function handleSecondarySaleFunds(
+        address _seller,
+        address _royaltyRecipient,
+        uint256 _paymentAmount,
+        uint256 _creatorRoyalties
+    ) internal {
         // pay royalties
-        creatorRoyalties = (_paymentAmount / modulo) * secondarySaleRoyalty;
-        (bool creatorSuccess,) = _royaltyRecipient.call{value : creatorRoyalties}("");
+        (bool creatorSuccess,) = _royaltyRecipient.call{value : _creatorRoyalties}("");
         require(creatorSuccess, "Token payment failed");
 
         // pay platform fee
@@ -298,7 +297,7 @@ ReserveAuctionMarketplace {
         require(koCommissionSuccess, "Token commission payment failed");
 
         // pay seller
-        (bool success,) = _seller.call{value : _paymentAmount - creatorRoyalties - koCommission}("");
+        (bool success,) = _seller.call{value : _paymentAmount - _creatorRoyalties - koCommission}("");
         require(success, "Token payment failed");
     }
 

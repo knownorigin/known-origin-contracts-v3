@@ -12,8 +12,8 @@ interface IKODAV3 is
 IERC165, // Contract introspection
 IERC721, // Core NFTs
 IERC2309, // Consecutive batch mint
-IERC2981, // Royalties
-IHasSecondarySaleFees // Rariable / Foundation royalties
+IERC2981 // Royalties
+//IHasSecondarySaleFees // Rariable / Foundation royalties todo - re-implement this re-using new latest royalty standard
 {
     // edition utils
 
@@ -49,7 +49,7 @@ IHasSecondarySaleFees // Rariable / Foundation royalties
     function facilitateReversePrimarySale(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _tokenId);
 
     // Expanded royalty method for the edition, not token
-    function royaltyAndCreatorInfo(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _amount);
+    function royaltyAndCreatorInfo(uint256 _editionId, uint256 _value) external returns (address _receiver, address _creator, uint256 _amount);
 
     // Allows the creator to correct mistakes until the first token from an edition is sold
     function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external;

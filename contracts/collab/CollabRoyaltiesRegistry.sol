@@ -18,6 +18,9 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExt
     mapping(uint256 => address) public proxies;
     uint256 public royaltyAmount = 12_50000; // 12.5% as represented in eip-2981
 
+    /// @notice precision 100.00000%
+    uint256 public modulo = 100_00000;
+
     // Events
     event KODASet(address koda);
     event AccessControlsSet(address accessControls);
@@ -162,13 +165,16 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExt
     }
 
     // Gets the funds handler proxy address and royalty amount for given edition id
-    function royaltyInfo(uint256 _editionId)
-    external
-    view
-    returns (address receiver, uint256 amount) {
-        receiver = proxies[_editionId];
-        require(receiver != address(0), "Edition not setup");
-        amount = royaltyAmount;
+    function royaltyInfo(
+        uint256 _editionId,
+        uint256 _value
+    ) external returns (
+        address _receiver,
+        uint256 _royaltyAmount
+    ) {
+        _receiver = proxies[_editionId];
+        require(_receiver != address(0), "Edition not setup");
+        _royaltyAmount = (_value / modulo) * royaltyAmount;
     }
 
     // Get the proxy for a given edition's funds handler
