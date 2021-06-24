@@ -9,7 +9,7 @@
   "private": true,
   "scripts": {
     "compile": "npx hardhat compile --show-stack-traces",
-    "coverage": "npx hardhat coverage",
+    "coverage": "NODE_OPTIONS=--max-old-space-size=4096 npx hardhat coverage",
     "test": "npx hardhat test",
     "contract-size": "npx hardhat size-contracts",
     "gas": "REPORT_GAS=true npx hardhat test"

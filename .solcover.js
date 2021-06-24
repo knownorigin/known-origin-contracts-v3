@@ -8,19 +8,20 @@ module.exports = {
     'access/legacy/libs/RBAC.sol',
     'access/legacy/libs/Roles.sol',
     'access/legacy/libs/Whitelist.sol',
+    'access/legacy/SelfServiceAccessControls.sol',
 
-    // Experimental
-    'programmable/resolvers/ContractBalanceFeedResolver.sol',
-    'programmable/resolvers/ManuallyChangingToken.sol',
-    'programmable/resolvers/RandomBlockResolver.sol',
-    'programmable/resolvers/UniswapPriceFeedResolver.sol',
-
-    // Gas token
+    // Spikes
     'spikes/core/chi/ChiGasSaver.sol',
     'spikes/core/chi/ChiToken.sol',
-
-    // token royalties (not edition aware)
     'spikes/royalties/ITokenRoyaltiesRegistry.sol',
     'spikes/royalties/TokenRoyaltiesRegistry.sol',
+    'spikes/royalties/EditionRoyaltiesRegistry.sol',
+    'spikes/collaborators/beacon/RoyaltyImplV1R1.sol',
+    'spikes/core/mixins/MintBatchViaSig.sol',
+    'spikes/core/mixins/NFTPermit.sol',
+    'spikes/registry/EditionRegistry.sol',
+    'spikes/programmable/TokenUriResolverRegistry.sol',
+    'spikes/marketplace/KODAV3SignatureMarketplace.sol',
+    'spikes/deployer/ContractDeployer.sol',
   ]
 };

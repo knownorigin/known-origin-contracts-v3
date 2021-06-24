@@ -357,7 +357,7 @@ contract('KODAV3SecondaryMarketplace token bids', function (accounts) {
           await this.marketplace.placeTokenBid(token, {from: collectorA, value: _0_5_ETH});
 
           // Check recorded values
-          const {offer, bidder} = await this.marketplace.tokenOffers(token);
+          const {offer, bidder} = await this.marketplace.tokenBids(token);
           expect(bidder).to.be.equal(collectorA);
           expect(offer).to.be.bignumber.equal(_0_5_ETH);
         });
