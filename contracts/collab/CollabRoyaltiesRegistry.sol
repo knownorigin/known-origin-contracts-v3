@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.5;
 
+import {ERC165Storage} from "@openzeppelin/contracts/utils/introspection/ERC165Storage.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 import {Konstants} from "../core/Konstants.sol";
-import {IERC2981HasRoyaltiesExtension} from "../core/IERC2981.sol";
+import {IERC2981} from "../core/IERC2981.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {ICollabFundsHandler} from "./handlers/ICollabFundsHandler.sol";
 
-contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExtension {
+contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981 {
 
     IKODAV3 public koda;
     IKOAccessControlsLookup public accessControls;
@@ -46,6 +47,9 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExt
     // Constructor
     constructor(IKOAccessControlsLookup _accessControls) {
         accessControls = _accessControls;
+
+        // _INTERFACE_ID_ERC2981
+        _registerInterface(0x2a55205a);
     }
 
     // Set the IKODAV3 dependency.
@@ -168,7 +172,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExt
     function royaltyInfo(
         uint256 _editionId,
         uint256 _value
-    ) external returns (
+    ) external override returns (
         address _receiver,
         uint256 _royaltyAmount
     ) {

@@ -270,10 +270,10 @@ ReserveAuctionMarketplace {
     //////////////////////////////
 
     function _facilitateSecondarySale(uint256 _tokenId, uint256 _paymentAmount, address _seller, address _buyer) internal {
-        (address royaltyRecipient, uint256 _royaltyAmount) = koda.royaltyInfo(_tokenId, _paymentAmount);
+        (address _royaltyRecipient, uint256 _royaltyAmount) = koda.royaltyInfo(_tokenId, _paymentAmount);
 
         // split money
-        handleSecondarySaleFunds(_seller, royaltyRecipient, _paymentAmount, _royaltyAmount);
+        handleSecondarySaleFunds(_seller, _royaltyRecipient, _paymentAmount, _royaltyAmount);
 
         // N:B. open offers are left for the bidder to withdraw or the new token owner to reject/accept
 

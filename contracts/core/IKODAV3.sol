@@ -12,8 +12,8 @@ interface IKODAV3 is
 IERC165, // Contract introspection
 IERC721, // Core NFTs
 IERC2309, // Consecutive batch mint
-IERC2981 // Royalties
-//IHasSecondarySaleFees // Rariable / Foundation royalties todo - re-implement this re-using new latest royalty standard
+IERC2981, // Royalties
+IHasSecondarySaleFees // Rariable / Foundation royalties
 {
     // edition utils
 

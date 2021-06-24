@@ -6,7 +6,7 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 // This is purely an extension for the KO platform
 interface IERC2981HasRoyaltiesExtension {
-    function hasRoyalties(uint256 _tokenId) external view returns (bool);
+    function hasRoyalties(uint256 _editionId) external view returns (bool);
 }
 
 /**

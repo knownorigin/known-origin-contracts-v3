@@ -411,22 +411,19 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     // Has Secondary Sale Fees //
     ////////////////////////////
 
-//    function getFeeRecipients(uint256 _tokenId) external override returns (address payable[] memory) {
-//        address payable[] memory feeRecipients = new address payable[](1);
-//        (address _receiver, ) = _royaltyInfo(_tokenId);
-//        feeRecipients[0] = payable(_receiver);
-//        return feeRecipients;
-//    }
-//
-//    function getFeeBps(uint256 _tokenId) external override returns (uint[] memory) {
-//        uint[] memory feeBps = new uint[](1);
-//        (address _receiver, ) = _royaltyInfo(_tokenId);
-//
-//        // todo - is this valid??
-//        feeBps[0] = uint(secondarySaleRoyalty) / basisPointsModulo;
-//        // convert to basis points
-//        return feeBps;
-//    }
+    function getFeeRecipients(uint256 _tokenId) external override returns (address payable[] memory) {
+        address payable[] memory feeRecipients = new address payable[](1);
+        (address _receiver, ) = _royaltyInfo(_tokenId, 0);
+        feeRecipients[0] = payable(_receiver);
+        return feeRecipients;
+    }
+
+    function getFeeBps(uint256 _tokenId) external override returns (uint[] memory) {
+        uint[] memory feeBps = new uint[](1);
+        feeBps[0] = uint(secondarySaleRoyalty) / basisPointsModulo;
+        // convert to basis points
+        return feeBps;
+    }
 
     ////////////////////////////////////
     // Primary Sale Utilities methods //
@@ -471,8 +468,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         uint256 _tokenId = getNextAvailablePrimarySaleToken(_editionId);
         address _creator = _getCreatorOfEdition(_editionId);
 
-        if (royaltyRegistryActive()) { // todo - do we need a has royalties check?
-            (address _receiver,) = royaltiesRegistryProxy.royaltyInfo(_editionId, 0); // todo - passing zero which I guess is OK?
+        if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)) {
+            // Note: we do not need the second value in tuple `_royaltyAmount` which is derived from the second arg to `royaltyInfo` and hence we pass 0
+            (address _receiver,) = royaltiesRegistryProxy.royaltyInfo(_editionId, 0);
             return (_receiver, _creator, _tokenId);
         }
 
@@ -518,7 +516,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         uint256 _tokenId = getReverseAvailablePrimarySaleToken(_editionId);
         address _creator = _getCreatorOfEdition(_editionId);
 
-        if (royaltyRegistryActive()) { // todo - do we need a has royalties check?
+        if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)) {
+            // Note: we do not need the second value in tuple `_royaltyAmount` which is derived from the second arg to `royaltyInfo` and hence we pass 0
             (address _receiver,) = royaltiesRegistryProxy.royaltyInfo(_editionId, 0);
             return (_receiver, _creator, _tokenId);
         }
