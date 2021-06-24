@@ -356,7 +356,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return _editionFromTokenId(_tokenId);
     }
 
-    function _royaltyInfo(uint256 _tokenId, uint256 _value) internal returns (address _receiver, uint256 _royaltyAmount) {
+    function _royaltyInfo(uint256 _tokenId, uint256 _value) internal view returns (address _receiver, uint256 _royaltyAmount) {
         uint256 editionId = _editionFromTokenId(_tokenId);
 
         // If we have a registry and its defined, use it
@@ -377,6 +377,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     function royaltyInfo(uint256 _tokenId, uint256 _value)
     external
     override
+    view
     returns (address _receiver, uint256 _royaltyAmount) {
         return _royaltyInfo(_tokenId, _value);
     }

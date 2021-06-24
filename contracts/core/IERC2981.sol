@@ -29,7 +29,7 @@ interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
     function royaltyInfo(
         uint256 _tokenId,
         uint256 _value
-    ) external returns (
+    ) external view returns (
         address _receiver,
         uint256 _royaltyAmount
     );

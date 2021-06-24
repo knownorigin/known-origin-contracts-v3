@@ -89,7 +89,7 @@ contract EditionRoyaltiesRegistry is ERC165, IERC2981, Konstants, Context {
     function royaltyInfo(
         uint256 _tokenId,
         uint256 _value
-    ) external override returns (
+    ) external override view returns (
         address _receiver,
         uint256 _royaltyAmount
     ) {

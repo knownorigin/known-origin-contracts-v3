@@ -80,7 +80,7 @@ contract TokenRoyaltiesRegistry is ERC165, ITokenRoyaltiesRegistry, Ownable {
     function royaltyInfo(
         uint256 _tokenId,
         uint256 _value
-    ) external override returns (
+    ) external override view returns (
         address _receiver,
         uint256 _royaltyAmount
     ) {

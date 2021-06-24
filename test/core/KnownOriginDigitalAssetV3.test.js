@@ -458,9 +458,10 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
           tokenId: firstEditionTokenId
         });
 
-        let res = await this.token.royaltyInfo.call(firstEditionTokenId);
-        expect(res.receiver).to.be.equal(collectorA);
-        expect(res.amount).to.be.bignumber.equal(this.secondarySaleRoyalty);
+        const paymentAmount = '10000000'
+        let res = await this.token.royaltyInfo.call(firstEditionTokenId, paymentAmount);
+        expect(res._receiver).to.be.equal(collectorA);
+        expect(res._royaltyAmount).to.be.bignumber.equal(this.secondarySaleRoyalty);
       });
 
       it('royaltyAndCreatorInfo()', async () => {
@@ -471,10 +472,11 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
           tokenId: firstEditionTokenId
         });
 
-        let res = await this.token.royaltyAndCreatorInfo.call(firstEditionTokenId);
+        let paymentAmount = '10000000'
+        let res = await this.token.royaltyAndCreatorInfo.call(firstEditionTokenId, paymentAmount);
         expect(res.receiver).to.be.equal(collectorA);
         expect(res.creator).to.be.equal(collectorA);
-        expect(res.amount).to.be.bignumber.equal(this.secondarySaleRoyalty);
+        expect(res.royaltyAmount).to.be.bignumber.equal(this.secondarySaleRoyalty);
 
       });
     });
@@ -535,7 +537,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
         resFees = await this.tokenWithRoyaltyProxy.getFeeBps.call(secondEditionTokenId);
         expect(resFees.length).to.be.equal(1);
-        expect(resFees[0]).to.be.bignumber.equal('1000'); // 10%
+        expect(resFees[0]).to.be.bignumber.equal('1250');
       });
     });
 
