@@ -47,6 +47,7 @@ interface IEditionSteppedMarketplace {
     function buyNextStep(uint256 _editionId) external payable;
 
     function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
+
     function convertSteppedAuctionToOffers(uint256 _editionId, uint128 _startDate) external;
 
     function updateSteppedAuction(uint256 _editionId, uint128 _basePrice, uint128 _stepPrice) external;
@@ -62,15 +63,21 @@ interface IReserveAuctionMarketplace {
     event EmergencyBidWithdrawFromReserveAuction(uint256 indexed _id, address _bidder, uint128 _bid);
 
     function placeBidOnReserveAuction(uint256 _id) external payable;
+
     function listForReserveAuction(address _creator, uint256 _id, uint128 _reservePrice, uint128 _startDate) external;
+
     function resultReserveAuction(uint256 _id) external;
+
     function withdrawBidFromReserveAuction(uint256 _id) external;
+
     function updateReservePriceForReserveAuction(uint256 _id, uint128 _reservePrice) external;
+
     function emergencyExitBidFromReserveAuction(uint256 _id) external;
 }
 
 interface IKODAV3PrimarySaleMarketplace is IEditionSteppedMarketplace, IEditionOffersMarketplace {
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
+
     function convertReserveAuctionToOffers(uint256 _editionId, uint128 _startDate) external;
 }
 
@@ -101,5 +108,6 @@ interface IBuyNowSecondaryMarketplace {
 
 interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffersMarketplace, IBuyNowSecondaryMarketplace {
     function convertReserveAuctionToBuyItNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) external;
+
     function convertReserveAuctionToOffers(uint256 _tokenId) external;
 }

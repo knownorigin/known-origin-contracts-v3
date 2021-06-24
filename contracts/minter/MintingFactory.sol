@@ -135,13 +135,13 @@ contract MintingFactory is Context {
 
     function mintBatchEditionAndComposeERC20s(
         SaleType _saleType,
-        // --- _config array (expected length of 5) ---
-        // Index 0 - Merkle Index
-        // Index 1 - Edition size
-        // Index 2 - Start Date
-        // Index 3 - Base price
-        // Index 4 - Step price
-        // ---------------------------------------------
+    // --- _config array (expected length of 5) ---
+    // Index 0 - Merkle Index
+    // Index 1 - Edition size
+    // Index 2 - Start Date
+    // Index 3 - Base price
+    // Index 4 - Step price
+    // ---------------------------------------------
         uint128[] calldata _config,
         string calldata _uri,
         address[] calldata _erc20s,
@@ -160,12 +160,12 @@ contract MintingFactory is Context {
     function mintBatchEditionAndComposeERC20sAsProxy(
         address _creator,
         SaleType _saleType,
-        // --- _config array (expected length of 4) ---
-        // Index 0 - Edition size
-        // Index 1 - Start Date
-        // Index 2 - Base price
-        // Index 3 - Step price
-        // ---------------------------------------------
+    // --- _config array (expected length of 4) ---
+    // Index 0 - Edition size
+    // Index 1 - Start Date
+    // Index 2 - Base price
+    // Index 3 - Step price
+    // ---------------------------------------------
         uint128[] calldata _config,
         string calldata _uri,
         address[] calldata _erc20s,

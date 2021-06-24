@@ -448,67 +448,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
   describe('royaltyInfo() and royaltyAndCreatorInfo()', async () => {
 
-    describe('with proxy', async () => {
-      beforeEach(async () => {
-
-        this.royaltiesRegistryProxy = await SimpleIERC2981.new(
-          [firstEditionTokenId, secondEditionTokenId],
-          [collabDao, collectorB],
-          [1000, 800],
-          {from: owner}
-        );
-
-        // Create token V3
-        this.tokenWithRoyaltyProxy = await KnownOriginDigitalAssetV3.new(
-          this.accessControls.address,
-          this.royaltiesRegistryProxy.address,
-          STARTING_EDITION,
-          {from: owner}
-        );
-
-        // Set contract roles
-        await this.accessControls.grantRole(this.CONTRACT_ROLE, this.tokenWithRoyaltyProxy.address, {from: owner});
-
-        expect(await this.tokenWithRoyaltyProxy.royaltyRegistryActive()).to.be.equal(true);
-        expect(await this.tokenWithRoyaltyProxy.royaltiesRegistryProxy()).to.be.equal(this.royaltiesRegistryProxy.address);
-      });
-
-      it('royaltyInfo()', async () => {
-        this.receipt = await this.tokenWithRoyaltyProxy.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
-        expectEvent.inLogs(this.receipt.logs, 'Transfer', {
-          from: ZERO_ADDRESS,
-          to: collectorA,
-          tokenId: firstEditionTokenId
-        });
-
-        let res = await this.tokenWithRoyaltyProxy.royaltyInfo.call(firstEditionTokenId);
-        expect(res.receiver).to.be.equal(collabDao); // from royaltiesRegistryProxy
-        expect(res.amount).to.be.bignumber.equal('1000');
-
-        await this.tokenWithRoyaltyProxy.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
-
-        res = await this.tokenWithRoyaltyProxy.royaltyInfo.call(secondEditionTokenId);
-        expect(res.receiver).to.be.equal(collectorB);
-        expect(res.amount).to.be.bignumber.equal('800');
-      });
-
-      it('royaltyAndCreatorInfo()', async () => {
-        this.receipt = await this.tokenWithRoyaltyProxy.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
-        expectEvent.inLogs(this.receipt.logs, 'Transfer', {
-          from: ZERO_ADDRESS,
-          to: collectorA,
-          tokenId: firstEditionTokenId
-        });
-
-        let res = await this.tokenWithRoyaltyProxy.royaltyAndCreatorInfo.call(firstEditionTokenId);
-        expect(res.receiver).to.be.equal(collabDao); // from royaltiesRegistryProxy
-        expect(res.creator).to.be.equal(collectorA);
-        expect(res.amount).to.be.bignumber.equal('1000');
-
-      });
-    });
-
-    describe('without proxy', async () => {
+    describe('without registry', async () => {
 
       it('royaltyInfo()', async () => {
         this.receipt = await this.token.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
@@ -519,7 +459,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
         });
 
         let res = await this.token.royaltyInfo.call(firstEditionTokenId);
-        expect(res.receiver).to.be.equal(collectorA); // from royaltiesRegistryProxy
+        expect(res.receiver).to.be.equal(collectorA);
         expect(res.amount).to.be.bignumber.equal(this.secondarySaleRoyalty);
       });
 
@@ -532,12 +472,13 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
         });
 
         let res = await this.token.royaltyAndCreatorInfo.call(firstEditionTokenId);
-        expect(res.receiver).to.be.equal(collectorA); // from royaltiesRegistryProxy
+        expect(res.receiver).to.be.equal(collectorA);
         expect(res.creator).to.be.equal(collectorA);
         expect(res.amount).to.be.bignumber.equal(this.secondarySaleRoyalty);
 
       });
     });
+
   });
 
   describe('getFeeRecipients() and getFeeBps()', async () => {
@@ -621,47 +562,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
   describe('facilitateNextPrimarySale()', async () => {
 
-    describe('with proxy', async () => {
-      beforeEach(async () => {
-
-        this.royaltiesRegistryProxy = await SimpleIERC2981.new(
-          [firstEditionTokenId, secondEditionTokenId],
-          [collabDao, collectorB],
-          [1000, 800],
-          {from: owner}
-        );
-
-        // Create token V3
-        this.tokenWithRoyaltyProxy = await KnownOriginDigitalAssetV3.new(
-          this.accessControls.address,
-          this.royaltiesRegistryProxy.address,
-          STARTING_EDITION,
-          {from: owner}
-        );
-
-        // Set contract roles
-        await this.accessControls.grantRole(this.CONTRACT_ROLE, this.tokenWithRoyaltyProxy.address, {from: owner});
-
-        expect(await this.tokenWithRoyaltyProxy.royaltyRegistryActive()).to.be.equal(true);
-        expect(await this.tokenWithRoyaltyProxy.royaltiesRegistryProxy()).to.be.equal(this.royaltiesRegistryProxy.address);
-      });
-
-      it('facilitateNextPrimarySale()', async () => {
-        this.receipt = await this.tokenWithRoyaltyProxy.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
-        expectEvent.inLogs(this.receipt.logs, 'Transfer', {
-          from: ZERO_ADDRESS,
-          to: collectorA,
-          tokenId: firstEditionTokenId
-        });
-
-        let res = await this.tokenWithRoyaltyProxy.facilitateNextPrimarySale.call(firstEditionTokenId);
-        expect(res.receiver).to.be.equal(collabDao); // from royaltiesRegistryProxy
-        expect(res.creator).to.be.equal(collectorA); // owner
-        expect(res.tokenId).to.be.bignumber.equal(firstEditionTokenId); // from getNextAvailablePrimarySaleToken
-      });
-    });
-
-    describe('without proxy', async () => {
+    describe('without registry', async () => {
 
       it('facilitateNextPrimarySale()', async () => {
         this.receipt = await this.token.mintBatchEdition(1, collectorA, TOKEN_URI, {from: contract});
@@ -698,6 +599,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
         expect(res.tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE)); // from getNextAvailablePrimarySaleToken
       });
     });
+
   });
 
   describe('getNextAvailablePrimarySaleToken()', async () => {
@@ -711,7 +613,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
 
       let tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId); // from royaltiesRegistryProxy
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId);
     });
 
     it('batch mint', async () => {
@@ -723,17 +625,17 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
 
       let tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId); // from royaltiesRegistryProxy
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId);
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA});
 
       tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE)); // from royaltiesRegistryProxy
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE));
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId.add(ONE), {from: collectorA});
 
       tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE).add(ONE)); // from royaltiesRegistryProxy
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE).add(ONE));
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId.add(ONE).add(ONE), {from: collectorA});
 
@@ -755,17 +657,17 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
 
       let tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId); // from royaltiesRegistryProxy
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId);
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA});
 
       tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE)); // from royaltiesRegistryProxy
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE));
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId.add(ONE), {from: collectorA});
 
       tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE).add(ONE)); // from royaltiesRegistryProxy
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE).add(ONE));
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId.add(ONE).add(ONE), {from: collectorA});
     });
@@ -786,12 +688,12 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
 
       let tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId); // from royaltiesRegistryProxy
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId);
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA});
 
       tokenId = await this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE)); // from royaltiesRegistryProxy
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId.add(ONE));
 
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId.add(ONE), {from: collectorA});
 
@@ -859,7 +761,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
 
       let tokenId = await this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId);
-      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId); // from royaltiesRegistryProxy
+      expect(tokenId).to.be.bignumber.equal(firstEditionTokenId);
     });
 
     it('batch mint', async () => {

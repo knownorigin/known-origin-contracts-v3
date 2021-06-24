@@ -33,6 +33,7 @@ interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
         @param _tokenPaid - The address of the token (ERC20) used to pay the fee. Set to 0x0 if native asset (ETH).
         @param _amount - The amount being paid to the creator using the correct decimals from tokenPaid (i.e. if 6 decimals, 1000000 for 1 token paid)
     */
+    // FIXME remove this
     event ReceivedRoyalties(
         address indexed _royaltyRecipient,
         address indexed _buyer,
@@ -60,5 +61,6 @@ interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
      * @param _tokenPaid - The address of the token (ERC20) used to pay the fee. Set to 0x0 if native asset (ETH).
      * @param _amount - The amount being paid to the creator using the correct decimals from tokenPaid (i.e. if 6 decimals, 1000000 for 1 token paid)
      */
+    // FIXME remove this
     function receivedRoyalties(address _royaltyRecipient, address _buyer, uint256 _tokenId, address _tokenPaid, uint256 _amount) external;
 }

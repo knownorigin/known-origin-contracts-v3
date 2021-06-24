@@ -39,7 +39,7 @@ contract CloneBasedRegistry {
         proxy = Clones.clone(handler);
 
         // Initialize proxy
-        IFundsHandler(proxy).init(_recipients,_splits);
+        IFundsHandler(proxy).init(_recipients, _splits);
 
         // Verify that it was initialized properly
         require(IFundsHandler(proxy).totalRecipients() == _recipients.length);
