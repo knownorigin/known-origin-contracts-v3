@@ -168,6 +168,11 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         emit RoyaltySetup(_editionId, _handler, proxy, _recipients, _splits);
     }
 
+    function getRoyaltiesReceiver(uint256 _editionId) external override view returns (address _receiver) {
+        _receiver = proxies[_editionId];
+        require(_receiver != address(0), "Edition not setup");
+    }
+
     // Gets the funds handler proxy address and royalty amount for given edition id
     function royaltyInfo(
         uint256 _editionId,

@@ -86,6 +86,14 @@ contract EditionRoyaltiesRegistry is ERC165, IERC2981, Konstants, Context {
     // ERC-2981 FACADE //
     ///////////
 
+    function getRoyaltiesReceiver(uint256 _editionId) external override view returns (address _receiver) {
+        EditionAgreement storage agreement = editionAgreements[_editionId];
+        if (agreement.fundsRecipient != address(0)) {
+            return agreement.fundsRecipient;
+        }
+        return koda.getCreatorOfEdition(_editionId);
+    }
+
     function royaltyInfo(
         uint256 _tokenId,
         uint256 _value

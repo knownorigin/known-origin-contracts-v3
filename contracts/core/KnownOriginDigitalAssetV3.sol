@@ -351,9 +351,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     function _royaltyInfo(uint256 _tokenId, uint256 _value) internal view returns (address _receiver, uint256 _royaltyAmount) {
         uint256 editionId = _editionFromTokenId(_tokenId);
-
         // If we have a registry and its defined, use it
         if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(editionId)) {
+            // Note: any registry must be edition aware so to only store one entry for all within the edition
             (_receiver, _royaltyAmount) = royaltiesRegistryProxy.royaltyInfo(editionId, _value);
         } else {
             // Fall back to KO defaults
@@ -376,26 +376,28 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     // Expanded method at edition level and expanding on the funds receiver and the creator
-    function royaltyAndCreatorInfo(uint256 _editionId, uint256 _value)
+    function royaltyAndCreatorInfo(uint256 _tokenId, uint256 _value)
     external
     view
     override
     returns (address receiver, address creator, uint256 royaltyAmount) {
-        address originalCreator = _getCreatorOfEdition(_editionId);
-
-        if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)) {
-            // Note: any registry must be edition aware so to only store one entry for all within the edition
-            (address _receiver, uint256 _royaltyAmount) = royaltiesRegistryProxy.royaltyInfo(_editionId, _value);
-            return (_receiver, originalCreator, _royaltyAmount);
-        }
-
-        return (originalCreator, originalCreator, (_value / modulo) * secondarySaleRoyalty);
+        address originalCreator = _getCreatorOfEdition(_editionFromTokenId(_tokenId));
+        (address _receiver, uint256 _royaltyAmount) = _royaltyInfo(_tokenId, _value);
+        return (_receiver, originalCreator, _royaltyAmount);
     }
 
-    function hasRoyalties(uint256 _tokenId) external override view returns (bool) {
-        require(exists(_tokenId), "Token does not exist");
-        return royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionFromTokenId(_tokenId))
+    function hasRoyalties(uint256 _editionId) external override view returns (bool) {
+        require(_editionExists(_editionId), "Edition does not exist");
+        return royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)
                 || secondarySaleRoyalty > 0;
+    }
+
+    function getRoyaltiesReceiver(uint256 _tokenId) public override view returns (address) {
+        uint256 editionId = _editionFromTokenId(_tokenId);
+        if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(editionId)) {
+            return royaltiesRegistryProxy.getRoyaltiesReceiver(editionId);
+        }
+        return _getCreatorOfEdition(editionId);
     }
 
     function royaltyRegistryActive() public view returns (bool) {
@@ -408,8 +410,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     function getFeeRecipients(uint256 _tokenId) external view override returns (address payable[] memory) {
         address payable[] memory feeRecipients = new address payable[](1);
-        (address _receiver, ) = _royaltyInfo(_tokenId, 0);
-        feeRecipients[0] = payable(_receiver);
+        feeRecipients[0] = payable(getRoyaltiesReceiver(_tokenId));
         return feeRecipients;
     }
 
@@ -465,8 +466,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         address _creator = _getCreatorOfEdition(_editionId);
 
         if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)) {
-            // Note: we do not need the second value in tuple `_royaltyAmount` which is derived from the second arg to `royaltyInfo` and hence we pass 0
-            (address _receiver,) = royaltiesRegistryProxy.royaltyInfo(_editionId, 0);
+            address _receiver = royaltiesRegistryProxy.getRoyaltiesReceiver(_editionId);
             return (_receiver, _creator, _tokenId);
         }
 
@@ -514,8 +514,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         address _creator = _getCreatorOfEdition(_editionId);
 
         if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)) {
-            // Note: we do not need the second value in tuple `_royaltyAmount` which is derived from the second arg to `royaltyInfo` and hence we pass 0
-            (address _receiver,) = royaltiesRegistryProxy.royaltyInfo(_editionId, 0);
+            address _receiver = royaltiesRegistryProxy.getRoyaltiesReceiver(_editionId);
             return (_receiver, _creator, _tokenId);
         }
 

@@ -77,6 +77,14 @@ contract TokenRoyaltiesRegistry is ERC165, ITokenRoyaltiesRegistry, Ownable {
     // ERC 2981 PROXY //
     ////////////////////
 
+    function getRoyaltiesReceiver(uint256 _editionId) external override view returns (address _receiver) {
+        MultiHolder memory holder = multiHolderRoyalties[_editionId];
+        if (holder.splitter != address(0)) {
+            return holder.splitter;
+        }
+        return holder.defaultRecipient;
+    }
+
     function royaltyInfo(
         uint256 _tokenId,
         uint256 _value

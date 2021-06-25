@@ -4,15 +4,21 @@ pragma solidity 0.8.4;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-// This is purely an extension for the KO platform
-interface IERC2981HasRoyaltiesExtension {
+/// @notice This is purely an extension for the KO platform
+/// @notice Royalties on KO are defined at an edition level for all tokens from the same edition
+interface IERC2981EditionExtension {
+
+    /// @notice Does the edition have any royalties defined
     function hasRoyalties(uint256 _editionId) external view returns (bool);
+
+    /// @notice Get the royalty receiver - all royalties should be sent to this account if not zero address
+    function getRoyaltiesReceiver(uint256 _editionId) external view returns (address);
 }
 
 /**
  * ERC2981 standards interface for royalties
  */
-interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
+interface IERC2981 is IERC165, IERC2981EditionExtension {
     /// ERC165 bytes to add to interface array - set in parent contract
     /// implementing this standard
     ///

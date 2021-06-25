@@ -28,6 +28,10 @@ contract MockRoyaltiesRegistry is ERC165, IERC2981 {
         return (overrides[_tokenId].receiver, (_value / modulo) * overrides[_tokenId].amount);
     }
 
+    function getRoyaltiesReceiver(uint256 _editionId) external override view returns (address) {
+        return overrides[_editionId].receiver;
+    }
+
     function hasRoyalties(uint256 _tokenId) external override view returns (bool) {
         return overrides[_tokenId].amount > 0;
     }

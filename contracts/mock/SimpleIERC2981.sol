@@ -29,6 +29,10 @@ contract SimpleIERC2981 is ERC165, IERC2981 {
         return (tokenIdToReceiver[_tokenId], tokenIdToAmount[_tokenId]);
     }
 
+    function getRoyaltiesReceiver(uint256 _editionId) external override view returns (address) {
+        return tokenIdToReceiver[_editionId];
+    }
+
     function hasRoyalties(uint256 _tokenId) external override view returns (bool) {
         return tokenIdToReceiver[_tokenId] != address(0);
     }
