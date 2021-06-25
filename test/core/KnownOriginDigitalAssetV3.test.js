@@ -1280,7 +1280,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('fails if the token does not exist', async () => {
       await expectRevert(
         this.token.hasRoyalties('99999'),
-        'Token does not exist',
+        'Edition does not exist',
       );
     });
 

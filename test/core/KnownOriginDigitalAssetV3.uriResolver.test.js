@@ -88,7 +88,7 @@ contract('KnownOriginDigitalAssetV3 Token URI resolver', function (accounts) {
 
     it('once a uri is set isDefined() is true and new URI is used', async () => {
       await this.tokenUriResolver.setEditionUri(firstEditionTokenId, 'my-new-hash');
-      expect(await this.tokenUriResolver.isDefined(firstEditionTokenId)).to.be.equal(true);
+      expect(await this.tokenUriResolver.isDefined(firstEditionTokenId, 0)).to.be.equal(true);
 
       const tokenUri = await this.token.tokenURI(firstEditionTokenId);
       expect(tokenUri).to.be.equal('my-new-hash');

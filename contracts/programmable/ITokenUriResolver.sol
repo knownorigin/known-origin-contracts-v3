@@ -2,10 +2,11 @@
 
 pragma solidity 0.8.4;
 
-
 interface ITokenUriResolver {
 
-    function editionURI(uint256 _editionId) external view returns (string memory);
+    /// @notice Return the edition or token level URI - token level trumps edition level if found
+    function tokenURI(uint256 _editionId, uint256 _tokenId) external view returns (string memory);
 
-    function isDefined(uint256 _editionId) external view returns (bool);
+    /// @notice Do we have an edition level or token level token URI resolver set
+    function isDefined(uint256 _editionId, uint256 _tokenId) external view returns (bool);
 }

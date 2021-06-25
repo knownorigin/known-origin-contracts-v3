@@ -9,11 +9,11 @@ contract MockTokenUriResolver is ITokenUriResolver {
 
     mapping(uint256 => string) overrides;
 
-    function editionURI(uint256 _editionId) external override view returns (string memory) {
+    function tokenURI(uint256 _editionId, uint256 _tokenId) external override view returns (string memory) {
         return overrides[_editionId];
     }
 
-    function isDefined(uint256 _editionId) external override view returns (bool){
+    function isDefined(uint256 _editionId, uint256 _tokenId) external override view returns (bool){
         return bytes(overrides[_editionId]).length > 0;
     }
 
