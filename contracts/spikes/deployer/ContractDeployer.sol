@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 import "../../core/KnownOriginDigitalAssetV3.sol";
 import "../../access/IKOAccessControlsLookup.sol";

@@ -5,7 +5,7 @@ const {expect} = require('chai');
 
 const ERC721ReceiverMock = artifacts.require('ERC721ReceiverMock');
 
-const wrapReason = reason => `VM Exception while processing transaction: revert ${reason}`;
+const wrapReason = reason => `${reason}`;
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');

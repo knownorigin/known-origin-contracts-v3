@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 import {ERC165Storage} from "@openzeppelin/contracts/utils/introspection/ERC165Storage.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -82,13 +82,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     /// @notice Allows a creator to disable sales of their edition
     mapping(uint256 => bool) public editionSalesDisabled;
-
-    // TODO check this as it is out of sync with KO basis points modulo - if so rename
-    /// @notice Basis points conversion modulo
-    uint256 public basisPointsModulo = 1000;
-
-    /// @notice precision 100.00000%
-    uint256 public modulo = 100_00000;
 
     constructor(
         IKOAccessControlsLookup _accessControls,
@@ -385,6 +378,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     // Expanded method at edition level and expanding on the funds receiver and the creator
     function royaltyAndCreatorInfo(uint256 _editionId, uint256 _value)
     external
+    view
     override
     returns (address receiver, address creator, uint256 royaltyAmount) {
         address originalCreator = _getCreatorOfEdition(_editionId);
@@ -412,14 +406,14 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     // Has Secondary Sale Fees //
     ////////////////////////////
 
-    function getFeeRecipients(uint256 _tokenId) external override returns (address payable[] memory) {
+    function getFeeRecipients(uint256 _tokenId) external view override returns (address payable[] memory) {
         address payable[] memory feeRecipients = new address payable[](1);
         (address _receiver, ) = _royaltyInfo(_tokenId, 0);
         feeRecipients[0] = payable(_receiver);
         return feeRecipients;
     }
 
-    function getFeeBps(uint256 _tokenId) external override returns (uint[] memory) {
+    function getFeeBps(uint256 _tokenId) external view override returns (uint[] memory) {
         uint[] memory feeBps = new uint[](1);
         feeBps[0] = uint(secondarySaleRoyalty) / basisPointsModulo;
         // convert to basis points
@@ -462,6 +456,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /// @notice For a given edition, returns the next token and associated royalty information
     function facilitateNextPrimarySale(uint256 _editionId)
     public
+    view
     override
     returns (address receiver, address creator, uint256 tokenId) {
         require(!editionSalesDisabled[_editionId], "Edition sales disabled");
@@ -510,6 +505,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /// @notice Using the reverse token ID logic of an edition, returns next token ID and associated royalty information
     function facilitateReversePrimarySale(uint256 _editionId)
     public
+    view
     override
     returns (address receiver, address creator, uint256 tokenId) {
         require(!editionSalesDisabled[_editionId], "Edition sales disabled");
@@ -783,10 +779,6 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     function setTokenUriResolver(ITokenUriResolver _tokenUriResolver) onlyAdmin public {
         tokenUriResolver = _tokenUriResolver;
         emit AdminTokenUriResolverSet(address(_tokenUriResolver));
-    }
-
-    function updateBasisPointsModulo(uint256 _newModulo) onlyAdmin public {
-        basisPointsModulo = _newModulo;
     }
 
     ///////////////////////

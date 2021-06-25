@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 // TODO whats the best way to test this?
 abstract contract IFreeFromUpTo {

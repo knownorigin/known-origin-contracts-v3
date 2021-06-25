@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 import {IKODAV3SecondarySaleMarketplace} from "./IKODAV3Marketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
@@ -315,15 +315,15 @@ ReserveAuctionMarketplace {
 
     // internal
 
-    function _isListingPermitted(uint256 _tokenId) internal override returns (bool) {
+    function _isListingPermitted(uint256 _tokenId) internal view override returns (bool) {
         return !_isTokenListed(_tokenId);
     }
 
-    function _isReserveListingPermitted(uint256 _tokenId) internal override returns (bool) {
+    function _isReserveListingPermitted(uint256 _tokenId) internal view override returns (bool) {
         return koda.ownerOf(_tokenId) == _msgSender();
     }
 
-    function _hasReserveListingBeenInvalidated(uint256 _id) internal override returns (bool) {
+    function _hasReserveListingBeenInvalidated(uint256 _id) internal view override returns (bool) {
         bool isApprovalActiveForMarketplace = koda.isApprovedForAll(
             editionOrTokenWithReserveAuctions[_id].seller,
             address(this)
@@ -332,7 +332,7 @@ ReserveAuctionMarketplace {
         return !isApprovalActiveForMarketplace || koda.ownerOf(_id) != editionOrTokenWithReserveAuctions[_id].seller;
     }
 
-    function _isBuyNowListingPermitted(uint256 _tokenId) internal override returns (bool) {
+    function _isBuyNowListingPermitted(uint256 _tokenId) internal view  override returns (bool) {
         return koda.ownerOf(_tokenId) == _msgSender();
     }
 

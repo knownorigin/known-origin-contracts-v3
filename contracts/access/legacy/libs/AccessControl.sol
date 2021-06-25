@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 // N:B - this has been copied into the project for legacy reasons only
 import "./Roles.sol";
