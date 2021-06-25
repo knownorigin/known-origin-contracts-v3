@@ -8,6 +8,7 @@ import {IERC2309} from "./IERC2309.sol";
 import {IERC2981} from "./IERC2981.sol";
 import {IHasSecondarySaleFees} from "./IHasSecondarySaleFees.sol";
 
+/// @title Core KODA V3 functionality
 interface IKODAV3 is
 IERC165, // Contract introspection
 IERC721, // Core NFTs

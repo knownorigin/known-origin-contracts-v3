@@ -7,20 +7,21 @@
     * Ability to mint single 1 of 1 NFTs
     * Ability to mint batches of NFT (multi-editions)
     * Collaboration support for `1..n` collaborators with royalties
-* Replace whitelisting with merkle proofs to reduce operational overheads 
+* Replace whitelisting with merkle proofs for minting access
 * Support for [ERC-2981: Royalty Standard](https://eips.ethereum.org/EIPS/eip-2981)
 * Support for [ERC-998 Top-down ERC-20 composable](https://eips.ethereum.org/EIPS/eip-998) (optional)
 * Support for [ERC-2309: Consecutive batch mint](https://eips.ethereum.org/EIPS/eip-2309) (optional)
+* Support for [Rarible V2 royalties standard](https://docs.rarible.com/asset/royalties-schema) (optional)
 * Support for a proxy management account for creatives (optional)
 * Support programmable/dynamic token URIs in the future (future iteration)
 * Support metadata updates before the first sale has been made (optional) 
 * Sealed Metadata: Support to set a one time `perma-web` backup of token metadata
 
-### Extras
+### GAS & Coverage
 
 * `GAS` report can be found [here](./gas-report-output.md) and generated on demand via `npm run gas`
-* Code coverage generation via `npm run coverage` output in `./coverage` folder
 * Contract size report found [here](./contract-size.md) or generated on demand via `npm run contract-size`
+* Code coverage generation via `npm run coverage` output in `./coverage` folder
 
 ## Deployments
 

@@ -4,11 +4,8 @@ pragma solidity 0.8.4;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-/**
- * @notice Royalties formats required for use on the Rarible platform
- *
- * @notice https://docs.rarible.com/asset/royalties-schema
- */
+/// @title Royalties formats required for use on the Rarible platform
+/// @dev https://docs.rarible.com/asset/royalties-schema
 interface IHasSecondarySaleFees is IERC165 {
 
     event SecondarySaleFees(uint256 tokenId, address[] recipients, uint[] bps);
