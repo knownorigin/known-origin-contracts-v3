@@ -57,7 +57,6 @@ contract('KODAV3Marketplace', function (accounts) {
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.marketplace.address, {from: owner});
 
     this.minBidAmount = await this.marketplace.minBidAmount();
-    this.secondarySaleRoyalty = await this.marketplace.secondarySaleRoyalty();
   });
 
   describe('secondary sale token listing', async () => {

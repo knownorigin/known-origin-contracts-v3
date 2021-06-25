@@ -20,7 +20,6 @@ BuyNowMarketplace,
 ReserveAuctionMarketplace {
 
     event SecondaryMarketplaceDeployed();
-    event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
     event AdminUpdateSecondarySaleCommission(uint256 _platformSecondarySaleCommission);
     event ConvertFromBuyNowToOffers(uint256 indexed _tokenId, uint128 _startDate);
     event ReserveAuctionConvertedToOffers(uint256 indexed _tokenId);
@@ -36,9 +35,6 @@ ReserveAuctionMarketplace {
 
     // Edition ID to Offer (an offer on any token in an edition)
     mapping(uint256 => Offer) public editionBids;
-
-    // Secondary sale commission
-    uint256 public secondarySaleRoyalty = 12_50000; // 12.5%
 
     uint256 public platformSecondarySaleCommission = 2_50000;  // 2.50000%
 
@@ -306,11 +302,6 @@ ReserveAuctionMarketplace {
     function updatePlatformSecondarySaleCommission(uint256 _platformSecondarySaleCommission) public onlyAdmin {
         platformSecondarySaleCommission = _platformSecondarySaleCommission;
         emit AdminUpdateSecondarySaleCommission(_platformSecondarySaleCommission);
-    }
-
-    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) public onlyAdmin {
-        secondarySaleRoyalty = _secondarySaleRoyalty;
-        emit AdminUpdateSecondaryRoyalty(_secondarySaleRoyalty);
     }
 
     // internal
