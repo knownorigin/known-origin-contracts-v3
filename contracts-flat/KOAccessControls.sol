@@ -443,7 +443,7 @@ library MerkleProof {
 
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 interface IKOAccessControlsLookup {
     function hasAdminRole(address _address) external view returns (bool);
@@ -462,7 +462,7 @@ interface IKOAccessControlsLookup {
 // File: contracts/access/legacy/ISelfServiceAccessControls.sol
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 interface ISelfServiceAccessControls {
 
@@ -474,7 +474,7 @@ interface ISelfServiceAccessControls {
 
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 
 
@@ -524,7 +524,7 @@ contract KOAccessControls is AccessControl, IKOAccessControlsLookup {
         address _address,
         uint256 _merkleIndex,
         bytes32[] calldata _merkleProof
-    )  external  {
+    ) external {
         require(isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
         artistProxy[_msgSender()] = _address;

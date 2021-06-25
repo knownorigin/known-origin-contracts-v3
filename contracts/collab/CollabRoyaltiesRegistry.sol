@@ -1,22 +1,26 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
+import {ERC165Storage} from "@openzeppelin/contracts/utils/introspection/ERC165Storage.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 import {Konstants} from "../core/Konstants.sol";
-import {IERC2981HasRoyaltiesExtension} from "../core/IERC2981.sol";
+import {IERC2981} from "../core/IERC2981.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {ICollabFundsHandler} from "./handlers/ICollabFundsHandler.sol";
 
-contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExtension {
+contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981 {
 
     IKODAV3 public koda;
     IKOAccessControlsLookup public accessControls;
     mapping(address => bool) public isHandlerWhitelisted;
     mapping(uint256 => address) public proxies;
     uint256 public royaltyAmount = 12_50000; // 12.5% as represented in eip-2981
+
+    /// @notice precision 100.00000%
+    uint256 public modulo = 100_00000;
 
     // Events
     event KODASet(address koda);
@@ -43,6 +47,9 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExt
     // Constructor
     constructor(IKOAccessControlsLookup _accessControls) {
         accessControls = _accessControls;
+
+        // _INTERFACE_ID_ERC2981
+        _registerInterface(0x2a55205a);
     }
 
     // Set the IKODAV3 dependency.
@@ -161,14 +168,22 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, IERC2981HasRoyaltiesExt
         emit RoyaltySetup(_editionId, _handler, proxy, _recipients, _splits);
     }
 
+    function getRoyaltiesReceiver(uint256 _editionId) external override view returns (address _receiver) {
+        _receiver = proxies[_editionId];
+        require(_receiver != address(0), "Edition not setup");
+    }
+
     // Gets the funds handler proxy address and royalty amount for given edition id
-    function royaltyInfo(uint256 _editionId)
-    external
-    view
-    returns (address receiver, uint256 amount) {
-        receiver = proxies[_editionId];
-        require(receiver != address(0), "Edition not setup");
-        amount = royaltyAmount;
+    function royaltyInfo(
+        uint256 _editionId,
+        uint256 _value
+    ) external override view returns (
+        address _receiver,
+        uint256 _royaltyAmount
+    ) {
+        _receiver = proxies[_editionId];
+        require(_receiver != address(0), "Edition not setup");
+        _royaltyAmount = (_value / modulo) * royaltyAmount;
     }
 
     // Get the proxy for a given edition's funds handler

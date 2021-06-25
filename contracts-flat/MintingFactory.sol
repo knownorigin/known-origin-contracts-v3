@@ -29,7 +29,7 @@ abstract contract Context {
 
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 interface IKODAV3Minter {
 
@@ -44,7 +44,7 @@ interface IKODAV3Minter {
 
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 interface IKOAccessControlsLookup {
     function hasAdminRole(address _address) external view returns (bool);
@@ -222,7 +222,7 @@ interface IERC721 is IERC165 {
 
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 /**
   @title ERC-2309: ERC-721 Batch Mint Extension
@@ -251,90 +251,59 @@ interface IERC2309 {
 
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 
 // This is purely an extension for the KO platform
 interface IERC2981HasRoyaltiesExtension {
-    function hasRoyalties(uint256 _tokenId) external view returns (bool);
+    function hasRoyalties(uint256 _editionId) external view returns (bool);
 }
 
 /**
  * ERC2981 standards interface for royalties
  */
 interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
-    /*
-     * ERC165 bytes to add to interface array - set in parent contract implementing this standard
-     *
-     * bytes4(keccak256('royaltyInfo(uint256)')) == 0xcef6d368
-     * bytes4(keccak256('receivedRoyalties(address,address,uint256,address,uint256)')) == 0x8589ff45
-     * bytes4(0xcef6d368) ^ bytes4(0x8589ff45) == 0x4b7f2c2d
-     * bytes4 private constant _INTERFACE_ID_ERC721ROYALTIES = 0x4b7f2c2d;
-     * _registerInterface(_INTERFACE_ID_ERC721ROYALTIES);
-     */
-    /**
+    /// ERC165 bytes to add to interface array - set in parent contract
+    /// implementing this standard
+    ///
+    /// bytes4(keccak256("royaltyInfo(uint256,uint256)")) == 0x2a55205a
+    /// bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
+    /// _registerInterface(_INTERFACE_ID_ERC2981);
 
-    /**
-        @notice This event is emitted when royalties are transferred.
-        @dev The marketplace would emit this event from their contracts.
-        @param _royaltyRecipient - The address of who is entitled to the royalties
-        @param _buyer - The address buying the NFT on a secondary sale
-        @param _tokenId - the token buying purchased/traded
-        @param _tokenPaid - The address of the token (ERC20) used to pay the fee. Set to 0x0 if native asset (ETH).
-        @param _amount - The amount being paid to the creator using the correct decimals from tokenPaid (i.e. if 6 decimals, 1000000 for 1 token paid)
-    */
-    event ReceivedRoyalties(
-        address indexed _royaltyRecipient,
-        address indexed _buyer,
-        uint256 indexed _tokenId,
-        address _tokenPaid,
-        uint256 _amount
+    /// @notice Called with the sale price to determine how much royalty
+    //          is owed and to whom.
+    /// @param _tokenId - the NFT asset queried for royalty information
+    /// @param _value - the sale price of the NFT asset specified by _tokenId
+    /// @return _receiver - address of who should be sent the royalty payment
+    /// @return _royaltyAmount - the royalty payment amount for _value sale price
+    function royaltyInfo(
+        uint256 _tokenId,
+        uint256 _value
+    ) external view returns (
+        address _receiver,
+        uint256 _royaltyAmount
     );
 
-    /**
-     * @notice Called to return both the creator's address and the royalty percentage -
-     *         this would be the main function called by marketplaces unless they specifically
-     *         need to adjust the royaltyAmount
-     * @notice Percentage is calculated as a fixed point with a scaling factor of 100000,
-     *         such that 100% would be the value 10000000, as 10000000/100000 = 100.
-     *         1% would be the value 100000, as 100000/100000 = 1
-     */
-    function royaltyInfo(uint256 _tokenId) external returns (address receiver, uint256 amount);
-
-    /**
-     * @notice Called when royalty is transferred to the receiver. We wrap emitting
-     *         the event as we want the NFT contract itself to contain the event.
-     * @param _royaltyRecipient - The address of who is entitled to the royalties
-     * @param _buyer - The address buying the NFT on a secondary sale
-     * @param _tokenId - the token buying purchased/traded
-     * @param _tokenPaid - The address of the token (ERC20) used to pay the fee. Set to 0x0 if native asset (ETH).
-     * @param _amount - The amount being paid to the creator using the correct decimals from tokenPaid (i.e. if 6 decimals, 1000000 for 1 token paid)
-     */
-    function receivedRoyalties(address _royaltyRecipient, address _buyer, uint256 _tokenId, address _tokenPaid, uint256 _amount) external;
 }
 
 // File: contracts/core/IHasSecondarySaleFees.sol
 
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 
+/**
+ * @notice Royalties formats required for use on the Rarible platform
+ *
+ * @notice https://docs.rarible.com/asset/royalties-schema
+ */
 interface IHasSecondarySaleFees is IERC165 {
+
     event SecondarySaleFees(uint256 tokenId, address[] recipients, uint[] bps);
 
-    /*
-     * bytes4(keccak256('getFeeBps(uint256)')) == 0x0ebd4c7f
-     * bytes4(keccak256('getFeeRecipients(uint256)')) == 0xb9c4d9fb
-     *
-     * => 0x0ebd4c7f ^ 0xb9c4d9fb == 0xb7799584
-     */
-//    bytes4 private constant _INTERFACE_ID_FEES = 0xb7799584;
-//    constructor() public {
-//        _registerInterface(_INTERFACE_ID_FEES);
-//    }
-
     function getFeeRecipients(uint256 id) external returns (address payable[] memory);
+
     function getFeeBps(uint256 id) external returns (uint[] memory);
 }
 
@@ -342,7 +311,7 @@ interface IHasSecondarySaleFees is IERC165 {
 
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 
 
@@ -351,10 +320,10 @@ pragma solidity 0.8.5;
 
 interface IKODAV3 is
 IERC165, // Contract introspection
-IERC721, // NFTs
+IERC721, // Core NFTs
 IERC2309, // Consecutive batch mint
-IERC2981,  // Royalties
-IHasSecondarySaleFees // rariable / foundation royalties
+IERC2981, // Royalties
+IHasSecondarySaleFees // Rariable / Foundation royalties
 {
     // edition utils
 
@@ -368,10 +337,13 @@ IHasSecondarySaleFees // rariable / foundation royalties
 
     function editionExists(uint256 _editionId) external view returns (bool);
 
+    // Has the edition been disabled / soft burnt
     function isEditionSalesDisabled(uint256 _editionId) external view returns (bool);
 
+    // Has the edition been disabled / soft burnt OR sold out
     function isSalesDisabledOrSoldOut(uint256 _editionId) external view returns (bool);
 
+    // Work out the max token ID for an edition ID
     function maxTokenIdOfEdition(uint256 _editionId) external view returns (uint256 _tokenId);
 
     // Helper method for getting the next primary sale token from an edition starting low to high token IDs
@@ -387,14 +359,18 @@ IHasSecondarySaleFees // rariable / foundation royalties
     function facilitateReversePrimarySale(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _tokenId);
 
     // Expanded royalty method for the edition, not token
-    function royaltyAndCreatorInfo(uint256 _editionId) external returns (address _receiver, address _creator, uint256 _amount);
+    function royaltyAndCreatorInfo(uint256 _editionId, uint256 _value) external returns (address _receiver, address _creator, uint256 _amount);
 
+    // Allows the creator to correct mistakes until the first token from an edition is sold
     function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external;
 
+    // Has any primary transfer happened from an edition
     function hasMadePrimarySale(uint256 _editionId) external view returns (bool);
 
+    // Has the edition sold out
     function isEditionSoldOut(uint256 _editionId) external view returns (bool);
 
+    // Toggle on/off the edition from being able to make sales
     function toggleEditionSalesDisabled(uint256 _editionId) external;
 
     // token utils
@@ -411,7 +387,7 @@ IHasSecondarySaleFees // rariable / foundation royalties
 // File: contracts/marketplace/IKODAV3Marketplace.sol
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 interface IBuyNowMarketplace {
     event ListedForBuyNow(uint256 indexed _id, uint256 _price, address _currentOwner, uint256 _startDate);
@@ -459,6 +435,7 @@ interface IEditionSteppedMarketplace {
     function buyNextStep(uint256 _editionId) external payable;
 
     function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
+
     function convertSteppedAuctionToOffers(uint256 _editionId, uint128 _startDate) external;
 
     function updateSteppedAuction(uint256 _editionId, uint128 _basePrice, uint128 _stepPrice) external;
@@ -474,15 +451,21 @@ interface IReserveAuctionMarketplace {
     event EmergencyBidWithdrawFromReserveAuction(uint256 indexed _id, address _bidder, uint128 _bid);
 
     function placeBidOnReserveAuction(uint256 _id) external payable;
+
     function listForReserveAuction(address _creator, uint256 _id, uint128 _reservePrice, uint128 _startDate) external;
+
     function resultReserveAuction(uint256 _id) external;
+
     function withdrawBidFromReserveAuction(uint256 _id) external;
+
     function updateReservePriceForReserveAuction(uint256 _id, uint128 _reservePrice) external;
+
     function emergencyExitBidFromReserveAuction(uint256 _id) external;
 }
 
 interface IKODAV3PrimarySaleMarketplace is IEditionSteppedMarketplace, IEditionOffersMarketplace {
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
+
     function convertReserveAuctionToOffers(uint256 _editionId, uint128 _startDate) external;
 }
 
@@ -511,8 +494,21 @@ interface IBuyNowSecondaryMarketplace {
     function listTokenForBuyNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) external;
 }
 
-interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffersMarketplace, IBuyNowSecondaryMarketplace {
+interface IEditionOffersSecondaryMarketplace {
+    event EditionBidPlaced(uint256 indexed _editionId, address indexed _bidder, uint256 _bid);
+    event EditionBidWithdrawn(uint256 indexed _editionId, address _bidder);
+    event EditionBidAccepted(uint256 indexed _tokenId, address _currentOwner, address _bidder, uint256 _amount);
+
+    function placeEditionBid(uint256 _editionId) external payable;
+
+    function withdrawEditionBid(uint256 _editionId) external;
+
+    function acceptEditionBid(uint256 _tokenId, uint256 _offerPrice) external;
+}
+
+interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffersMarketplace, IEditionOffersSecondaryMarketplace, IBuyNowSecondaryMarketplace {
     function convertReserveAuctionToBuyItNow(uint256 _tokenId, uint128 _listingPrice, uint128 _startDate) external;
+
     function convertReserveAuctionToOffers(uint256 _tokenId) external;
 }
 
@@ -757,7 +753,7 @@ interface IERC20 {
 
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 
 
@@ -766,6 +762,7 @@ pragma solidity 0.8.5;
 
 /// @notice Core logic and state shared between both marketplaces
 abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
+
     event AdminUpdateModulo(uint256 _modulo);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
     event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
@@ -784,7 +781,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         _;
     }
 
-    function _onlyContract() private {
+    function _onlyContract() private view {
         require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
     }
 
@@ -794,7 +791,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         _;
     }
 
-    function _onlyAdmin() private {
+    function _onlyAdmin() private view {
         require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
     }
 
@@ -901,7 +898,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
 
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 
 
@@ -988,7 +985,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
 
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 
 
@@ -1030,12 +1027,12 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         require(_reservePrice >= minBidAmount, "Reserve price must be at least min bid");
 
         editionOrTokenWithReserveAuctions[_id] = ReserveAuction({
-            seller : _creator,
-            bidder : address(0),
-            reservePrice : _reservePrice,
-            startDate : _startDate,
-            biddingEnd : 0,
-            bid : 0
+        seller : _creator,
+        bidder : address(0),
+        reservePrice : _reservePrice,
+        startDate : _startDate,
+        biddingEnd : 0,
+        bid : 0
         });
 
         emit ListedForReserveAuction(_id, _reservePrice, _startDate);
@@ -1216,7 +1213,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 
 
@@ -1649,15 +1646,15 @@ BuyNowMarketplace {
 
     // internal
 
-    function _isListingPermitted(uint256 _editionId) internal override returns (bool) {
+    function _isListingPermitted(uint256 _editionId) internal view override returns (bool) {
         return !_isEditionListed(_editionId);
     }
 
-    function _isReserveListingPermitted(uint256 _editionId) internal override returns (bool) {
+    function _isReserveListingPermitted(uint256 _editionId) internal view override returns (bool) {
         return koda.getSizeOfEdition(_editionId) == 1 && accessControls.hasContractRole(_msgSender());
     }
 
-    function _hasReserveListingBeenInvalidated(uint256 _id) internal override returns (bool) {
+    function _hasReserveListingBeenInvalidated(uint256 _id) internal view override returns (bool) {
         bool isApprovalActiveForMarketplace = koda.isApprovedForAll(
             editionOrTokenWithReserveAuctions[_id].seller,
             address(this)
@@ -1666,7 +1663,7 @@ BuyNowMarketplace {
         return !isApprovalActiveForMarketplace || koda.isSalesDisabledOrSoldOut(_id);
     }
 
-    function _isBuyNowListingPermitted(uint256) internal override returns (bool) {
+    function _isBuyNowListingPermitted(uint256) internal view override returns (bool) {
         return accessControls.hasContractRole(_msgSender());
     }
 
@@ -1737,7 +1734,7 @@ BuyNowMarketplace {
 
 
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 
 
@@ -1870,13 +1867,13 @@ contract MintingFactory is Context {
 
     function mintBatchEditionAndComposeERC20s(
         SaleType _saleType,
-        // --- _config array (expected length of 5) ---
-        // Index 0 - Merkle Index
-        // Index 1 - Edition size
-        // Index 2 - Start Date
-        // Index 3 - Base price
-        // Index 4 - Step price
-        // ---------------------------------------------
+    // --- _config array (expected length of 5) ---
+    // Index 0 - Merkle Index
+    // Index 1 - Edition size
+    // Index 2 - Start Date
+    // Index 3 - Base price
+    // Index 4 - Step price
+    // ---------------------------------------------
         uint128[] calldata _config,
         string calldata _uri,
         address[] calldata _erc20s,
@@ -1895,12 +1892,12 @@ contract MintingFactory is Context {
     function mintBatchEditionAndComposeERC20sAsProxy(
         address _creator,
         SaleType _saleType,
-        // --- _config array (expected length of 4) ---
-        // Index 0 - Edition size
-        // Index 1 - Start Date
-        // Index 2 - Base price
-        // Index 3 - Step price
-        // ---------------------------------------------
+    // --- _config array (expected length of 4) ---
+    // Index 0 - Edition size
+    // Index 1 - Start Date
+    // Index 2 - Base price
+    // Index 3 - Step price
+    // ---------------------------------------------
         uint128[] calldata _config,
         string calldata _uri,
         address[] calldata _erc20s,

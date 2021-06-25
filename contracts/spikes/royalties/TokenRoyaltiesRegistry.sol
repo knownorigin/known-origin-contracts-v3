@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 import "../collaborators/handlers/FundsSplitter.sol";
 import "../collaborators/handlers/FundsReceiver.sol";
@@ -77,7 +77,21 @@ contract TokenRoyaltiesRegistry is ERC165, ITokenRoyaltiesRegistry, Ownable {
     // ERC 2981 PROXY //
     ////////////////////
 
-    function royaltyInfo(uint256 _tokenId) external view override returns (address receiver, uint256 amount) {
+    function getRoyaltiesReceiver(uint256 _editionId) external override view returns (address _receiver) {
+        MultiHolder memory holder = multiHolderRoyalties[_editionId];
+        if (holder.splitter != address(0)) {
+            return holder.splitter;
+        }
+        return holder.defaultRecipient;
+    }
+
+    function royaltyInfo(
+        uint256 _tokenId,
+        uint256 _value
+    ) external override view returns (
+        address _receiver,
+        uint256 _royaltyAmount
+    ) {
         // Royalties can be optional
         if (!royaltiesSet[_tokenId]) {
             return (address(0), 0);
@@ -155,12 +169,6 @@ contract TokenRoyaltiesRegistry is ERC165, ITokenRoyaltiesRegistry, Ownable {
         recipients : _recipients,
         splits : _splits
         });
-    }
-
-    function receivedRoyalties(address _royaltyRecipient, address _buyer, uint256 _tokenId, address _tokenPaid, uint256 _amount)
-    external
-    override {
-        emit ReceivedRoyalties(_royaltyRecipient, _buyer, _tokenId, _tokenPaid, _amount);
     }
 
     ///////////////////////////////

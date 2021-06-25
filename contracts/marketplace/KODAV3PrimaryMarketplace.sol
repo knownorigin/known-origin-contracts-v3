@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
@@ -435,15 +435,15 @@ BuyNowMarketplace {
 
     // internal
 
-    function _isListingPermitted(uint256 _editionId) internal override returns (bool) {
+    function _isListingPermitted(uint256 _editionId) internal view override returns (bool) {
         return !_isEditionListed(_editionId);
     }
 
-    function _isReserveListingPermitted(uint256 _editionId) internal override returns (bool) {
+    function _isReserveListingPermitted(uint256 _editionId) internal view override returns (bool) {
         return koda.getSizeOfEdition(_editionId) == 1 && accessControls.hasContractRole(_msgSender());
     }
 
-    function _hasReserveListingBeenInvalidated(uint256 _id) internal override returns (bool) {
+    function _hasReserveListingBeenInvalidated(uint256 _id) internal view override returns (bool) {
         bool isApprovalActiveForMarketplace = koda.isApprovedForAll(
             editionOrTokenWithReserveAuctions[_id].seller,
             address(this)
@@ -452,7 +452,7 @@ BuyNowMarketplace {
         return !isApprovalActiveForMarketplace || koda.isSalesDisabledOrSoldOut(_id);
     }
 
-    function _isBuyNowListingPermitted(uint256) internal override returns (bool) {
+    function _isBuyNowListingPermitted(uint256) internal view override returns (bool) {
         return accessControls.hasContractRole(_msgSender());
     }
 

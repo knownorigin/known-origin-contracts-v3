@@ -64,14 +64,15 @@ contract('KnownOriginDigitalAssetV3 Royalties resolver', function (accounts) {
       const hasRoyalties = await this.token.hasRoyalties(firstEditionTokenId);
       expect(hasRoyalties).to.be.equal(true);
 
-      const royaltyInfo = await this.token.royaltyInfo.call(firstEditionTokenId);
-      expect(royaltyInfo.receiver).to.be.equal(owner);
-      expect(royaltyInfo.amount).to.be.bignumber.equal('1250000');
+      const paymentAmount = '10000000'
+      const royaltyInfo = await this.token.royaltyInfo.call(firstEditionTokenId, paymentAmount);
+      expect(royaltyInfo._receiver).to.be.equal(owner);
+      expect(royaltyInfo._royaltyAmount).to.be.bignumber.equal('1250000');
 
-      const royaltyAndCreatorInfo = await this.token.royaltyAndCreatorInfo.call(firstEditionTokenId);
+      const royaltyAndCreatorInfo = await this.token.royaltyAndCreatorInfo.call(firstEditionTokenId, paymentAmount);
       expect(royaltyAndCreatorInfo.receiver).to.be.equal(owner);
       expect(royaltyAndCreatorInfo.creator).to.be.equal(owner);
-      expect(royaltyAndCreatorInfo.amount).to.be.bignumber.equal('1250000');
+      expect(royaltyAndCreatorInfo.royaltyAmount).to.be.bignumber.equal('1250000');
     });
   });
 
@@ -85,14 +86,15 @@ contract('KnownOriginDigitalAssetV3 Royalties resolver', function (accounts) {
       const hasRoyalties = await this.token.hasRoyalties(firstEditionTokenId);
       expect(hasRoyalties).to.be.equal(true);
 
-      const royaltyInfo = await this.token.royaltyInfo.call(firstEditionTokenId);
-      expect(royaltyInfo.receiver).to.be.equal(newReceiver);
-      expect(royaltyInfo.amount).to.be.bignumber.equal('999999');
+      const paymentAmount = '10000000'
+      const royaltyInfo = await this.token.royaltyInfo.call(firstEditionTokenId, paymentAmount);
+      expect(royaltyInfo._receiver).to.be.equal(newReceiver);
+      expect(royaltyInfo._royaltyAmount).to.be.bignumber.equal('999999');
 
-      const royaltyAndCreatorInfo = await this.token.royaltyAndCreatorInfo.call(firstEditionTokenId);
+      const royaltyAndCreatorInfo = await this.token.royaltyAndCreatorInfo.call(firstEditionTokenId, paymentAmount);
       expect(royaltyAndCreatorInfo.receiver).to.be.equal(newReceiver);
       expect(royaltyAndCreatorInfo.creator).to.be.equal(owner);
-      expect(royaltyAndCreatorInfo.amount).to.be.bignumber.equal('999999');
+      expect(royaltyAndCreatorInfo.royaltyAmount).to.be.bignumber.equal('999999');
     });
   });
 

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
@@ -11,6 +11,7 @@ import {IKODAV3} from "../core/IKODAV3.sol";
 
 /// @notice Core logic and state shared between both marketplaces
 abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
+
     event AdminUpdateModulo(uint256 _modulo);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
     event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
@@ -29,7 +30,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         _;
     }
 
-    function _onlyContract() private {
+    function _onlyContract() private view {
         require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
     }
 
@@ -39,7 +40,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
         _;
     }
 
-    function _onlyAdmin() private {
+    function _onlyAdmin() private view {
         require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
     }
 

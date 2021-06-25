@@ -76,6 +76,8 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
     // Funds Handler Implementation V1: Receiver
     royaltyImplV1 = await RoyaltyImplV1.new({from: owner});
 
+    this.modulo = await royaltiesRegistry.modulo()
+
   });
 
   describe('Implementation', () => {
@@ -459,10 +461,12 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
           it('returns proxy address and royalty amount', async () => {
 
-            // Check the royalty info for the edition id
-            const info = await royaltiesRegistry.royaltyInfo(EDITION_ID);
-            expect(info.receiver).to.equal(proxyAddr);
-            expect(info.amount.eq(ROYALTY_AMOUNT)).to.be.true;
+            // Check the royalty info for the edition id given a payment amount
+            const paymentAmount = ether('1')
+
+            const info = await royaltiesRegistry.royaltyInfo(EDITION_ID, paymentAmount);
+            expect(info._receiver).to.equal(proxyAddr);
+            expect(info._royaltyAmount).to.be.bignumber.equal((paymentAmount.div(this.modulo)).mul(ROYALTY_AMOUNT));
 
           });
 
@@ -508,10 +512,11 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
               // Reuse proxy
               await royaltiesRegistry.reuseRoyaltySetup(EDITION_ID_2, EDITION_ID, {from: contract});
 
-              // Check the royalty info for the edition id
-              const info = await royaltiesRegistry.royaltyInfo(EDITION_ID_2);
-              expect(info.receiver).to.equal(proxyAddr);
-              expect(info.amount.eq(ROYALTY_AMOUNT)).to.be.true;
+              const paymentAmount = ether('1')
+
+              const info = await royaltiesRegistry.royaltyInfo(EDITION_ID, paymentAmount);
+              expect(info._receiver).to.equal(proxyAddr);
+              expect(info._royaltyAmount).to.be.bignumber.equal((paymentAmount.div(this.modulo)).mul(ROYALTY_AMOUNT));
 
             });
 
@@ -533,16 +538,16 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
             const editionId = await token.getEditionIdOfToken(TOKEN_ID);
             expect(editionId).to.be.bignumber.equal(EDITION_ID);
 
-            // Check the royalties registry directly with the edition id
-            let info = await royaltiesRegistry.royaltyInfo(editionId);
-            expect(info.receiver).to.equal(proxyAddr);
-            expect(info.amount.eq(ROYALTY_AMOUNT)).to.be.true;
+            const paymentAmount = ether('1')
+
+            let info = await royaltiesRegistry.royaltyInfo(editionId, paymentAmount);
+            expect(info._receiver).to.equal(proxyAddr);
+            expect(info._royaltyAmount).to.be.bignumber.equal((paymentAmount.div(this.modulo)).mul(ROYALTY_AMOUNT));
 
             // Check the royalties registry via the NFT
-            info = await token.royaltyInfo.call(TOKEN_ID);
-            expect(info.receiver).to.equal(proxyAddr);
-            expect(info.amount.eq(ROYALTY_AMOUNT)).to.be.true;
-
+            info = await token.royaltyInfo.call(TOKEN_ID, paymentAmount);
+            expect(info._receiver).to.equal(proxyAddr);
+            expect(info._royaltyAmount).to.be.bignumber.equal((paymentAmount.div(this.modulo)).mul(ROYALTY_AMOUNT));
           });
 
         });
@@ -716,8 +721,8 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
       proxyAddr = await royaltiesRegistry.getProxy(EDITION_ID_2);
       expect(await royaltiesRegistry.hasRoyalties(EDITION_ID_2)).to.be.true;
 
-      const {receiver} = await royaltiesRegistry.royaltyInfo(EDITION_ID_2);
-      expect(receiver).to.be.equal(proxyAddr);
+      const {_receiver} = await royaltiesRegistry.royaltyInfo(EDITION_ID_2, ether('1'));
+      expect(_receiver).to.be.equal(proxyAddr);
 
       // Setup a contract handle to interact with
       const [deployerAcct] = await ethers.getSigners();

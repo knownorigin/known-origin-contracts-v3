@@ -82,20 +82,4 @@ contract('KODAV3SecondaryMarketplace', function (accounts) {
     });
   });
 
-  describe('updateSecondaryRoyalty()', () => {
-    it('can update as admin', async () => {
-      const newCommission = new BN('1350000')
-      const {receipt} = await this.marketplace.updateSecondaryRoyalty(newCommission, {from: owner})
-      await expectEvent(receipt, 'AdminUpdateSecondaryRoyalty', {
-        _secondarySaleRoyalty: newCommission
-      })
-    })
-
-    it('reverts if not admin', async () => {
-      await expectRevert(
-        this.marketplace.updateSecondaryRoyalty('0', {from: minter}),
-        "Caller not admin"
-      )
-    })
-  })
 });

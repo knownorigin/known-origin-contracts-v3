@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 import {IKODAV3SecondarySaleMarketplace} from "./IKODAV3Marketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
@@ -20,7 +20,6 @@ BuyNowMarketplace,
 ReserveAuctionMarketplace {
 
     event SecondaryMarketplaceDeployed();
-    event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
     event AdminUpdateSecondarySaleCommission(uint256 _platformSecondarySaleCommission);
     event ConvertFromBuyNowToOffers(uint256 indexed _tokenId, uint128 _startDate);
     event ReserveAuctionConvertedToOffers(uint256 indexed _tokenId);
@@ -36,9 +35,6 @@ ReserveAuctionMarketplace {
 
     // Edition ID to Offer (an offer on any token in an edition)
     mapping(uint256 => Offer) public editionBids;
-
-    // Secondary sale commission
-    uint256 public secondarySaleRoyalty = 12_50000; // 12.5%
 
     uint256 public platformSecondarySaleCommission = 2_50000;  // 2.50000%
 
@@ -270,26 +266,25 @@ ReserveAuctionMarketplace {
     //////////////////////////////
 
     function _facilitateSecondarySale(uint256 _tokenId, uint256 _paymentAmount, address _seller, address _buyer) internal {
-        (address royaltyRecipient,) = koda.royaltyInfo(_tokenId);
+        (address _royaltyRecipient, uint256 _royaltyAmount) = koda.royaltyInfo(_tokenId, _paymentAmount);
 
         // split money
-        uint256 creatorRoyalties = handleSecondarySaleFunds(_seller, royaltyRecipient, _paymentAmount);
+        handleSecondarySaleFunds(_seller, _royaltyRecipient, _paymentAmount, _royaltyAmount);
 
         // N:B. open offers are left for the bidder to withdraw or the new token owner to reject/accept
 
         // send token to buyer
         koda.safeTransferFrom(_seller, _buyer, _tokenId);
-
-        // fire royalties callback event
-        koda.receivedRoyalties(royaltyRecipient, _buyer, _tokenId, address(0), creatorRoyalties);
     }
 
-    function handleSecondarySaleFunds(address _seller, address _royaltyRecipient, uint256 _paymentAmount)
-    internal
-    returns (uint256 creatorRoyalties){
+    function handleSecondarySaleFunds(
+        address _seller,
+        address _royaltyRecipient,
+        uint256 _paymentAmount,
+        uint256 _creatorRoyalties
+    ) internal {
         // pay royalties
-        creatorRoyalties = (_paymentAmount / modulo) * secondarySaleRoyalty;
-        (bool creatorSuccess,) = _royaltyRecipient.call{value : creatorRoyalties}("");
+        (bool creatorSuccess,) = _royaltyRecipient.call{value : _creatorRoyalties}("");
         require(creatorSuccess, "Token payment failed");
 
         // pay platform fee
@@ -298,7 +293,7 @@ ReserveAuctionMarketplace {
         require(koCommissionSuccess, "Token commission payment failed");
 
         // pay seller
-        (bool success,) = _seller.call{value : _paymentAmount - creatorRoyalties - koCommission}("");
+        (bool success,) = _seller.call{value : _paymentAmount - _creatorRoyalties - koCommission}("");
         require(success, "Token payment failed");
     }
 
@@ -309,22 +304,17 @@ ReserveAuctionMarketplace {
         emit AdminUpdateSecondarySaleCommission(_platformSecondarySaleCommission);
     }
 
-    function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) public onlyAdmin {
-        secondarySaleRoyalty = _secondarySaleRoyalty;
-        emit AdminUpdateSecondaryRoyalty(_secondarySaleRoyalty);
-    }
-
     // internal
 
-    function _isListingPermitted(uint256 _tokenId) internal override returns (bool) {
+    function _isListingPermitted(uint256 _tokenId) internal view override returns (bool) {
         return !_isTokenListed(_tokenId);
     }
 
-    function _isReserveListingPermitted(uint256 _tokenId) internal override returns (bool) {
+    function _isReserveListingPermitted(uint256 _tokenId) internal view override returns (bool) {
         return koda.ownerOf(_tokenId) == _msgSender();
     }
 
-    function _hasReserveListingBeenInvalidated(uint256 _id) internal override returns (bool) {
+    function _hasReserveListingBeenInvalidated(uint256 _id) internal view override returns (bool) {
         bool isApprovalActiveForMarketplace = koda.isApprovedForAll(
             editionOrTokenWithReserveAuctions[_id].seller,
             address(this)
@@ -333,7 +323,7 @@ ReserveAuctionMarketplace {
         return !isApprovalActiveForMarketplace || koda.ownerOf(_id) != editionOrTokenWithReserveAuctions[_id].seller;
     }
 
-    function _isBuyNowListingPermitted(uint256 _tokenId) internal override returns (bool) {
+    function _isBuyNowListingPermitted(uint256 _tokenId) internal view  override returns (bool) {
         return koda.ownerOf(_tokenId) == _msgSender();
     }
 

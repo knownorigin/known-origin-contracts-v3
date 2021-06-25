@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.5;
+pragma solidity 0.8.4;
 
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -14,6 +14,8 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     bytes4 constant internal ERC721_RECEIVED = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
 
     event AdminUpdateSecondaryRoyalty(uint256 _secondarySaleRoyalty);
+    event AdminUpdateBasisPointsModulo(uint256 _basisPointsModulo);
+    event AdminUpdateModulo(uint256 _modulo);
     event AdminEditionReported(uint256 indexed _editionId, bool indexed _reported);
     event AdminArtistAccountReported(address indexed _account, bool indexed _reported);
     event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
@@ -23,7 +25,7 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
         _;
     }
 
-    function _onlyContract() private {
+    function _onlyContract() private view {
         require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
     }
 
@@ -32,7 +34,7 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
         _;
     }
 
-    function _onlyAdmin() private {
+    function _onlyAdmin() private view {
         require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
     }
 
@@ -45,7 +47,14 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     mapping(address => bool) public reportedArtistAccounts;
 
     // Secondary sale commission
-    uint256 public secondarySaleRoyalty = 12_50000; // 12.5%
+    uint256 public secondarySaleRoyalty = 12_50000; // 12.5% by default
+
+    /// @notice precision 100.00000%
+    uint256 public modulo = 100_00000;
+
+    /// @notice Basis points conversion modulo
+    /// @notice This is used by the IHasSecondarySaleFees implementation which is different than EIP-2981 specs
+    uint256 public basisPointsModulo = 1000;
 
     constructor(IKOAccessControlsLookup _accessControls) {
         accessControls = _accessControls;
@@ -59,6 +68,16 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     function reportArtistAccount(address _account, bool _reported) onlyAdmin public {
         reportedArtistAccounts[_account] = _reported;
         emit AdminArtistAccountReported(_account, _reported);
+    }
+
+    function updateBasisPointsModulo(uint256 _basisPointsModulo) onlyAdmin public {
+        basisPointsModulo = _basisPointsModulo;
+        emit AdminUpdateBasisPointsModulo(_basisPointsModulo);
+    }
+
+    function updateModulo(uint256 _modulo) onlyAdmin public {
+        modulo = _modulo;
+        emit AdminUpdateModulo(_modulo);
     }
 
     function updateSecondaryRoyalty(uint256 _secondarySaleRoyalty) onlyAdmin public {
