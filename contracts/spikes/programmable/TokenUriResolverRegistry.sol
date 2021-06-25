@@ -17,11 +17,11 @@ contract TokenUriResolverRegistry is ITokenUriResolver, Context {
         accessControls = _accessControls;
     }
 
-    function editionURI(uint256 _editionId) external override view returns (string memory) {
-        return editionIdOverrides[_editionId].editionURI(_editionId);
+    function tokenURI(uint256 _editionId, uint256 _tokenId) external override view returns (string memory) {
+        return editionIdOverrides[_editionId].tokenURI(_editionId, _tokenId);
     }
 
-    function isDefined(uint256 _editionId) external override view returns (bool) {
+    function isDefined(uint256 _editionId, uint256 _tokenId) external override view returns (bool) {
         return editionIdOverrides[_editionId] != ITokenUriResolver(address(0));
     }
 }

@@ -203,8 +203,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     function editionURI(uint256 _editionId) public view returns (string memory) {
         require(_editionExists(_editionId), "Edition does not exist");
 
-        if (tokenUriResolverActive() && tokenUriResolver.isDefined(_editionId)) {
-            return tokenUriResolver.editionURI(_editionId);
+        // Here we are checking only that the edition has a edition level resolver - there may be a overiden token level resolver
+        if (tokenUriResolverActive() && tokenUriResolver.isDefined(_editionId, 0)) {
+            return tokenUriResolver.tokenURI(_editionId, 0);
         }
 
         return editionDetails[_editionId].uri;
@@ -215,8 +216,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         require(_exists(_tokenId), "Token does not exist");
         uint256 editionId = _editionFromTokenId(_tokenId);
 
-        if (tokenUriResolverActive() && tokenUriResolver.isDefined(editionId)) {
-            return tokenUriResolver.editionURI(editionId);
+        if (tokenUriResolverActive() && tokenUriResolver.isDefined(editionId, _tokenId)) {
+            return tokenUriResolver.tokenURI(editionId, _tokenId);
         }
 
         return editionDetails[editionId].uri;
@@ -389,7 +390,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     function hasRoyalties(uint256 _editionId) external override view returns (bool) {
         require(_editionExists(_editionId), "Edition does not exist");
         return royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)
-                || secondarySaleRoyalty > 0;
+        || secondarySaleRoyalty > 0;
     }
 
     function getRoyaltiesReceiver(uint256 _tokenId) public override view returns (address) {
