@@ -6,14 +6,17 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./CollabFundsHandlerBase.sol";
-import "./ICollabFundsDrainable.sol";
+import {
+ICollabFundsDrainable,
+ICollabFundsShareDrainable
+} from "./ICollabFundsDrainable.sol";
 
 /**
  * Allows funds to be split using a pull pattern, holding a balance until drained
  *
  * Supports claiming/draining all balances at one as well as claiming individual shares
  */
-contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollabFundsDrainable {
+contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollabFundsDrainable, ICollabFundsShareDrainable {
 
     uint256 public totalEthReceived;
     uint256 public totalEthPaid;
@@ -80,8 +83,7 @@ contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollab
         emit FundsDrained(balance, recipients, shares, address(0));
     }
 
-    // todo add to interface
-    function drainMyShare() public nonReentrant {
+    function drainShare() public override nonReentrant {
         // Check that there are funds to drain
         uint256 balance = address(this).balance;
         require(balance > 0, "No funds to drain");
@@ -114,8 +116,19 @@ contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollab
             ethPaidToCollaborator[recipient] = amountOwed;
             totalEthPaid += amountOwed;
             payable(recipient).call{value : amountOwed}("");
-            // todo - emit event here
+
+            uint256[] memory shares = new uint256[](1);
+            shares[0] = share;
+
+            address[] memory recipients = new address[](1);
+            recipients[0] = recipient;
+
+            emit FundsDrained(amountOwed, recipients, shares, address(0));
         }
+    }
+    
+    function drainShareERC20(IERC20 token) public override {
+        // TODO
     }
 
     function drainERC20(IERC20 token) public nonReentrant override {

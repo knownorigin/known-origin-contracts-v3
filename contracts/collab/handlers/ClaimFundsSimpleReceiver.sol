@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./CollabFundsHandlerBase.sol";
-import "./ICollabFundsDrainable.sol";
+import {ICollabFundsDrainable} from "./ICollabFundsDrainable.sol";
 
 /**
  * Allows funds to be split using a pull pattern, holding a balance until drained.
