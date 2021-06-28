@@ -106,9 +106,8 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     payable
     whenNotPaused
     onlyContractOrCreator(_editionId)
-    onlyContractOrCreator(_previousEditionId)
+    onlyContractOrCreator(_previousEditionId) // TODO confirm this logic - I believe we should remove the previous ID check
     returns (address proxy) {
-
         // Get the proxy registered to the previous edition id
         proxy = proxies[_previousEditionId];
 
@@ -121,6 +120,8 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         // Emit event
         emit RoyaltySetupReused(_editionId, proxy);
     }
+
+    // TODO add a admin override to fix issues if they arise
 
     /// @notice Sets up a funds handler proxy
     function setupRoyalty(uint256 _editionId, address _handler, address[] calldata _recipients, uint256[] calldata _splits)

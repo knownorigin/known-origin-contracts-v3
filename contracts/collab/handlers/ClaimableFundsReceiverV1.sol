@@ -5,15 +5,14 @@ pragma solidity 0.8.4;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./CollabFundsHandlerBase.sol";
+import {CollabFundsHandlerBase} from "./CollabFundsHandlerBase.sol";
 import {ICollabFundsDrainable} from "./ICollabFundsDrainable.sol";
 
-/**
- * Allows funds to be split using a pull pattern, holding a balance until drained.
- *
- * Supports claiming/draining all balances at one - not an individual shares
- */
-contract CollabFundsSimpleReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollabFundsDrainable {
+/// @title Allows funds to be split using a pull pattern, holding a balance until drained.
+/// @title Supports claiming/draining all balances at one - not an individual shares
+///
+/// @author KnownOrigin Labs - https://knownorigin.io/
+contract ClaimableFundsReceiverV1 is ReentrancyGuard, CollabFundsHandlerBase, ICollabFundsDrainable {
 
     // split current contract balance among recipients
     function drain() public nonReentrant override {

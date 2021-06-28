@@ -14,7 +14,7 @@
 * Support for [Rarible V2 royalties standard](https://docs.rarible.com/asset/royalties-schema) (optional)
 * Support for a proxy management account for creatives (optional)
 * Support programmable/dynamic token URIs in the future (future iteration)
-* Support metadata updates before the first sale has been made (optional) 
+* Support metadata updates before the first sale has been made (optional)
 * Sealed Metadata: Support to set a one time `perma-web` backup of token metadata
 
 ### GAS & Coverage
@@ -33,6 +33,8 @@ AccessControls             - 0xB078C9E804cAcBD4C20161FB7F3af464dE960349 (verifie
 Minting Factory            - 0x17fcD33fc32352FB15f46d66CE909C3DA815D657 (verified)
 Primary marketplace        - 0x69FbdaDB09961F530C6209e7758eCA54FA635804 (verified)
 Secondary marketplace      - 0x0E70f22F6333B08C9fb5044C65C5937420E72739 (verified)
+Collab royalties registry  - 0x0566E9720c1048810b11f77D7708b0AaB81f2541 (verified)
+V1 funds handler           - 0x2a287892332709adBc392d777d1547553F14cB0a (verified)
 ```
 
 ### Mainnet
@@ -43,6 +45,8 @@ AccessControls             -
 Minting Factory            - 
 Primary marketplace        - 
 Secondary marketplace      - 
+Collab royalties registry  - 
+V1 funds handler           - 
 ```
 
 ### How to?

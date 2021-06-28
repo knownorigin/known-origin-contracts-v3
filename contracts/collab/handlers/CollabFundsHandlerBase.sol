@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.4;
 
-import "./ICollabFundsHandler.sol";
+import {ICollabFundsHandler} from "./ICollabFundsHandler.sol";
 
 abstract contract CollabFundsHandlerBase is ICollabFundsHandler {
 
