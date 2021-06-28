@@ -349,12 +349,12 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
     });
 
-    context('getProxy()', async () => {
+    context('getRoyaltiesReceiver()', async () => {
 
       it('reverts if royalty not setup for edition', async () => {
 
         expectRevert(
-            royaltiesRegistry.getProxy(EDITION_ID),
+            royaltiesRegistry.getRoyaltiesReceiver(EDITION_ID),
             "Edition not setup"
         );
 
@@ -718,7 +718,7 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
       // Setup royalty
       await royaltiesRegistry.setupRoyalty(EDITION_ID_2, royaltyImplV1.address, RECIPIENTS_3, SPLITS_3, {from: contract});
-      proxyAddr = await royaltiesRegistry.getProxy(EDITION_ID_2);
+      proxyAddr = await royaltiesRegistry.getRoyaltiesReceiver(EDITION_ID_2);
       expect(await royaltiesRegistry.hasRoyalties(EDITION_ID_2)).to.be.true;
 
       const {_receiver} = await royaltiesRegistry.royaltyInfo(EDITION_ID_2, ether('1'));

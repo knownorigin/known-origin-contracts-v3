@@ -13,15 +13,6 @@ import {ICollabFundsHandler} from "./handlers/ICollabFundsHandler.sol";
 
 contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981 {
 
-    IKODAV3 public koda;
-    IKOAccessControlsLookup public accessControls;
-    mapping(address => bool) public isHandlerWhitelisted;
-    mapping(uint256 => address) public proxies;
-    uint256 public royaltyAmount = 12_50000; // 12.5% as represented in eip-2981
-
-    /// @notice precision 100.00000%
-    uint256 public modulo = 100_00000;
-
     // Events
     event KODASet(address koda);
     event AccessControlsSet(address accessControls);
@@ -30,7 +21,21 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     event RoyaltySetup(uint256 indexed editionId, address handler, address proxy, address[] recipients, uint256[] splits);
     event RoyaltySetupReused(uint256 indexed editionId, address indexed handler);
 
-    // Modifiers
+    IKODAV3 public koda;
+    IKOAccessControlsLookup public accessControls;
+
+    // @notice A controlled list of proxies which can be used byt eh KO protocol
+    mapping(address => bool) public isHandlerWhitelisted;
+
+    /// @notice Funds handler to edition ID mapping - once set all funds are sent here on every sale, including EIP-2981 invocations
+    mapping(uint256 => address) public proxies;
+
+    /// @notice KO secondary sale royalty amount
+    uint256 public royaltyAmount = 12_50000; // 12.5% as represented in eip-2981
+
+    /// @notice precision 100.00000%
+    uint256 public modulo = 100_00000;
+
     modifier onlyContractOrCreator(uint256 _editionId) {
         require(
             accessControls.hasContractRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
@@ -44,7 +49,6 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         _;
     }
 
-    // Constructor
     constructor(IKOAccessControlsLookup _accessControls) {
         accessControls = _accessControls;
 
@@ -52,8 +56,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         _registerInterface(0x2a55205a);
     }
 
-    // Set the IKODAV3 dependency.
-    // Can't be passed to constructor, circular since KODA requires this on its constructor
+    /// @notice Set the IKODAV3 dependency - can't be passed to constructor due to circular dependency
     function setKoda(IKODAV3 _koda)
     external
     onlyAdmin {
@@ -61,7 +64,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         emit KODASet(address(koda));
     }
 
-    // Set the IKOAccessControlsLookup dependency.
+    /// @notice Set the IKOAccessControlsLookup dependency.
     function setAccessControls(IKOAccessControlsLookup _accessControls)
     external
     onlyAdmin {
@@ -69,7 +72,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         emit AccessControlsSet(address(accessControls));
     }
 
-    // Admin setter for changing the royalty amount
+    /// @notice Admin setter for changing the default royalty amount
     function setRoyaltyAmount(uint256 _amount)
     external
     onlyAdmin() {
@@ -78,25 +81,11 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         emit RoyaltyAmountSet(royaltyAmount);
     }
 
-    // Is the given token part of an edition that has a collab royalties contract setup?
-    function hasRoyalties(uint256 _tokenId)
-    external
-    override
-    view
-    returns (bool) {
+    ////////////////////////////
+    /// Royalties setup logic //
+    ////////////////////////////
 
-        // Get the associated edition id for the given token id
-        uint256 editionId = _editionFromTokenId(_tokenId);
-
-        // Get the proxy registered to the previous edition id
-        address proxy = proxies[editionId];
-
-        // Ensure there actually was a registration
-        return proxy != address(0);
-
-    }
-
-    // Add a named funds handler
+    /// @notice Add a new cloneable funds handler
     function addHandler(address _handler)
     external
     onlyAdmin() {
@@ -111,7 +100,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         emit HandlerAdded(_handler);
     }
 
-    // Reuse the funds handler proxy from a previous collaboration
+    /// @notice Reuse the funds handler proxy from a previous collaboration
     function reuseRoyaltySetup(uint256 _editionId, uint256 _previousEditionId)
     external
     payable
@@ -133,14 +122,13 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         emit RoyaltySetupReused(_editionId, proxy);
     }
 
-    // Sets up a funds handler proxy
+    /// @notice Sets up a funds handler proxy
     function setupRoyalty(uint256 _editionId, address _handler, address[] calldata _recipients, uint256[] calldata _splits)
     external
     payable
     whenNotPaused
     onlyContractOrCreator(_editionId)
     returns (address proxy) {
-
         // Disallow multiple setups per edition id
         require(proxies[_editionId] == address(0), "Edition already setup");
 
@@ -168,28 +156,43 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         emit RoyaltySetup(_editionId, _handler, proxy, _recipients, _splits);
     }
 
-    function getRoyaltiesReceiver(uint256 _editionId) external override view returns (address _receiver) {
+    ////////////////////
+    /// Query Methods //
+    ////////////////////
+
+    /// @notice Is the given token part of an edition that has a collab royalties contract setup?
+    function hasRoyalties(uint256 _tokenId)
+    external
+    override
+    view returns (bool) {
+
+        // Get the associated edition id for the given token id
+        uint256 editionId = _editionFromTokenId(_tokenId);
+
+        // Get the proxy registered to the previous edition id
+        address proxy = proxies[editionId];
+
+        // Ensure there actually was a registration
+        return proxy != address(0);
+    }
+
+    /// @notice Get the proxy for a given edition's funds handler
+    function getRoyaltiesReceiver(uint256 _editionId)
+    external
+    override
+    view returns (address _receiver) {
         _receiver = proxies[_editionId];
         require(_receiver != address(0), "Edition not setup");
     }
 
-    // Gets the funds handler proxy address and royalty amount for given edition id
-    function royaltyInfo(
-        uint256 _editionId,
-        uint256 _value
-    ) external override view returns (
-        address _receiver,
-        uint256 _royaltyAmount
-    ) {
+    /// @notice Gets the funds handler proxy address and royalty amount for given edition id
+    function royaltyInfo(uint256 _editionId, uint256 _value)
+    external
+    override
+    view returns (address _receiver, uint256 _royaltyAmount) {
         _receiver = proxies[_editionId];
         require(_receiver != address(0), "Edition not setup");
         _royaltyAmount = (_value / modulo) * royaltyAmount;
-    }
-
-    // Get the proxy for a given edition's funds handler
-    function getProxy(uint256 _editionId) public view returns (address proxy) {
-        proxy = proxies[_editionId];
-        require(proxy != address(0), "Edition not setup");
     }
 
 }

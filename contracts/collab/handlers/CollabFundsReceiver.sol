@@ -126,7 +126,7 @@ contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollab
             emit FundsDrained(amountOwed, recipients, shares, address(0));
         }
     }
-    
+
     function drainShareERC20(IERC20 token) public override {
         // TODO
     }
