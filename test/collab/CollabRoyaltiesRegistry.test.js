@@ -13,8 +13,8 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
   const [owner, artist1, artist2, artist3, admin, deployer, contract] = accounts;
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
-  const HALF = new BN(50000);
-  const QUARTER = new BN(25000);
+  const HALF = new BN(5000000);
+  const QUARTER = new BN(2500000);
   const STARTING_EDITION = '12000';
   const EDITION_ID = new BN(STARTING_EDITION);
   const EDITION_ID_2 = new BN(13000);

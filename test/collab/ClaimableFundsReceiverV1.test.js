@@ -20,8 +20,8 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
   const ZERO = new BN(0);
   const TWO = new BN(2);
   const THREE = new BN(3);
-  const HALF = new BN(50000);
-  const QUARTER = new BN(25000);
+  const HALF = new BN(5000000);
+  const QUARTER = new BN(2500000);
   const STARTING_EDITION = '12000';
   const EDITION_ID = new BN(STARTING_EDITION);
   const EDITION_ID_2 = new BN(13000);
@@ -36,7 +36,7 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
   const SEND_AMOUNT = '200';
   const ETH_AMOUNT = ethers.utils.parseEther(SEND_AMOUNT);
   const ERC20_AMOUNT = new BN('200000000000000000000'); // 200 * 10 ** 18
-  const SCALE_FACTOR = '100000';
+  const SCALE_FACTOR = '10000000';
   const FUNDS_HANDLER_V1 = 'v1';
 
   let royaltyReceiver, royaltyProxy, royaltyProxy2,
@@ -124,12 +124,12 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
         });
 
-        context('royaltyAtIndex()', async () => {
+        context('shareAtIndex()', async () => {
 
           it('returns address and split values for given recipient index', async () => {
 
             for (let i = 0; i < RECIPIENTS_3.length; i++) {
-              const royalty = await royaltyReceiver.royaltyAtIndex(i);
+              const royalty = await royaltyReceiver.shareAtIndex(i);
               expect(royalty.recipient).to.bignumber.equal(RECIPIENTS_3[i]);
               expect(royalty.split).to.bignumber.equal(SPLITS_3[i]);
 
@@ -605,12 +605,12 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
         });
 
-        context('royaltyAtIndex()', async () => {
+        context('shareAtIndex()', async () => {
 
           it('returns address and split values for given recipient index', async () => {
 
             for (let i = 0; i < RECIPIENTS_3.length; i++) {
-              const royalty = await royaltyProxy.royaltyAtIndex(i);
+              const royalty = await royaltyProxy.shareAtIndex(i);
               expect(royalty.recipient.toString()).to.bignumber.equal(RECIPIENTS_3[i]);
               expect(royalty.split.toString()).to.bignumber.equal(SPLITS_3[i]);
             }
@@ -666,18 +666,18 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
         });
 
-        context('royaltyAtIndex()', async () => {
+        context('shareAtIndex()', async () => {
 
           it('for each proxy, returns address and split values for given recipient index', async () => {
 
             for (let i = 0; i < RECIPIENTS_3.length; i++) {
-              const royalty = await royaltyProxy.royaltyAtIndex(i);
+              const royalty = await royaltyProxy.shareAtIndex(i);
               expect(royalty.recipient, toString()).to.bignumber.equal(RECIPIENTS_3[i]);
               expect(royalty.split.toString()).to.bignumber.equal(SPLITS_3[i]);
             }
 
             for (let i = 0; i < RECIPIENTS_2.length; i++) {
-              const royalty = await royaltyProxy2.royaltyAtIndex(i);
+              const royalty = await royaltyProxy2.shareAtIndex(i);
               expect(royalty.recipient, toString()).to.bignumber.equal(RECIPIENTS_2[i]);
               expect(royalty.split.toString()).to.bignumber.equal(SPLITS_2[i]);
             }

@@ -5,11 +5,11 @@ pragma solidity 0.8.4;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./CollabFundsHandlerBase.sol";
+import {CollabFundsHandlerBase} from  "../CollabFundsHandlerBase.sol";
 import {
 ICollabFundsDrainable,
 ICollabFundsShareDrainable
-} from "./ICollabFundsDrainable.sol";
+} from "../ICollabFundsDrainable.sol";
 
 /**
  * Allows funds to be split using a pull pattern, holding a balance until drained
@@ -41,7 +41,7 @@ contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollab
         uint256[] memory shares = new uint256[](recipients.length);
 
         // Calculate and send share for each recipient
-        uint256 singleUnitOfValue = totalEthReceived / SCALE_FACTOR;
+        uint256 singleUnitOfValue = totalEthReceived / modulo;
         uint256 sumPaidOut;
         for (uint256 i = 0; i < recipients.length; i++) {
             address recipient = recipients[i];
@@ -109,7 +109,7 @@ contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollab
         }
         require(recipient != address(0), "Nice try but you are not a collaborator");
 
-        uint256 singleUnitOfValue = totalEthReceived / SCALE_FACTOR;
+        uint256 singleUnitOfValue = totalEthReceived / modulo;
         uint256 share = singleUnitOfValue * splits[recipientIndex];
         uint256 amountOwed = share - ethPaidToCollaborator[recipient];
         if (amountOwed > 0) {
@@ -140,7 +140,7 @@ contract CollabFundsReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollab
         uint256[] memory shares = new uint256[](recipients.length);
 
         // Calculate and send share for each recipient
-        uint256 singleUnitOfValue = balance / SCALE_FACTOR;
+        uint256 singleUnitOfValue = balance / modulo;
         uint256 sumPaidOut;
         for (uint256 i = 0; i < recipients.length; i++) {
             shares[i] = singleUnitOfValue * splits[i];

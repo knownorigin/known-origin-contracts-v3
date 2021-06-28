@@ -8,5 +8,5 @@ interface ICollabFundsHandler {
 
     function totalRecipients() external view returns (uint256);
 
-    function royaltyAtIndex(uint256 index) external view returns (address _recipient, uint256 _split);
+    function shareAtIndex(uint256 index) external view returns (address _recipient, uint256 _split);
 }

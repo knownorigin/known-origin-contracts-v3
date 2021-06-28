@@ -12,6 +12,9 @@ async function main() {
   await fundsReceiverV1.deployed();
   console.log('V1 funds receiver deployed at:', fundsReceiverV1.address);
 
+  // Note: Added this to registry on rinkeby
+  //  - https://rinkeby.etherscan.io/tx/0x64ea83b1d8375c00062a7e65820266e15db98b212e2eee35dcfe8a8317b82f51
+
   console.log('Finished!');
 }
 

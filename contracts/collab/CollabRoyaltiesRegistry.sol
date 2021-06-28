@@ -126,7 +126,6 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     /// @notice Sets up a funds handler proxy
     function setupRoyalty(uint256 _editionId, address _handler, address[] calldata _recipients, uint256[] calldata _splits)
     external
-    payable
     whenNotPaused
     onlyContractOrCreator(_editionId)
     returns (address proxy) {
