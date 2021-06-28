@@ -33,8 +33,9 @@ AccessControls             - 0xB078C9E804cAcBD4C20161FB7F3af464dE960349 (verifie
 Minting Factory            - 0x17fcD33fc32352FB15f46d66CE909C3DA815D657 (verified)
 Primary marketplace        - 0x69FbdaDB09961F530C6209e7758eCA54FA635804 (verified)
 Secondary marketplace      - 0x0E70f22F6333B08C9fb5044C65C5937420E72739 (verified)
-Collab royalties registry  - 0x0566E9720c1048810b11f77D7708b0AaB81f2541 (verified)
-V1 funds handler           - 0x2a287892332709adBc392d777d1547553F14cB0a (verified)
+Collab royalties registry  - 0xEa83f18884d94FA8a7b77027Be4b771bbb6CDc2F (verified)
+V1 funds reciever          - 0x7D3844F751Afdd1d416e85758A4c496a6Ffb20Ca (verified) 
+   -> sample 4 x 25% split - 0x0484b4a4caa52882214dd80b955992e69c6013ab (verified)
 ```
 
 ### Mainnet
@@ -46,7 +47,7 @@ Minting Factory            -
 Primary marketplace        - 
 Secondary marketplace      - 
 Collab royalties registry  - 
-V1 funds handler           - 
+V1 funds reciever           - 
 ```
 
 ### How to?

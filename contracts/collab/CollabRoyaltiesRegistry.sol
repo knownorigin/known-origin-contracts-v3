@@ -17,6 +17,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     event KODASet(address koda);
     event AccessControlsSet(address accessControls);
     event RoyaltyAmountSet(uint256 royaltyAmount);
+    event EmergencyClearRoyalty(uint256 editionId);
     event HandlerAdded(address handler);
     event RoyaltySetup(uint256 indexed editionId, address handler, address proxy, address[] recipients, uint256[] splits);
     event RoyaltySetupReused(uint256 indexed editionId, address indexed handler);
@@ -121,8 +122,6 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         emit RoyaltySetupReused(_editionId, proxy);
     }
 
-    // TODO add a admin override to fix issues if they arise
-
     /// @notice Sets up a funds handler proxy
     function setupRoyalty(uint256 _editionId, address _handler, address[] calldata _recipients, uint256[] calldata _splits)
     external
@@ -154,6 +153,12 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
 
         // Emit event
         emit RoyaltySetup(_editionId, _handler, proxy, _recipients, _splits);
+    }
+
+    /// @notice ability to clear royalty
+    function emergencyClearRoyaltyHandler(uint256 _editionId) public onlyAdmin {
+        proxies[_editionId] = address(0);
+        emit EmergencyClearRoyalty(_editionId);
     }
 
     ////////////////////

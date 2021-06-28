@@ -843,7 +843,7 @@ interface ICollabFundsHandler {
 
     function totalRecipients() external view returns (uint256);
 
-    function royaltyAtIndex(uint256 index) external view returns (address _recipient, uint256 _split);
+    function shareAtIndex(uint256 index) external view returns (address _recipient, uint256 _split);
 }
 
 // File: contracts/collab/CollabRoyaltiesRegistry.sol
@@ -866,6 +866,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     event KODASet(address koda);
     event AccessControlsSet(address accessControls);
     event RoyaltyAmountSet(uint256 royaltyAmount);
+    event EmergencyClearRoyalty(uint256 editionId);
     event HandlerAdded(address handler);
     event RoyaltySetup(uint256 indexed editionId, address handler, address proxy, address[] recipients, uint256[] splits);
     event RoyaltySetupReused(uint256 indexed editionId, address indexed handler);
@@ -955,9 +956,8 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     payable
     whenNotPaused
     onlyContractOrCreator(_editionId)
-    onlyContractOrCreator(_previousEditionId)
+    onlyContractOrCreator(_previousEditionId) // TODO confirm this logic - I believe we should remove the previous ID check
     returns (address proxy) {
-
         // Get the proxy registered to the previous edition id
         proxy = proxies[_previousEditionId];
 
@@ -974,7 +974,6 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     /// @notice Sets up a funds handler proxy
     function setupRoyalty(uint256 _editionId, address _handler, address[] calldata _recipients, uint256[] calldata _splits)
     external
-    payable
     whenNotPaused
     onlyContractOrCreator(_editionId)
     returns (address proxy) {
@@ -1003,6 +1002,12 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
 
         // Emit event
         emit RoyaltySetup(_editionId, _handler, proxy, _recipients, _splits);
+    }
+
+    /// @notice ability to clear royalty
+    function emergencyClearRoyaltyHandler(uint256 _editionId) public onlyAdmin {
+        proxies[_editionId] = address(0);
+        emit EmergencyClearRoyalty(_editionId);
     }
 
     ////////////////////
