@@ -130,12 +130,12 @@ contract('Beacon-based Royalty Funds Handler Architecture', function (accounts) 
 
                 })
 
-                context('shareAtIndex()', async () => {
+                context('royaltyAtIndex()', async () => {
 
                     it('returns address and split values for given recipient index', async () => {
 
                         for (let i = 0; i < RECIPIENTS_3.length; i++) {
-                            const royalty = await royaltyImplV1R2.shareAtIndex(i);
+                            const royalty = await royaltyImplV1R2.royaltyAtIndex(i);
                             expect(royalty.recipient).to.bignumber.equal(RECIPIENTS_3[i]);
                             expect(royalty.split).to.bignumber.equal(SPLITS_3[i]);
 
@@ -196,12 +196,12 @@ contract('Beacon-based Royalty Funds Handler Architecture', function (accounts) 
 
                 })
 
-                context('shareAtIndex()', async () => {
+                context('royaltyAtIndex()', async () => {
 
                     it('returns address and split values for given recipient index', async () => {
 
                         for (let i = 0; i < RECIPIENTS_3.length; i++) {
-                            const royalty = await royaltyImplV2.shareAtIndex(i);
+                            const royalty = await royaltyImplV2.royaltyAtIndex(i);
                             expect(royalty.recipient).to.bignumber.equal(RECIPIENTS_3[i]);
                             expect(royalty.split).to.bignumber.equal(SPLITS_3[i]);
 
@@ -589,12 +589,12 @@ contract('Beacon-based Royalty Funds Handler Architecture', function (accounts) 
 
                     });
 
-                context('shareAtIndex()', async () => {
+                context('royaltyAtIndex()', async () => {
 
                     it('returns address and split values for given recipient index', async () => {
 
                         for (let i = 0; i < RECIPIENTS_3.length; i++) {
-                            const royalty = await royaltyProxy.shareAtIndex(i);
+                            const royalty = await royaltyProxy.royaltyAtIndex(i);
                             expect(royalty.recipient.toString()).to.bignumber.equal(RECIPIENTS_3[i]);
                             expect(royalty.split.toString()).to.bignumber.equal(SPLITS_3[i]);
                         }
@@ -639,12 +639,12 @@ contract('Beacon-based Royalty Funds Handler Architecture', function (accounts) 
 
                 });
 
-                context('shareAtIndex()', async () => {
+                context('royaltyAtIndex()', async () => {
 
                     it('returns address and split values for given recipient index', async () => {
 
                         for (let i = 0; i < RECIPIENTS_3.length; i++) {
-                            const royalty = await royaltyProxy.shareAtIndex(i);
+                            const royalty = await royaltyProxy.royaltyAtIndex(i);
                             expect(royalty.recipient,toString()).to.bignumber.equal(RECIPIENTS_3[i]);
                             expect(royalty.split.toString()).to.bignumber.equal(SPLITS_3[i]);
 
@@ -701,18 +701,18 @@ contract('Beacon-based Royalty Funds Handler Architecture', function (accounts) 
 
                 });
 
-                context('shareAtIndex()', async () => {
+                context('royaltyAtIndex()', async () => {
 
                     it('for each proxy, returns address and split values for given recipient index', async () => {
 
                         for (let i = 0; i < RECIPIENTS_3.length; i++) {
-                            const royalty = await royaltyProxy.shareAtIndex(i);
+                            const royalty = await royaltyProxy.royaltyAtIndex(i);
                             expect(royalty.recipient,toString()).to.bignumber.equal(RECIPIENTS_3[i]);
                             expect(royalty.split.toString()).to.bignumber.equal(SPLITS_3[i]);
                         }
 
                         for (let i = 0; i < RECIPIENTS_2.length; i++) {
-                            const royalty = await royaltyProxy2.shareAtIndex(i);
+                            const royalty = await royaltyProxy2.royaltyAtIndex(i);
                             expect(royalty.recipient,toString()).to.bignumber.equal(RECIPIENTS_2[i]);
                             expect(royalty.split.toString()).to.bignumber.equal(SPLITS_2[i]);
                         }
