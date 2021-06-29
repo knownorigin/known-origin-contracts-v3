@@ -1,6 +1,33 @@
-// File: @openzeppelin/contracts/utils/introspection/IERC165.sol
+// File: @openzeppelin/contracts/utils/Context.sol
 
 // SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+/*
+ * @dev Provides information about the current execution context, including the
+ * sender of the transaction and its data. While these are generally available
+ * via msg.sender and msg.data, they should not be accessed in such a direct
+ * manner, since when dealing with meta-transactions the account sending and
+ * paying for execution may not be the actual sender (as far as an application
+ * is concerned).
+ *
+ * This contract is only required for intermediate, library-like contracts.
+ */
+abstract contract Context {
+    function _msgSender() internal view virtual returns (address) {
+        return msg.sender;
+    }
+
+    function _msgData() internal view virtual returns (bytes calldata) {
+        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
+        return msg.data;
+    }
+}
+
+// File: @openzeppelin/contracts/utils/introspection/IERC165.sol
+
+
 
 pragma solidity ^0.8.0;
 
@@ -368,33 +395,6 @@ library Address {
                 revert(errorMessage);
             }
         }
-    }
-}
-
-// File: @openzeppelin/contracts/utils/Context.sol
-
-
-
-pragma solidity ^0.8.0;
-
-/*
- * @dev Provides information about the current execution context, including the
- * sender of the transaction and its data. While these are generally available
- * via msg.sender and msg.data, they should not be accessed in such a direct
- * manner, since when dealing with meta-transactions the account sending and
- * paying for execution may not be the actual sender (as far as an application
- * is concerned).
- *
- * This contract is only required for intermediate, library-like contracts.
- */
-abstract contract Context {
-    function _msgSender() internal view virtual returns (address) {
-        return msg.sender;
-    }
-
-    function _msgData() internal view virtual returns (bytes calldata) {
-        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
-        return msg.data;
     }
 }
 
@@ -831,6 +831,52 @@ interface IKOAccessControlsLookup {
     function hasContractOrAdminRole(address _address) external view returns (bool);
 }
 
+// File: contracts/collab/ICollabRoyaltiesRegistry.sol
+
+
+pragma solidity 0.8.4;
+
+/// @notice Common interface to the Royalties collaborations registry
+interface ICollabRoyaltiesRegistry {
+
+    /// @notice Creates & deploys a new royalties recipient, cloning _handle and setting it up with the provided _recipients and _splits
+    function createRoyaltiesRecipient(
+        uint256 _merkleIndex,
+        bytes32[] calldata _merkleProof,
+        address _handler,
+        address[] calldata _recipients,
+        uint256[] calldata _splits
+    ) external returns (address deployedHandler);
+
+    /// @notice Sets up the provided edition to use the provided _recipient
+    function useRoyaltiesRecipient(uint256 _editionId, address _deployedHandler) external;
+
+    /// @notice Setup a royalties handler but does not deploy it, uses predicable clone and sets this against the edition
+    function usePredeterminedRoyaltiesRecipient(
+        uint256 _editionId,
+        address _handler,
+        address[] calldata _recipients,
+        uint256[] calldata _splits
+    ) external;
+
+    /// @notice Deploy and setup a royalties recipient for the given edition
+    function createAndUseRoyaltiesRecipient(
+        uint256 _editionId,
+        address _handler,
+        address[] calldata _recipients,
+        uint256[] calldata _splits
+    )
+    external returns (address deployedHandler);
+
+    /// @notice Predict the deployed clone address with the given parameters
+    function predictedRoyaltiesHandler(
+        address _handler,
+        address[] calldata _recipients,
+        uint256[] calldata _splits
+    ) external view returns (address predictedHandler);
+
+}
+
 // File: contracts/collab/handlers/ICollabFundsHandler.sol
 
 
@@ -860,25 +906,34 @@ pragma solidity 0.8.4;
 
 
 
-contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981 {
 
-    // Events
+
+contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981, ICollabRoyaltiesRegistry {
+
+    // Admin Events
     event KODASet(address koda);
     event AccessControlsSet(address accessControls);
     event RoyaltyAmountSet(uint256 royaltyAmount);
     event EmergencyClearRoyalty(uint256 editionId);
     event HandlerAdded(address handler);
-    event RoyaltySetup(uint256 indexed editionId, address handler, address proxy, address[] recipients, uint256[] splits);
-    event RoyaltySetupReused(uint256 indexed editionId, address indexed handler);
+
+    // Normal Events
+    event RoyaltyRecipientCreated(address creator, address handler, address deployedHandler, address[] recipients, uint256[] splits);
+    event RoyaltiesHandlerSetup(uint256 editionId, address deployedHandler);
+    event FutureRoyaltiesHandlerSetup(uint256 editionId, address deployedHandler);
 
     IKODAV3 public koda;
+
     IKOAccessControlsLookup public accessControls;
 
     // @notice A controlled list of proxies which can be used byt eh KO protocol
     mapping(address => bool) public isHandlerWhitelisted;
 
+    // @notice A list of initialised/deployed royalties recipients
+    mapping(address => bool) public deployedRoyaltiesHandlers;
+
     /// @notice Funds handler to edition ID mapping - once set all funds are sent here on every sale, including EIP-2981 invocations
-    mapping(uint256 => address) public proxies;
+    mapping(uint256 => address) public editionRoyaltiesHandlers;
 
     /// @notice KO secondary sale royalty amount
     uint256 public royaltyAmount = 12_50000; // 12.5% as represented in eip-2981
@@ -888,8 +943,16 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
 
     modifier onlyContractOrCreator(uint256 _editionId) {
         require(
-            accessControls.hasContractRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
+            koda.getCreatorOfEdition(_editionId) == _msgSender() || accessControls.hasContractRole(_msgSender()),
             "Caller not creator or contract"
+        );
+        _;
+    }
+
+    modifier onlyContractOrAdmin() {
+        require(
+            accessControls.hasAdminRole(_msgSender()) || accessControls.hasContractRole(_msgSender()),
+            "Caller not admin or contract"
         );
         _;
     }
@@ -931,10 +994,6 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         emit RoyaltyAmountSet(royaltyAmount);
     }
 
-    ////////////////////////////
-    /// Royalties setup logic //
-    ////////////////////////////
-
     /// @notice Add a new cloneable funds handler
     function addHandler(address _handler)
     external
@@ -950,63 +1009,170 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         emit HandlerAdded(_handler);
     }
 
-    /// @notice Reuse the funds handler proxy from a previous collaboration
-    function reuseRoyaltySetup(uint256 _editionId, uint256 _previousEditionId)
+    ////////////////////////////
+    /// Royalties setup logic //
+    ////////////////////////////
+
+    // TODO proxy minters?
+
+    /// @notice Sets up a royalties funds handler
+    /// @dev Can only be called once with the same args as this creates a new contract and we dont want to
+    ///      override any currently deployed instance
+    /// @dev Can only be called by an approved artist
+    function createRoyaltiesRecipient(
+        uint256 _merkleIndex,
+        bytes32[] calldata _merkleProof,
+        address _handler,
+        address[] calldata _recipients,
+        uint256[] calldata _splits
+    )
     external
-    payable
+    override
     whenNotPaused
-    onlyContractOrCreator(_editionId)
-    onlyContractOrCreator(_previousEditionId) // TODO confirm this logic - I believe we should remove the previous ID check
-    returns (address proxy) {
-        // Get the proxy registered to the previous edition id
-        proxy = proxies[_previousEditionId];
+    returns (address deployedHandler) {
+        // Ensure only artists can call this
+        require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
-        // Ensure there actually was a registration
-        require(proxy != address(0), "No funds handler registered for previous edition id");
+        validateHandlerArgs(_handler, _recipients, _splits);
 
-        // Register the same proxy for the new edition id
-        proxies[_editionId] = proxy;
+        // Clone funds handler as Minimal deployedHandler with a deterministic address
+        deployedHandler = deployCloneableHandler(_handler, _recipients, _splits);
 
         // Emit event
-        emit RoyaltySetupReused(_editionId, proxy);
+        emit RoyaltyRecipientCreated(_msgSender(), _handler, deployedHandler, _recipients, _splits);
     }
 
-    /// @notice Sets up a funds handler proxy
-    function setupRoyalty(uint256 _editionId, address _handler, address[] calldata _recipients, uint256[] calldata _splits)
+    /// @notice Allows a deployed handler to be set against an edition
+    /// @dev Can be called by edition creator or another approved contract
+    /// @dev Can only be called once per edition
+    /// @dev Provided handler account must already be deployed
+    function useRoyaltiesRecipient(uint256 _editionId, address _deployedHandler)
     external
+    override
     whenNotPaused
-    onlyContractOrCreator(_editionId)
-    returns (address proxy) {
-        // Disallow multiple setups per edition id
-        require(proxies[_editionId] == address(0), "Edition already setup");
+    onlyContractOrCreator(_editionId) {
+        // Ensure not already defined i.e. dont overwrite deployed contact
+        require(editionRoyaltiesHandlers[_editionId] == address(0), "Funds handler already registered");
 
+        // Ensure there actually was a registration
+        require(deployedRoyaltiesHandlers[_deployedHandler], "No deployed handler found");
+
+        // Register the deployed handler for the edition ID
+        editionRoyaltiesHandlers[_editionId] = _deployedHandler;
+
+        // Emit event
+        emit RoyaltiesHandlerSetup(_editionId, _deployedHandler);
+    }
+
+    /// @notice Allows an admin set a predetermined royalties recipient against an edition
+    /// @dev assumes the called has provided the correct args and a valid edition
+    function usePredeterminedRoyaltiesRecipient(
+        uint256 _editionId,
+        address _handler,
+        address[] calldata _recipients,
+        uint256[] calldata _splits
+    )
+    external
+    override
+    whenNotPaused
+    onlyContractOrAdmin {
+        // Ensure not already defined i.e. dont overwrite deployed contact
+        require(editionRoyaltiesHandlers[_editionId] == address(0), "Funds handler already registered");
+
+        // Determine salt
+        bytes32 salt = keccak256(abi.encode(_recipients, _splits));
+        address futureDeployedHandler = Clones.predictDeterministicAddress(_handler, salt);
+
+        // Register the same proxy for the new edition id
+        editionRoyaltiesHandlers[_editionId] = futureDeployedHandler;
+
+        // Emit event
+        emit FutureRoyaltiesHandlerSetup(_editionId, futureDeployedHandler);
+    }
+
+    function createAndUseRoyaltiesRecipient(
+        uint256 _editionId,
+        address _handler,
+        address[] calldata _recipients,
+        uint256[] calldata _splits
+    )
+    external
+    override
+    whenNotPaused
+    onlyContractOrAdmin
+    returns (address deployedHandler) {
+        validateHandlerArgs(_handler, _recipients, _splits);
+
+        // Confirm the handler has not already been created
+        address expectedAddress = Clones.predictDeterministicAddress(_handler, keccak256(abi.encode(_recipients, _splits)));
+        require(!deployedRoyaltiesHandlers[expectedAddress], "Already deployed the royalties handler");
+
+        // Clone funds handler as Minimal deployedHandler with a deterministic address
+        deployedHandler = deployCloneableHandler(_handler, _recipients, _splits);
+
+        // Emit event
+        emit RoyaltyRecipientCreated(_msgSender(), _handler, deployedHandler, _recipients, _splits);
+
+        // Register the deployed handler for the edition ID
+        editionRoyaltiesHandlers[_editionId] = deployedHandler;
+
+        // Emit event
+        emit RoyaltiesHandlerSetup(_editionId, deployedHandler);
+    }
+
+    function deployCloneableHandler(address _handler, address[] calldata _recipients, uint256[] calldata _splits)
+    internal
+    returns (address deployedHandler) {
+        // Confirm the handler has not already been created
+        address expectedAddress = Clones.predictDeterministicAddress(_handler, keccak256(abi.encode(_recipients, _splits)));
+        require(!deployedRoyaltiesHandlers[expectedAddress], "Already deployed the royalties handler");
+
+        // Clone funds handler as Minimal deployedHandler with a deterministic address
+        deployedHandler = Clones.cloneDeterministic(
+            _handler,
+            keccak256(abi.encode(_recipients, _splits))
+        );
+
+        // Initialize handler
+        ICollabFundsHandler(deployedHandler).init(_recipients, _splits);
+
+        // Verify that it was initialized properly
+        require(
+            ICollabFundsHandler(deployedHandler).totalRecipients() == _recipients.length,
+            "Funds handler created incorrectly"
+        );
+
+        // Record the deployed handler
+        deployedRoyaltiesHandlers[deployedHandler] = true;
+    }
+
+    function validateHandlerArgs(address _handler, address[] calldata _recipients, uint256[] calldata _splits)
+    internal view {
         // Require more than 1 recipient
         require(_recipients.length > 1, "Collab must have more than one funds recipient");
 
         // Recipient and splits array lengths must match
         require(_recipients.length == _splits.length, "Recipients and splits lengths must match");
 
+        // Ensure the handler is know and approved
         require(isHandlerWhitelisted[_handler], "Handler is not whitelisted");
-
-        // Clone funds handler as Minimal Proxy
-        proxy = Clones.clone(_handler);
-
-        // Initialize proxy
-        ICollabFundsHandler(proxy).init(_recipients, _splits);
-
-        // Verify that it was initialized properly
-        require(ICollabFundsHandler(proxy).totalRecipients() == _recipients.length);
-
-        // Store address of proxy by edition id
-        proxies[_editionId] = proxy;
-
-        // Emit event
-        emit RoyaltySetup(_editionId, _handler, proxy, _recipients, _splits);
     }
 
-    /// @notice ability to clear royalty
-    function emergencyClearRoyaltyHandler(uint256 _editionId) public onlyAdmin {
-        proxies[_editionId] = address(0);
+    /// @notice Allows for the royalty creator to predetermine the recipient address for the funds to be sent to
+    /// @dev It does not deploy it, only allows to predetermine the address
+    function predictedRoyaltiesHandler(address _handler, address[] calldata _recipients, uint256[] calldata _splits)
+    public
+    override
+    view
+    returns (address) {
+        bytes32 salt = keccak256(abi.encode(_recipients, _splits));
+        return Clones.predictDeterministicAddress(_handler, salt);
+    }
+
+    /// @notice ability to clear royalty in an emergency situation - this would then default all royalties to the original creator
+    /// @dev Only callable from admin
+    function emergencyResetRoyaltiesHandler(uint256 _editionId) public onlyAdmin {
+        editionRoyaltiesHandlers[_editionId] = address(0);
         emit EmergencyClearRoyalty(_editionId);
     }
 
@@ -1024,7 +1190,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         uint256 editionId = _editionFromTokenId(_tokenId);
 
         // Get the proxy registered to the previous edition id
-        address proxy = proxies[editionId];
+        address proxy = editionRoyaltiesHandlers[editionId];
 
         // Ensure there actually was a registration
         return proxy != address(0);
@@ -1035,7 +1201,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     external
     override
     view returns (address _receiver) {
-        _receiver = proxies[_editionId];
+        _receiver = editionRoyaltiesHandlers[_editionId];
         require(_receiver != address(0), "Edition not setup");
     }
 
@@ -1044,7 +1210,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     external
     override
     view returns (address _receiver, uint256 _royaltyAmount) {
-        _receiver = proxies[_editionId];
+        _receiver = editionRoyaltiesHandlers[_editionId];
         require(_receiver != address(0), "Edition not setup");
         _royaltyAmount = (_value / modulo) * royaltyAmount;
     }

@@ -6,6 +6,7 @@ import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
 import {IKODAV3Minter} from "../core/IKODAV3Minter.sol";
 import {KODAV3PrimaryMarketplace} from "../marketplace/KODAV3PrimaryMarketplace.sol";
+import {ICollabRoyaltiesRegistry} from "../collab/ICollabRoyaltiesRegistry.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 
 contract MintingFactory is Context {
@@ -22,6 +23,8 @@ contract MintingFactory is Context {
     IKODAV3Minter public koda;
 
     KODAV3PrimaryMarketplace public marketplace;
+
+    ICollabRoyaltiesRegistry public royaltiesRegistry;
 
     modifier canMintAgain(){
         require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
