@@ -6,7 +6,7 @@
 * [ERC-721](https://eips.ethereum.org/EIPS/eip-721) compliant NFTs
     * Ability to mint single 1 of 1 NFTs
     * Ability to mint batches of NFT (multi-editions)
-    * Collaboration support for `1..n` collaborators with royalties
+    * Collaboration support for `1..n` collaborators with royalties - predetermined addresses
 * Replace whitelisting with merkle proofs for minting access
 * Support for [ERC-2981: Royalty Standard](https://eips.ethereum.org/EIPS/eip-2981)
 * Support for [ERC-998 Top-down ERC-20 composable](https://eips.ethereum.org/EIPS/eip-998) (optional)
@@ -33,9 +33,9 @@ AccessControls             - 0xB078C9E804cAcBD4C20161FB7F3af464dE960349 (verifie
 Minting Factory            - 0x17fcD33fc32352FB15f46d66CE909C3DA815D657 (verified)
 Primary marketplace        - 0x69FbdaDB09961F530C6209e7758eCA54FA635804 (verified)
 Secondary marketplace      - 0x0E70f22F6333B08C9fb5044C65C5937420E72739 (verified)
-Collab royalties registry  - 0xEa83f18884d94FA8a7b77027Be4b771bbb6CDc2F (verified)
-V1 funds reciever          - 0x7D3844F751Afdd1d416e85758A4c496a6Ffb20Ca (verified) 
-   -> sample 4 x 25% split - 0x0484b4a4caa52882214dd80b955992e69c6013ab (verified)
+Collab royalties registry  -  (verified)
+V1 funds reciever          -  (verified) 
+   -> sample 4 x 25% split -  (verified)
 ```
 
 ### Mainnet

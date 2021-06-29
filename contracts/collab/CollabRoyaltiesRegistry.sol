@@ -17,9 +17,9 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     event KODASet(address koda);
     event AccessControlsSet(address accessControls);
     event RoyaltyAmountSet(uint256 royaltyAmount);
-    event EmergencyClearRoyalty(uint256 editionId);
-    event HandlerAdded(address handler);
-    event RoyaltySetup(uint256 indexed editionId, address handler, address proxy, address[] recipients, uint256[] splits);
+    event EmergencyClearRoyalty(uint256 indexed editionId);
+    event HandlerAdded(address indexed handler);
+    event RoyaltySetup(uint256 indexed editionId, address indexed handler, address indexed proxy, address[] recipients, uint256[] splits);
     event RoyaltySetupReused(uint256 indexed editionId, address indexed handler);
 
     IKODAV3 public koda;
@@ -104,10 +104,8 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     /// @notice Reuse the funds handler proxy from a previous collaboration
     function reuseRoyaltySetup(uint256 _editionId, uint256 _previousEditionId)
     external
-    payable
     whenNotPaused
     onlyContractOrCreator(_editionId)
-    onlyContractOrCreator(_previousEditionId) // TODO confirm this logic - I believe we should remove the previous ID check
     returns (address proxy) {
         // Get the proxy registered to the previous edition id
         proxy = proxies[_previousEditionId];
@@ -140,7 +138,8 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         require(isHandlerWhitelisted[_handler], "Handler is not whitelisted");
 
         // Clone funds handler as Minimal Proxy
-        proxy = Clones.clone(_handler);
+        bytes32 salt = keccak256(abi.encode(_recipients, _splits));
+        proxy = Clones.cloneDeterministic(_handler, salt);
 
         // Initialize proxy
         ICollabFundsHandler(proxy).init(_recipients, _splits);
@@ -155,7 +154,19 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
         emit RoyaltySetup(_editionId, _handler, proxy, _recipients, _splits);
     }
 
-    /// @notice ability to clear royalty
+    /// @notice Allows for the royalty creator to predetermine the recipient address for the funds to be sent to
+    /// @dev It does not deploy it, only allows to predetermine the address
+    function predictedRoyaltiesHandler(address _handler, address[] calldata _recipients, uint256[] calldata _splits) public view returns (address) {
+        bytes32 salt = keccak256(abi.encode(_recipients, _splits));
+        return Clones.predictDeterministicAddress(_handler, salt);
+    }
+
+    // TODO method admin to set address
+    // TODO method admin to deploy
+    // TODO add method for setting address before the funds are there
+
+    /// @notice ability to clear royalty in an emergency situation - this would then default all royalties to the original creator
+    /// @dev Only callable from admin
     function emergencyClearRoyaltyHandler(uint256 _editionId) public onlyAdmin {
         proxies[_editionId] = address(0);
         emit EmergencyClearRoyalty(_editionId);

@@ -230,7 +230,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
         it('reverts if recipient list contains fewer than 2 addresses', async () => {
 
           const BAD_RECIPIENTS = [artist1];
-          const SPLITS = [SPLITS_3[1]];
 
           expectRevert(
             royaltiesRegistry.setupRoyalty(EDITION_ID, FUNDS_HANDLER_V1, BAD_RECIPIENTS, SPLITS_3, {from: contract}),
@@ -270,9 +269,9 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
             editionId: EDITION_ID,
             handler: claimableFundsReceiverV1.address,
             recipients: RECIPIENTS_3,
-            //splits: SPLITS_3
-            // FIXME: throws "expected event argument 'splits' to have value 50000,25000,25000 but got 50000,25000,25000"
+            //splits: SPLITS_3 // disable due to inability to perform equality check on arrays within events (tested below)
           });
+          expect(receipt.logs[0].args.splits.map(v => v.toString())).to.deep.equal(SPLITS_3.map(v => v.toString()));
         });
 
       });
@@ -406,6 +405,32 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
       });
 
+    });
+
+  });
+
+  describe('Predetermine collab handler', async () => {
+
+    beforeEach(async () => {
+      await royaltiesRegistry.addHandler(claimableFundsReceiverV1.address, {from: admin});
+
+      // create edition for for artist 1
+      await token.mintBatchEdition(3, artist1, TOKEN_URI, {from: contract});
+    });
+
+    it('address is predetermined - 3x splits', async () => {
+      const predetermineAddress = await royaltiesRegistry.predictedRoyaltiesHandler(claimableFundsReceiverV1.address, RECIPIENTS_3, SPLITS_3);
+      const proxyAddr = await royaltiesRegistry.setupRoyalty.call(EDITION_ID, claimableFundsReceiverV1.address, RECIPIENTS_3, SPLITS_3, {from: contract});
+      expect(predetermineAddress).to.be.equal(proxyAddr);
+    });
+
+    it('address is predetermined - 4x splits', async () => {
+      const RECIPIENTS = [artist1, artist2, artist3, admin];
+      const SPLITS = [QUARTER, QUARTER, QUARTER, QUARTER];
+
+      const predetermineAddress = await royaltiesRegistry.predictedRoyaltiesHandler(claimableFundsReceiverV1.address, RECIPIENTS, SPLITS);
+      const proxyAddr = await royaltiesRegistry.setupRoyalty.call(EDITION_ID, claimableFundsReceiverV1.address, RECIPIENTS, SPLITS, {from: contract});
+      expect(predetermineAddress).to.be.equal(proxyAddr);
     });
 
   });

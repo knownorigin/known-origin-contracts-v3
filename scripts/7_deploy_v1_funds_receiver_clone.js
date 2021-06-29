@@ -13,7 +13,7 @@ async function main() {
   console.log('V1 funds receiver deployed at:', fundsReceiverV1.address);
 
   // Note: Added this to registry on rinkeby
-  //  - s
+  //  - https://rinkeby.etherscan.io/address/0x0484b4a4caa52882214dd80b955992e69c6013ab
 
   console.log('Finished!');
 }
