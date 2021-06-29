@@ -74,6 +74,7 @@ contract('MinterFactory', function (accounts) {
       this.accessControls.address,
       this.token.address,
       this.marketplace.address,
+      ZERO_ADDRESS, // no royalties address
       {from: deployer}
     );
     await this.accessControls.grantRole(this.DEFAULT_ADMIN_ROLE, admin, {from: deployer});
@@ -118,6 +119,7 @@ contract('MinterFactory', function (accounts) {
         TOKEN_URI,
         this.artistProofIndex,
         this.artistProof,
+        ZERO_ADDRESS,
         {from: artist}
       );
 
@@ -138,7 +140,11 @@ contract('MinterFactory', function (accounts) {
     });
 
     it('edition listed', async () => {
-      const {seller: _seller, price: _listingPrice, startDate: _startDate} = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
+      const {
+        seller: _seller,
+        price: _listingPrice,
+        startDate: _startDate
+      } = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
       expect(_seller).to.equal(artist, 'Failed edition details edition validation');
       expect(_startDate).to.bignumber.equal(this.startDate.toString(), 'Failed edition details size validation');
       expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
@@ -153,7 +159,7 @@ contract('MinterFactory', function (accounts) {
         this.merkleProof.claims[artist].proof,
         {from: artist}
       );
-    })
+    });
 
     it('can mint token as proxy', async () => {
       this.startDate = Date.now();
@@ -165,6 +171,7 @@ contract('MinterFactory', function (accounts) {
         ETH_ONE,
         0,
         TOKEN_URI,
+        ZERO_ADDRESS,
         {from: proxy}
       );
 
@@ -173,7 +180,7 @@ contract('MinterFactory', function (accounts) {
         to: artist,
         tokenId: firstEditionTokenId
       });
-    })
+    });
 
     it('can mint batch edition as proxy', async () => {
       this.startDate = Date.now();
@@ -185,6 +192,7 @@ contract('MinterFactory', function (accounts) {
         ETH_ONE,
         0,
         TOKEN_URI,
+        ZERO_ADDRESS,
         {from: proxy}
       );
 
@@ -193,7 +201,7 @@ contract('MinterFactory', function (accounts) {
         to: artist,
         tokenId: firstEditionTokenId
       });
-    })
+    });
 
     it('can mint cosecutive batch as proxy', async () => {
       this.startDate = Date.now();
@@ -205,6 +213,7 @@ contract('MinterFactory', function (accounts) {
         ETH_ONE,
         0,
         TOKEN_URI,
+        ZERO_ADDRESS,
         {from: proxy}
       );
 
@@ -216,7 +225,7 @@ contract('MinterFactory', function (accounts) {
         fromTokenId: start.toString(),
         toTokenId: end.toString()
       });
-    })
+    });
 
     it('can mint and compose as proxy', async () => {
       this.startDate = Date.now();
@@ -237,8 +246,8 @@ contract('MinterFactory', function (accounts) {
         [ether('1000')],
         {from: proxy}
       );
-    })
-  })
+    });
+  });
 
   describe('mintBatchEdition() - Buy Now - edition size 10', () => {
 
@@ -255,6 +264,7 @@ contract('MinterFactory', function (accounts) {
         TOKEN_URI,
         this.artistProofIndex,
         this.artistProof,
+        ZERO_ADDRESS,
         {from: artist}
       );
 
@@ -275,7 +285,11 @@ contract('MinterFactory', function (accounts) {
     });
 
     it('edition listed', async () => {
-      const {seller: _seller, price: _listingPrice, startDate: _startDate} = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
+      const {
+        seller: _seller,
+        price: _listingPrice,
+        startDate: _startDate
+      } = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
       expect(_seller).to.equal(artist, 'Failed edition details edition validation');
       expect(_startDate).to.bignumber.equal(this.startDate.toString(), 'Failed edition details size validation');
       expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
@@ -294,6 +308,7 @@ contract('MinterFactory', function (accounts) {
         TOKEN_URI,
         this.artistProofIndex,
         this.artistProof,
+        ZERO_ADDRESS,
         {from: artist}
       );
 
@@ -320,6 +335,7 @@ contract('MinterFactory', function (accounts) {
         TOKEN_URI,
         this.artistProofIndex,
         this.artistProof,
+        ZERO_ADDRESS,
         {from: artist}
       );
 
@@ -343,7 +359,11 @@ contract('MinterFactory', function (accounts) {
     });
 
     it('edition listed', async () => {
-      const {seller: _seller, price: _listingPrice, startDate: _startDate} = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
+      const {
+        seller: _seller,
+        price: _listingPrice,
+        startDate: _startDate
+      } = await this.marketplace.editionOrTokenListings(firstEditionTokenId);
       expect(_seller).to.equal(artist, 'Failed edition details edition validation');
       expect(_startDate).to.bignumber.equal(this.startDate.toString(), 'Failed edition details size validation');
       expect(_listingPrice).to.bignumber.equal(ETH_ONE, 'Failed edition details uri validation');
@@ -363,6 +383,7 @@ contract('MinterFactory', function (accounts) {
         TOKEN_URI,
         this.artistProofIndex,
         this.artistProof,
+        ZERO_ADDRESS,
         {from: artist}
       );
 
@@ -377,7 +398,6 @@ contract('MinterFactory', function (accounts) {
     });
   });
 
-  //Error: Returned values aren't valid, did it run Out of Gas? You might also see this error if you are not using the correct ABI for the contract you are retrieving data from, requesting data from a block number that does not exist, or querying a node which is not fully synced.
   describe('mintBatchEditionAndComposeERC20s()', () => {
     const editionSize = new BN('10');
 
@@ -457,7 +477,7 @@ contract('MinterFactory', function (accounts) {
 
       // exhaust all tokens
       for (const id of range) {
-        const receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, this.artistProofIndex, this.artistProof, {from: artist});
+        const receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, this.artistProofIndex, this.artistProof, ZERO_ADDRESS, {from: artist});
         await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
           from: ZERO_ADDRESS,
           to: artist,
@@ -478,7 +498,7 @@ contract('MinterFactory', function (accounts) {
 
       // confirm next mint will revert
       await expectRevert(
-        this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, this.artistProofIndex, this.artistProof, {from: artist}),
+        this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, this.artistProofIndex, this.artistProof, ZERO_ADDRESS, {from: artist}),
         'Caller unable to create yet'
       );
 
@@ -487,7 +507,7 @@ contract('MinterFactory', function (accounts) {
       await this.factory.setNow(this.startDate);
 
       // can mint again
-      let receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, this.artistProofIndex, this.artistProof, {from: artist});
+      let receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, this.artistProofIndex, this.artistProof, ZERO_ADDRESS, {from: artist});
       await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
         from: ZERO_ADDRESS,
         to: artist,
@@ -503,7 +523,7 @@ contract('MinterFactory', function (accounts) {
       expect(await this.factory.canCreateNewEdition(artist)).to.be.equal(true);
 
       // can mint again
-      receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, this.artistProofIndex, this.artistProof, {from: artist});
+      receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, this.artistProofIndex, this.artistProof, ZERO_ADDRESS, {from: artist});
       await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
         from: ZERO_ADDRESS,
         to: artist,
@@ -558,7 +578,7 @@ contract('MinterFactory', function (accounts) {
 
       // mint 50 editions
       for (const id of _.range(0, 50)) {
-        const receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, this.artistProofIndex, this.artistProof, {from: artist});
+        const receipt = await this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, this.artistProofIndex, this.artistProof, ZERO_ADDRESS, {from: artist});
         await expectEvent.inTransaction(receipt.tx, KnownOriginDigitalAssetV3, 'Transfer', {
           from: ZERO_ADDRESS,
           to: artist,
@@ -582,7 +602,7 @@ contract('MinterFactory', function (accounts) {
 
       // confirm next mint will revert
       await expectRevert(
-        this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, this.artistProofIndex, this.artistProof, {from: artist}),
+        this.factory.mintToken(SaleType.BUY_NOW, this.startDate, ETH_ONE, 0, TOKEN_URI, this.artistProofIndex, this.artistProof, ZERO_ADDRESS, {from: artist}),
         'Caller unable to create yet'
       );
     });

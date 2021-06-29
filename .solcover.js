@@ -17,6 +17,8 @@ module.exports = {
     'spikes/royalties/TokenRoyaltiesRegistry.sol',
     'spikes/royalties/EditionRoyaltiesRegistry.sol',
     'spikes/collaborators/beacon/RoyaltyImplV1R1.sol',
+    'spikes/collaborators/handlers/FundsReceiver.sol',
+    'spikes/collaborators/handlers/FundsSplitter.sol',
     'spikes/core/mixins/MintBatchViaSig.sol',
     'spikes/core/mixins/NFTPermit.sol',
     'spikes/registry/EditionRegistry.sol',

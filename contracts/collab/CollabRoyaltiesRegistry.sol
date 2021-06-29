@@ -21,6 +21,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     event RoyaltyAmountSet(uint256 royaltyAmount);
     event EmergencyClearRoyalty(uint256 editionId);
     event HandlerAdded(address handler);
+    event HandlerRemoved(address handler);
 
     // Normal Events
     event RoyaltyRecipientCreated(address creator, address handler, address deployedHandler, address[] recipients, uint256[] splits);
@@ -112,6 +113,17 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
 
         // Emit event
         emit HandlerAdded(_handler);
+    }
+
+    /// @notice Remove a cloneable funds handler
+    function removeHandler(address _handler)
+    external
+    onlyAdmin() {
+        // Store the beacon address by name
+        isHandlerWhitelisted[_handler] = false;
+
+        // Emit event
+        emit HandlerRemoved(_handler);
     }
 
     ////////////////////////////
