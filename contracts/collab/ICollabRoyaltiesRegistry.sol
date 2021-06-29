@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-/// @notice Common interface to the Royalties collaborations registry
+/// @notice Common interface to the edition royalties registry
 interface ICollabRoyaltiesRegistry {
 
     /// @notice Creates & deploys a new royalties recipient, cloning _handle and setting it up with the provided _recipients and _splits

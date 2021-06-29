@@ -1,11 +1,22 @@
+
 ·------------------------------|-------------·
 |  Contract Name               ·  Size (Kb)  │
 ·······························|··············
-|  MintingFactory              ·       8.05  │
+|  ClaimableFundsReceiverV1    ·       3.70  │
 ·······························|··············
-|  KODAV3SecondaryMarketplace  ·      18.24  │
+|  ClaimableFundsSplitterV1    ·       3.71  │
 ·······························|··············
-|  KODAV3PrimaryMarketplace    ·      21.48  │
+|  KOAccessControls            ·       4.79  │
 ·······························|··············
-|  KnownOriginDigitalAssetV3   ·      22.16  │
+|  CollabRoyaltiesRegistry     ·       7.74  │
 ·······························|··············
+|  MintingFactory              ·       8.79  │
+·······························|··············
+|  MockMintingFactory          ·       8.92  │
+·······························|··············
+|  KODAV3SecondaryMarketplace  ·      18.03  │
+·······························|··············
+|  KODAV3PrimaryMarketplace    ·      21.67  │
+·······························|··············
+|  KnownOriginDigitalAssetV3   ·      22.52  │
+·------------------------------|-------------·
