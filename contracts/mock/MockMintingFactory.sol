@@ -10,8 +10,9 @@ contract MockMintingFactory is MintingFactory {
     constructor(
         IKOAccessControlsLookup _accessControls,
         IKODAV3Minter _koda,
-        KODAV3PrimaryMarketplace _marketplace
-    ) MintingFactory(_accessControls, _koda, _marketplace) {}
+        IKODAV3PrimarySaleMarketplace _marketplace,
+        ICollabRoyaltiesRegistry _royaltiesRegistry
+    ) MintingFactory(_accessControls, _koda, _marketplace, _royaltiesRegistry) {}
 
     function setNow(uint128 _now) external {
         nowOverride = _now;

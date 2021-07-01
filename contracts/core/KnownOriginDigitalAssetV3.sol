@@ -14,7 +14,7 @@ import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
 import {BaseKoda} from "./BaseKoda.sol";
 
 /// @title A ERC-721 compliant contract which has a focus on being GAS efficient along with being able to support
-//// both unique tokens and multi-editions sharing common traits but of limited supply
+/// both unique tokens and multi-editions sharing common traits but of limited supply
 ///
 /// @author KnownOrigin Labs - https://knownorigin.io/
 ///

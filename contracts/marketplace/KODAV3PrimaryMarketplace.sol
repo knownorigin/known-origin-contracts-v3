@@ -456,7 +456,7 @@ BuyNowMarketplace {
         return accessControls.hasContractRole(_msgSender());
     }
 
-    function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller) internal override returns (uint256) {
+    function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address) internal override returns (uint256) {
         return _facilitateNextPrimarySale(_id, _paymentAmount, _buyer, false);
     }
 

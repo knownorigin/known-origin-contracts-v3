@@ -5,7 +5,8 @@ pragma solidity 0.8.4;
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
 import {IKODAV3Minter} from "../core/IKODAV3Minter.sol";
-import {KODAV3PrimaryMarketplace} from "../marketplace/KODAV3PrimaryMarketplace.sol";
+import {IKODAV3PrimarySaleMarketplace} from "../marketplace/KODAV3PrimaryMarketplace.sol";
+import {ICollabRoyaltiesRegistry} from "../collab/ICollabRoyaltiesRegistry.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 
 contract MintingFactory is Context {
@@ -16,17 +17,22 @@ contract MintingFactory is Context {
     event AdminMintingPeriodChanged(uint256 _mintingPeriod);
     event AdminMaxMintsInPeriodChanged(uint256 _maxMintsInPeriod);
     event AdminFrequencyOverrideChanged(address _account, bool _override);
+    event AdminRoyaltiesRegistryChanged(address _royaltiesRegistry);
 
-    IKOAccessControlsLookup public accessControls;
-
-    IKODAV3Minter public koda;
-
-    KODAV3PrimaryMarketplace public marketplace;
+    modifier onlyAdmin() {
+        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+        _;
+    }
 
     modifier canMintAgain(){
         require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
         _;
     }
+
+    IKOAccessControlsLookup public accessControls;
+    IKODAV3Minter public koda;
+    IKODAV3PrimarySaleMarketplace public marketplace;
+    ICollabRoyaltiesRegistry public royaltiesRegistry;
 
     // Minting allowance period
     uint256 public mintingPeriod = 30 days;
@@ -52,11 +58,13 @@ contract MintingFactory is Context {
     constructor(
         IKOAccessControlsLookup _accessControls,
         IKODAV3Minter _koda,
-        KODAV3PrimaryMarketplace _marketplace
+        IKODAV3PrimarySaleMarketplace _marketplace,
+        ICollabRoyaltiesRegistry _royaltiesRegistry
     ) {
         accessControls = _accessControls;
         koda = _koda;
         marketplace = _marketplace;
+        royaltiesRegistry = _royaltiesRegistry;
 
         emit MintingFactoryCreated();
     }
@@ -68,7 +76,8 @@ contract MintingFactory is Context {
         uint128 _stepPrice,
         string calldata _uri,
         uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof
+        bytes32[] calldata _merkleProof,
+        address _deployedRoyaltiesHandler
     ) canMintAgain external {
         require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
@@ -77,6 +86,7 @@ contract MintingFactory is Context {
 
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_msgSender());
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintTokenAsProxy(
@@ -85,7 +95,8 @@ contract MintingFactory is Context {
         uint128 _startDate,
         uint128 _basePrice,
         uint128 _stepPrice,
-        string calldata _uri
+        string calldata _uri,
+        address _deployedRoyaltiesHandler
     ) canMintAgain external {
         require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
 
@@ -94,6 +105,7 @@ contract MintingFactory is Context {
 
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_creator);
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintBatchEdition(
@@ -104,7 +116,8 @@ contract MintingFactory is Context {
         uint128 _stepPrice,
         string calldata _uri,
         uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof
+        bytes32[] calldata _merkleProof,
+        address _deployedRoyaltiesHandler
     ) canMintAgain external {
         require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
@@ -113,6 +126,7 @@ contract MintingFactory is Context {
 
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_msgSender());
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintBatchEditionAsProxy(
@@ -122,7 +136,8 @@ contract MintingFactory is Context {
         uint128 _startDate,
         uint128 _basePrice,
         uint128 _stepPrice,
-        string calldata _uri
+        string calldata _uri,
+        address _deployedRoyaltiesHandler
     ) canMintAgain external {
         require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
 
@@ -131,6 +146,7 @@ contract MintingFactory is Context {
 
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_creator);
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintBatchEditionAndComposeERC20s(
@@ -188,7 +204,8 @@ contract MintingFactory is Context {
         uint128 _stepPrice,
         string calldata _uri,
         uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof
+        bytes32[] calldata _merkleProof,
+        address _deployedRoyaltiesHandler
     ) canMintAgain external {
         require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
@@ -197,6 +214,7 @@ contract MintingFactory is Context {
 
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_msgSender());
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintConsecutiveBatchEditionAsProxy(
@@ -206,7 +224,8 @@ contract MintingFactory is Context {
         uint128 _startDate,
         uint128 _basePrice,
         uint128 _stepPrice,
-        string calldata _uri
+        string calldata _uri,
+        address _deployedRoyaltiesHandler
     ) canMintAgain external {
         require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
 
@@ -215,6 +234,7 @@ contract MintingFactory is Context {
 
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_creator);
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function _setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
@@ -232,6 +252,12 @@ contract MintingFactory is Context {
         }
 
         emit EditionMintedAndListed(_editionId, _saleType);
+    }
+
+    function _setupRoyalties(uint256 _editionId, address _deployedHandler) internal {
+        if (_deployedHandler != address(0) && address(royaltiesRegistry) != address(0)) {
+            royaltiesRegistry.useRoyaltiesRecipient(_editionId, _deployedHandler);
+        }
     }
 
     /// Internal helpers
@@ -290,20 +316,22 @@ contract MintingFactory is Context {
         );
     }
 
-    function setFrequencyOverride(address _account, bool _override) external {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+    function setFrequencyOverride(address _account, bool _override) onlyAdmin public {
         frequencyOverride[_account] = _override;
         emit AdminFrequencyOverrideChanged(_account, _override);
     }
 
-    function setMintingPeriod(uint256 _mintingPeriod) public {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+    function setMintingPeriod(uint256 _mintingPeriod) onlyAdmin public {
         mintingPeriod = _mintingPeriod;
         emit AdminMintingPeriodChanged(_mintingPeriod);
     }
 
-    function setMaxMintsInPeriod(uint256 _maxMintsInPeriod) public {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+    function setRoyaltiesRegistry(ICollabRoyaltiesRegistry _royaltiesRegistry) onlyAdmin public {
+        royaltiesRegistry = _royaltiesRegistry;
+        emit AdminRoyaltiesRegistryChanged(address(_royaltiesRegistry));
+    }
+
+    function setMaxMintsInPeriod(uint256 _maxMintsInPeriod) onlyAdmin public {
         maxMintsInPeriod = _maxMintsInPeriod;
         emit AdminMaxMintsInPeriodChanged(_maxMintsInPeriod);
     }

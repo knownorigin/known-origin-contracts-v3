@@ -75,7 +75,7 @@ interface IReserveAuctionMarketplace {
     function emergencyExitBidFromReserveAuction(uint256 _id) external;
 }
 
-interface IKODAV3PrimarySaleMarketplace is IEditionSteppedMarketplace, IEditionOffersMarketplace {
+interface IKODAV3PrimarySaleMarketplace is IEditionSteppedMarketplace, IEditionOffersMarketplace, IBuyNowMarketplace, IReserveAuctionMarketplace {
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
 
     function convertReserveAuctionToOffers(uint256 _editionId, uint128 _startDate) external;

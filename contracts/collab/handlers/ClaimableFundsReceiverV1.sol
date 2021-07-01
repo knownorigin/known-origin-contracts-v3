@@ -5,17 +5,22 @@ pragma solidity 0.8.4;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./CollabFundsHandlerBase.sol";
-import "./ICollabFundsDrainable.sol";
+import {CollabFundsHandlerBase} from "./CollabFundsHandlerBase.sol";
+import {ICollabFundsDrainable} from "./ICollabFundsDrainable.sol";
 
-/**
- * Allows funds to be split using a pull pattern, holding a balance until drained.
- *
- * Supports claiming/draining all balances at one - not an individual shares
- */
-contract CollabFundsSimpleReceiver is ReentrancyGuard, CollabFundsHandlerBase, ICollabFundsDrainable {
+/// @title Allows funds to be received and then split later on using a pull pattern, holding a balance until drained.
+/// @notice Supports claiming/draining all balances at one
+/// @notice Doe not an individual shares
+///
+/// @author KnownOrigin Labs - https://knownorigin.io/
+contract ClaimableFundsReceiverV1 is ReentrancyGuard, CollabFundsHandlerBase, ICollabFundsDrainable {
 
-    // split current contract balance among recipients
+    // accept all funds
+    receive() external virtual payable {
+        // But do not do anything with them ... assuming all funds are drained manually
+    }
+
+    /// split current contract balance among recipients
     function drain() public nonReentrant override {
 
         // Check that there are funds to drain
@@ -25,7 +30,7 @@ contract CollabFundsSimpleReceiver is ReentrancyGuard, CollabFundsHandlerBase, I
         uint256[] memory shares = new uint256[](recipients.length);
 
         // Calculate and send share for each recipient
-        uint256 singleUnitOfValue = balance / SCALE_FACTOR;
+        uint256 singleUnitOfValue = balance / modulo;
         uint256 sumPaidOut;
         for (uint256 i = 0; i < recipients.length; i++) {
             shares[i] = singleUnitOfValue * splits[i];
@@ -46,6 +51,7 @@ contract CollabFundsSimpleReceiver is ReentrancyGuard, CollabFundsHandlerBase, I
         emit FundsDrained(balance, recipients, shares, address(0));
     }
 
+    /// split the current token balance among recipients
     function drainERC20(IERC20 token) public nonReentrant override {
 
         // Check that there are funds to drain
@@ -55,7 +61,7 @@ contract CollabFundsSimpleReceiver is ReentrancyGuard, CollabFundsHandlerBase, I
         uint256[] memory shares = new uint256[](recipients.length);
 
         // Calculate and send share for each recipient
-        uint256 singleUnitOfValue = balance / SCALE_FACTOR;
+        uint256 singleUnitOfValue = balance / modulo;
         uint256 sumPaidOut;
         for (uint256 i = 0; i < recipients.length; i++) {
             shares[i] = singleUnitOfValue * splits[i];

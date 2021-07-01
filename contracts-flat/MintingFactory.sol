@@ -254,15 +254,21 @@ interface IERC2309 {
 pragma solidity 0.8.4;
 
 
-// This is purely an extension for the KO platform
-interface IERC2981HasRoyaltiesExtension {
+/// @notice This is purely an extension for the KO platform
+/// @notice Royalties on KO are defined at an edition level for all tokens from the same edition
+interface IERC2981EditionExtension {
+
+    /// @notice Does the edition have any royalties defined
     function hasRoyalties(uint256 _editionId) external view returns (bool);
+
+    /// @notice Get the royalty receiver - all royalties should be sent to this account if not zero address
+    function getRoyaltiesReceiver(uint256 _editionId) external view returns (address);
 }
 
 /**
  * ERC2981 standards interface for royalties
  */
-interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
+interface IERC2981 is IERC165, IERC2981EditionExtension {
     /// ERC165 bytes to add to interface array - set in parent contract
     /// implementing this standard
     ///
@@ -293,11 +299,8 @@ interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
 pragma solidity 0.8.4;
 
 
-/**
- * @notice Royalties formats required for use on the Rarible platform
- *
- * @notice https://docs.rarible.com/asset/royalties-schema
- */
+/// @title Royalties formats required for use on the Rarible platform
+/// @dev https://docs.rarible.com/asset/royalties-schema
 interface IHasSecondarySaleFees is IERC165 {
 
     event SecondarySaleFees(uint256 tokenId, address[] recipients, uint[] bps);
@@ -318,6 +321,7 @@ pragma solidity 0.8.4;
 
 
 
+/// @title Core KODA V3 functionality
 interface IKODAV3 is
 IERC165, // Contract introspection
 IERC721, // Core NFTs
@@ -463,7 +467,7 @@ interface IReserveAuctionMarketplace {
     function emergencyExitBidFromReserveAuction(uint256 _id) external;
 }
 
-interface IKODAV3PrimarySaleMarketplace is IEditionSteppedMarketplace, IEditionOffersMarketplace {
+interface IKODAV3PrimarySaleMarketplace is IEditionSteppedMarketplace, IEditionOffersMarketplace, IBuyNowMarketplace, IReserveAuctionMarketplace {
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
 
     function convertReserveAuctionToOffers(uint256 _editionId, uint128 _startDate) external;
@@ -1667,7 +1671,7 @@ BuyNowMarketplace {
         return accessControls.hasContractRole(_msgSender());
     }
 
-    function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller) internal override returns (uint256) {
+    function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address) internal override returns (uint256) {
         return _facilitateNextPrimarySale(_id, _paymentAmount, _buyer, false);
     }
 
@@ -1730,11 +1734,58 @@ BuyNowMarketplace {
     }
 }
 
+// File: contracts/collab/ICollabRoyaltiesRegistry.sol
+
+
+pragma solidity 0.8.4;
+
+/// @notice Common interface to the edition royalties registry
+interface ICollabRoyaltiesRegistry {
+
+    /// @notice Creates & deploys a new royalties recipient, cloning _handle and setting it up with the provided _recipients and _splits
+    function createRoyaltiesRecipient(
+        uint256 _merkleIndex,
+        bytes32[] calldata _merkleProof,
+        address _handler,
+        address[] calldata _recipients,
+        uint256[] calldata _splits
+    ) external returns (address deployedHandler);
+
+    /// @notice Sets up the provided edition to use the provided _recipient
+    function useRoyaltiesRecipient(uint256 _editionId, address _deployedHandler) external;
+
+    /// @notice Setup a royalties handler but does not deploy it, uses predicable clone and sets this against the edition
+    function usePredeterminedRoyaltiesRecipient(
+        uint256 _editionId,
+        address _handler,
+        address[] calldata _recipients,
+        uint256[] calldata _splits
+    ) external;
+
+    /// @notice Deploy and setup a royalties recipient for the given edition
+    function createAndUseRoyaltiesRecipient(
+        uint256 _editionId,
+        address _handler,
+        address[] calldata _recipients,
+        uint256[] calldata _splits
+    )
+    external returns (address deployedHandler);
+
+    /// @notice Predict the deployed clone address with the given parameters
+    function predictedRoyaltiesHandler(
+        address _handler,
+        address[] calldata _recipients,
+        uint256[] calldata _splits
+    ) external view returns (address predictedHandler);
+
+}
+
 // File: contracts/minter/MintingFactory.sol
 
 
 
 pragma solidity 0.8.4;
+
 
 
 
@@ -1748,17 +1799,22 @@ contract MintingFactory is Context {
     event AdminMintingPeriodChanged(uint256 _mintingPeriod);
     event AdminMaxMintsInPeriodChanged(uint256 _maxMintsInPeriod);
     event AdminFrequencyOverrideChanged(address _account, bool _override);
+    event AdminRoyaltiesRegistryChanged(address _royaltiesRegistry);
 
-    IKOAccessControlsLookup public accessControls;
-
-    IKODAV3Minter public koda;
-
-    KODAV3PrimaryMarketplace public marketplace;
+    modifier onlyAdmin() {
+        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+        _;
+    }
 
     modifier canMintAgain(){
         require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
         _;
     }
+
+    IKOAccessControlsLookup public accessControls;
+    IKODAV3Minter public koda;
+    IKODAV3PrimarySaleMarketplace public marketplace;
+    ICollabRoyaltiesRegistry public royaltiesRegistry;
 
     // Minting allowance period
     uint256 public mintingPeriod = 30 days;
@@ -1784,11 +1840,13 @@ contract MintingFactory is Context {
     constructor(
         IKOAccessControlsLookup _accessControls,
         IKODAV3Minter _koda,
-        KODAV3PrimaryMarketplace _marketplace
+        IKODAV3PrimarySaleMarketplace _marketplace,
+        ICollabRoyaltiesRegistry _royaltiesRegistry
     ) {
         accessControls = _accessControls;
         koda = _koda;
         marketplace = _marketplace;
+        royaltiesRegistry = _royaltiesRegistry;
 
         emit MintingFactoryCreated();
     }
@@ -1800,7 +1858,8 @@ contract MintingFactory is Context {
         uint128 _stepPrice,
         string calldata _uri,
         uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof
+        bytes32[] calldata _merkleProof,
+        address _deployedRoyaltiesHandler
     ) canMintAgain external {
         require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
@@ -1809,6 +1868,7 @@ contract MintingFactory is Context {
 
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_msgSender());
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintTokenAsProxy(
@@ -1817,7 +1877,8 @@ contract MintingFactory is Context {
         uint128 _startDate,
         uint128 _basePrice,
         uint128 _stepPrice,
-        string calldata _uri
+        string calldata _uri,
+        address _deployedRoyaltiesHandler
     ) canMintAgain external {
         require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
 
@@ -1826,6 +1887,7 @@ contract MintingFactory is Context {
 
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_creator);
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintBatchEdition(
@@ -1836,7 +1898,8 @@ contract MintingFactory is Context {
         uint128 _stepPrice,
         string calldata _uri,
         uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof
+        bytes32[] calldata _merkleProof,
+        address _deployedRoyaltiesHandler
     ) canMintAgain external {
         require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
@@ -1845,6 +1908,7 @@ contract MintingFactory is Context {
 
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_msgSender());
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintBatchEditionAsProxy(
@@ -1854,7 +1918,8 @@ contract MintingFactory is Context {
         uint128 _startDate,
         uint128 _basePrice,
         uint128 _stepPrice,
-        string calldata _uri
+        string calldata _uri,
+        address _deployedRoyaltiesHandler
     ) canMintAgain external {
         require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
 
@@ -1863,6 +1928,7 @@ contract MintingFactory is Context {
 
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_creator);
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintBatchEditionAndComposeERC20s(
@@ -1920,7 +1986,8 @@ contract MintingFactory is Context {
         uint128 _stepPrice,
         string calldata _uri,
         uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof
+        bytes32[] calldata _merkleProof,
+        address _deployedRoyaltiesHandler
     ) canMintAgain external {
         require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
@@ -1929,6 +1996,7 @@ contract MintingFactory is Context {
 
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_msgSender());
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintConsecutiveBatchEditionAsProxy(
@@ -1938,7 +2006,8 @@ contract MintingFactory is Context {
         uint128 _startDate,
         uint128 _basePrice,
         uint128 _stepPrice,
-        string calldata _uri
+        string calldata _uri,
+        address _deployedRoyaltiesHandler
     ) canMintAgain external {
         require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
 
@@ -1947,6 +2016,7 @@ contract MintingFactory is Context {
 
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_creator);
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function _setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
@@ -1964,6 +2034,12 @@ contract MintingFactory is Context {
         }
 
         emit EditionMintedAndListed(_editionId, _saleType);
+    }
+
+    function _setupRoyalties(uint256 _editionId, address _deployedHandler) internal {
+        if (_deployedHandler != address(0) && address(royaltiesRegistry) != address(0)) {
+            royaltiesRegistry.useRoyaltiesRecipient(_editionId, _deployedHandler);
+        }
     }
 
     /// Internal helpers
@@ -2022,20 +2098,22 @@ contract MintingFactory is Context {
         );
     }
 
-    function setFrequencyOverride(address _account, bool _override) external {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+    function setFrequencyOverride(address _account, bool _override) onlyAdmin public {
         frequencyOverride[_account] = _override;
         emit AdminFrequencyOverrideChanged(_account, _override);
     }
 
-    function setMintingPeriod(uint256 _mintingPeriod) public {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+    function setMintingPeriod(uint256 _mintingPeriod) onlyAdmin public {
         mintingPeriod = _mintingPeriod;
         emit AdminMintingPeriodChanged(_mintingPeriod);
     }
 
-    function setMaxMintsInPeriod(uint256 _maxMintsInPeriod) public {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+    function setRoyaltiesRegistry(ICollabRoyaltiesRegistry _royaltiesRegistry) onlyAdmin public {
+        royaltiesRegistry = _royaltiesRegistry;
+        emit AdminRoyaltiesRegistryChanged(address(_royaltiesRegistry));
+    }
+
+    function setMaxMintsInPeriod(uint256 _maxMintsInPeriod) onlyAdmin public {
         maxMintsInPeriod = _maxMintsInPeriod;
         emit AdminMaxMintsInPeriodChanged(_maxMintsInPeriod);
     }

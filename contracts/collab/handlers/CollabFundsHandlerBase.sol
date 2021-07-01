@@ -2,17 +2,17 @@
 
 pragma solidity 0.8.4;
 
-import "./ICollabFundsHandler.sol";
+import {ICollabFundsHandler} from "./ICollabFundsHandler.sol";
 
 abstract contract CollabFundsHandlerBase is ICollabFundsHandler {
 
-    // Constants
-    uint256 internal constant SCALE_FACTOR = 100000;
+    /// @notice in line with EIP-2981 format - precision 100.00000%
+    uint256 internal constant modulo = 100_00000;
 
-    // State
-    bool internal locked = false;
     address[] public recipients;
     uint256[] public splits;
+
+    bool internal locked = false;
 
     /**
      * @notice Using a minimal proxy contract pattern initialises the contract and sets delegation
@@ -20,21 +20,26 @@ abstract contract CollabFundsHandlerBase is ICollabFundsHandler {
      */
     function init(address[] calldata _recipients, uint256[] calldata _splits) override virtual external {
         require(!locked, "contract locked sorry");
+
+        // Validate splits are correct
+        uint256 total;
+        for (uint256 i = 0; i < _splits.length; i++) {
+            total = total + _splits[i];
+        }
+        require(total == modulo, "Shares dont not equal 100%");
+
         locked = true;
         recipients = _recipients;
         splits = _splits;
     }
 
-    // accept all funds
-    receive() external payable {}
-
-    // get the number of recipients this funds handler is configured for
+    /// get the number of recipients this funds handler is configured for
     function totalRecipients() public override virtual view returns (uint256) {
         return recipients.length;
     }
 
-    // get the recipient and split at the given index of the recipients list
-    function royaltyAtIndex(uint256 _index) public override view returns (address recipient, uint256 split) {
+    /// get the recipient and split at the given index of the shares list
+    function shareAtIndex(uint256 _index) public override view returns (address recipient, uint256 split) {
         recipient = recipients[_index];
         split = splits[_index];
     }
