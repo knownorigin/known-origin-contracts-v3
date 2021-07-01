@@ -30,7 +30,7 @@
 ```
 Core NFT                   - 0xf59DfBE431DE93E725AeF35aFf3EB4A0EF819aF2 (not verified)
 AccessControls             - 0xB078C9E804cAcBD4C20161FB7F3af464dE960349 (verified)
-Minting Factory            - 0x17fcD33fc32352FB15f46d66CE909C3DA815D657 (verified)
+Minting Factory            - 0x2D14A0cd491f6C034526203404913d8978bE576C (verified)
 Primary marketplace        - 0x69FbdaDB09961F530C6209e7758eCA54FA635804 (verified)
 Secondary marketplace      - 0x0E70f22F6333B08C9fb5044C65C5937420E72739 (verified)
 Collab royalties registry  - 0x68Dd5ae3130B5d193F36b03E58ECBCAc5eceb9E5 (verified)
