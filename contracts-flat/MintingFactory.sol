@@ -33,11 +33,11 @@ pragma solidity 0.8.4;
 
 interface IKODAV3Minter {
 
-    function mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri) external returns (uint256 _editionId);
+    function mintBatchEdition(uint16 _editionSize, address _to, string calldata _uri) external returns (uint256 _editionId);
 
-    function mintBatchEditionAndComposeERC20s(uint96 _editionSize, address _to, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts) external returns (uint256 _editionId);
+    function mintBatchEditionAndComposeERC20s(uint16 _editionSize, address _to, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts) external returns (uint256 _editionId);
 
-    function mintConsecutiveBatchEdition(uint96 _editionSize, address _to, string calldata _uri) external returns (uint256 _editionId);
+    function mintConsecutiveBatchEdition(uint16 _editionSize, address _to, string calldata _uri) external returns (uint256 _editionId);
 }
 
 // File: contracts/access/IKOAccessControlsLookup.sol
@@ -383,7 +383,7 @@ IHasSecondarySaleFees // Rariable / Foundation royalties
 
     function getEditionIdOfToken(uint256 _tokenId) external pure returns (uint256 _editionId);
 
-    function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri);
+    function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint16 _size, uint256 _editionId, string memory _uri);
 
     function hadPrimarySaleOfToken(uint256 _tokenId) external view returns (bool);
 }
@@ -777,7 +777,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     event AdminRecoverETH(address payable indexed _recipient, uint256 _amount);
 
     event BidderRefunded(uint256 indexed _id, address _bidder, uint256 _bid, address _newBidder, uint256 _newOffer);
-    event BidRefundFailed(uint256 indexed _id, address _bidder, uint256 _bid);
+    event BidderRefundedFailed(uint256 indexed _id, address _bidder, uint256 _bid, address _newBidder, uint256 _newOffer);
 
     // Only a whitelisted smart contract in the access controls contract
     modifier onlyContract() {
@@ -840,6 +840,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     }
 
     function updateModulo(uint256 _modulo) public onlyAdmin {
+        require(_modulo > 0, "Modulo point cannot be zero");
         modulo = _modulo;
         emit AdminUpdateModulo(_modulo);
     }
@@ -873,16 +874,10 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
 
     function _refundBidder(uint256 _id, address _receiver, uint256 _paymentAmount, address _newBidder, uint256 _newOffer) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
-        require(success, "ETH refund failed");
-        emit BidderRefunded(_id, _receiver, _paymentAmount, _newBidder, _newOffer);
-    }
-
-    function _refundBidderIgnoreError(uint256 _id, address _receiver, uint256 _paymentAmount) internal {
-        (bool success,) = _receiver.call{value : _paymentAmount}("");
         if (!success) {
-            emit BidRefundFailed(_id, _receiver, _paymentAmount);
+            emit BidderRefunded(_id, _receiver, _paymentAmount, _newBidder, _newOffer);
         } else {
-            emit BidderRefunded(_id, _receiver, _paymentAmount, address(0), 0);
+            emit BidderRefundedFailed(_id, _receiver, _paymentAmount, _newBidder, _newOffer);
         }
     }
 
@@ -1429,7 +1424,9 @@ BuyNowMarketplace {
         require(offer.bidder != address(0), "No open bid");
 
         // send money back to top bidder
-        _refundBidderIgnoreError(_editionId, offer.bidder, offer.offer);
+        if (offer.offer > 0) {
+            _refundBidder(_editionId, offer.bidder, offer.offer, address(0), 0);
+        }
 
         emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
 
@@ -1892,7 +1889,7 @@ contract MintingFactory is Context {
 
     function mintBatchEdition(
         SaleType _saleType,
-        uint96 _editionSize,
+        uint16 _editionSize,
         uint128 _startDate,
         uint128 _basePrice,
         uint128 _stepPrice,
@@ -1914,7 +1911,7 @@ contract MintingFactory is Context {
     function mintBatchEditionAsProxy(
         address _creator,
         SaleType _saleType,
-        uint96 _editionSize,
+        uint16 _editionSize,
         uint128 _startDate,
         uint128 _basePrice,
         uint128 _stepPrice,
@@ -1949,7 +1946,7 @@ contract MintingFactory is Context {
         require(accessControls.isVerifiedArtist(_config[0], _msgSender(), _merkleProof), "Caller must have minter role");
         require(_config.length == 5, "Config must consist of 5 elements in the array");
 
-        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint96(_config[1]), _msgSender(), _uri, _erc20s, _amounts);
+        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint16(_config[1]), _msgSender(), _uri, _erc20s, _amounts);
 
         _setupSalesMechanic(editionId, _saleType, _config[2], _config[3], _config[4]);
         _recordSuccessfulMint(_msgSender());
@@ -1972,7 +1969,7 @@ contract MintingFactory is Context {
         require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
         require(_config.length == 4, "Config must consist of 4 elements in the array");
 
-        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint96(_config[0]), _creator, _uri, _erc20s, _amounts);
+        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint16(_config[0]), _creator, _uri, _erc20s, _amounts);
 
         _setupSalesMechanic(editionId, _saleType, _config[1], _config[2], _config[3]);
         _recordSuccessfulMint(_creator);
@@ -1980,7 +1977,7 @@ contract MintingFactory is Context {
 
     function mintConsecutiveBatchEdition(
         SaleType _saleType,
-        uint96 _editionSize,
+        uint16 _editionSize,
         uint128 _startDate,
         uint128 _basePrice,
         uint128 _stepPrice,
@@ -2002,7 +1999,7 @@ contract MintingFactory is Context {
     function mintConsecutiveBatchEditionAsProxy(
         address _creator,
         SaleType _saleType,
-        uint96 _editionSize,
+        uint16 _editionSize,
         uint128 _startDate,
         uint128 _basePrice,
         uint128 _stepPrice,

@@ -212,15 +212,21 @@ interface IERC2309 {
 pragma solidity 0.8.4;
 
 
-// This is purely an extension for the KO platform
-interface IERC2981HasRoyaltiesExtension {
+/// @notice This is purely an extension for the KO platform
+/// @notice Royalties on KO are defined at an edition level for all tokens from the same edition
+interface IERC2981EditionExtension {
+
+    /// @notice Does the edition have any royalties defined
     function hasRoyalties(uint256 _editionId) external view returns (bool);
+
+    /// @notice Get the royalty receiver - all royalties should be sent to this account if not zero address
+    function getRoyaltiesReceiver(uint256 _editionId) external view returns (address);
 }
 
 /**
  * ERC2981 standards interface for royalties
  */
-interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
+interface IERC2981 is IERC165, IERC2981EditionExtension {
     /// ERC165 bytes to add to interface array - set in parent contract
     /// implementing this standard
     ///
@@ -251,11 +257,8 @@ interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
 pragma solidity 0.8.4;
 
 
-/**
- * @notice Royalties formats required for use on the Rarible platform
- *
- * @notice https://docs.rarible.com/asset/royalties-schema
- */
+/// @title Royalties formats required for use on the Rarible platform
+/// @dev https://docs.rarible.com/asset/royalties-schema
 interface IHasSecondarySaleFees is IERC165 {
 
     event SecondarySaleFees(uint256 tokenId, address[] recipients, uint[] bps);
@@ -276,6 +279,7 @@ pragma solidity 0.8.4;
 
 
 
+/// @title Core KODA V3 functionality
 interface IKODAV3 is
 IERC165, // Contract introspection
 IERC721, // Core NFTs
@@ -337,7 +341,7 @@ IHasSecondarySaleFees // Rariable / Foundation royalties
 
     function getEditionIdOfToken(uint256 _tokenId) external pure returns (uint256 _editionId);
 
-    function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri);
+    function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint16 _size, uint256 _editionId, string memory _uri);
 
     function hadPrimarySaleOfToken(uint256 _tokenId) external view returns (bool);
 }
@@ -421,7 +425,7 @@ interface IReserveAuctionMarketplace {
     function emergencyExitBidFromReserveAuction(uint256 _id) external;
 }
 
-interface IKODAV3PrimarySaleMarketplace is IEditionSteppedMarketplace, IEditionOffersMarketplace {
+interface IKODAV3PrimarySaleMarketplace is IEditionSteppedMarketplace, IEditionOffersMarketplace, IBuyNowMarketplace, IReserveAuctionMarketplace {
     function convertReserveAuctionToBuyItNow(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
 
     function convertReserveAuctionToOffers(uint256 _editionId, uint128 _startDate) external;
@@ -758,7 +762,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     event AdminRecoverETH(address payable indexed _recipient, uint256 _amount);
 
     event BidderRefunded(uint256 indexed _id, address _bidder, uint256 _bid, address _newBidder, uint256 _newOffer);
-    event BidRefundFailed(uint256 indexed _id, address _bidder, uint256 _bid);
+    event BidderRefundedFailed(uint256 indexed _id, address _bidder, uint256 _bid, address _newBidder, uint256 _newOffer);
 
     // Only a whitelisted smart contract in the access controls contract
     modifier onlyContract() {
@@ -821,6 +825,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     }
 
     function updateModulo(uint256 _modulo) public onlyAdmin {
+        require(_modulo > 0, "Modulo point cannot be zero");
         modulo = _modulo;
         emit AdminUpdateModulo(_modulo);
     }
@@ -854,16 +859,10 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
 
     function _refundBidder(uint256 _id, address _receiver, uint256 _paymentAmount, address _newBidder, uint256 _newOffer) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
-        require(success, "ETH refund failed");
-        emit BidderRefunded(_id, _receiver, _paymentAmount, _newBidder, _newOffer);
-    }
-
-    function _refundBidderIgnoreError(uint256 _id, address _receiver, uint256 _paymentAmount) internal {
-        (bool success,) = _receiver.call{value : _paymentAmount}("");
         if (!success) {
-            emit BidRefundFailed(_id, _receiver, _paymentAmount);
+            emit BidderRefunded(_id, _receiver, _paymentAmount, _newBidder, _newOffer);
         } else {
-            emit BidderRefunded(_id, _receiver, _paymentAmount, address(0), 0);
+            emit BidderRefundedFailed(_id, _receiver, _paymentAmount, _newBidder, _newOffer);
         }
     }
 
@@ -1410,7 +1409,9 @@ BuyNowMarketplace {
         require(offer.bidder != address(0), "No open bid");
 
         // send money back to top bidder
-        _refundBidderIgnoreError(_editionId, offer.bidder, offer.offer);
+        if (offer.offer > 0) {
+            _refundBidder(_editionId, offer.bidder, offer.offer, address(0), 0);
+        }
 
         emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
 
@@ -1652,7 +1653,7 @@ BuyNowMarketplace {
         return accessControls.hasContractRole(_msgSender());
     }
 
-    function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address _seller) internal override returns (uint256) {
+    function _processSale(uint256 _id, uint256 _paymentAmount, address _buyer, address) internal override returns (uint256) {
         return _facilitateNextPrimarySale(_id, _paymentAmount, _buyer, false);
     }
 

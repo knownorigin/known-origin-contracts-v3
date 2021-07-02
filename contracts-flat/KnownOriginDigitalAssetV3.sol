@@ -341,15 +341,21 @@ interface IKOAccessControlsLookup {
 pragma solidity 0.8.4;
 
 
-// This is purely an extension for the KO platform
-interface IERC2981HasRoyaltiesExtension {
+/// @notice This is purely an extension for the KO platform
+/// @notice Royalties on KO are defined at an edition level for all tokens from the same edition
+interface IERC2981EditionExtension {
+
+    /// @notice Does the edition have any royalties defined
     function hasRoyalties(uint256 _editionId) external view returns (bool);
+
+    /// @notice Get the royalty receiver - all royalties should be sent to this account if not zero address
+    function getRoyaltiesReceiver(uint256 _editionId) external view returns (address);
 }
 
 /**
  * ERC2981 standards interface for royalties
  */
-interface IERC2981 is IERC165, IERC2981HasRoyaltiesExtension {
+interface IERC2981 is IERC165, IERC2981EditionExtension {
     /// ERC165 bytes to add to interface array - set in parent contract
     /// implementing this standard
     ///
@@ -381,11 +387,11 @@ pragma solidity 0.8.4;
 
 interface IKODAV3Minter {
 
-    function mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri) external returns (uint256 _editionId);
+    function mintBatchEdition(uint16 _editionSize, address _to, string calldata _uri) external returns (uint256 _editionId);
 
-    function mintBatchEditionAndComposeERC20s(uint96 _editionSize, address _to, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts) external returns (uint256 _editionId);
+    function mintBatchEditionAndComposeERC20s(uint16 _editionSize, address _to, string calldata _uri, address[] calldata _erc20s, uint256[] calldata _amounts) external returns (uint256 _editionId);
 
-    function mintConsecutiveBatchEdition(uint96 _editionSize, address _to, string calldata _uri) external returns (uint256 _editionId);
+    function mintConsecutiveBatchEdition(uint16 _editionSize, address _to, string calldata _uri) external returns (uint256 _editionId);
 }
 
 // File: contracts/programmable/ITokenUriResolver.sol
@@ -394,12 +400,13 @@ interface IKODAV3Minter {
 
 pragma solidity 0.8.4;
 
-
 interface ITokenUriResolver {
 
-    function editionURI(uint256 _editionId) external view returns (string memory);
+    /// @notice Return the edition or token level URI - token level trumps edition level if found
+    function tokenURI(uint256 _editionId, uint256 _tokenId) external view returns (string memory);
 
-    function isDefined(uint256 _editionId) external view returns (bool);
+    /// @notice Do we have an edition level or token level token URI resolver set
+    function isDefined(uint256 _editionId, uint256 _tokenId) external view returns (bool);
 }
 
 // File: @openzeppelin/contracts/token/ERC20/IERC20.sol
@@ -1041,11 +1048,8 @@ interface IERC2309 {
 pragma solidity 0.8.4;
 
 
-/**
- * @notice Royalties formats required for use on the Rarible platform
- *
- * @notice https://docs.rarible.com/asset/royalties-schema
- */
+/// @title Royalties formats required for use on the Rarible platform
+/// @dev https://docs.rarible.com/asset/royalties-schema
 interface IHasSecondarySaleFees is IERC165 {
 
     event SecondarySaleFees(uint256 tokenId, address[] recipients, uint[] bps);
@@ -1066,6 +1070,7 @@ pragma solidity 0.8.4;
 
 
 
+/// @title Core KODA V3 functionality
 interface IKODAV3 is
 IERC165, // Contract introspection
 IERC721, // Core NFTs
@@ -1127,7 +1132,7 @@ IHasSecondarySaleFees // Rariable / Foundation royalties
 
     function getEditionIdOfToken(uint256 _tokenId) external pure returns (uint256 _editionId);
 
-    function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri);
+    function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint16 _size, uint256 _editionId, string memory _uri);
 
     function hadPrimarySaleOfToken(uint256 _tokenId) external view returns (bool);
 }
@@ -1353,10 +1358,7 @@ pragma solidity 0.8.4;
 contract Konstants {
 
     // Every edition always goes up in batches of 1000
-    uint256 public constant MAX_EDITION_SIZE = 1000;
-
-    // Max Edition ID KO can handle with this contract
-    uint96 public constant MAX_EDITION_ID = ~uint96(0);
+    uint16 public constant MAX_EDITION_SIZE = 1000;
 
     // magic method that defines the maximum range for an edition - this is fixed forever - tokens are minted in range
     function _editionFromTokenId(uint256 _tokenId) internal pure returns (uint256) {
@@ -1437,11 +1439,13 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     }
 
     function updateBasisPointsModulo(uint256 _basisPointsModulo) onlyAdmin public {
+        require(_basisPointsModulo > 0, "Basis point cannot be zero");
         basisPointsModulo = _basisPointsModulo;
         emit AdminUpdateBasisPointsModulo(_basisPointsModulo);
     }
 
     function updateModulo(uint256 _modulo) onlyAdmin public {
+        require(_modulo > 0, "Modulo point cannot be zero");
         modulo = _modulo;
         emit AdminUpdateModulo(_modulo);
     }
@@ -1480,7 +1484,7 @@ pragma solidity 0.8.4;
 
 
 /// @title A ERC-721 compliant contract which has a focus on being GAS efficient along with being able to support
-//// both unique tokens and multi-editions sharing common traits but of limited supply
+/// both unique tokens and multi-editions sharing common traits but of limited supply
 ///
 /// @author KnownOrigin Labs - https://knownorigin.io/
 ///
@@ -1518,7 +1522,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     struct EditionDetails {
         address creator; // primary edition/token creator
-        uint96 editionSize; // onchain edition size
+        uint16 editionSize; // onchain edition size
         string uri; // the referenced metadata
     }
 
@@ -1574,7 +1578,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     /// @notice Mints batches of tokens emitting multiple Transfer events
-    function mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri)
+    function mintBatchEdition(uint16 _editionSize, address _to, string calldata _uri)
     public
     override
     onlyContract
@@ -1585,7 +1589,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /// @notice Mints an edition token batch and composes ERC20s for every token in the edition
     /// @dev there is a limit on the number of ERC20s that can be embedded in an edition
     function mintBatchEditionAndComposeERC20s(
-        uint96 _editionSize,
+        uint16 _editionSize,
         address _to,
         string calldata _uri,
         address[] calldata _erc20s,
@@ -1604,7 +1608,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         }
     }
 
-    function _mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri) internal returns (uint256) {
+    function _mintBatchEdition(uint16 _editionSize, address _to, string calldata _uri) internal returns (uint256) {
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid edition size");
 
         uint256 start = generateNextEditionNumber();
@@ -1626,7 +1630,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     /// @notice Mints batches of tokens but emits a single ConsecutiveTransfer event EIP-2309
-    function mintConsecutiveBatchEdition(uint96 _editionSize, address _to, string calldata _uri)
+    function mintConsecutiveBatchEdition(uint16 _editionSize, address _to, string calldata _uri)
     public
     override
     onlyContract
@@ -1669,8 +1673,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     function editionURI(uint256 _editionId) public view returns (string memory) {
         require(_editionExists(_editionId), "Edition does not exist");
 
-        if (tokenUriResolverActive() && tokenUriResolver.isDefined(_editionId)) {
-            return tokenUriResolver.editionURI(_editionId);
+        // Here we are checking only that the edition has a edition level resolver - there may be a overiden token level resolver
+        if (tokenUriResolverActive() && tokenUriResolver.isDefined(_editionId, 0)) {
+            return tokenUriResolver.tokenURI(_editionId, 0);
         }
 
         return editionDetails[_editionId].uri;
@@ -1681,8 +1686,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         require(_exists(_tokenId), "Token does not exist");
         uint256 editionId = _editionFromTokenId(_tokenId);
 
-        if (tokenUriResolverActive() && tokenUriResolver.isDefined(editionId)) {
-            return tokenUriResolver.editionURI(editionId);
+        if (tokenUriResolverActive() && tokenUriResolver.isDefined(editionId, _tokenId)) {
+            return tokenUriResolver.tokenURI(editionId, _tokenId);
         }
 
         return editionDetails[editionId].uri;
@@ -1713,15 +1718,15 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     public
     override
     view
-    returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri) {
+    returns (address _originalCreator, address _owner, uint16 _size, uint256 _editionId, string memory _uri) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
         return (
-        edition.creator, // originCreator
-        _ownerOf(_tokenId, editionId), // owner
+        edition.creator,
+        _ownerOf(_tokenId, editionId),
+        edition.editionSize,
         editionId,
-        edition.editionSize, // size
-        edition.uri
+        tokenURI(_tokenId)
         );
     }
 
@@ -1817,9 +1822,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     function _royaltyInfo(uint256 _tokenId, uint256 _value) internal view returns (address _receiver, uint256 _royaltyAmount) {
         uint256 editionId = _editionFromTokenId(_tokenId);
-
         // If we have a registry and its defined, use it
         if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(editionId)) {
+            // Note: any registry must be edition aware so to only store one entry for all within the edition
             (_receiver, _royaltyAmount) = royaltiesRegistryProxy.royaltyInfo(editionId, _value);
         } else {
             // Fall back to KO defaults
@@ -1842,26 +1847,28 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     // Expanded method at edition level and expanding on the funds receiver and the creator
-    function royaltyAndCreatorInfo(uint256 _editionId, uint256 _value)
+    function royaltyAndCreatorInfo(uint256 _tokenId, uint256 _value)
     external
     view
     override
     returns (address receiver, address creator, uint256 royaltyAmount) {
-        address originalCreator = _getCreatorOfEdition(_editionId);
-
-        if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)) {
-            // Note: any registry must be edition aware so to only store one entry for all within the edition
-            (address _receiver, uint256 _royaltyAmount) = royaltiesRegistryProxy.royaltyInfo(_editionId, _value);
-            return (_receiver, originalCreator, _royaltyAmount);
-        }
-
-        return (originalCreator, originalCreator, (_value / modulo) * secondarySaleRoyalty);
+        address originalCreator = _getCreatorOfEdition(_editionFromTokenId(_tokenId));
+        (address _receiver, uint256 _royaltyAmount) = _royaltyInfo(_tokenId, _value);
+        return (_receiver, originalCreator, _royaltyAmount);
     }
 
-    function hasRoyalties(uint256 _tokenId) external override view returns (bool) {
-        require(exists(_tokenId), "Token does not exist");
-        return royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionFromTokenId(_tokenId))
-                || secondarySaleRoyalty > 0;
+    function hasRoyalties(uint256 _editionId) external override view returns (bool) {
+        require(_editionExists(_editionId), "Edition does not exist");
+        return royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)
+        || secondarySaleRoyalty > 0;
+    }
+
+    function getRoyaltiesReceiver(uint256 _tokenId) public override view returns (address) {
+        uint256 editionId = _editionFromTokenId(_tokenId);
+        if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(editionId)) {
+            return royaltiesRegistryProxy.getRoyaltiesReceiver(editionId);
+        }
+        return _getCreatorOfEdition(editionId);
     }
 
     function royaltyRegistryActive() public view returns (bool) {
@@ -1874,8 +1881,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     function getFeeRecipients(uint256 _tokenId) external view override returns (address payable[] memory) {
         address payable[] memory feeRecipients = new address payable[](1);
-        (address _receiver, ) = _royaltyInfo(_tokenId, 0);
-        feeRecipients[0] = payable(_receiver);
+        feeRecipients[0] = payable(getRoyaltiesReceiver(_tokenId));
         return feeRecipients;
     }
 
@@ -1931,8 +1937,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         address _creator = _getCreatorOfEdition(_editionId);
 
         if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)) {
-            // Note: we do not need the second value in tuple `_royaltyAmount` which is derived from the second arg to `royaltyInfo` and hence we pass 0
-            (address _receiver,) = royaltiesRegistryProxy.royaltyInfo(_editionId, 0);
+            address _receiver = royaltiesRegistryProxy.getRoyaltiesReceiver(_editionId);
             return (_receiver, _creator, _tokenId);
         }
 
@@ -1980,8 +1985,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         address _creator = _getCreatorOfEdition(_editionId);
 
         if (royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)) {
-            // Note: we do not need the second value in tuple `_royaltyAmount` which is derived from the second arg to `royaltyInfo` and hence we pass 0
-            (address _receiver,) = royaltiesRegistryProxy.royaltyInfo(_editionId, 0);
+            address _receiver = royaltiesRegistryProxy.getRoyaltiesReceiver(_editionId);
             return (_receiver, _creator, _tokenId);
         }
 
@@ -2011,6 +2015,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     /// @notice If all tokens in the edition have been sold
     function isEditionSoldOut(uint256 _editionId) public override view returns (bool) {
+        require(_editionExists(_editionId), "Edition does not exist");
         uint256 maxTokenId = _maxTokenIdOfEdition(_editionId);
 
         // low to high

@@ -786,7 +786,7 @@ IHasSecondarySaleFees // Rariable / Foundation royalties
 
     function getEditionIdOfToken(uint256 _tokenId) external pure returns (uint256 _editionId);
 
-    function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri);
+    function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint16 _size, uint256 _editionId, string memory _uri);
 
     function hadPrimarySaleOfToken(uint256 _tokenId) external view returns (bool);
 }
@@ -800,10 +800,7 @@ pragma solidity 0.8.4;
 contract Konstants {
 
     // Every edition always goes up in batches of 1000
-    uint256 public constant MAX_EDITION_SIZE = 1000;
-
-    // Max Edition ID KO can handle with this contract
-    uint96 public constant MAX_EDITION_ID = ~uint96(0);
+    uint16 public constant MAX_EDITION_SIZE = 1000;
 
     // magic method that defines the maximum range for an edition - this is fixed forever - tokens are minted in range
     function _editionFromTokenId(uint256 _tokenId) internal pure returns (uint256) {
@@ -836,7 +833,7 @@ interface IKOAccessControlsLookup {
 
 pragma solidity 0.8.4;
 
-/// @notice Common interface to the Royalties collaborations registry
+/// @notice Common interface to the edition royalties registry
 interface ICollabRoyaltiesRegistry {
 
     /// @notice Creates & deploys a new royalties recipient, cloning _handle and setting it up with the provided _recipients and _splits
@@ -916,6 +913,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     event RoyaltyAmountSet(uint256 royaltyAmount);
     event EmergencyClearRoyalty(uint256 editionId);
     event HandlerAdded(address handler);
+    event HandlerRemoved(address handler);
 
     // Normal Events
     event RoyaltyRecipientCreated(address creator, address handler, address deployedHandler, address[] recipients, uint256[] splits);
@@ -1007,6 +1005,17 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
 
         // Emit event
         emit HandlerAdded(_handler);
+    }
+
+    /// @notice Remove a cloneable funds handler
+    function removeHandler(address _handler)
+    external
+    onlyAdmin() {
+        // Store the beacon address by name
+        isHandlerWhitelisted[_handler] = false;
+
+        // Emit event
+        emit HandlerRemoved(_handler);
     }
 
     ////////////////////////////
