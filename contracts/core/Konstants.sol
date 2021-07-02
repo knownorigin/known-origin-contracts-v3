@@ -5,10 +5,7 @@ pragma solidity 0.8.4;
 contract Konstants {
 
     // Every edition always goes up in batches of 1000
-    uint256 public constant MAX_EDITION_SIZE = 1000;
-
-    // Max Edition ID KO can handle with this contract
-    uint96 public constant MAX_EDITION_ID = ~uint96(0);
+    uint16 public constant MAX_EDITION_SIZE = 1000;
 
     // magic method that defines the maximum range for an edition - this is fixed forever - tokens are minted in range
     function _editionFromTokenId(uint256 _tokenId) internal pure returns (uint256) {

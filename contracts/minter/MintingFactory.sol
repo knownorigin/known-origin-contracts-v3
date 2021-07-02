@@ -110,7 +110,7 @@ contract MintingFactory is Context {
 
     function mintBatchEdition(
         SaleType _saleType,
-        uint96 _editionSize,
+        uint16 _editionSize,
         uint128 _startDate,
         uint128 _basePrice,
         uint128 _stepPrice,
@@ -132,7 +132,7 @@ contract MintingFactory is Context {
     function mintBatchEditionAsProxy(
         address _creator,
         SaleType _saleType,
-        uint96 _editionSize,
+        uint16 _editionSize,
         uint128 _startDate,
         uint128 _basePrice,
         uint128 _stepPrice,
@@ -167,7 +167,7 @@ contract MintingFactory is Context {
         require(accessControls.isVerifiedArtist(_config[0], _msgSender(), _merkleProof), "Caller must have minter role");
         require(_config.length == 5, "Config must consist of 5 elements in the array");
 
-        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint96(_config[1]), _msgSender(), _uri, _erc20s, _amounts);
+        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint16(_config[1]), _msgSender(), _uri, _erc20s, _amounts);
 
         _setupSalesMechanic(editionId, _saleType, _config[2], _config[3], _config[4]);
         _recordSuccessfulMint(_msgSender());
@@ -190,7 +190,7 @@ contract MintingFactory is Context {
         require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
         require(_config.length == 4, "Config must consist of 4 elements in the array");
 
-        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint96(_config[0]), _creator, _uri, _erc20s, _amounts);
+        uint256 editionId = koda.mintBatchEditionAndComposeERC20s(uint16(_config[0]), _creator, _uri, _erc20s, _amounts);
 
         _setupSalesMechanic(editionId, _saleType, _config[1], _config[2], _config[3]);
         _recordSuccessfulMint(_creator);
@@ -198,7 +198,7 @@ contract MintingFactory is Context {
 
     function mintConsecutiveBatchEdition(
         SaleType _saleType,
-        uint96 _editionSize,
+        uint16 _editionSize,
         uint128 _startDate,
         uint128 _basePrice,
         uint128 _stepPrice,
@@ -220,7 +220,7 @@ contract MintingFactory is Context {
     function mintConsecutiveBatchEditionAsProxy(
         address _creator,
         SaleType _saleType,
-        uint96 _editionSize,
+        uint16 _editionSize,
         uint128 _startDate,
         uint128 _basePrice,
         uint128 _stepPrice,

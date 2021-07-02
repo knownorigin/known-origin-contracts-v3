@@ -71,11 +71,13 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     }
 
     function updateBasisPointsModulo(uint256 _basisPointsModulo) onlyAdmin public {
+        require(_basisPointsModulo > 0, "Basis point cannot be zero");
         basisPointsModulo = _basisPointsModulo;
         emit AdminUpdateBasisPointsModulo(_basisPointsModulo);
     }
 
     function updateModulo(uint256 _modulo) onlyAdmin public {
+        require(_modulo > 0, "Modulo point cannot be zero");
         modulo = _modulo;
         emit AdminUpdateModulo(_modulo);
     }

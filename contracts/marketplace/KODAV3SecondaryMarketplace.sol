@@ -231,7 +231,9 @@ ReserveAuctionMarketplace {
         require(offer.bidder != address(0), "No open bid");
 
         // send money back to top bidder
-        _refundBidderIgnoreError(_tokenId, offer.bidder, offer.offer);
+        if (offer.offer > 0) {
+            _refundBidder(_tokenId, offer.bidder, offer.offer, address(0), 0);
+        }
 
         // delete offer
         delete tokenBids[_tokenId];
@@ -323,7 +325,7 @@ ReserveAuctionMarketplace {
         return !isApprovalActiveForMarketplace || koda.ownerOf(_id) != editionOrTokenWithReserveAuctions[_id].seller;
     }
 
-    function _isBuyNowListingPermitted(uint256 _tokenId) internal view  override returns (bool) {
+    function _isBuyNowListingPermitted(uint256 _tokenId) internal view override returns (bool) {
         return koda.ownerOf(_tokenId) == _msgSender();
     }
 
