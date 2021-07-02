@@ -22,7 +22,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     event AdminRecoverETH(address payable indexed _recipient, uint256 _amount);
 
     event BidderRefunded(uint256 indexed _id, address _bidder, uint256 _bid, address _newBidder, uint256 _newOffer);
-    event BidRefundFailed(uint256 indexed _id, address _bidder, uint256 _bid);
+    event BidderRefundedFailed(uint256 indexed _id, address _bidder, uint256 _bid, address _newBidder, uint256 _newOffer);
 
     // Only a whitelisted smart contract in the access controls contract
     modifier onlyContract() {
@@ -85,6 +85,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     }
 
     function updateModulo(uint256 _modulo) public onlyAdmin {
+        require(_modulo > 0, "Modulo point cannot be zero");
         modulo = _modulo;
         emit AdminUpdateModulo(_modulo);
     }
@@ -118,16 +119,10 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
 
     function _refundBidder(uint256 _id, address _receiver, uint256 _paymentAmount, address _newBidder, uint256 _newOffer) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
-        require(success, "ETH refund failed");
-        emit BidderRefunded(_id, _receiver, _paymentAmount, _newBidder, _newOffer);
-    }
-
-    function _refundBidderIgnoreError(uint256 _id, address _receiver, uint256 _paymentAmount) internal {
-        (bool success,) = _receiver.call{value : _paymentAmount}("");
         if (!success) {
-            emit BidRefundFailed(_id, _receiver, _paymentAmount);
+            emit BidderRefunded(_id, _receiver, _paymentAmount, _newBidder, _newOffer);
         } else {
-            emit BidderRefunded(_id, _receiver, _paymentAmount, address(0), 0);
+            emit BidderRefundedFailed(_id, _receiver, _paymentAmount, _newBidder, _newOffer);
         }
     }
 

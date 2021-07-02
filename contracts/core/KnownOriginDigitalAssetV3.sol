@@ -52,7 +52,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     struct EditionDetails {
         address creator; // primary edition/token creator
-        uint96 editionSize; // onchain edition size
+        uint16 editionSize; // onchain edition size
         string uri; // the referenced metadata
     }
 
@@ -108,7 +108,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     /// @notice Mints batches of tokens emitting multiple Transfer events
-    function mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri)
+    function mintBatchEdition(uint16 _editionSize, address _to, string calldata _uri)
     public
     override
     onlyContract
@@ -119,7 +119,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /// @notice Mints an edition token batch and composes ERC20s for every token in the edition
     /// @dev there is a limit on the number of ERC20s that can be embedded in an edition
     function mintBatchEditionAndComposeERC20s(
-        uint96 _editionSize,
+        uint16 _editionSize,
         address _to,
         string calldata _uri,
         address[] calldata _erc20s,
@@ -138,7 +138,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         }
     }
 
-    function _mintBatchEdition(uint96 _editionSize, address _to, string calldata _uri) internal returns (uint256) {
+    function _mintBatchEdition(uint16 _editionSize, address _to, string calldata _uri) internal returns (uint256) {
         require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid edition size");
 
         uint256 start = generateNextEditionNumber();
@@ -160,7 +160,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     /// @notice Mints batches of tokens but emits a single ConsecutiveTransfer event EIP-2309
-    function mintConsecutiveBatchEdition(uint96 _editionSize, address _to, string calldata _uri)
+    function mintConsecutiveBatchEdition(uint16 _editionSize, address _to, string calldata _uri)
     public
     override
     onlyContract
@@ -248,15 +248,15 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     public
     override
     view
-    returns (address _originalCreator, address _owner, uint256 _editionId, uint256 _size, string memory _uri) {
+    returns (address _originalCreator, address _owner, uint16 _size, uint256 _editionId, string memory _uri) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         EditionDetails storage edition = editionDetails[editionId];
         return (
-        edition.creator, // originCreator
-        _ownerOf(_tokenId, editionId), // owner
+        edition.creator,
+        _ownerOf(_tokenId, editionId),
+        edition.editionSize,
         editionId,
-        edition.editionSize, // size
-        edition.uri
+        tokenURI(_tokenId)
         );
     }
 
@@ -545,6 +545,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     /// @notice If all tokens in the edition have been sold
     function isEditionSoldOut(uint256 _editionId) public override view returns (bool) {
+        require(_editionExists(_editionId), "Edition does not exist");
         uint256 maxTokenId = _maxTokenIdOfEdition(_editionId);
 
         // low to high

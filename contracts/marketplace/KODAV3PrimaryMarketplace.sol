@@ -214,7 +214,9 @@ BuyNowMarketplace {
         require(offer.bidder != address(0), "No open bid");
 
         // send money back to top bidder
-        _refundBidderIgnoreError(_editionId, offer.bidder, offer.offer);
+        if(offer.offer > 0) {
+            _refundBidder(_editionId, offer.bidder, offer.offer, address(0), 0);
+        }
 
         emit EditionBidRejected(_editionId, offer.bidder, offer.offer);
 
