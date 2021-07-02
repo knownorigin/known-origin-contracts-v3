@@ -325,7 +325,7 @@ ReserveAuctionMarketplace {
         return !isApprovalActiveForMarketplace || koda.ownerOf(_id) != editionOrTokenWithReserveAuctions[_id].seller;
     }
 
-    function _isBuyNowListingPermitted(uint256 _tokenId) internal view  override returns (bool) {
+    function _isBuyNowListingPermitted(uint256 _tokenId) internal view override returns (bool) {
         return koda.ownerOf(_tokenId) == _msgSender();
     }
 
