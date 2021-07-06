@@ -46,6 +46,49 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     // Token ID -> ERC20 contract -> balance of ERC20 owned by token
     mapping(uint256 => mapping(address => uint256)) public ERC20Balances;
 
+    struct ComposedNFT {
+        address nft;
+        uint256 tokenId;
+    }
+
+    // KODA Token ID -> composed nft
+    mapping(uint256 => ComposedNFT) public kodaTokenComposedNFT;
+
+    // External NFT address -> External Token ID -> KODA token ID
+    mapping(address => mapping(uint256 => uint256)) public composedNFTsToKodaToken;
+
+    event ReceivedChild(address indexed _from, uint256 indexed _tokenId, address indexed _childContract, uint256 _childTokenId);
+    event TransferChild(uint256 indexed tokenId, address indexed _to, address indexed _childContract, uint256 _childTokenId);
+
+    function composeNFTIntoKodaToken(uint256 _kodaTokenId, address _nft, uint256 _nftTokenId) external {
+        require(_nft != address(0), "Invalid NFT address");
+        require(kodaTokenComposedNFT[_kodaTokenId].nft == address(0), "KODA has reached limit of 1 composed NFT");
+
+        IERC721 nftContract = IERC721(_nft);
+        IERC721 self = IERC721(address(this));
+        require(self.ownerOf(_kodaTokenId) == nftContract.ownerOf(_nftTokenId), "Need to own both KODA and child NFT");
+
+        kodaTokenComposedNFT[_kodaTokenId] = ComposedNFT(_nft, _nftTokenId);
+        composedNFTsToKodaToken[_nft][_nftTokenId] = _kodaTokenId;
+
+        nftContract.transferFrom(_msgSender(), address(this), _nftTokenId);
+        emit ReceivedChild(_msgSender(), _kodaTokenId, _nft, _nftTokenId);
+    }
+
+    function transferChildNFT(uint256 _kodaTokenId, address _recipient) external {
+        IERC721 self = IERC721(address(this));
+        require(self.ownerOf(_kodaTokenId) == _msgSender(), "Only KODA owner");
+
+        address nft = kodaTokenComposedNFT[_kodaTokenId].nft;
+        uint256 nftId = kodaTokenComposedNFT[_kodaTokenId].tokenId;
+        IERC721(nft).transferFrom(address(this), _recipient, nftId);
+
+        delete kodaTokenComposedNFT[_kodaTokenId];
+        delete composedNFTsToKodaToken[nft][nftId];
+
+        emit TransferChild(_kodaTokenId, _recipient, nft, nftId);
+    }
+
     /// @notice the ERC20 balance of a NFT token given an ERC20 token address
     function balanceOfERC20(uint256 _tokenId, address _erc20Contract) public override view returns (uint256) {
         IKODAV3 koda = IKODAV3(address(this));
