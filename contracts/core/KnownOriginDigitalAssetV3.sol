@@ -11,6 +11,7 @@ import {IERC2981} from "./IERC2981.sol";
 import {IKODAV3Minter} from "./IKODAV3Minter.sol";
 import {ITokenUriResolver} from "../programmable/ITokenUriResolver.sol";
 import {TopDownERC20Composable} from "./composable/TopDownERC20Composable.sol";
+import {TopDownSimpleERC721Composable} from "./composable/TopDownSimpleERC721Composable.sol";
 import {BaseKoda} from "./BaseKoda.sol";
 
 /// @title A ERC-721 compliant contract which has a focus on being GAS efficient along with being able to support
@@ -22,7 +23,12 @@ import {BaseKoda} from "./BaseKoda.sol";
 /// @notice EIP-2981 Royalties Standard
 /// @notice EIP-2309 Consecutive batch mint
 /// @notice ERC-998 Top-down ERC-20 composable
-contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165Storage, IKODAV3Minter {
+contract KnownOriginDigitalAssetV3 is
+    TopDownERC20Composable,
+    TopDownSimpleERC721Composable,
+    BaseKoda,
+    ERC165Storage,
+    IKODAV3Minter {
 
     event EditionURIUpdated(uint256 indexed _editionId);
     event EditionSalesDisabledToggled(uint256 indexed _editionId, bool _oldValue, bool _newValue);
