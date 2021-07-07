@@ -27,8 +27,10 @@ abstract contract TopDownSimpleERC721Composable is Context {
         require(kodaTokenComposedNFT[_kodaTokenId].nft == address(0), "KODA has reached limit of 1 composed NFT");
 
         IERC721 nftContract = IERC721(_nft);
-        IERC721 self = IERC721(address(this));
-        require(self.ownerOf(_kodaTokenId) == nftContract.ownerOf(_nftTokenId), "Need to own both KODA and child NFT");
+        require(
+            IERC721(address(this)).ownerOf(_kodaTokenId) == nftContract.ownerOf(_nftTokenId),
+            "Need to own both KODA and child NFT"
+        );
 
         kodaTokenComposedNFT[_kodaTokenId] = ComposedNFT(_nft, _nftTokenId);
         composedNFTsToKodaToken[_nft][_nftTokenId] = _kodaTokenId;
@@ -40,8 +42,10 @@ abstract contract TopDownSimpleERC721Composable is Context {
     /// @notice Transfer a child 721 wrapped within a KODA token to a given recipient
     /// @notice only KODA token owner can call this
     function transferChild(uint256 _kodaTokenId, address _recipient) external {
-        IERC721 self = IERC721(address(this));
-        require(self.ownerOf(_kodaTokenId) == _msgSender(), "Only KODA owner");
+        require(
+            IERC721(address(this)).ownerOf(_kodaTokenId) == _msgSender(),
+            "Only KODA owner"
+        );
 
         address nft = kodaTokenComposedNFT[_kodaTokenId].nft;
         uint256 nftId = kodaTokenComposedNFT[_kodaTokenId].tokenId;
