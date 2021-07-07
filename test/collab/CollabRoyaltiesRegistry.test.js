@@ -156,12 +156,12 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
         );
       });
 
-      it('reverts if funds handler name already registered', async () => {
+      it('reverts if funds handler already registered', async () => {
         await royaltiesRegistry.addHandler(claimableFundsReceiverV1.address, {from: admin});
         await expectRevert(
           royaltiesRegistry.addHandler(
             claimableFundsReceiverV1.address, {from: admin}),
-          'Handler name already registered'
+          'Handler already registered'
         );
       });
 
