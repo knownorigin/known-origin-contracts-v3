@@ -105,10 +105,10 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     external
     onlyAdmin() {
 
-        // Revert if handler exists with given name
-        require(isHandlerWhitelisted[_handler] == false, "Handler name already registered");
+        // Revert if handler already whitelisted
+        require(isHandlerWhitelisted[_handler] == false, "Handler already registered");
 
-        // Store the beacon address by name
+        // whitelist handler
         isHandlerWhitelisted[_handler] = true;
 
         // Emit event
@@ -119,7 +119,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     function removeHandler(address _handler)
     external
     onlyAdmin() {
-        // Store the beacon address by name
+        // remove handler from whitelist
         isHandlerWhitelisted[_handler] = false;
 
         // Emit event
