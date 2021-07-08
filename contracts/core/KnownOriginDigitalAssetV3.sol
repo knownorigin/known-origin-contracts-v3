@@ -813,7 +813,10 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     /// @notice Optional metadata storage slot which allows a token owner to set an additional metadata blob on the token
     function lockInAdditionalTokenMetaData(uint256 _tokenId, string calldata _metadata) external {
-        require(_msgSender() == ownerOf(_tokenId), "Unable to set when not owner");
+        require(
+            _msgSender() == ownerOf(_tokenId) || accessControls.hasContractRole(_msgSender()),
+            "Unable to set when not owner or contract"
+        );
         require(bytes(sealedTokenMetaData[_tokenId]).length == 0, "can only be set once");
         sealedTokenMetaData[_tokenId] = _metadata;
         emit SealedTokenMetaDataSet(_tokenId);
