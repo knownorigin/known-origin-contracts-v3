@@ -997,10 +997,10 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     external
     onlyAdmin() {
 
-        // Revert if handler exists with given name
-        require(isHandlerWhitelisted[_handler] == false, "Handler name already registered");
+        // Revert if handler already whitelisted
+        require(isHandlerWhitelisted[_handler] == false, "Handler already registered");
 
-        // Store the beacon address by name
+        // whitelist handler
         isHandlerWhitelisted[_handler] = true;
 
         // Emit event
@@ -1011,7 +1011,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     function removeHandler(address _handler)
     external
     onlyAdmin() {
-        // Store the beacon address by name
+        // remove handler from whitelist
         isHandlerWhitelisted[_handler] = false;
 
         // Emit event
@@ -1023,6 +1023,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     ////////////////////////////
 
     // TODO proxy minters?
+    // TODO should non-artists be able to create as well?
 
     /// @notice Sets up a royalties funds handler
     /// @dev Can only be called once with the same args as this creates a new contract and we dont want to

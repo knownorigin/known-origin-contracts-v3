@@ -115,7 +115,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           '1',
           {from: owner}
         ),
-        "KODA has reached limit of 1 composed NFT"
+        "Max 1 NFT"
       )
     })
 
@@ -131,7 +131,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           '1',
           {from: owner}
         ),
-        "Need to own both KODA and child NFT"
+        "Need to own both tokens"
       )
     })
 
@@ -145,7 +145,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           '1',
           {from: owner}
         ),
-        "Need to own both KODA and child NFT"
+        "Need to own both tokens"
       )
     })
 

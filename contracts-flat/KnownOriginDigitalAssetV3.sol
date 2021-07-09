@@ -1231,7 +1231,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
             owner == spender || self.isApprovedForAll(owner, spender) || self.getApproved(_tokenId) == spender,
             "Only token owner"
         );
-        require(_from == _msgSender(), "ERC20 owner must be the token owner");
+        require(_from == _msgSender(), "Must be token owner");
 
         IKODAV3 koda = IKODAV3(address(this));
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
@@ -1346,6 +1346,67 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
                 ERC20sEmbeddedInEdition[editionId].remove(_erc20Contract);
             }
         }
+    }
+}
+
+// File: contracts/core/composable/TopDownSimpleERC721Composable.sol
+
+
+
+pragma solidity 0.8.4;
+
+
+
+abstract contract TopDownSimpleERC721Composable is Context {
+    struct ComposedNFT {
+        address nft;
+        uint256 tokenId;
+    }
+
+    // KODA Token ID -> composed nft
+    mapping(uint256 => ComposedNFT) public kodaTokenComposedNFT;
+
+    // External NFT address -> External Token ID -> KODA token ID
+    mapping(address => mapping(uint256 => uint256)) public composedNFTsToKodaToken;
+
+    event ReceivedChild(address indexed _from, uint256 indexed _tokenId, address indexed _childContract, uint256 _childTokenId);
+    event TransferChild(uint256 indexed _tokenId, address indexed _to, address indexed _childContract, uint256 _childTokenId);
+
+    /// @notice compose a child ERC721 into a KODA token
+    /// @notice Caller must own both KODA and child NFT tokens
+    function composeNFTIntoKodaToken(uint256 _kodaTokenId, address _nft, uint256 _nftTokenId) external {
+        require(kodaTokenComposedNFT[_kodaTokenId].nft == address(0), "Max 1 NFT");
+
+        IERC721 nftContract = IERC721(_nft);
+        require(
+            IERC721(address(this)).ownerOf(_kodaTokenId) == nftContract.ownerOf(_nftTokenId),
+            "Need to own both tokens"
+        );
+
+        kodaTokenComposedNFT[_kodaTokenId] = ComposedNFT(_nft, _nftTokenId);
+        composedNFTsToKodaToken[_nft][_nftTokenId] = _kodaTokenId;
+
+        nftContract.transferFrom(_msgSender(), address(this), _nftTokenId);
+        emit ReceivedChild(_msgSender(), _kodaTokenId, _nft, _nftTokenId);
+    }
+
+    /// @notice Transfer a child 721 wrapped within a KODA token to a given recipient
+    /// @notice only KODA token owner can call this
+    function transferChild(uint256 _kodaTokenId, address _recipient) external {
+        require(
+            IERC721(address(this)).ownerOf(_kodaTokenId) == _msgSender(),
+            "Only KODA owner"
+        );
+
+        address nft = kodaTokenComposedNFT[_kodaTokenId].nft;
+        uint256 nftId = kodaTokenComposedNFT[_kodaTokenId].tokenId;
+
+        delete kodaTokenComposedNFT[_kodaTokenId];
+        delete composedNFTsToKodaToken[nft][nftId];
+
+        IERC721(nft).transferFrom(address(this), _recipient, nftId);
+
+        emit TransferChild(_kodaTokenId, _recipient, nft, nftId);
     }
 }
 
@@ -1483,6 +1544,7 @@ pragma solidity 0.8.4;
 
 
 
+
 /// @title A ERC-721 compliant contract which has a focus on being GAS efficient along with being able to support
 /// both unique tokens and multi-editions sharing common traits but of limited supply
 ///
@@ -1492,7 +1554,12 @@ pragma solidity 0.8.4;
 /// @notice EIP-2981 Royalties Standard
 /// @notice EIP-2309 Consecutive batch mint
 /// @notice ERC-998 Top-down ERC-20 composable
-contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165Storage, IKODAV3Minter {
+contract KnownOriginDigitalAssetV3 is
+    TopDownERC20Composable,
+    TopDownSimpleERC721Composable,
+    BaseKoda,
+    ERC165Storage,
+    IKODAV3Minter {
 
     event EditionURIUpdated(uint256 indexed _editionId);
     event EditionSalesDisabledToggled(uint256 indexed _editionId, bool _oldValue, bool _newValue);
@@ -1501,6 +1568,15 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     event AdditionalEditionUnlockableSet(uint256 indexed _editionId);
     event AdminRoyaltiesRegistryProxySet(address indexed _royaltiesRegistryProxy);
     event AdminTokenUriResolverSet(address indexed _tokenUriResolver);
+
+    modifier validateEdition(uint256 _editionId) {
+        _validateEdition(_editionId);
+        _;
+    }
+
+    function _validateEdition(uint256 _editionId) private view {
+        require(_editionExists(_editionId), "Edition does not exist");
+    }
 
     /// @notice Token name
     string public constant name = "KnownOriginDigitalAsset";
@@ -1656,7 +1732,10 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     /// @notice Allows the creator of an edition to update the token URI provided that no primary sales have been made
     function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external override {
         require(_msgSender() == editionDetails[_editionId].creator, "Not creator");
-        require(!hasMadePrimarySale(_editionId), "Edition has had primary sale");
+        require(
+            !hasMadePrimarySale(_editionId) && (!tokenUriResolverActive() || !tokenUriResolver.isDefined(_editionId, 0)),
+            "Invalid Edition state"
+        );
 
         editionDetails[_editionId].uri = _newURI;
 
@@ -1670,10 +1749,9 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     /// @notice URI for an edition. Individual tokens in an edition will have this URI when tokenURI() is called
-    function editionURI(uint256 _editionId) public view returns (string memory) {
-        require(_editionExists(_editionId), "Edition does not exist");
+    function editionURI(uint256 _editionId) validateEdition(_editionId) public view returns (string memory) {
 
-        // Here we are checking only that the edition has a edition level resolver - there may be a overiden token level resolver
+        // Here we are checking only that the edition has a edition level resolver - there may be a overridden token level resolver
         if (tokenUriResolverActive() && tokenUriResolver.isDefined(_editionId, 0)) {
             return tokenUriResolver.tokenURI(_editionId, 0);
         }
@@ -1741,9 +1819,8 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     /// @notice Toggle for disabling primary sales for an edition
-    function toggleEditionSalesDisabled(uint256 _editionId) external override {
+    function toggleEditionSalesDisabled(uint256 _editionId) validateEdition(_editionId) external override {
         address creator = editionDetails[_editionId].creator;
-        require(_editionExists(_editionId), "Edition does not exist");
 
         require(
             creator == _msgSender() || accessControls.hasAdminRole(_msgSender()),
@@ -1857,8 +1934,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
         return (_receiver, originalCreator, _royaltyAmount);
     }
 
-    function hasRoyalties(uint256 _editionId) external override view returns (bool) {
-        require(_editionExists(_editionId), "Edition does not exist");
+    function hasRoyalties(uint256 _editionId) validateEdition(_editionId) external override view returns (bool) {
         return royaltyRegistryActive() && royaltiesRegistryProxy.hasRoyalties(_editionId)
         || secondarySaleRoyalty > 0;
     }
@@ -1897,8 +1973,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     ////////////////////////////////////
 
     /// @notice List of token IDs that are still with the original creator
-    function getAllUnsoldTokenIdsForEdition(uint256 _editionId) public view returns (uint256[] memory) {
-        require(_editionExists(_editionId), "Edition does not exist");
+    function getAllUnsoldTokenIdsForEdition(uint256 _editionId) validateEdition(_editionId) public view returns (uint256[] memory) {
         uint256 maxTokenId = _maxTokenIdOfEdition(_editionId);
 
         // work out number of unsold tokens in order to allocate memory to an array later
@@ -1998,8 +2073,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     /// @notice If any token in the edition has been sold
-    function hasMadePrimarySale(uint256 _editionId) public override view returns (bool) {
-        require(_editionExists(_editionId), "Edition does not exist");
+    function hasMadePrimarySale(uint256 _editionId) validateEdition(_editionId) public override view returns (bool) {
         uint256 maxTokenId = _maxTokenIdOfEdition(_editionId);
 
         // low to high
@@ -2014,8 +2088,7 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
     }
 
     /// @notice If all tokens in the edition have been sold
-    function isEditionSoldOut(uint256 _editionId) public override view returns (bool) {
-        require(_editionExists(_editionId), "Edition does not exist");
+    function isEditionSoldOut(uint256 _editionId) validateEdition(_editionId) public override view returns (bool) {
         uint256 maxTokenId = _maxTokenIdOfEdition(_editionId);
 
         // low to high
@@ -2283,7 +2356,10 @@ contract KnownOriginDigitalAssetV3 is TopDownERC20Composable, BaseKoda, ERC165St
 
     /// @notice Optional metadata storage slot which allows a token owner to set an additional metadata blob on the token
     function lockInAdditionalTokenMetaData(uint256 _tokenId, string calldata _metadata) external {
-        require(_msgSender() == ownerOf(_tokenId), "Unable to set when not owner");
+        require(
+            _msgSender() == ownerOf(_tokenId) || accessControls.hasContractRole(_msgSender()),
+            "Unable to set when not owner or contract"
+        );
         require(bytes(sealedTokenMetaData[_tokenId]).length == 0, "can only be set once");
         sealedTokenMetaData[_tokenId] = _metadata;
         emit SealedTokenMetaDataSet(_tokenId);

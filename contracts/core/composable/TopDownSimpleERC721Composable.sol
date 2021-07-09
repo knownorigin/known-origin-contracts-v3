@@ -23,13 +23,12 @@ abstract contract TopDownSimpleERC721Composable is Context {
     /// @notice compose a child ERC721 into a KODA token
     /// @notice Caller must own both KODA and child NFT tokens
     function composeNFTIntoKodaToken(uint256 _kodaTokenId, address _nft, uint256 _nftTokenId) external {
-        require(_nft != address(0), "Invalid NFT address");
-        require(kodaTokenComposedNFT[_kodaTokenId].nft == address(0), "KODA has reached limit of 1 composed NFT");
+        require(kodaTokenComposedNFT[_kodaTokenId].nft == address(0), "Max 1 NFT");
 
         IERC721 nftContract = IERC721(_nft);
         require(
             IERC721(address(this)).ownerOf(_kodaTokenId) == nftContract.ownerOf(_nftTokenId),
-            "Need to own both KODA and child NFT"
+            "Need to own both tokens"
         );
 
         kodaTokenComposedNFT[_kodaTokenId] = ComposedNFT(_nft, _nftTokenId);
