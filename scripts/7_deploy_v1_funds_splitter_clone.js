@@ -7,6 +7,8 @@ async function main() {
   const {name: network} = hre.network;
   console.log(`Running on network [${network}]`);
 
+  // TODO deploy this via KOCreate2OmniDeployer.sol so it has the same address on all networks
+
   const ClaimableFundsSplitterV1 = await ethers.getContractFactory('ClaimableFundsSplitterV1');
   const fundsSplitterV1 = await ClaimableFundsSplitterV1.deploy();
   await fundsSplitterV1.deployed();
