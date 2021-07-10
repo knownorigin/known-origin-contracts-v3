@@ -94,7 +94,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     it('reverts if nft is zero address', async () => {
       await expectRevert(
         this.token.composeNFTIntoKodaToken(firstEditionTokenId, ZERO_ADDRESS, '1'),
-        "Invalid NFT address"
+        "function call to a non-contract account"
       )
     })
 
