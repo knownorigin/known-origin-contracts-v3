@@ -1,5 +1,7 @@
 const hre = require('hardhat');
 
+const KOCreate2OmniDeployer = require('../artifacts/contracts/deployer/KOCreate2OmniDeployer.sol/KOCreate2OmniDeployer.json');
+
 async function main() {
   const [deployer] = await ethers.getSigners();
   console.log('Deploying V1 funds splitter with account:', await deployer.getAddress());
