@@ -1,5 +1,7 @@
+const prompt = require('prompt-sync')();
 const hre = require('hardhat');
 
+const ClaimableFundsSplitterV1 = require('../artifacts/contracts/collab/handlers/ClaimableFundsSplitterV1.sol/ClaimableFundsSplitterV1.json')
 const KOCreate2OmniDeployer = require('../artifacts/contracts/deployer/KOCreate2OmniDeployer.sol/KOCreate2OmniDeployer.json');
 
 async function main() {
@@ -9,12 +11,15 @@ async function main() {
   const {name: network} = hre.network;
   console.log(`Running on network [${network}]`);
 
-  // TODO deploy this via KOCreate2OmniDeployer.sol so it has the same address on all networks
+  const omniDeployerAddress = prompt(`Omni deployer address? `)
+  const omniDeployer = new ethers.Contract(
+    omniDeployerAddress,
+    KOCreate2OmniDeployer.abi,
+    deployer
+  )
 
-  const ClaimableFundsSplitterV1 = await ethers.getContractFactory('ClaimableFundsSplitterV1');
-  const fundsSplitterV1 = await ClaimableFundsSplitterV1.deploy();
-  await fundsSplitterV1.deployed();
-  console.log('V1 funds split deployed at:', fundsSplitterV1.address);
+  const salt = prompt(`Salt? `)
+  await omniDeployer.deploy(ClaimableFundsSplitterV1.bytecode, salt)
 
   console.log('Finished!');
 }

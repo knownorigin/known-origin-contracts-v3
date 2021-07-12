@@ -1,9 +1,8 @@
-const prompt = require('prompt-sync')();
 const hre = require('hardhat');
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  console.log('Deploying minting factory with the account:', await deployer.getAddress());
+  console.log('Deploying omni deployer with the account:', await deployer.getAddress());
 
   const {name: network} = hre.network;
   console.log(`Running on network [${network}]`);
