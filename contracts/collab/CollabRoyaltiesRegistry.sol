@@ -130,9 +130,6 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     /// Royalties setup logic //
     ////////////////////////////
 
-    // TODO proxy minters?
-    // TODO should non-artists be able to create as well?
-
     /// @notice Sets up a royalties funds handler
     /// @dev Can only be called once with the same args as this creates a new contract and we dont want to
     ///      override any currently deployed instance
