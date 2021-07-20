@@ -18,7 +18,9 @@ async function main() {
     deployer
   )
 
-  const salt = prompt(`Salt? `)
+  const salt = ethers.utils.keccak256("ClaimableFundsReceiverV1");
+  prompt(`Using keccak256("ClaimableFundsReceiverV1") to generate [${salt}] - click enter to continue ... ?`);
+
   await omniDeployer.deploy(ClaimableFundsReceiverV1.bytecode, salt)
 
   console.log('Finished!');
