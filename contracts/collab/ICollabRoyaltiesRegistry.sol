@@ -6,8 +6,6 @@ interface ICollabRoyaltiesRegistry {
 
     /// @notice Creates & deploys a new royalties recipient, cloning _handle and setting it up with the provided _recipients and _splits
     function createRoyaltiesRecipient(
-        uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof,
         address _handler,
         address[] calldata _recipients,
         uint256[] calldata _splits

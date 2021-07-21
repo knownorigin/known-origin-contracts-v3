@@ -641,8 +641,6 @@ contract('MinterFactory', function (accounts) {
 
       // Deploy a funds splitter
       let receipt = await royaltiesRegistry.createRoyaltiesRecipient(
-        this.artistProofIndex,
-        this.artistProof,
         claimableFundsReceiverV1.address,
         RECIPIENTS,
         SPLITS,

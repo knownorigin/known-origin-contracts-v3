@@ -135,8 +135,6 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     ///      override any currently deployed instance
     /// @dev Can only be called by an approved artist
     function createRoyaltiesRecipient(
-        uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof,
         address _handler,
         address[] calldata _recipients,
         uint256[] calldata _splits
@@ -145,9 +143,6 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     override
     whenNotPaused
     returns (address deployedHandler) {
-        // Ensure only artists can call this
-        require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
-
         validateHandlerArgs(_handler, _recipients, _splits);
 
         // Clone funds handler as Minimal deployedHandler with a deterministic address

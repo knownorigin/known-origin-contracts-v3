@@ -15,10 +15,11 @@ const MockNFT = artifacts.require('MockNFT');
 
 contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accounts) {
 
-  const [owner, minter, koCommission, contract, random] = accounts;
+  const [owner, anotherOwner, contract, random] = accounts;
 
   const STARTING_EDITION = '10000';
   const firstEditionTokenId = new BN('11000');
+  const secondEditionTokenId = new BN('12000');
 
   const to18DP = (value) => {
     return new BN(value).mul(new BN('10').pow(new BN('18')));
@@ -54,6 +55,10 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     // mint some NFTs
     await this.token.mintBatchEdition(1, owner, 'random', {from: contract})
     await this.otherToken.mint(owner, '1', {from: owner})
+
+    // mint some NFTs
+    await this.token.mintBatchEdition(1, anotherOwner, 'random', {from: contract})
+    await this.otherToken.mint(anotherOwner, '2', {from: anotherOwner})
   });
 
   describe('composeNFTIntoKodaToken', () => {
@@ -170,6 +175,18 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           {from: owner}
         ),
         "ERC721: owner query for nonexistent token"
+      )
+    })
+
+    it.only('Reverts when does not own either token', async () => {
+      await expectRevert(
+        this.token.composeNFTIntoKodaToken(
+          secondEditionTokenId,
+          this.otherToken.address,
+          '2',
+          {from: owner}
+        ),
+        "ERC721: transfer caller is not owner nor approved"
       )
     })
   })
