@@ -178,7 +178,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
       )
     })
 
-    it.only('Reverts when does not own either token', async () => {
+    it('Reverts when does not own either token', async () => {
       await expectRevert(
         this.token.composeNFTIntoKodaToken(
           secondEditionTokenId,
