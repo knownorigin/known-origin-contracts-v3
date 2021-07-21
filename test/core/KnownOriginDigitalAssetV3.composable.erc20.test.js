@@ -546,7 +546,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           ONE_THOUSAND_TOKENS,
           {from: owner}
         ),
-        "ERC20 owner must be the token owner"
+        "Must be token owner"
       )
     })
 

@@ -11,6 +11,7 @@ const KODAV3Marketplace = artifacts.require('KODAV3PrimaryMarketplace');
 const SimpleIERC2981 = artifacts.require('SimpleIERC2981');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 const MockERC20 = artifacts.require('MockERC20');
+const MockTokenUriResolver = artifacts.require('MockTokenUriResolver');
 
 const {parseBalanceMap} = require('../utils/parse-balance-map');
 
@@ -1375,7 +1376,26 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: owner}),
-        "Edition has had primary sale"
+        "Invalid Edition state"
+      )
+    })
+
+    it('Reverts once a resolver is set and defined', async () => {
+      // Create a new resolver
+      const tokenUriResolver = await MockTokenUriResolver.new({from: owner});
+
+      // Set it on the NFT
+      expect(await this.token.tokenUriResolverActive()).to.be.equal(false);
+      await this.token.setTokenUriResolver(tokenUriResolver.address, {from: owner});
+      expect(await this.token.tokenUriResolverActive()).to.be.equal(true);
+
+      // Override an edition
+      await tokenUriResolver.setEditionUri(firstEditionTokenId, 'my-new-hash');
+
+      // try set it and expect failure
+      await expectRevert(
+        this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: owner}),
+        "Invalid Edition state"
       )
     })
   })

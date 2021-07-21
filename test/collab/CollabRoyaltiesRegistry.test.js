@@ -201,25 +201,10 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
       context('Can create and use a new royalties recipient', async () => {
         describe('createRoyaltiesRecipient() validation', () => {
-          it('reverts if not artist', async () => {
-            await expectRevert(
-              royaltiesRegistry.createRoyaltiesRecipient(
-                this.merkleProof.claims[artist1].index,
-                this.merkleProof.claims[artist1].proof,
-                claimableFundsReceiverV1.address,
-                [],
-                [],
-                {from: contract}
-              ),
-              'Caller must have minter role'
-            );
-          });
 
           it('reverts if does not equal 100%', async () => {
             await expectRevert(
               royaltiesRegistry.createRoyaltiesRecipient(
-                this.merkleProof.claims[artist1].index,
-                this.merkleProof.claims[artist1].proof,
                 claimableFundsReceiverV1.address,
                 [artist1, artist2],
                 [QUARTER, HALF],
@@ -234,8 +219,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
             await expectRevert(
               royaltiesRegistry.createRoyaltiesRecipient(
-                this.merkleProof.claims[artist1].index,
-                this.merkleProof.claims[artist1].proof,
                 claimableFundsReceiverV1.address,
                 BAD_RECIPIENTS,
                 SPLITS_3,
@@ -246,8 +229,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
             await expectRevert(
               royaltiesRegistry.createRoyaltiesRecipient(
-                this.merkleProof.claims[artist1].index,
-                this.merkleProof.claims[artist1].proof,
                 claimableFundsReceiverV1.address,
                 [],
                 [],
@@ -260,8 +241,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
           it('reverts if recipients and splits are not in sync', async () => {
             await expectRevert(
               royaltiesRegistry.createRoyaltiesRecipient(
-                this.merkleProof.claims[artist1].index,
-                this.merkleProof.claims[artist1].proof,
                 claimableFundsReceiverV1.address,
                 [artist1, artist2],
                 SPLITS_3,
@@ -274,8 +253,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
           it('reverts if handler is not white listed', async () => {
             await expectRevert(
               royaltiesRegistry.createRoyaltiesRecipient(
-                this.merkleProof.claims[artist1].index,
-                this.merkleProof.claims[artist1].proof,
                 contract,
                 RECIPIENTS_3,
                 SPLITS_3,
@@ -289,8 +266,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
             // Deploy one ...
             await royaltiesRegistry.createRoyaltiesRecipient(
-              this.merkleProof.claims[artist1].index,
-              this.merkleProof.claims[artist1].proof,
               claimableFundsReceiverV1.address,
               RECIPIENTS_3,
               SPLITS_3,
@@ -300,8 +275,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
             // try again and it will fail
             await expectRevert(
               royaltiesRegistry.createRoyaltiesRecipient(
-                this.merkleProof.claims[artist1].index,
-                this.merkleProof.claims[artist1].proof,
                 claimableFundsReceiverV1.address,
                 RECIPIENTS_3,
                 SPLITS_3,
@@ -329,8 +302,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
           // Deploy it
           let receipt = await royaltiesRegistry.createRoyaltiesRecipient(
-            this.merkleProof.claims[artist1].index,
-            this.merkleProof.claims[artist1].proof,
             claimableFundsReceiverV1.address,
             RECIPIENTS_3,
             SPLITS_3,
@@ -407,8 +378,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
           // deploy it
           await royaltiesRegistry.createRoyaltiesRecipient(
-            this.merkleProof.claims[artist1].index,
-            this.merkleProof.claims[artist1].proof,
             claimableFundsReceiverV1.address,
             RECIPIENTS_3,
             SPLITS_3,
@@ -467,8 +436,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
     it('address is predetermined - 3x splits', async () => {
       const predetermineAddress = await royaltiesRegistry.predictedRoyaltiesHandler(claimableFundsReceiverV1.address, RECIPIENTS_3, SPLITS_3);
       const proxyAddr = await royaltiesRegistry.createRoyaltiesRecipient.call(
-        this.merkleProof.claims[artist1].index,
-        this.merkleProof.claims[artist1].proof,
         claimableFundsReceiverV1.address,
         RECIPIENTS_3,
         SPLITS_3,
@@ -482,8 +449,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
       const SPLITS = [QUARTER, QUARTER, QUARTER, QUARTER];
       const predetermineAddress = await royaltiesRegistry.predictedRoyaltiesHandler(claimableFundsReceiverV1.address, RECIPIENTS, SPLITS);
       const proxyAddr = await royaltiesRegistry.createRoyaltiesRecipient.call(
-        this.merkleProof.claims[artist1].index,
-        this.merkleProof.claims[artist1].proof,
         claimableFundsReceiverV1.address,
         RECIPIENTS,
         SPLITS,
