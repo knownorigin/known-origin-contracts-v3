@@ -23,19 +23,22 @@
 * Contract size report found [here](./contract-size.md) or generated on demand via `npm run contract-size`
 * Code coverage generation via `npm run coverage` output in `./coverage` folder
 
+![alt text](./code-coverage.png)
+
 ## Deployments
 
 ### Rinkeby
 
 ```
-Core NFT                   - 0xE1a362395D157Cc40FFA16E19a1Aa8Db27F7BF2e (verified)
+Core NFT                   - 0x1Ed168725D86d7153cB65A984687342F8AF39931 (verified)
 AccessControls             - 0xB078C9E804cAcBD4C20161FB7F3af464dE960349 (verified)
-Minting Factory            - 0x6005368E200604D0C5c974E91991BF654520a349 (verified)
-Primary marketplace        - 0xDD7a80E419174713fe41C3Cb85F296663d20aFEc (verified)
-Secondary marketplace      - 0x794a9609d4439c73F9D3f1Cbf8e222898851BA58 (verified)
-Collab royalties registry  - 0x7B5e1dA2686D8F874108ff0604fdC94d8EeAa668 (verified)
-V1 funds splitter          - 0xBEC19d918EBc50AEF6E1154D356741A02a888D07 (verified) 
-V1 funds receiver          - 0x4D8A250e1f1EbcDCF15796b753b0a274b29Ac0e9 (verified) 
+Minting Factory            - 0x1276221e802596E4aE1b49aBd5018B42776B5CcE (verified)
+Primary marketplace        - 0x7Ad43E16a0559737f4b77A3a2CA6Df258e548854 (verified)
+Secondary marketplace      - 0x22E96002776C68E0A722fd00333798B2aa16835e (verified)
+Collab royalties registry  - 0x1648F0dBdf3329034d2751CaC3bE2a0fA7D1fd19 (verified)
+Omni deployer              - 0x6b277Fe32E5b8cAa4E7C077aced78299e124B448 (verified)
+V1 funds splitter          - 0x9C7520747e7ec7aE7fa8314fC7463d7590785b01 (verified) 
+V1 funds receiver          - 0x6045ef85B6337b1a5cBb331413f5b712DE503f17 (verified) 
 ```
 
 ### Mainnet
