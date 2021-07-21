@@ -174,7 +174,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           '2',
           {from: owner}
         ),
-        "ERC721: owner query for nonexistent token"
+        "Need to own both tokens"
       )
     })
 
@@ -236,13 +236,13 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
         {from: owner}
       )
 
-      await this.otherToken.mint(owner, '2', {from: owner})
-      await this.otherToken.approve(this.token.address, '2', {from: owner})
+      await this.otherToken.mint(owner, '3', {from: owner})
+      await this.otherToken.approve(this.token.address, '3', {from: owner})
 
       const {receipt} = await this.token.composeNFTIntoKodaToken(
         firstEditionTokenId,
         this.otherToken.address,
-        '2',
+        '3',
         {from: owner}
       )
 
@@ -250,7 +250,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
         _from: owner,
         _tokenId: firstEditionTokenId,
         _childContract: this.otherToken.address,
-        _childTokenId: '2'
+        _childTokenId: '3'
       })
 
       const {
@@ -259,14 +259,14 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
       } = await this.token.kodaTokenComposedNFT(firstEditionTokenId)
 
       expect(nft).to.be.equal(this.otherToken.address)
-      expect(tokenId).to.be.bignumber.equal('2')
+      expect(tokenId).to.be.bignumber.equal('3')
 
       expect(
-        await this.token.composedNFTsToKodaToken(this.otherToken.address, '2')
+        await this.token.composedNFTsToKodaToken(this.otherToken.address, '3')
       ).to.be.bignumber.equal(firstEditionTokenId)
 
       expect(
-        await this.otherToken.ownerOf('2')
+        await this.otherToken.ownerOf('3')
       ).to.be.equal(this.token.address)
     })
 
