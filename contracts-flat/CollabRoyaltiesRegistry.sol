@@ -838,8 +838,6 @@ interface ICollabRoyaltiesRegistry {
 
     /// @notice Creates & deploys a new royalties recipient, cloning _handle and setting it up with the provided _recipients and _splits
     function createRoyaltiesRecipient(
-        uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof,
         address _handler,
         address[] calldata _recipients,
         uint256[] calldata _splits
@@ -941,8 +939,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
 
     modifier onlyContractOrCreator(uint256 _editionId) {
         require(
-            koda.getCreatorOfEdition(_editionId) == _msgSender()
-            || accessControls.hasContractRole(_msgSender()),
+            koda.getCreatorOfEdition(_editionId) == _msgSender() || accessControls.hasContractRole(_msgSender()),
             "Caller not creator or contract"
         );
         _;
