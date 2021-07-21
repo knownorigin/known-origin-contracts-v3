@@ -838,8 +838,6 @@ interface ICollabRoyaltiesRegistry {
 
     /// @notice Creates & deploys a new royalties recipient, cloning _handle and setting it up with the provided _recipients and _splits
     function createRoyaltiesRecipient(
-        uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof,
         address _handler,
         address[] calldata _recipients,
         uint256[] calldata _splits
@@ -997,10 +995,10 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     external
     onlyAdmin() {
 
-        // Revert if handler exists with given name
-        require(isHandlerWhitelisted[_handler] == false, "Handler name already registered");
+        // Revert if handler already whitelisted
+        require(isHandlerWhitelisted[_handler] == false, "Handler already registered");
 
-        // Store the beacon address by name
+        // whitelist handler
         isHandlerWhitelisted[_handler] = true;
 
         // Emit event
@@ -1011,7 +1009,7 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     function removeHandler(address _handler)
     external
     onlyAdmin() {
-        // Store the beacon address by name
+        // remove handler from whitelist
         isHandlerWhitelisted[_handler] = false;
 
         // Emit event
@@ -1022,15 +1020,11 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     /// Royalties setup logic //
     ////////////////////////////
 
-    // TODO proxy minters?
-
     /// @notice Sets up a royalties funds handler
     /// @dev Can only be called once with the same args as this creates a new contract and we dont want to
     ///      override any currently deployed instance
     /// @dev Can only be called by an approved artist
     function createRoyaltiesRecipient(
-        uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof,
         address _handler,
         address[] calldata _recipients,
         uint256[] calldata _splits
@@ -1039,9 +1033,6 @@ contract CollabRoyaltiesRegistry is Pausable, Konstants, ERC165Storage, IERC2981
     override
     whenNotPaused
     returns (address deployedHandler) {
-        // Ensure only artists can call this
-        require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
-
         validateHandlerArgs(_handler, _recipients, _splits);
 
         // Clone funds handler as Minimal deployedHandler with a deterministic address

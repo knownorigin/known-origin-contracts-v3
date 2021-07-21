@@ -91,7 +91,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
             owner == spender || self.isApprovedForAll(owner, spender) || self.getApproved(_tokenId) == spender,
             "Only token owner"
         );
-        require(_from == _msgSender(), "ERC20 owner must be the token owner");
+        require(_from == _msgSender(), "Must be token owner");
 
         IKODAV3 koda = IKODAV3(address(this));
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);

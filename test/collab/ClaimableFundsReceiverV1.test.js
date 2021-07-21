@@ -239,8 +239,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
           );
 
           await royaltiesRegistry.createRoyaltiesRecipient(
-            this.merkleProof.claims[artist1].index,
-            this.merkleProof.claims[artist1].proof,
             royaltyReceiver.address,
             RECIPIENTS_3,
             SPLITS_3,
@@ -298,8 +296,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
           );
 
           await royaltiesRegistry.createRoyaltiesRecipient(
-            this.merkleProof.claims[artist1].index,
-            this.merkleProof.claims[artist1].proof,
             royaltyReceiver.address,
             RECIPIENTS_3,
             SPLITS_3,
@@ -323,8 +319,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
 
           // Actually deploy and use the handler
           await royaltiesRegistry.createRoyaltiesRecipient(
-            this.merkleProof.claims[artist1].index,
-            this.merkleProof.claims[artist1].proof,
             royaltyReceiver.address,
             RECIPIENTS_2,
             SPLITS_2,
@@ -409,8 +403,6 @@ contract('Collaborator Royalty Funds Handling Architecture', function (accounts)
         SPLITS_3,
       );
       await royaltiesRegistry.createRoyaltiesRecipient(
-        this.merkleProof.claims[artist1].index,
-        this.merkleProof.claims[artist1].proof,
         royaltyReceiver.address,
         RECIPIENTS_3,
         SPLITS_3,
