@@ -24,6 +24,8 @@ async function main() {
   await omniDeployer.deploy(ClaimableFundsSplitterV1.bytecode, salt)
 
   console.log('Finished!');
+
+  // TODO now go white list the handler
 }
 
 main()
