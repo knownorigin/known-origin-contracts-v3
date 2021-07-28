@@ -60,3 +60,17 @@ Use `hardhat` deploy for - see `/scripts` folder for more info e.g.
 `npx hardhat run --network rinkeby scripts/X_my_script.js`
 
 To verify also try hardhat but this sometimes fails, and you need to use the flat contracts.
+
+### Minting controls via merkle tree
+
+1. Get enabled creators
+```
+node ./utils/v3-migration/1_gather_and_generate_data.js
+```
+
+2. Create proofs
+```
+node ./utils/v3-migration/2_create_and_store_merkle_tree.js
+```
+
+3. Update access controls with these values - refresh the web app
