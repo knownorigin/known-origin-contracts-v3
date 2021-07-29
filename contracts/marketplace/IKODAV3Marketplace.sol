@@ -102,6 +102,8 @@ interface ITokenOffersMarketplace {
     function withdrawTokenBid(uint256 _tokenId) external;
 
     function placeTokenBid(uint256 _tokenId) external payable;
+
+    function placeTokenBidFor(uint256 _tokenId, address _bidder) external payable;
 }
 
 interface IBuyNowSecondaryMarketplace {
@@ -114,6 +116,8 @@ interface IEditionOffersSecondaryMarketplace {
     event EditionBidAccepted(uint256 indexed _tokenId, address _currentOwner, address _bidder, uint256 _amount);
 
     function placeEditionBid(uint256 _editionId) external payable;
+
+    function placeEditionBidFor(uint256 _editionId, address _bidder) external payable;
 
     function withdrawEditionBid(uint256 _editionId) external;
 
