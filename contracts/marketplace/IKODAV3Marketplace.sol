@@ -28,6 +28,8 @@ interface IEditionOffersMarketplace {
 
     function placeEditionBid(uint256 _editionId) external payable;
 
+    function placeEditionBidFor(uint256 _editionId, address _bidder) external payable;
+
     function withdrawEditionBid(uint256 _editionId) external;
 
     function rejectEditionBid(uint256 _editionId) external;
