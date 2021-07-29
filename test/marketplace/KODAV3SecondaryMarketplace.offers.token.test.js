@@ -99,6 +99,36 @@ contract('KODAV3SecondaryMarketplace token bids', function (accounts) {
       })
     })
 
+    describe('placeEditionBidFor', () => {
+      beforeEach(async () => {
+        // Ensure owner is approved as this will fail if not
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // create 3 tokens to the minter
+        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+      });
+
+      it('Correctly placed a bid on behalf of someone', async () => {
+        const bid = ether('0.2');
+
+        const marketplaceBalanceTracker = await balance.tracker(this.marketplace.address)
+        const {receipt} = await this.marketplace.placeEditionBidFor(firstTokenId, collectorB, {from: contract, value: bid})
+
+        await expectEvent(receipt, 'EditionBidPlaced', {
+          _editionId: firstTokenId,
+          _bidder: collectorB,
+          _bid: bid
+        })
+
+        expect(await marketplaceBalanceTracker.delta()).to.be.bignumber.equal(bid)
+
+        const editionBidInfo = await this.marketplace.editionBids(firstTokenId)
+
+        expect(editionBidInfo.offer).to.be.bignumber.equal(bid)
+        expect(editionBidInfo.bidder).to.be.bignumber.equal(collectorB)
+      })
+    })
+
     describe('withdrawEditionBid()', () => {
       beforeEach(async () => {
         // Ensure owner is approved as this will fail if not
@@ -443,6 +473,41 @@ contract('KODAV3SecondaryMarketplace token bids', function (accounts) {
       });
 
     });
+
+    describe('placeTokenBidFor()', () => {
+      const _0_5_ETH = ether('0.5');
+
+      beforeEach(async () => {
+
+        // Ensure owner is approved as this will fail if not
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // create 3 tokens to the minter
+        await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
+
+
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract});
+
+      });
+
+      it('Can place a token bid on behalf of ', async () => {
+        const token = firstTokenId;
+
+        // offer minimum bid for token
+        const receipt = await this.marketplace.placeTokenBidFor(token, collectorB, {from: contract, value: _0_5_ETH});
+        expectEvent(receipt, 'TokenBidPlaced', {
+          _tokenId: token,
+          _currentOwner: minter,
+          _bidder: collectorB,
+          _amount: _0_5_ETH
+        });
+
+        // Check recorded values
+        const {offer, bidder} = await this.marketplace.tokenBids(token);
+        expect(bidder).to.be.equal(collectorB);
+        expect(offer).to.be.bignumber.equal(_0_5_ETH);
+      })
+    })
 
     describe('withdrawTokenBid()', () => {
 

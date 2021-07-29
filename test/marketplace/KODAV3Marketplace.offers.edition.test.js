@@ -303,6 +303,26 @@ contract('KODAV3Marketplace', function (accounts) {
 
     });
 
+    describe('placeEditionBidFor()', () => {
+      it('Can place a bid on behalf of someone', async () => {
+        const edition = firstEditionTokenId;
+
+        // offer minimum bid for token
+        const _0_5_ETH = ether('0.5')
+        const receipt = await this.marketplace.placeEditionBidFor(edition, collectorB, {from: contract, value: _0_5_ETH});
+        expectEvent(receipt, 'EditionBidPlaced', {
+          _editionId: edition,
+          _bidder: collectorB,
+          _amount: _0_5_ETH
+        });
+
+        // Check recorded values
+        const {offer, bidder} = await this.marketplace.editionOffers(firstEditionTokenId);
+        expect(bidder).to.be.equal(collectorB);
+        expect(offer).to.be.bignumber.equal(_0_5_ETH);
+      })
+    })
+
     describe('withdrawEditionBid()', () => {
 
       const _0_5_ETH = ether('0.5');
