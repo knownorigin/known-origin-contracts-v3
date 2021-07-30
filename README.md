@@ -30,15 +30,15 @@
 ### Rinkeby
 
 ```
-Core NFT                   - 0x1Ed168725D86d7153cB65A984687342F8AF39931 (verified)
-AccessControls             - 0xB078C9E804cAcBD4C20161FB7F3af464dE960349 (verified)
-Minting Factory            - 0x1276221e802596E4aE1b49aBd5018B42776B5CcE (verified)
-Primary marketplace        - 0x039F462954a69961e7fe388dB5AB3Bce4Ae1d41f (verified)
-Secondary marketplace      - 0x6F928Da4eE5C22fc7a53AAe6A05216EE6D79E243 (verified)
-Collab royalties registry  - 0x1648F0dBdf3329034d2751CaC3bE2a0fA7D1fd19 (verified)
-Omni deployer              - 0x6b277Fe32E5b8cAa4E7C077aced78299e124B448 (verified)
-V1 funds splitter          - 0x9C7520747e7ec7aE7fa8314fC7463d7590785b01 (verified) 
-V1 funds receiver          - 0x6045ef85B6337b1a5cBb331413f5b712DE503f17 (verified) 
+Core NFT                   - 0x66ED505Df51A030334cd6dBBBF7D479C86Fb6c87 = (verified)
+AccessControls             - 0xB078C9E804cAcBD4C20161FB7F3af464dE960349 = (verified)
+Minting Factory            - 0x7e8d5d7A7771DcE2359fe9b0d1e2135465d27b80 = (verified)
+Primary marketplace        - 0x2E85D2F1854128c601A28b98d4F02FA5Db8c4Aad = (verified)
+Secondary marketplace      - 0x4EAd5d21708a2d47483233f70B375a800f8c782e = (verified)
+Collab royalties registry  - 0x7cf9212F430B58C894057bC76A3FCAB1ce347B2c = (verified)
+Omni deployer              - 0xCb9f819Dc5Cf25AB1719Cd2ed91d9F5e2aC0D214 = (verified)
+V1 funds splitter          - 0x9C7520747e7ec7aE7fa8314fC7463d7590785b01 = (verified) 
+V1 funds receiver          - 0x6045ef85B6337b1a5cBb331413f5b712DE503f17 = (verified) 
 ```
 
 ### Mainnet
