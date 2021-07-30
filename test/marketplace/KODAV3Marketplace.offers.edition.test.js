@@ -385,12 +385,31 @@ contract('KODAV3Marketplace', function (accounts) {
 
       describe('on success', () => {
 
-        it('can withdraw bid after lockup period elapses', async () => {
+        it('can withdraw bid after lockup period elapses - placeEditionBid()', async () => {
 
           const edition = firstEditionTokenId;
 
           // offer 0.5 ETH for token (first bid)
           await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
+
+          // Back to the future...
+          await time.increase(time.duration.hours(LOCKUP_HOURS));
+
+          // withdraw bid
+          const receipt = await this.marketplace.withdrawEditionBid(edition, {from: collectorA});
+          expectEvent(receipt, 'EditionBidWithdrawn', {
+            _editionId: edition,
+            _bidder: collectorA
+          });
+
+        });
+
+        it('can withdraw bid after lockup period elapses - placeEditionBidFor()', async () => {
+
+          const edition = firstEditionTokenId;
+
+          // offer 0.5 ETH for token (first bid)
+          await this.marketplace.placeEditionBidFor(edition, collectorA, {from: contract, value: _0_5_ETH});
 
           // Back to the future...
           await time.increase(time.duration.hours(LOCKUP_HOURS));
@@ -638,12 +657,33 @@ contract('KODAV3Marketplace', function (accounts) {
 
         });
 
-        it('high bidder refunded when rejected', async () => {
+        it('high bidder refunded when rejected - placeEditionBid()', async () => {
 
           const edition = firstEditionTokenId;
 
           // collector A places offer 0.5 ETH for token
           await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
+
+          // get the buyer's starting wallet balance
+          const tracker = await balance.tracker(collectorA);
+          const startBalance = await tracker.get();
+
+          // creator rejects bid
+          await this.marketplace.rejectEditionBid(edition, {from: minter});
+
+          // collector A's expected balance is starting balance plus .5 ETH, the previous bid amount
+          const expectedBalance = startBalance.add(_0_5_ETH);
+          const endBalance = await tracker.get();
+          expect(endBalance).to.be.bignumber.equal(expectedBalance);
+
+        });
+
+        it('high bidder refunded when rejected - placeEditionBidFor()', async () => {
+
+          const edition = firstEditionTokenId;
+
+          // collector A places offer 0.5 ETH for token
+          await this.marketplace.placeEditionBidFor(edition, collectorA, {from: contract, value: _0_5_ETH});
 
           // get the buyer's starting wallet balance
           const tracker = await balance.tracker(collectorA);
