@@ -378,6 +378,8 @@ interface IEditionOffersMarketplace {
 
     function placeEditionBid(uint256 _editionId) external payable;
 
+    function placeEditionBidFor(uint256 _editionId, address _bidder) external payable;
+
     function withdrawEditionBid(uint256 _editionId) external;
 
     function rejectEditionBid(uint256 _editionId) external;
@@ -450,6 +452,8 @@ interface ITokenOffersMarketplace {
     function withdrawTokenBid(uint256 _tokenId) external;
 
     function placeTokenBid(uint256 _tokenId) external payable;
+
+    function placeTokenBidFor(uint256 _tokenId, address _bidder) external payable;
 }
 
 interface IBuyNowSecondaryMarketplace {
@@ -462,6 +466,8 @@ interface IEditionOffersSecondaryMarketplace {
     event EditionBidAccepted(uint256 indexed _tokenId, address _currentOwner, address _bidder, uint256 _amount);
 
     function placeEditionBid(uint256 _editionId) external payable;
+
+    function placeEditionBidFor(uint256 _editionId, address _bidder) external payable;
 
     function withdrawEditionBid(uint256 _editionId) external;
 
@@ -1307,29 +1313,16 @@ BuyNowMarketplace {
     payable
     whenNotPaused
     nonReentrant {
-        require(!_isEditionListed(_editionId), "Edition is listed");
+        _placeEditionBid(_editionId, _msgSender());
+    }
 
-        Offer storage offer = editionOffers[_editionId];
-        require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
-
-        // Honor start date if set
-        uint256 startDate = editionOffersStartDate[_editionId];
-        if (startDate > 0) {
-            require(block.timestamp >= startDate, "Not yet accepting offers");
-
-            // elapsed, so free storage
-            delete editionOffersStartDate[_editionId];
-        }
-
-        // send money back to top bidder if existing offer found
-        if (offer.offer > 0) {
-            _refundBidder(_editionId, offer.bidder, offer.offer, _msgSender(), msg.value);
-        }
-
-        // setup offer
-        editionOffers[_editionId] = Offer(msg.value, _msgSender(), _getLockupTime());
-
-        emit EditionBidPlaced(_editionId, _msgSender(), msg.value);
+    function placeEditionBidFor(uint256 _editionId, address _bidder)
+    public
+    override
+    payable
+    whenNotPaused
+    nonReentrant {
+        _placeEditionBid(_editionId, _bidder);
     }
 
     function withdrawEditionBid(uint256 _editionId)
@@ -1713,5 +1706,31 @@ BuyNowMarketplace {
         }
 
         return false;
+    }
+
+    function _placeEditionBid(uint256 _editionId, address _bidder) internal {
+        require(!_isEditionListed(_editionId), "Edition is listed");
+
+        Offer storage offer = editionOffers[_editionId];
+        require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
+
+        // Honor start date if set
+        uint256 startDate = editionOffersStartDate[_editionId];
+        if (startDate > 0) {
+            require(block.timestamp >= startDate, "Not yet accepting offers");
+
+            // elapsed, so free storage
+            delete editionOffersStartDate[_editionId];
+        }
+
+        // send money back to top bidder if existing offer found
+        if (offer.offer > 0) {
+            _refundBidder(_editionId, offer.bidder, offer.offer, _msgSender(), msg.value);
+        }
+
+        // setup offer
+        editionOffers[_editionId] = Offer(msg.value, _bidder, _getLockupTime());
+
+        emit EditionBidPlaced(_editionId, _bidder, msg.value);
     }
 }

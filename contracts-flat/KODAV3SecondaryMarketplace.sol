@@ -31,6 +31,8 @@ interface IEditionOffersMarketplace {
 
     function placeEditionBid(uint256 _editionId) external payable;
 
+    function placeEditionBidFor(uint256 _editionId, address _bidder) external payable;
+
     function withdrawEditionBid(uint256 _editionId) external;
 
     function rejectEditionBid(uint256 _editionId) external;
@@ -103,6 +105,8 @@ interface ITokenOffersMarketplace {
     function withdrawTokenBid(uint256 _tokenId) external;
 
     function placeTokenBid(uint256 _tokenId) external payable;
+
+    function placeTokenBidFor(uint256 _tokenId, address _bidder) external payable;
 }
 
 interface IBuyNowSecondaryMarketplace {
@@ -115,6 +119,8 @@ interface IEditionOffersSecondaryMarketplace {
     event EditionBidAccepted(uint256 indexed _tokenId, address _currentOwner, address _bidder, uint256 _amount);
 
     function placeEditionBid(uint256 _editionId) external payable;
+
+    function placeEditionBidFor(uint256 _editionId, address _bidder) external payable;
 
     function withdrawEditionBid(uint256 _editionId) external;
 
@@ -1271,21 +1277,16 @@ ReserveAuctionMarketplace {
     override
     whenNotPaused
     nonReentrant {
-        require(koda.editionExists(_editionId), "Edition does not exist");
+        _placeEditionBidFor(_editionId, _msgSender());
+    }
 
-        // Check for highest offer
-        Offer storage offer = editionBids[_editionId];
-        require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
-
-        // send money back to top bidder if existing offer found
-        if (offer.offer > 0) {
-            _refundBidder(_editionId, offer.bidder, offer.offer, _msgSender(), msg.value);
-        }
-
-        // setup offer
-        editionBids[_editionId] = Offer(msg.value, _msgSender(), _getLockupTime());
-
-        emit EditionBidPlaced(_editionId, _msgSender(), msg.value);
+    function placeEditionBidFor(uint256 _editionId, address _bidder)
+    public
+    payable
+    override
+    whenNotPaused
+    nonReentrant {
+        _placeEditionBidFor(_editionId, _bidder);
     }
 
     function withdrawEditionBid(uint256 _editionId)
@@ -1340,21 +1341,16 @@ ReserveAuctionMarketplace {
     override
     whenNotPaused
     nonReentrant {
-        require(!_isTokenListed(_tokenId), "Token is listed");
+        _placeTokenBidFor(_tokenId, _msgSender());
+    }
 
-        // Check for highest offer
-        Offer storage offer = tokenBids[_tokenId];
-        require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
-
-        // send money back to top bidder if existing offer found
-        if (offer.offer > 0) {
-            _refundBidder(_tokenId, offer.bidder, offer.offer, _msgSender(), msg.value);
-        }
-
-        // setup offer
-        tokenBids[_tokenId] = Offer(msg.value, _msgSender(), _getLockupTime());
-
-        emit TokenBidPlaced(_tokenId, koda.ownerOf(_tokenId), _msgSender(), msg.value);
+    function placeTokenBidFor(uint256 _tokenId, address _bidder)
+    public
+    payable
+    override
+    whenNotPaused
+    nonReentrant {
+        _placeTokenBidFor(_tokenId, _bidder);
     }
 
     function withdrawTokenBid(uint256 _tokenId)
@@ -1547,5 +1543,41 @@ ReserveAuctionMarketplace {
         }
 
         return false;
+    }
+
+    function _placeEditionBidFor(uint256 _editionId, address _bidder) internal {
+        require(koda.editionExists(_editionId), "Edition does not exist");
+
+        // Check for highest offer
+        Offer storage offer = editionBids[_editionId];
+        require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
+
+        // send money back to top bidder if existing offer found
+        if (offer.offer > 0) {
+            _refundBidder(_editionId, offer.bidder, offer.offer, _msgSender(), msg.value);
+        }
+
+        // setup offer
+        editionBids[_editionId] = Offer(msg.value, _bidder, _getLockupTime());
+
+        emit EditionBidPlaced(_editionId, _bidder, msg.value);
+    }
+
+    function _placeTokenBidFor(uint256 _tokenId, address _bidder) internal {
+        require(!_isTokenListed(_tokenId), "Token is listed");
+
+        // Check for highest offer
+        Offer storage offer = tokenBids[_tokenId];
+        require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
+
+        // send money back to top bidder if existing offer found
+        if (offer.offer > 0) {
+            _refundBidder(_tokenId, offer.bidder, offer.offer, _msgSender(), msg.value);
+        }
+
+        // setup offer
+        tokenBids[_tokenId] = Offer(msg.value, _bidder, _getLockupTime());
+
+        emit TokenBidPlaced(_tokenId, koda.ownerOf(_tokenId), _bidder, msg.value);
     }
 }
