@@ -61,6 +61,19 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
     payable
     whenNotPaused
     nonReentrant {
+        _placeBidOnReserveAuction(_id, _msgSender());
+    }
+
+    function placeBidOnReserveAuctionFor(uint256 _id, address _bidder)
+    public
+    override
+    payable
+    whenNotPaused
+    nonReentrant {
+        _placeBidOnReserveAuction(_id, _bidder);
+    }
+
+    function _placeBidOnReserveAuction(uint256 _id, address _bidder) internal {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
         require(reserveAuction.reservePrice > 0, "Not set up for reserve auction");
         require(block.timestamp >= reserveAuction.startDate, "Not accepting bids yet");
@@ -90,13 +103,13 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
         // if someone else has previously bid, there is a bid we need to refund
         if (reserveAuction.bid > 0) {
-            _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid, _msgSender(), msg.value);
+            _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid, _bidder, msg.value);
         }
 
         reserveAuction.bid = uint128(msg.value);
-        reserveAuction.bidder = _msgSender();
+        reserveAuction.bidder = _bidder;
 
-        emit BidPlacedOnReserveAuction(_id, reserveAuction.seller, _msgSender(), msg.value, originalBiddingEnd, reserveAuction.biddingEnd);
+        emit BidPlacedOnReserveAuction(_id, reserveAuction.seller, _bidder, msg.value, originalBiddingEnd, reserveAuction.biddingEnd);
     }
 
     function resultReserveAuction(uint256 _id)

@@ -31,7 +31,7 @@ contract('ERC721 baseline tests', function (accounts) {
     None: 0,
     RevertWithMessage: 1,
     RevertWithoutMessage: 2,
-  }
+  };
 
   beforeEach(async () => {
     const legacyAccessControls = await SelfServiceAccessControls.new();
@@ -63,11 +63,11 @@ contract('ERC721 baseline tests', function (accounts) {
 
   describe('metadata', () => {
     it('has a name', async () => {
-      expect(await this.token.name()).to.be.equal("KnownOriginDigitalAsset");
+      expect(await this.token.name()).to.be.equal('KnownOriginDigitalAsset');
     });
 
     it('has a symbol', async () => {
-      expect(await this.token.symbol()).to.be.equal("KODA");
+      expect(await this.token.symbol()).to.be.equal('KODA');
     });
 
     describe('mintBatchEdition(1, to, uri) token URI', () => {
@@ -139,7 +139,7 @@ contract('ERC721 baseline tests', function (accounts) {
           creatorBalance: '1',
           size: '1',
           uri: TOKEN_URI
-        })
+        });
       });
     });
   });
@@ -169,7 +169,7 @@ contract('ERC721 baseline tests', function (accounts) {
             creatorBalance: editionSize,
             size: editionSize,
             uri: TOKEN_URI
-          })
+          });
         }
       });
     });
@@ -207,7 +207,7 @@ contract('ERC721 baseline tests', function (accounts) {
             creatorBalance: '10',
             size: editionSize,
             uri: TOKEN_URI
-          })
+          });
         }
       });
     });
@@ -259,7 +259,7 @@ contract('ERC721 baseline tests', function (accounts) {
 
         it('returns address zero when token is owned by platform', async () => {
           expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(owner);
-        })
+        });
 
         it('returns the owner of the given token ID', async () => {
           await this.token.transferFrom(owner, other, thirdEditionTokenId, {from: owner});
@@ -313,7 +313,7 @@ contract('ERC721 baseline tests', function (accounts) {
             creator: owner,
             size: '1',
             uri: TOKEN_URI
-          })
+          });
         });
       };
 
@@ -784,7 +784,7 @@ contract('ERC721 baseline tests', function (accounts) {
 
         it('returns address zero when token is owned by platform', async () => {
           expect(await this.token.ownerOf(this.token1)).to.be.equal(owner);
-        })
+        });
 
         it('returns the owner of the given token ID', async () => {
           await this.token.transferFrom(owner, other, this.token3, {from: owner});
@@ -838,7 +838,7 @@ contract('ERC721 baseline tests', function (accounts) {
             creator: owner,
             size: '10',
             uri: 'https://ipfs.infura.io/ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv-1'
-          })
+          });
         });
       };
 
@@ -1309,7 +1309,7 @@ contract('ERC721 baseline tests', function (accounts) {
 
         it('returns address zero when token is owned by platform', async () => {
           expect(await this.token.ownerOf(this.token1)).to.be.equal(owner);
-        })
+        });
 
         it('returns the owner of the given token ID', async () => {
           await this.token.transferFrom(owner, other, this.token3, {from: owner});
@@ -1363,7 +1363,7 @@ contract('ERC721 baseline tests', function (accounts) {
             creator: owner,
             size: '10',
             uri: 'https://ipfs.infura.io/ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv-1'
-          })
+          });
         });
       };
 

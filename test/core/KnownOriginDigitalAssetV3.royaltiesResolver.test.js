@@ -64,7 +64,7 @@ contract('KnownOriginDigitalAssetV3 Royalties resolver', function (accounts) {
       const hasRoyalties = await this.token.hasRoyalties(firstEditionTokenId);
       expect(hasRoyalties).to.be.equal(true);
 
-      const paymentAmount = '10000000'
+      const paymentAmount = '10000000';
       const royaltyInfo = await this.token.royaltyInfo.call(firstEditionTokenId, paymentAmount);
       expect(royaltyInfo._receiver).to.be.equal(owner);
       expect(royaltyInfo._royaltyAmount).to.be.bignumber.equal('1250000');
@@ -86,7 +86,7 @@ contract('KnownOriginDigitalAssetV3 Royalties resolver', function (accounts) {
       const hasRoyalties = await this.token.hasRoyalties(firstEditionTokenId);
       expect(hasRoyalties).to.be.equal(true);
 
-      const paymentAmount = '10000000'
+      const paymentAmount = '10000000';
       const royaltyInfo = await this.token.royaltyInfo.call(firstEditionTokenId, paymentAmount);
       expect(royaltyInfo._receiver).to.be.equal(newReceiver);
       expect(royaltyInfo._royaltyAmount).to.be.bignumber.equal('999999');

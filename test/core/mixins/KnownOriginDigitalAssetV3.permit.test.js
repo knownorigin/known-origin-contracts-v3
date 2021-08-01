@@ -48,7 +48,7 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
 
     // Create marketplace and enable in whitelist
-    this.marketplace = await KODAV3Marketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner})
+    this.marketplace = await KODAV3Marketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner});
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.marketplace.address, {from: owner});
   });
 
@@ -57,14 +57,14 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     expect(name).to.eq('KnownOriginDigitalAsset');
     expect(await token.symbol()).to.eq('KODA');
     expect(await token.version()).to.eq('3');
-    expect((await token.getChainId()).toString()).to.eq("31337");
+    expect((await token.getChainId()).toString()).to.eq('31337');
     expect(await token.DOMAIN_SEPARATOR()).to.eq(getDomainSeparator(name));
     expect(await token.PERMIT_TYPEHASH()).to.eq(
       keccak256(toUtf8Bytes('Permit(address owner,address spender,uint256 tokenId,uint256 nonce,uint256 deadline)'))
     );
   });
 
-  it.skip("should set allowance for token ID after permit transaction", async () => {
+  it.skip('should set allowance for token ID after permit transaction', async () => {
     const tokenId = firstEditionTokenId;
     const spender = contract;
 
@@ -83,7 +83,7 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     const digest = await getApprovalDigest(owner, spender, tokenId, nonce, deadline);
 
     // Sign it with the new wallet
-    const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'))
+    const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'));
 
     // permit the approval - from a random account
     const {logs} = await this.token.permit(owner, spender, tokenId, deadline, v, r, s, {from: random});
@@ -95,10 +95,10 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
 
     // check spender is now approved
     expect(await token.getApproved(tokenId)).to.eq(spender);
-    expect(await token.nonces(owner)).to.be.bignumber.eq("1");
+    expect(await token.nonces(owner)).to.be.bignumber.eq('1');
   });
 
-  it.skip("should fail to permit is not signed by the owner", async () => {
+  it.skip('should fail to permit is not signed by the owner', async () => {
     const tokenId = firstEditionTokenId;
     const spender = contract;
 
@@ -117,20 +117,20 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     const digest = await getApprovalDigest(owner, spender, tokenId, nonce, deadline);
 
     // Sign it with the new wallet
-    const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'))
+    const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'));
 
     // Failing to provider the right owner of the token
     await expectRevert(
       this.token.permit(contract, spender, firstEditionTokenId, deadline, v, r, s, {from: random}),
-      "Invalid owner"
+      'Invalid owner'
     );
 
     // check spender is now approved
     expect(await token.getApproved(tokenId)).to.eq(ZERO_ADDRESS);
-    expect(await token.nonces(owner)).to.be.bignumber.eq("0");
+    expect(await token.nonces(owner)).to.be.bignumber.eq('0');
   });
 
-  it.skip("should fail to permit if token does not exist", async () => {
+  it.skip('should fail to permit if token does not exist', async () => {
     const tokenId = secondEditionTokenId;
     const spender = contract;
 
@@ -149,20 +149,20 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     const digest = await getApprovalDigest(owner, spender, tokenId, nonce, deadline);
 
     // Sign it with the new wallet
-    const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'))
+    const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'));
 
     // Failing to provider the right owner of the token
     await expectRevert(
       this.token.permit(minter, spender, tokenId, deadline, v, r, s, {from: random}),
-      "ERC721_ZERO_OWNER"
+      'ERC721_ZERO_OWNER'
     );
 
     // check spender is now approved
     expect(await token.getApproved(tokenId)).to.eq(ZERO_ADDRESS);
-    expect(await token.nonces(owner)).to.be.bignumber.eq("0");
+    expect(await token.nonces(owner)).to.be.bignumber.eq('0');
   });
 
-  it.skip("should fail to permit if deadline has passed", async () => {
+  it.skip('should fail to permit if deadline has passed', async () => {
     const tokenId = secondEditionTokenId;
     const spender = contract;
 
@@ -175,26 +175,26 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
 
     // get nonce
     const nonce = await this.token.nonces(owner);
-    const deadline = new BN("0"); // DEADLINE OF ZERO
+    const deadline = new BN('0'); // DEADLINE OF ZERO
 
     // Generate digest
     const digest = await getApprovalDigest(owner, spender, tokenId, nonce, deadline);
 
     // Sign it with the new wallet
-    const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'))
+    const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'));
 
     // Failing to provider the right owner of the token
     await expectRevert(
       this.token.permit(owner, spender, tokenId, deadline, v, r, s, {from: random}),
-      "Deadline expired"
+      'Deadline expired'
     );
 
     // check spender is now approved
     expect(await token.getApproved(tokenId)).to.eq(ZERO_ADDRESS);
-    expect(await token.nonces(owner)).to.be.bignumber.eq("0");
+    expect(await token.nonces(owner)).to.be.bignumber.eq('0');
   });
 
-  it.skip("should fail to permit if signed by the wrong account", async () => {
+  it.skip('should fail to permit if signed by the wrong account', async () => {
     const tokenId = firstEditionTokenId;
     const spender = contract;
 
@@ -212,17 +212,17 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
     const digest = await getApprovalDigest(owner, spender, tokenId, nonce, deadline);
 
     // Sign it with the rouge signer
-    const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'))
+    const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'));
 
     // Failing to provider the right owner of the token
     await expectRevert(
       this.token.permit(owner, spender, tokenId, deadline, v, r, s, {from: random}),
-      "INVALID_SIGNATURE"
+      'INVALID_SIGNATURE'
     );
 
     // check spender is now approved
     expect(await token.getApproved(tokenId)).to.eq(ZERO_ADDRESS);
-    expect(await token.nonces(owner)).to.be.bignumber.eq("0");
+    expect(await token.nonces(owner)).to.be.bignumber.eq('0');
   });
 
   const getDomainSeparator = (name) => {
@@ -239,14 +239,14 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
           this.token.address
         ]
       )
-    )
-  }
+    );
+  };
 
   const PERMIT_TYPEHASH = keccak256(toUtf8Bytes('Permit(address owner,address spender,uint256 tokenId,uint256 nonce,uint256 deadline)'));
 
   const getApprovalDigest = async (owner, spender, tokenId, nonce, deadline) => {
     // console.log({owner, spender, tokenId, nonce, deadline});
-    const DOMAIN_SEPARATOR = getDomainSeparator(await this.token.name())
+    const DOMAIN_SEPARATOR = getDomainSeparator(await this.token.name());
     return keccak256(
       solidityPack(
         ['bytes1', 'bytes1', 'bytes32', 'bytes32'],
@@ -262,7 +262,7 @@ contract('KnownOriginDigitalAssetV3 permit tests (ERC-2612)', function (accounts
           )
         ]
       )
-    )
-  }
+    );
+  };
 
 });

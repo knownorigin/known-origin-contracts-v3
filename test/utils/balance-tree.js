@@ -1,15 +1,17 @@
-"use strict";
+'use strict';
 
-Object.defineProperty(exports, "__esModule", {
+Object.defineProperty(exports, '__esModule', {
   value: true
 });
 exports.default = void 0;
 
-var _merkleTree = _interopRequireDefault(require("./merkle-tree"));
+var _merkleTree = _interopRequireDefault(require('./merkle-tree'));
 
-var _ethers = require("ethers");
+var _ethers = require('ethers');
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(obj) {
+  return obj && obj.__esModule ? obj : {default: obj};
+}
 
 class BalanceTree {
   constructor(balances) {

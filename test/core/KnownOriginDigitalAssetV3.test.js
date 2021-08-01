@@ -459,7 +459,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
           tokenId: firstEditionTokenId
         });
 
-        const paymentAmount = '10000000'
+        const paymentAmount = '10000000';
         let res = await this.token.royaltyInfo.call(firstEditionTokenId, paymentAmount);
         expect(res._receiver).to.be.equal(collectorA);
         expect(res._royaltyAmount).to.be.bignumber.equal(this.secondarySaleRoyalty);
@@ -473,7 +473,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
           tokenId: firstEditionTokenId
         });
 
-        let paymentAmount = '10000000'
+        let paymentAmount = '10000000';
         let res = await this.token.royaltyAndCreatorInfo.call(firstEditionTokenId, paymentAmount);
         expect(res.receiver).to.be.equal(collectorA);
         expect(res.creator).to.be.equal(collectorA);
@@ -954,7 +954,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: proxy});
       expect(await this.token.sealedEditionMetaData(firstEditionTokenId)).to.be.equal('hello');
-    })
+    });
 
     it('should lockInAdditionalMetaData()', async () => {
       await this.token.mintBatchEdition(1, owner, TOKEN_URI, {from: contract});
@@ -1290,95 +1290,95 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
   });
 
   describe('getAllUnsoldTokenIdsForEdition() and transfering to the dead address', () => {
-    const editionSize = 50
-    const edition2Size = 100
+    const editionSize = 50;
+    const edition2Size = 100;
 
     beforeEach(async () => {
-      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract})
-      await this.token.mintBatchEdition(edition2Size, owner, TOKEN_URI, {from: contract})
-    })
+      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract});
+      await this.token.mintBatchEdition(edition2Size, owner, TOKEN_URI, {from: contract});
+    });
 
     it('Returns the correct list of unsold tokens when no tokens sold for first edition', async () => {
-      const expectedTokenIdsFirstEdition = Array(editionSize).fill(0).map((val, idx) => (11000 + idx).toString())
+      const expectedTokenIdsFirstEdition = Array(editionSize).fill(0).map((val, idx) => (11000 + idx).toString());
 
-      const unsoldTokenIdsFirstEdition = (await this.token.getAllUnsoldTokenIdsForEdition(firstEditionTokenId)).map(unsoldTokenId => unsoldTokenId.toString())
+      const unsoldTokenIdsFirstEdition = (await this.token.getAllUnsoldTokenIdsForEdition(firstEditionTokenId)).map(unsoldTokenId => unsoldTokenId.toString());
 
-      expect(unsoldTokenIdsFirstEdition).to.be.deep.equal(expectedTokenIdsFirstEdition)
-    })
+      expect(unsoldTokenIdsFirstEdition).to.be.deep.equal(expectedTokenIdsFirstEdition);
+    });
 
     it('Returns the correct list of unsold tokens when no tokens sold for second edition', async () => {
-      const expectedTokenIdsSecondEdition = Array(edition2Size).fill(0).map((val, idx) => (12000 + idx).toString())
+      const expectedTokenIdsSecondEdition = Array(edition2Size).fill(0).map((val, idx) => (12000 + idx).toString());
 
-      const unsoldTokenIdsSecondEdition = (await this.token.getAllUnsoldTokenIdsForEdition(secondEditionTokenId)).map(unsoldTokenId => unsoldTokenId.toString())
+      const unsoldTokenIdsSecondEdition = (await this.token.getAllUnsoldTokenIdsForEdition(secondEditionTokenId)).map(unsoldTokenId => unsoldTokenId.toString());
 
-      expect(unsoldTokenIdsSecondEdition).to.be.deep.equal(expectedTokenIdsSecondEdition)
-    })
+      expect(unsoldTokenIdsSecondEdition).to.be.deep.equal(expectedTokenIdsSecondEdition);
+    });
 
     it('Transfers all unsold tokens to the dead address', async () => {
-      await this.token.batchTransferFrom(owner, '0x000000000000000000000000000000000000dEaD', await this.token.getAllUnsoldTokenIdsForEdition(firstEditionTokenId), {from: owner})
-    })
-  })
+      await this.token.batchTransferFrom(owner, '0x000000000000000000000000000000000000dEaD', await this.token.getAllUnsoldTokenIdsForEdition(firstEditionTokenId), {from: owner});
+    });
+  });
 
   describe('hasMadePrimarySale()', () => {
-    const editionSize = 10
+    const editionSize = 10;
 
     beforeEach(async () => {
-      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract})
-    })
+      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract});
+    });
 
     it('Should return false when no tokens in edition sold', async () => {
-      const hasMadePrimarySale = await this.token.hasMadePrimarySale(firstEditionTokenId)
-      expect(hasMadePrimarySale).to.be.false
-    })
+      const hasMadePrimarySale = await this.token.hasMadePrimarySale(firstEditionTokenId);
+      expect(hasMadePrimarySale).to.be.false;
+    });
 
     it('Returns true when at least 1 token in edition is sold', async () => {
-      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner})
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
 
-      const hasMadePrimarySale = await this.token.hasMadePrimarySale(firstEditionTokenId)
-      expect(hasMadePrimarySale).to.be.true
-    })
-  })
+      const hasMadePrimarySale = await this.token.hasMadePrimarySale(firstEditionTokenId);
+      expect(hasMadePrimarySale).to.be.true;
+    });
+  });
 
   describe('updateURIIfNoSaleMade()', () => {
-    const editionSize = 10
+    const editionSize = 10;
 
     beforeEach(async () => {
-      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract})
-    })
+      await this.token.mintBatchEdition(editionSize, owner, TOKEN_URI, {from: contract});
+    });
 
     it('Updated the URI when primary sale not made on edition', async () => {
-      const uri = 'random'
-      const { receipt } = await this.token.updateURIIfNoSaleMade(firstEditionTokenId, uri, {from: owner})
+      const uri = 'random';
+      const {receipt} = await this.token.updateURIIfNoSaleMade(firstEditionTokenId, uri, {from: owner});
 
       await expectEvent(receipt, 'EditionURIUpdated', {
         _editionId: firstEditionTokenId
-      })
+      });
 
-      expect(await this.token.tokenURI(firstEditionTokenId)).to.be.equal(uri)
-    })
+      expect(await this.token.tokenURI(firstEditionTokenId)).to.be.equal(uri);
+    });
 
     it('Reverts when edition does not exist', async () => {
       await expectRevert(
         this.token.updateURIIfNoSaleMade(secondEditionTokenId, 'random', {from: owner}),
-        "Not creator"
-      )
-    })
+        'Not creator'
+      );
+    });
 
     it('Reverts when not creator of edition', async () => {
       await expectRevert(
         this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: contract}),
-        "Not creator"
-      )
-    })
+        'Not creator'
+      );
+    });
 
     it('Reverts when edition has had a primary sale', async () => {
-      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner})
+      await this.token.transferFrom(owner, collectorA, firstEditionTokenId, {from: owner});
 
       await expectRevert(
         this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: owner}),
-        "Invalid Edition state"
-      )
-    })
+        'Invalid Edition state'
+      );
+    });
 
     it('Reverts once a resolver is set and defined', async () => {
       // Create a new resolver
@@ -1395,83 +1395,83 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // try set it and expect failure
       await expectRevert(
         this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: owner}),
-        "Invalid Edition state"
-      )
-    })
-  })
+        'Invalid Edition state'
+      );
+    });
+  });
 
   describe('toggleEditionSalesDisabled()', () => {
-    const editionSize = 10
+    const editionSize = 10;
 
     beforeEach(async () => {
-      await this.token.mintBatchEdition(editionSize, minter, TOKEN_URI, {from: contract})
-    })
+      await this.token.mintBatchEdition(editionSize, minter, TOKEN_URI, {from: contract});
+    });
 
     it('Flips the toggle if creator', async () => {
-      const {receipt} = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: minter})
+      const {receipt} = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: minter});
 
       await expectEvent(receipt, 'EditionSalesDisabledToggled', {
         _editionId: firstEditionTokenId,
         _oldValue: false,
         _newValue: true
-      })
-    })
+      });
+    });
 
     it('Flips the toggle if admin', async () => {
-      const {receipt} = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: owner})
+      const {receipt} = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: owner});
 
       await expectEvent(receipt, 'EditionSalesDisabledToggled', {
         _editionId: firstEditionTokenId,
         _oldValue: false,
         _newValue: true
-      })
-    })
+      });
+    });
 
     it('Can flip the toggle off after turning on', async () => {
-      const tx1 = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: owner})
+      const tx1 = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: owner});
 
       await expectEvent(tx1.receipt, 'EditionSalesDisabledToggled', {
         _editionId: firstEditionTokenId,
         _oldValue: false,
         _newValue: true
-      })
+      });
 
-      const tx2 = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: owner})
+      const tx2 = await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: owner});
 
       await expectEvent(tx2.receipt, 'EditionSalesDisabledToggled', {
         _editionId: firstEditionTokenId,
         _oldValue: true,
         _newValue: false
-      })
-    })
+      });
+    });
 
     it('Reverts when edition does not exist', async () => {
       await expectRevert(
         this.token.toggleEditionSalesDisabled(secondEditionTokenId, {from: owner}),
-        "Edition does not exist"
-      )
-    })
+        'Edition does not exist'
+      );
+    });
 
     it('Reverts when not creator or platform', async () => {
       await expectRevert(
         this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: collectorA}),
-        "Only creator or platform admin"
-      )
-    })
-  })
+        'Only creator or platform admin'
+      );
+    });
+  });
 
   describe('lockInUnlockableContent()', () => {
     it('Can call as creator', async () => {
-      await this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: contract})
+      await this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: contract});
 
-      const content = 'random'
-      const {receipt} = await this.token.lockInUnlockableContent(firstEditionTokenId, content, {from: owner})
+      const content = 'random';
+      const {receipt} = await this.token.lockInUnlockableContent(firstEditionTokenId, content, {from: owner});
       await expectEvent(receipt, 'AdditionalEditionUnlockableSet', {
         _editionId: firstEditionTokenId
-      })
+      });
 
-      expect(await this.token.additionalEditionUnlockableSlot(firstEditionTokenId)).to.be.equal(content)
-    })
+      expect(await this.token.additionalEditionUnlockableSlot(firstEditionTokenId)).to.be.equal(content);
+    });
 
     it('can call as proxy', async () => {
       await this.accessControls.setVerifiedArtistProxy(
@@ -1481,22 +1481,22 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
         {from: owner}
       );
 
-      await this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: contract})
+      await this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: contract});
 
-      const content = 'random'
-      const {receipt} = await this.token.lockInUnlockableContent(firstEditionTokenId, content, {from: proxy})
+      const content = 'random';
+      const {receipt} = await this.token.lockInUnlockableContent(firstEditionTokenId, content, {from: proxy});
       await expectEvent(receipt, 'AdditionalEditionUnlockableSet', {
         _editionId: firstEditionTokenId
-      })
+      });
 
-      expect(await this.token.additionalEditionUnlockableSlot(firstEditionTokenId)).to.be.equal(content)
-    })
+      expect(await this.token.additionalEditionUnlockableSlot(firstEditionTokenId)).to.be.equal(content);
+    });
 
     it('Reverts when not creator', async () => {
       await expectRevert(
         this.token.lockInUnlockableContent(firstEditionTokenId, 'collector a is the best', {from: collectorA}),
-        "Unable to set when not creator"
-      )
-    })
-  })
+        'Unable to set when not creator'
+      );
+    });
+  });
 });

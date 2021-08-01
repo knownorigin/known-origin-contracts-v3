@@ -1,11 +1,11 @@
-"use strict";
+'use strict';
 
-Object.defineProperty(exports, "__esModule", {
+Object.defineProperty(exports, '__esModule', {
   value: true
 });
 exports.default = void 0;
 
-var _ethereumjsUtil = require("ethereumjs-util");
+var _ethereumjsUtil = require('ethereumjs-util');
 
 class MerkleTree {
   constructor(elements) {

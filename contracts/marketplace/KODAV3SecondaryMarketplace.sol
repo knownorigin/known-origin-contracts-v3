@@ -351,7 +351,7 @@ ReserveAuctionMarketplace {
 
         // send money back to top bidder if existing offer found
         if (offer.offer > 0) {
-            _refundBidder(_editionId, offer.bidder, offer.offer, _msgSender(), msg.value);
+            _refundBidder(_editionId, offer.bidder, offer.offer, _bidder, msg.value);
         }
 
         // setup offer
@@ -369,7 +369,7 @@ ReserveAuctionMarketplace {
 
         // send money back to top bidder if existing offer found
         if (offer.offer > 0) {
-            _refundBidder(_tokenId, offer.bidder, offer.offer, _msgSender(), msg.value);
+            _refundBidder(_tokenId, offer.bidder, offer.offer, _bidder, msg.value);
         }
 
         // setup offer

@@ -2,7 +2,7 @@ const {BN, constants, expectEvent, expectRevert, ether} = require('@openzeppelin
 const {ZERO_ADDRESS, MAX_UINT256} = constants;
 const {ecsign} = require('ethereumjs-util');
 
-const {ethers, utils} = require('ethers')
+const {ethers, utils} = require('ethers');
 const {keccak256, defaultAbiCoder, toUtf8Bytes, solidityPack} = utils;
 
 const _ = require('lodash');
@@ -21,11 +21,11 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
   const [ownerPk, minterPk] = [
     '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
     '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d'
-  ] // private keys of hard hat blockchain - no real money here
+  ]; // private keys of hard hat blockchain - no real money here
 
-  const name = 'KODAV3SignatureMarketplace'
+  const name = 'KODAV3SignatureMarketplace';
 
-  const version = "3";
+  const version = '3';
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
@@ -75,12 +75,12 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
 
     this.provider = new ethers.providers.Web3Provider(new Web3.providers.HttpProvider(
       'http://localhost:8545'
-    ))
-  })
+    ));
+  });
 
   describe.skip('isListingValid()', () => {
     it('Returns true for a valid listing', async () => {
-      expect(await this.marketplace.getChainId()).to.be.bignumber.equal("31337");
+      expect(await this.marketplace.getChainId()).to.be.bignumber.equal('31337');
 
       const ownerWallet = new ethers.Wallet(
         ownerPk,
@@ -91,7 +91,7 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
       const nonce = (await this.marketplace.listingNonces(owner, STARTING_EDITION)).addn(1);
 
       // Generate digest
-      const price = 5
+      const price = 5;
       const digest = await getListingDigest(
         owner,
         STARTING_EDITION,
@@ -105,7 +105,7 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
       const {v, r, s} = ecsign(
         Buffer.from(digest.slice(2), 'hex'),
         Buffer.from(ownerWallet.privateKey.slice(2), 'hex')
-      )
+      );
 
       const isListingValid = await this.marketplace.isListingValid(
         owner,
@@ -116,16 +116,16 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
         v,
         r,
         s
-      )
+      );
 
-      expect(isListingValid).to.be.true
-    })
-  })
+      expect(isListingValid).to.be.true;
+    });
+  });
 
   describe.skip('buyEditionToken()', () => {
     describe.skip('ETH listings', () => {
       beforeEach(async () => {
-        const price = ether('1')
+        const price = ether('1');
         this.artistSignature = await createSignatureListing(
           minter,
           minterPk,
@@ -133,23 +133,23 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
           price,
           ZERO_ADDRESS,
           0
-        )
+        );
 
-        this.artist = minter
-        this.price = price
+        this.artist = minter;
+        this.price = price;
 
         // Ensure owner is approved as this will fail if not
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
         // create 3 tokens to the minter
         await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
-      })
+      });
 
       it('Given a valid ETH listing, can buy a token from an edition', async () => {
-        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(minter)
+        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(minter);
 
-        const {v, r, s} = this.artistSignature
-        const { receipt } = await this.marketplace.buyEditionToken(
+        const {v, r, s} = this.artistSignature;
+        const {receipt} = await this.marketplace.buyEditionToken(
           this.artist,
           STARTING_EDITION.addn(1000),
           this.price,
@@ -163,21 +163,21 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
             value: this.price,
             from: random
           }
-        )
+        );
 
-        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(random)
+        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(random);
 
         await expectEvent(receipt, 'EditionPurchased', {
           _editionId: STARTING_EDITION.addn(1000),
           _tokenId: firstEditionTokenId,
           _buyer: random,
           _price: this.price
-        })
-      })
+        });
+      });
 
       it('Reverts when someone lists someone elses token and then someone tried to buy tokens', async () => {
         // owner creates a listing for minter's tokens
-        const price = ether('1')
+        const price = ether('1');
         this.artistSignature = await createSignatureListing(
           owner,
           ownerPk,
@@ -185,9 +185,9 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
           price,
           ZERO_ADDRESS,
           0
-        )
+        );
 
-        const {v, r, s} = this.artistSignature
+        const {v, r, s} = this.artistSignature;
         await expectRevert(
           this.marketplace.buyEditionToken(
             owner,
@@ -204,13 +204,13 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
               from: random
             }
           ),
-          "ERC721_OWNER_MISMATCH"
-        )
-      })
+          'ERC721_OWNER_MISMATCH'
+        );
+      });
 
       it('Reverts when listing nonce has been invalidated', async () => {
         // random buys one token
-        const {v, r, s} = this.artistSignature
+        const {v, r, s} = this.artistSignature;
         await this.marketplace.buyEditionToken(
           this.artist,
           STARTING_EDITION.addn(1000),
@@ -225,16 +225,16 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
             value: this.price,
             from: random
           }
-        )
+        );
 
         const nonceBefore = await this.marketplace.listingNonces(this.artist, STARTING_EDITION.addn(1000));
 
         // artist creates a new listing but first invalidates token
-        await this.marketplace.invalidateListingNonce(STARTING_EDITION.addn(1000), {from: minter})
+        await this.marketplace.invalidateListingNonce(STARTING_EDITION.addn(1000), {from: minter});
 
         const nonceAfter = (await this.marketplace.listingNonces(this.artist, STARTING_EDITION.addn(1000)));
 
-        expect(nonceAfter.sub(nonceBefore)).to.be.bignumber.equal('1')
+        expect(nonceAfter.sub(nonceBefore)).to.be.bignumber.equal('1');
 
         // try to buy from old listing
         await expectRevert(
@@ -253,11 +253,11 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
               from: random
             }
           ),
-          "Invalid listing"
-        )
+          'Invalid listing'
+        );
 
         // create new listing and let buyer pay new price
-        const price = ether('2')
+        const price = ether('2');
         this.artistSignature = await createSignatureListing(
           minter,
           minterPk,
@@ -265,7 +265,7 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
           price,
           ZERO_ADDRESS,
           0
-        )
+        );
 
         await this.marketplace.buyEditionToken(
           this.artist,
@@ -281,19 +281,19 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
             value: price,
             from: random
           }
-        )
+        );
 
-        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(random)
-        expect(await this.token.ownerOf(firstEditionTokenId.addn(1))).to.be.equal(random)
-      })
-    })
+        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(random);
+        expect(await this.token.ownerOf(firstEditionTokenId.addn(1))).to.be.equal(random);
+      });
+    });
 
     describe.skip('ERC20 listings', () => {
       beforeEach(async () => {
-        this.mockERC20 = await MockERC20.new({from: owner})
+        this.mockERC20 = await MockERC20.new({from: owner});
 
-        const price = ether('1')
-        await this.mockERC20.transfer(random, price, {from: owner})
+        const price = ether('1');
+        await this.mockERC20.transfer(random, price, {from: owner});
 
         this.artistSignature = await createSignatureListing(
           minter,
@@ -302,26 +302,26 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
           price,
           this.mockERC20.address,
           0
-        )
+        );
 
-        this.artist = minter
-        this.price = price
+        this.artist = minter;
+        this.price = price;
 
         // Ensure owner is approved as this will fail if not
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
         // create 3 tokens to the minter
         await this.token.mintBatchEdition(3, minter, TOKEN_URI, {from: contract});
-      })
+      });
 
       it('Given a valid listing, can buy a token from an edition', async () => {
-        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(minter)
+        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(minter);
 
-        await this.mockERC20.approve(this.marketplace.address, this.price, {from: random})
-        const balanceOfKOBefore = await this.mockERC20.balanceOf(koCommission)
+        await this.mockERC20.approve(this.marketplace.address, this.price, {from: random});
+        const balanceOfKOBefore = await this.mockERC20.balanceOf(koCommission);
 
-        const {v, r, s} = this.artistSignature
-        const { receipt } = await this.marketplace.buyEditionToken(
+        const {v, r, s} = this.artistSignature;
+        const {receipt} = await this.marketplace.buyEditionToken(
           this.artist,
           STARTING_EDITION.addn(1000),
           this.price,
@@ -334,22 +334,22 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
           {
             from: random
           }
-        )
+        );
 
-        const balanceOfKOAfter = await this.mockERC20.balanceOf(koCommission)
-        expect(balanceOfKOAfter.sub(balanceOfKOBefore)).to.be.bignumber.equal(this.price.divn(10000000).muln(1500000))
+        const balanceOfKOAfter = await this.mockERC20.balanceOf(koCommission);
+        expect(balanceOfKOAfter.sub(balanceOfKOBefore)).to.be.bignumber.equal(this.price.divn(10000000).muln(1500000));
 
-        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(random)
+        expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(random);
 
         await expectEvent(receipt, 'EditionPurchased', {
           _editionId: STARTING_EDITION.addn(1000),
           _tokenId: firstEditionTokenId,
           _buyer: random,
           _price: this.price
-        })
-      })
-    })
-  })
+        });
+      });
+    });
+  });
 
   const createSignatureListing = async (sender, senderPk, editionId, price, paymentTokenAddress, startDate) => {
     const wallet = new ethers.Wallet(
@@ -374,10 +374,10 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
     const {v, r, s} = ecsign(
       Buffer.from(digest.slice(2), 'hex'),
       Buffer.from(wallet.privateKey.slice(2), 'hex')
-    )
+    );
 
-    return {v, r, s}
-  }
+    return {v, r, s};
+  };
 
   const getDomainSeparator = () => {
     return keccak256(
@@ -393,15 +393,15 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
           this.marketplace.address
         ]
       )
-    )
-  }
+    );
+  };
 
   const PERMIT_TYPEHASH = keccak256(toUtf8Bytes('Permit(address _creator,address _editionId,uint256 _price,address _paymentToken,uint256 _startDate,uint256 nonce)'));
 
   const getListingDigest = async (owner, editionId, price, paymentToken, startDate, nonce) => {
     // console.log({owner, spender, tokenId, nonce});
 
-    const DOMAIN_SEPARATOR = getDomainSeparator()
+    const DOMAIN_SEPARATOR = getDomainSeparator();
 
     return keccak256(
       solidityPack(
@@ -418,6 +418,6 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
           )
         ]
       )
-    )
-  }
-})
+    );
+  };
+});

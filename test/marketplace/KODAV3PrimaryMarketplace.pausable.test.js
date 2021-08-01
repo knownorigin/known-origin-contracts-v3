@@ -70,15 +70,15 @@ contract('KODAV3PrimaryMarketplace pausable', function (accounts) {
     it('pause() - reverts when not admin', async () => {
       await expectRevert(
         this.marketplace.pause({from: collectorA}),
-        "Caller not admin"
-      )
+        'Caller not admin'
+      );
     });
 
     it('unpause() - reverts when not admin', async () => {
       await expectRevert(
         this.marketplace.unpause({from: collectorA}),
-        "Caller not admin"
-      )
+        'Caller not admin'
+      );
     });
   });
 

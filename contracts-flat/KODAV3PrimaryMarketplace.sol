@@ -360,7 +360,6 @@ interface IBuyNowMarketplace {
     function listForBuyNow(address _creator, uint256 _id, uint128 _listingPrice, uint128 _startDate) external;
 
     function buyEditionToken(uint256 _id) external payable;
-
     function buyEditionTokenFor(uint256 _id, address _recipient) external payable;
 
     function setBuyNowPriceListing(uint256 _editionId, uint128 _listingPrice) external;
@@ -377,7 +376,6 @@ interface IEditionOffersMarketplace {
     function enableEditionOffers(uint256 _editionId, uint128 _startDate) external;
 
     function placeEditionBid(uint256 _editionId) external payable;
-
     function placeEditionBidFor(uint256 _editionId, address _bidder) external payable;
 
     function withdrawEditionBid(uint256 _editionId) external;
@@ -397,6 +395,7 @@ interface IEditionSteppedMarketplace {
     function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate) external;
 
     function buyNextStep(uint256 _editionId) external payable;
+    function buyNextStepFor(uint256 _editionId, address _buyer) external payable;
 
     function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
 
@@ -415,6 +414,7 @@ interface IReserveAuctionMarketplace {
     event EmergencyBidWithdrawFromReserveAuction(uint256 indexed _id, address _bidder, uint128 _bid);
 
     function placeBidOnReserveAuction(uint256 _id) external payable;
+    function placeBidOnReserveAuctionFor(uint256 _id, address _bidder) external payable;
 
     function listForReserveAuction(address _creator, uint256 _id, uint128 _reservePrice, uint128 _startDate) external;
 
@@ -452,7 +452,6 @@ interface ITokenOffersMarketplace {
     function withdrawTokenBid(uint256 _tokenId) external;
 
     function placeTokenBid(uint256 _tokenId) external payable;
-
     function placeTokenBidFor(uint256 _tokenId, address _bidder) external payable;
 }
 
@@ -466,7 +465,6 @@ interface IEditionOffersSecondaryMarketplace {
     event EditionBidAccepted(uint256 indexed _tokenId, address _currentOwner, address _bidder, uint256 _amount);
 
     function placeEditionBid(uint256 _editionId) external payable;
-
     function placeEditionBidFor(uint256 _editionId, address _bidder) external payable;
 
     function withdrawEditionBid(uint256 _editionId) external;
@@ -1034,6 +1032,19 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
     payable
     whenNotPaused
     nonReentrant {
+        _placeBidOnReserveAuction(_id, _msgSender());
+    }
+
+    function placeBidOnReserveAuctionFor(uint256 _id, address _bidder)
+    public
+    override
+    payable
+    whenNotPaused
+    nonReentrant {
+        _placeBidOnReserveAuction(_id, _bidder);
+    }
+
+    function _placeBidOnReserveAuction(uint256 _id, address _bidder) internal {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
         require(reserveAuction.reservePrice > 0, "Not set up for reserve auction");
         require(block.timestamp >= reserveAuction.startDate, "Not accepting bids yet");
@@ -1063,13 +1074,13 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
         // if someone else has previously bid, there is a bid we need to refund
         if (reserveAuction.bid > 0) {
-            _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid, _msgSender(), msg.value);
+            _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid, _bidder, msg.value);
         }
 
         reserveAuction.bid = uint128(msg.value);
-        reserveAuction.bidder = _msgSender();
+        reserveAuction.bidder = _bidder;
 
-        emit BidPlacedOnReserveAuction(_id, reserveAuction.seller, _msgSender(), msg.value, originalBiddingEnd, reserveAuction.biddingEnd);
+        emit BidPlacedOnReserveAuction(_id, reserveAuction.seller, _bidder, msg.value, originalBiddingEnd, reserveAuction.biddingEnd);
     }
 
     function resultReserveAuction(uint256 _id)
@@ -1493,6 +1504,19 @@ BuyNowMarketplace {
     payable
     whenNotPaused
     nonReentrant {
+        _buyNextStep(_editionId, _msgSender());
+    }
+
+    function buyNextStepFor(uint256 _editionId, address _buyer)
+    public
+    override
+    payable
+    whenNotPaused
+    nonReentrant {
+        _buyNextStep(_editionId, _buyer);
+    }
+
+    function _buyNextStep(uint256 _editionId, address _buyer) internal {
         Stepped storage steppedAuction = editionStep[_editionId];
         require(steppedAuction.seller != address(0), "Edition not listed for stepped auction");
         require(steppedAuction.startDate <= block.timestamp, "Not started yet");
@@ -1500,7 +1524,7 @@ BuyNowMarketplace {
         uint256 expectedPrice = _getNextEditionSteppedPrice(_editionId);
         require(msg.value >= expectedPrice, "Expected price not met");
 
-        uint256 tokenId = _facilitateNextPrimarySale(_editionId, expectedPrice, _msgSender(), true);
+        uint256 tokenId = _facilitateNextPrimarySale(_editionId, expectedPrice, _buyer, true);
 
         // Bump the current step
         uint16 step = steppedAuction.currentStep;
@@ -1510,11 +1534,11 @@ BuyNowMarketplace {
 
         // send back excess if supplied - will allow UX flow of setting max price to pay
         if (msg.value > expectedPrice) {
-            (bool success,) = _msgSender().call{value : msg.value - expectedPrice}("");
+            (bool success,) = _buyer.call{value : msg.value - expectedPrice}("");
             require(success, "failed to send overspend back");
         }
 
-        emit EditionSteppedSaleBuy(_editionId, tokenId, _msgSender(), expectedPrice, step);
+        emit EditionSteppedSaleBuy(_editionId, tokenId, _buyer, expectedPrice, step);
     }
 
     // creates an exit from a step if required but forces a buy now price

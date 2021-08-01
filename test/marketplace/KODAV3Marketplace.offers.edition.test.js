@@ -81,8 +81,8 @@ contract('KODAV3Marketplace', function (accounts) {
         const duration = time.duration.days(1);
         const start = now.add(duration);
         await expectRevert(
-            this.marketplace.enableEditionOffers(firstEditionTokenId, start, {from: collectorA}),
-            "Caller not contract"
+          this.marketplace.enableEditionOffers(firstEditionTokenId, start, {from: collectorA}),
+          'Caller not contract'
         );
 
       });
@@ -98,12 +98,12 @@ contract('KODAV3Marketplace', function (accounts) {
           await this.marketplace.enableEditionOffers(firstEditionTokenId, start, {from: contract});
 
           await expectRevert(
-              this.marketplace.placeEditionBid(firstEditionTokenId, {
-                from: collectorA,
-                value: _0_1_ETH
-              }),
-              "Not yet accepting offers"
-          )
+            this.marketplace.placeEditionBid(firstEditionTokenId, {
+              from: collectorA,
+              value: _0_1_ETH
+            }),
+            'Not yet accepting offers'
+          );
 
         });
 
@@ -141,13 +141,13 @@ contract('KODAV3Marketplace', function (accounts) {
       const _0_5_ETH = ether('0.5');
 
       it('Reverts when edition is listed', async () => {
-        await this.marketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, '0', {from: contract})
+        await this.marketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, '0', {from: contract});
 
         await expectRevert(
           this.marketplace.placeEditionBid(firstEditionTokenId, {from: collectorB, value: _0_1_ETH}),
-          "Edition is listed"
+          'Edition is listed'
         );
-      })
+      });
 
       it('reverts if bid lower than minimum on first bid', async () => {
 
@@ -156,8 +156,8 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // collector B places offer 0.50001 ETH for token (too low)
         await expectRevert(
-            this.marketplace.placeEditionBid(edition, {from: collectorB, value: BID_TOO_LOW}),
-            'Bid not high enough'
+          this.marketplace.placeEditionBid(edition, {from: collectorB, value: BID_TOO_LOW}),
+          'Bid not high enough'
         );
       });
 
@@ -171,8 +171,8 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // collector B places offer 0.50001 ETH for token (too low)
         await expectRevert(
-            this.marketplace.placeEditionBid(edition, {from: collectorB, value: BID_TOO_LOW}),
-            'Bid not high enough'
+          this.marketplace.placeEditionBid(edition, {from: collectorB, value: BID_TOO_LOW}),
+          'Bid not high enough'
         );
       });
 
@@ -190,8 +190,8 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // collector C places offer 0.510001 ETH for token (too low for next bid)
         await expectRevert(
-            this.marketplace.placeEditionBid(edition, {from: collectorB, value: BID_TOO_LOW}),
-            'Bid not high enough'
+          this.marketplace.placeEditionBid(edition, {from: collectorB, value: BID_TOO_LOW}),
+          'Bid not high enough'
         );
 
       });
@@ -293,8 +293,8 @@ contract('KODAV3Marketplace', function (accounts) {
 
           // attempt to bid again with same offer
           await expectRevert(
-              this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH}),
-              'Bid not high enough'
+            this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH}),
+            'Bid not high enough'
           );
 
         });
@@ -308,8 +308,11 @@ contract('KODAV3Marketplace', function (accounts) {
         const edition = firstEditionTokenId;
 
         // offer minimum bid for token
-        const _0_5_ETH = ether('0.5')
-        const receipt = await this.marketplace.placeEditionBidFor(edition, collectorB, {from: contract, value: _0_5_ETH});
+        const _0_5_ETH = ether('0.5');
+        const receipt = await this.marketplace.placeEditionBidFor(edition, collectorB, {
+          from: contract,
+          value: _0_5_ETH
+        });
         expectEvent(receipt, 'EditionBidPlaced', {
           _editionId: edition,
           _bidder: collectorB,
@@ -320,8 +323,8 @@ contract('KODAV3Marketplace', function (accounts) {
         const {offer, bidder} = await this.marketplace.editionOffers(firstEditionTokenId);
         expect(bidder).to.be.equal(collectorB);
         expect(offer).to.be.bignumber.equal(_0_5_ETH);
-      })
-    })
+      });
+    });
 
     describe('withdrawEditionBid()', () => {
 
@@ -347,8 +350,8 @@ contract('KODAV3Marketplace', function (accounts) {
         });
 
         await expectRevert(
-            this.marketplace.withdrawEditionBid(edition, {from: collectorA}),
-            "Bid lockup not elapsed"
+          this.marketplace.withdrawEditionBid(edition, {from: collectorA}),
+          'Bid lockup not elapsed'
         );
 
       });
@@ -359,8 +362,8 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // collector A attempts to withdraw bid when none exists
         await expectRevert(
-            this.marketplace.withdrawEditionBid(edition, {from: collectorA}),
-            'No open bid'
+          this.marketplace.withdrawEditionBid(edition, {from: collectorA}),
+          'No open bid'
         );
 
       });
@@ -377,8 +380,8 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // collector B attempts to withdraw collector A's bid
         await expectRevert(
-            this.marketplace.withdrawEditionBid(edition, {from: collectorB}),
-            'Not the top bidder'
+          this.marketplace.withdrawEditionBid(edition, {from: collectorB}),
+          'Not the top bidder'
         );
 
       });
@@ -466,7 +469,7 @@ contract('KODAV3Marketplace', function (accounts) {
           const receipt = await this.marketplace.withdrawEditionBid(edition, {from: collectorA, gasPrice});
 
           // Determine the gas cost associated with the transaction
-          const gasUsed = new BN( receipt.receipt.cumulativeGasUsed );
+          const gasUsed = new BN(receipt.receipt.cumulativeGasUsed);
           const txCost = gasUsed.mul(gasPrice);
 
           // Expected balance is starting balance less tx cost plus .5 ETH, the previous bid amount
@@ -514,8 +517,8 @@ contract('KODAV3Marketplace', function (accounts) {
 
           // attempt to withdraw bid again
           await expectRevert(
-              this.marketplace.withdrawEditionBid(edition, {from: collectorA}),
-              'No open bid'
+            this.marketplace.withdrawEditionBid(edition, {from: collectorA}),
+            'No open bid'
           );
 
         });
@@ -529,13 +532,13 @@ contract('KODAV3Marketplace', function (accounts) {
 
           // collector a bids
           await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
-          await this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter})
+          await this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter});
 
           await this.marketplace.placeEditionBid(edition, {from: collectorB, value: _0_5_ETH});
-          await this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter})
+          await this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter});
 
           await this.marketplace.placeEditionBid(edition, {from: collectorB, value: _0_5_ETH});
-          await this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter})
+          await this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter});
 
           await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
 
@@ -543,7 +546,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
           // withdraw bid
           await this.marketplace.withdrawEditionBid(edition, {from: collectorA});
-        })
+        });
       });
 
     });
@@ -568,8 +571,8 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // minter attempts to reject bid when none exists
         await expectRevert(
-            this.marketplace.rejectEditionBid(edition, {from: minter}),
-            'No open bid'
+          this.marketplace.rejectEditionBid(edition, {from: minter}),
+          'No open bid'
         );
 
       });
@@ -583,8 +586,8 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // collector B attempts to reject collector A's bid
         await expectRevert(
-            this.marketplace.rejectEditionBid(edition, {from: collectorB}),
-            'Caller not the creator'
+          this.marketplace.rejectEditionBid(edition, {from: collectorB}),
+          'Caller not the creator'
         );
 
       });
@@ -599,13 +602,13 @@ contract('KODAV3Marketplace', function (accounts) {
           await this.marketplace.enableEditionOffers(firstEditionTokenId, '0', {from: contract});
 
           await this.marketplace.placeEditionBid(edition, {from: collectorB, value: _0_1_ETH});
-          await this.marketplace.acceptEditionBid(edition, _0_1_ETH, {from: minter})
+          await this.marketplace.acceptEditionBid(edition, _0_1_ETH, {from: minter});
 
           await this.marketplace.placeEditionBid(edition, {from: collectorB, value: _0_1_ETH});
-          await this.marketplace.acceptEditionBid(edition, _0_1_ETH, {from: minter})
+          await this.marketplace.acceptEditionBid(edition, _0_1_ETH, {from: minter});
 
           await this.marketplace.placeEditionBid(edition, {from: collectorB, value: _0_1_ETH});
-          await this.marketplace.acceptEditionBid(edition, _0_1_ETH, {from: minter})
+          await this.marketplace.acceptEditionBid(edition, _0_1_ETH, {from: minter});
 
           await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_1_ETH});
 
@@ -614,7 +617,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
           // withdraw bid
           await this.marketplace.rejectEditionBid(edition, {from: minter});
-        })
+        });
 
         it('emits EditionBidRejected event when creator rejects offer', async () => {
 
@@ -731,13 +734,13 @@ contract('KODAV3Marketplace', function (accounts) {
 
           // attempt to reject bid again
           await expectRevert(
-              this.marketplace.rejectEditionBid(edition, {from: minter}),
-              'No open bid'
+            this.marketplace.rejectEditionBid(edition, {from: minter}),
+            'No open bid'
           );
 
         });
 
-      })
+      });
 
     });
 
@@ -761,8 +764,8 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // minter attempts to reject bid when none exists
         await expectRevert(
-            this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter}),
-            'No open bid'
+          this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter}),
+          'No open bid'
         );
 
       });
@@ -776,8 +779,8 @@ contract('KODAV3Marketplace', function (accounts) {
 
         // collector B attempts to reject collector A's bid
         await expectRevert(
-            this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: collectorB}),
-            'Not creator'
+          this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: collectorB}),
+          'Not creator'
         );
 
       });
@@ -790,8 +793,8 @@ contract('KODAV3Marketplace', function (accounts) {
         await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_1_ETH});
 
         await expectRevert(
-            this.marketplace.acceptEditionBid(firstEditionTokenId, _0_5_ETH, {from: minter}),
-            'Offer price has changed'
+          this.marketplace.acceptEditionBid(firstEditionTokenId, _0_5_ETH, {from: minter}),
+          'Offer price has changed'
         );
       });
 
@@ -812,7 +815,7 @@ contract('KODAV3Marketplace', function (accounts) {
             _amount: _0_5_ETH
           });
 
-        })
+        });
 
         it('emits EditionBidAccepted event when proxy accepts offer', async () => {
           await this.accessControls.setVerifiedArtistProxy(
@@ -835,7 +838,7 @@ contract('KODAV3Marketplace', function (accounts) {
             _amount: _0_5_ETH
           });
 
-        })
+        });
 
         xit('KO and artist commission is split', async () => {
           // TODO implement this test
@@ -853,8 +856,8 @@ contract('KODAV3Marketplace', function (accounts) {
 
           // attempt to accept offer twice
           await expectRevert(
-              this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter}),
-              'No open bid'
+            this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter}),
+            'No open bid'
           );
 
         });
@@ -874,7 +877,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
         });
 
-      })
+      });
 
     });
 
@@ -997,7 +1000,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
         });
 
-      })
+      });
 
     });
 
@@ -1016,13 +1019,13 @@ contract('KODAV3Marketplace', function (accounts) {
       });
 
       it('Can buy a token until sales are disabled', async () => {
-        await this.marketplace.convertFromBuyNowToOffers(firstEditionTokenId, this.start, {from: minter})
+        await this.marketplace.convertFromBuyNowToOffers(firstEditionTokenId, this.start, {from: minter});
 
         // collector A buys a token
         const edition = firstEditionTokenId;
 
         // offer 0.5 ETH for token (first bid)
-        const _0_5_ETH = ether('0.5')
+        const _0_5_ETH = ether('0.5');
         await this.marketplace.placeEditionBid(edition, {from: collectorA, value: _0_5_ETH});
 
         // accept bid
@@ -1033,18 +1036,18 @@ contract('KODAV3Marketplace', function (accounts) {
           _amount: _0_5_ETH
         });
 
-        await this.marketplace.placeEditionBid(edition, {from: collectorB, value: _0_5_ETH})
+        await this.marketplace.placeEditionBid(edition, {from: collectorB, value: _0_5_ETH});
 
         // seller disables sales
-        await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: minter})
+        await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: minter});
 
         // any further sale should fail
         await expectRevert(
           this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter}),
-          "Edition sales disabled"
-        )
+          'Edition sales disabled'
+        );
       });
-    })
+    });
 
     describe('convert to buy it now', () => {
       describe('when offers enabled', () => {
@@ -1054,49 +1057,49 @@ contract('KODAV3Marketplace', function (accounts) {
           this.start = now.add(duration);
 
           await this.marketplace.enableEditionOffers(firstEditionTokenId, this.start, {from: contract});
-        })
+        });
 
         describe('when an offer is in flight', () => {
           it('can convert and refund', async () => {
             // place bid
             await time.increaseTo(this.start);
-            await this.marketplace.placeEditionBid(firstEditionTokenId, {from: collectorA, value: MIN_BID})
+            await this.marketplace.placeEditionBid(firstEditionTokenId, {from: collectorA, value: MIN_BID});
 
-            const collectorATracker = await balance.tracker(collectorA)
+            const collectorATracker = await balance.tracker(collectorA);
 
-            const price = ether('0.75')
-            const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter})
+            const price = ether('0.75');
+            const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter});
 
-            expect(await collectorATracker.delta()).to.be.bignumber.equal(MIN_BID)
+            expect(await collectorATracker.delta()).to.be.bignumber.equal(MIN_BID);
 
             await expectEvent(receipt, 'EditionConvertedFromOffersToBuyItNow', {
               _editionId: firstEditionTokenId,
               _price: price,
               _startDate: new BN('0')
-            })
+            });
 
             // test buy
-            await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: price})
-            expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA)
-          })
-        })
+            await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: price});
+            expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+          });
+        });
 
         describe('when no offer is in flight', () => {
           it('can convert', async () => {
-            const price = ether('0.75')
-            const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter})
+            const price = ether('0.75');
+            const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter});
 
             await expectEvent(receipt, 'EditionConvertedFromOffersToBuyItNow', {
               _editionId: firstEditionTokenId,
               _price: price,
               _startDate: new BN('0')
-            })
+            });
 
             // test buy
-            await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: price})
-            expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA)
-          })
-        })
+            await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: price});
+            expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+          });
+        });
 
         it('can convert as proxy', async () => {
           await this.accessControls.setVerifiedArtistProxy(
@@ -1106,85 +1109,85 @@ contract('KODAV3Marketplace', function (accounts) {
             {from: minter}
           );
 
-          const price = ether('0.75')
-          const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: proxy})
+          const price = ether('0.75');
+          const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: proxy});
 
           await expectEvent(receipt, 'EditionConvertedFromOffersToBuyItNow', {
             _editionId: firstEditionTokenId,
             _price: price,
             _startDate: new BN('0')
-          })
+          });
 
           // test buy
-          await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: price})
-          expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA)
-        })
-      })
+          await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: price});
+          expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+        });
+      });
 
       describe('when not listed (generally accepting bids)', () => {
         describe('with bid', () => {
           it('can convert and refund', async () => {
             // place bid
-            await this.marketplace.placeEditionBid(firstEditionTokenId, {from: collectorA, value: MIN_BID})
+            await this.marketplace.placeEditionBid(firstEditionTokenId, {from: collectorA, value: MIN_BID});
 
-            const collectorATracker = await balance.tracker(collectorA)
+            const collectorATracker = await balance.tracker(collectorA);
 
-            const price = ether('0.75')
-            const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter})
+            const price = ether('0.75');
+            const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter});
 
-            expect(await collectorATracker.delta()).to.be.bignumber.equal(MIN_BID)
+            expect(await collectorATracker.delta()).to.be.bignumber.equal(MIN_BID);
 
             await expectEvent(receipt, 'EditionConvertedFromOffersToBuyItNow', {
               _editionId: firstEditionTokenId,
               _price: price,
               _startDate: new BN('0')
-            })
+            });
 
             // test buy
-            await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: price})
-            expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA)
-          })
-        })
+            await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: price});
+            expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+          });
+        });
 
         describe('without bid', () => {
           it('can convert', async () => {
-            const price = ether('0.75')
-            const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter})
+            const price = ether('0.75');
+            const {receipt} = await this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, price, '0', {from: minter});
 
             await expectEvent(receipt, 'EditionConvertedFromOffersToBuyItNow', {
               _editionId: firstEditionTokenId,
               _price: price,
               _startDate: new BN('0')
-            })
+            });
 
             // test buy
-            await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: price})
-            expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA)
-          })
-        })
-      })
+            await this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: price});
+            expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
+          });
+        });
+      });
 
       it('Reverts when not creator', async () => {
         await expectRevert(
           this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, '0', '0', {from: collectorA}),
-          "Not creator"
-        )
-      })
+          'Not creator'
+        );
+      });
 
       it('Reverts when listing price not enough', async () => {
         await expectRevert(
           this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, '0', '0', {from: minter}),
-          "Listing price not enough"
-        )
-      })
+          'Listing price not enough'
+        );
+      });
 
       it('Reverts when edition is listed - buy now', async () => {
-        await this.marketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, '0', {from: contract})
+        await this.marketplace.listForBuyNow(minter, firstEditionTokenId, _0_1_ETH, '0', {from: contract});
         await expectRevert(
           this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, _0_1_ETH, '0', {from: minter}),
-          "Edition is listed"
-        )
-      })
+          'Edition is listed'
+        );
+      });
 
       it('Reverts when edition is listed - stepped', async () => {
         const latestBlockTime = await time.latest();
@@ -1202,9 +1205,9 @@ contract('KODAV3Marketplace', function (accounts) {
 
         await expectRevert(
           this.marketplace.convertOffersToBuyItNow(firstEditionTokenId, _0_1_ETH, '0', {from: minter}),
-          "Edition is listed"
-        )
-      })
+          'Edition is listed'
+        );
+      });
 
       it('Reverts when edition is listed - reserve', async () => {
         await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract});
@@ -1215,14 +1218,14 @@ contract('KODAV3Marketplace', function (accounts) {
           ether('1'),
           '0',
           {from: contract}
-        )
+        );
 
         await expectRevert(
           this.marketplace.convertOffersToBuyItNow(secondEditionTokenId, _0_1_ETH, '0', {from: minter}),
-          "Edition is listed"
-        )
-      })
-    })
+          'Edition is listed'
+        );
+      });
+    });
   });
 
 });

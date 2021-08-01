@@ -4,7 +4,7 @@ const {ZERO_ADDRESS} = constants;
 const _ = require('lodash');
 
 const web3 = require('web3');
-const {ether} = require("@openzeppelin/test-helpers");
+const {ether} = require('@openzeppelin/test-helpers');
 
 const {expect} = require('chai');
 
@@ -72,7 +72,7 @@ contract('KODA CHI Token Tests', function (accounts) {
     await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
 
     // Create marketplace and enable in whitelist
-    this.marketplace = await KODAV3Marketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner})
+    this.marketplace = await KODAV3Marketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner});
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.marketplace.address, {from: owner});
   });
 
@@ -85,7 +85,7 @@ contract('KODA CHI Token Tests', function (accounts) {
 
       it('GAS tokens have been burnt', async () => {
         expect(await this.chiToken.balanceOf(owner)).to.be.bignumber.equal('197');
-      })
+      });
 
       it('emits a Transfer event', async () => {
         expectEvent.inLogs(this.logs, 'Transfer', {from: ZERO_ADDRESS, to: owner, tokenId: firstEditionTokenId});
@@ -99,7 +99,7 @@ contract('KODA CHI Token Tests', function (accounts) {
 
       it('GAS tokens have NOT been burnt', async () => {
         expect(await this.chiToken.balanceOf(owner)).to.be.bignumber.equal('200');
-      })
+      });
 
       it('emits a Transfer event', () => {
         expectEvent.inLogs(this.logs, 'Transfer', {from: ZERO_ADDRESS, to: owner, tokenId: firstEditionTokenId});

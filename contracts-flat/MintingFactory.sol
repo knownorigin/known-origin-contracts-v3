@@ -27,7 +27,7 @@ abstract contract Context {
 
 // File: contracts/core/IKODAV3Minter.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -42,7 +42,7 @@ interface IKODAV3Minter {
 
 // File: contracts/access/IKOAccessControlsLookup.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -62,7 +62,7 @@ interface IKOAccessControlsLookup {
 
 // File: @openzeppelin/contracts/utils/introspection/IERC165.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -89,7 +89,7 @@ interface IERC165 {
 
 // File: @openzeppelin/contracts/token/ERC721/IERC721.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -220,7 +220,7 @@ interface IERC721 is IERC165 {
 
 // File: contracts/core/IERC2309.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -249,7 +249,7 @@ interface IERC2309 {
 
 // File: contracts/core/IERC2981.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -294,7 +294,7 @@ interface IERC2981 is IERC165, IERC2981EditionExtension {
 
 // File: contracts/core/IHasSecondarySaleFees.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -312,7 +312,7 @@ interface IHasSecondarySaleFees is IERC165 {
 
 // File: contracts/core/IKODAV3.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -390,7 +390,7 @@ IHasSecondarySaleFees // Rariable / Foundation royalties
 
 // File: contracts/marketplace/IKODAV3Marketplace.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 interface IBuyNowMarketplace {
@@ -419,6 +419,8 @@ interface IEditionOffersMarketplace {
     function enableEditionOffers(uint256 _editionId, uint128 _startDate) external;
 
     function placeEditionBid(uint256 _editionId) external payable;
+
+    function placeEditionBidFor(uint256 _editionId, address _bidder) external payable;
 
     function withdrawEditionBid(uint256 _editionId) external;
 
@@ -455,6 +457,7 @@ interface IReserveAuctionMarketplace {
     event EmergencyBidWithdrawFromReserveAuction(uint256 indexed _id, address _bidder, uint128 _bid);
 
     function placeBidOnReserveAuction(uint256 _id) external payable;
+    function placeBidOnReserveAuctionFor(uint256 _id, address _bidder) external payable;
 
     function listForReserveAuction(address _creator, uint256 _id, uint128 _reservePrice, uint128 _startDate) external;
 
@@ -492,6 +495,8 @@ interface ITokenOffersMarketplace {
     function withdrawTokenBid(uint256 _tokenId) external;
 
     function placeTokenBid(uint256 _tokenId) external payable;
+
+    function placeTokenBidFor(uint256 _tokenId, address _bidder) external payable;
 }
 
 interface IBuyNowSecondaryMarketplace {
@@ -504,6 +509,8 @@ interface IEditionOffersSecondaryMarketplace {
     event EditionBidAccepted(uint256 indexed _tokenId, address _currentOwner, address _bidder, uint256 _amount);
 
     function placeEditionBid(uint256 _editionId) external payable;
+
+    function placeEditionBidFor(uint256 _editionId, address _bidder) external payable;
 
     function withdrawEditionBid(uint256 _editionId) external;
 
@@ -518,7 +525,7 @@ interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffe
 
 // File: @openzeppelin/contracts/security/ReentrancyGuard.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -583,7 +590,7 @@ abstract contract ReentrancyGuard {
 
 // File: @openzeppelin/contracts/security/Pausable.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -675,7 +682,7 @@ abstract contract Pausable is Context {
 
 // File: @openzeppelin/contracts/token/ERC20/IERC20.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -755,7 +762,7 @@ interface IERC20 {
 
 // File: contracts/marketplace/BaseMarketplace.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -895,7 +902,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
 
 // File: contracts/marketplace/BuyNowMarketplace.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -982,7 +989,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
 
 // File: contracts/marketplace/ReserveAuctionMarketplace.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -1043,6 +1050,19 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
     payable
     whenNotPaused
     nonReentrant {
+        _placeBidOnReserveAuction(_id, _msgSender());
+    }
+
+    function placeBidOnReserveAuctionFor(uint256 _id, address _bidder)
+    public
+    override
+    payable
+    whenNotPaused
+    nonReentrant {
+        _placeBidOnReserveAuction(_id, _bidder);
+    }
+
+    function _placeBidOnReserveAuction(uint256 _id, address _bidder) internal {
         ReserveAuction storage reserveAuction = editionOrTokenWithReserveAuctions[_id];
         require(reserveAuction.reservePrice > 0, "Not set up for reserve auction");
         require(block.timestamp >= reserveAuction.startDate, "Not accepting bids yet");
@@ -1072,13 +1092,13 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
         // if someone else has previously bid, there is a bid we need to refund
         if (reserveAuction.bid > 0) {
-            _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid, _msgSender(), msg.value);
+            _refundBidder(_id, reserveAuction.bidder, reserveAuction.bid, _bidder, msg.value);
         }
 
         reserveAuction.bid = uint128(msg.value);
-        reserveAuction.bidder = _msgSender();
+        reserveAuction.bidder = _bidder;
 
-        emit BidPlacedOnReserveAuction(_id, reserveAuction.seller, _msgSender(), msg.value, originalBiddingEnd, reserveAuction.biddingEnd);
+        emit BidPlacedOnReserveAuction(_id, reserveAuction.seller, _bidder, msg.value, originalBiddingEnd, reserveAuction.biddingEnd);
     }
 
     function resultReserveAuction(uint256 _id)
@@ -1210,7 +1230,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
 // File: contracts/marketplace/KODAV3PrimaryMarketplace.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -1322,29 +1342,16 @@ BuyNowMarketplace {
     payable
     whenNotPaused
     nonReentrant {
-        require(!_isEditionListed(_editionId), "Edition is listed");
+        _placeEditionBid(_editionId, _msgSender());
+    }
 
-        Offer storage offer = editionOffers[_editionId];
-        require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
-
-        // Honor start date if set
-        uint256 startDate = editionOffersStartDate[_editionId];
-        if (startDate > 0) {
-            require(block.timestamp >= startDate, "Not yet accepting offers");
-
-            // elapsed, so free storage
-            delete editionOffersStartDate[_editionId];
-        }
-
-        // send money back to top bidder if existing offer found
-        if (offer.offer > 0) {
-            _refundBidder(_editionId, offer.bidder, offer.offer, _msgSender(), msg.value);
-        }
-
-        // setup offer
-        editionOffers[_editionId] = Offer(msg.value, _msgSender(), _getLockupTime());
-
-        emit EditionBidPlaced(_editionId, _msgSender(), msg.value);
+    function placeEditionBidFor(uint256 _editionId, address _bidder)
+    public
+    override
+    payable
+    whenNotPaused
+    nonReentrant {
+        _placeEditionBid(_editionId, _bidder);
     }
 
     function withdrawEditionBid(uint256 _editionId)
@@ -1729,11 +1736,37 @@ BuyNowMarketplace {
 
         return false;
     }
+
+    function _placeEditionBid(uint256 _editionId, address _bidder) internal {
+        require(!_isEditionListed(_editionId), "Edition is listed");
+
+        Offer storage offer = editionOffers[_editionId];
+        require(msg.value >= offer.offer + minBidAmount, "Bid not high enough");
+
+        // Honor start date if set
+        uint256 startDate = editionOffersStartDate[_editionId];
+        if (startDate > 0) {
+            require(block.timestamp >= startDate, "Not yet accepting offers");
+
+            // elapsed, so free storage
+            delete editionOffersStartDate[_editionId];
+        }
+
+        // send money back to top bidder if existing offer found
+        if (offer.offer > 0) {
+            _refundBidder(_editionId, offer.bidder, offer.offer, _msgSender(), msg.value);
+        }
+
+        // setup offer
+        editionOffers[_editionId] = Offer(msg.value, _bidder, _getLockupTime());
+
+        emit EditionBidPlaced(_editionId, _bidder, msg.value);
+    }
 }
 
 // File: contracts/collab/ICollabRoyaltiesRegistry.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 /// @notice Common interface to the edition royalties registry
@@ -1777,7 +1810,7 @@ interface ICollabRoyaltiesRegistry {
 
 // File: contracts/minter/MintingFactory.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 

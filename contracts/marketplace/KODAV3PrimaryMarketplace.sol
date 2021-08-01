@@ -292,6 +292,19 @@ BuyNowMarketplace {
     payable
     whenNotPaused
     nonReentrant {
+        _buyNextStep(_editionId, _msgSender(), _msgSender());
+    }
+
+    function buyNextStepFor(uint256 _editionId, address _buyer)
+    public
+    override
+    payable
+    whenNotPaused
+    nonReentrant {
+        _buyNextStep(_editionId, _msgSender(), _buyer);
+    }
+
+    function _buyNextStep(uint256 _editionId, address _invoker, address _buyer) internal {
         Stepped storage steppedAuction = editionStep[_editionId];
         require(steppedAuction.seller != address(0), "Edition not listed for stepped auction");
         require(steppedAuction.startDate <= block.timestamp, "Not started yet");
@@ -299,7 +312,7 @@ BuyNowMarketplace {
         uint256 expectedPrice = _getNextEditionSteppedPrice(_editionId);
         require(msg.value >= expectedPrice, "Expected price not met");
 
-        uint256 tokenId = _facilitateNextPrimarySale(_editionId, expectedPrice, _msgSender(), true);
+        uint256 tokenId = _facilitateNextPrimarySale(_editionId, expectedPrice, _buyer, true);
 
         // Bump the current step
         uint16 step = steppedAuction.currentStep;
@@ -309,11 +322,11 @@ BuyNowMarketplace {
 
         // send back excess if supplied - will allow UX flow of setting max price to pay
         if (msg.value > expectedPrice) {
-            (bool success,) = _msgSender().call{value : msg.value - expectedPrice}("");
+            (bool success,) = _invoker.call{value : msg.value - expectedPrice}("");
             require(success, "failed to send overspend back");
         }
 
-        emit EditionSteppedSaleBuy(_editionId, tokenId, _msgSender(), expectedPrice, step);
+        emit EditionSteppedSaleBuy(_editionId, tokenId, _buyer, expectedPrice, step);
     }
 
     // creates an exit from a step if required but forces a buy now price

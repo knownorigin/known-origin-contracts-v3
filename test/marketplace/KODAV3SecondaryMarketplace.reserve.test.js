@@ -11,7 +11,7 @@ const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 
 contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts) {
-  const [owner, minter, koCommission, contract, bidder1, bidder2, newAccessControls] = accounts
+  const [owner, minter, koCommission, contract, bidder1, bidder2, newAccessControls, anotherAccount] = accounts
 
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
@@ -49,7 +49,8 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
   });
 
   describe('all tests', () => {
-    describe('End to end reserve auctions', () => {
+
+    describe('End to end reserve auctions - placeBidOnReserveAuction()', () => {
       beforeEach(async () => {
         await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
 
@@ -76,6 +77,66 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
 
         // place a bid as bidder 1
         await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder1, value: ether('1')})
+
+        // outbid by bidder 2 - bidder 1 gets money back
+        const bidder1Tracker = await balance.tracker(bidder1)
+
+        const bidder2Bid = ether('1.2')
+        await this.marketplace.placeBidOnReserveAuction(FIRST_TOKEN_ID, {from: bidder2, value: bidder2Bid})
+
+        expect(await bidder1Tracker.delta()).to.be.bignumber.equal(ether('1'))
+
+        const reserveAuctionDetailsAfterBid = await this.marketplace.editionOrTokenWithReserveAuctions(FIRST_TOKEN_ID)
+
+        expect(reserveAuctionDetailsAfterBid.bidder).to.be.equal(bidder2)
+
+        // move past bidding end to result the auction
+        await time.increaseTo(
+          parseInt(reserveAuctionDetailsAfterBid.biddingEnd.toString()) + 5
+        )
+
+        const platformTracker = await balance.tracker(koCommission)
+        const sellerTracker = await balance.tracker(minter)
+
+        await this.marketplace.resultReserveAuction(FIRST_TOKEN_ID, {from: bidder2})
+
+        expect(await this.token.ownerOf(FIRST_TOKEN_ID)).to.be.bignumber.equal(bidder2)
+
+        const platformCommission = bidder2Bid.divn(10000000).muln(250000)
+        expect(await platformTracker.delta()).to.be.bignumber.equal(platformCommission)
+
+        const sellerCommission = bidder2Bid.sub(platformCommission)
+        expect(await sellerTracker.delta()).to.be.bignumber.equal(sellerCommission)
+      })
+    })
+
+    describe('End to end reserve auctions - placeBidOnReserveAuctionFor()', () => {
+      beforeEach(async () => {
+        await this.token.setApprovalForAll(this.marketplace.address, true, {from: minter});
+
+        // reserve is only for 1 of 1
+        await this.token.mintBatchEdition(1, minter, TOKEN_URI, {from: contract})
+      })
+
+      it('Successfully results a full reserve auction with no start date', async () => {
+        const reservePrice = ether('0.5')
+
+        const { receipt } = await this.marketplace.listForReserveAuction(
+          minter,
+          FIRST_TOKEN_ID,
+          reservePrice,
+          '0',
+          {from: minter}
+        )
+
+        await expectEvent(receipt, 'ListedForReserveAuction', {
+          _id: FIRST_TOKEN_ID,
+          _reservePrice: reservePrice,
+          _startDate: '0'
+        })
+
+        // place a bid as bidder 1
+        await this.marketplace.placeBidOnReserveAuctionFor(FIRST_TOKEN_ID, bidder1, {from: anotherAccount, value: ether('1')})
 
         // outbid by bidder 2 - bidder 1 gets money back
         const bidder1Tracker = await balance.tracker(bidder1)
@@ -261,8 +322,6 @@ contract('KODAV3SecondaryMarketplace reserve auction tests', function (accounts)
           "Not accepting bids yet"
         )
       })
-
-      // todo it('Reverts when bidding as a contract', async () => {})
 
       it('Reverts when first bid is not above min bid', async () => {
         await expectRevert(

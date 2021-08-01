@@ -35,14 +35,14 @@ contract('KOAccessControls tests', function (accounts) {
     it('addAdminRole() reverts if not admin when updating', async () => {
       await expectRevert(
         this.accessControls.addAdminRole(account, {from: notApproved}),
-        "Sender must be an admin to grant role"
+        'Sender must be an admin to grant role'
       );
     });
 
     it('removeAdminRole() reverts if not admin when updating', async () => {
       await expectRevert(
         this.accessControls.removeAdminRole(account, {from: notApproved}),
-        "Sender must be an admin to revoke role"
+        'Sender must be an admin to revoke role'
       );
     });
   });
@@ -61,14 +61,14 @@ contract('KOAccessControls tests', function (accounts) {
     it('addAdminRole() reverts if not admin when updating', async () => {
       await expectRevert(
         this.accessControls.addContractRole(account, {from: notApproved}),
-        "Sender must be an admin to grant role"
+        'Sender must be an admin to grant role'
       );
     });
 
     it('removeAdminRole() reverts if not admin when updating', async () => {
       await expectRevert(
         this.accessControls.removeContractRole(account, {from: notApproved}),
-        "Sender must be an admin to revoke role"
+        'Sender must be an admin to revoke role'
       );
     });
   });

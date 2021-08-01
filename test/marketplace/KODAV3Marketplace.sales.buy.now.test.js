@@ -258,7 +258,7 @@ contract('KODAV3Marketplace', function (accounts) {
       it('reverts if not contract role', async () => {
         await expectRevert(
           this.marketplace.listForBuyNow(minter, firstEditionTokenId.add(ONE), _0_1_ETH, await time.latest(), {from: collectorA}),
-          "Buy now listing invalid"
+          'Buy now listing invalid'
         );
       });
 
@@ -584,15 +584,15 @@ contract('KODAV3Marketplace', function (accounts) {
         expect(await this.token.ownerOf(firstEditionTokenId)).to.be.equal(collectorA);
 
         // seller disables sales
-        await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: minter})
+        await this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: minter});
 
         // any further sale should fail
         await expectRevert(
           this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: _0_1_ETH}),
-          "Edition sales disabled"
-        )
+          'Edition sales disabled'
+        );
       });
-    })
+    });
   });
 
 });

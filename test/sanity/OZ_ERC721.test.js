@@ -62,9 +62,9 @@ for (const k of Object.getOwnPropertyNames(INTERFACES)) {
 
 contract('OpenZeppelin ERC721 spec test', (accounts) => {
   const [owner, minter, contract, approved, anotherApproved, operator, other] = accounts;
-  const name = "KnownOriginDigitalAsset";
-  const symbol = "KODA";
-  const STARTING_EDITION = "10000";
+  const name = 'KnownOriginDigitalAsset';
+  const symbol = 'KODA';
+  const STARTING_EDITION = '10000';
 
   const firstTokenId = new BN('11000');
   const secondTokenId = new BN('12000');
