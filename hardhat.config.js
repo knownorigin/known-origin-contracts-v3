@@ -6,6 +6,7 @@ require('hardhat-gas-reporter');
 require('@nomiclabs/hardhat-solhint');
 require('hardhat-contract-sizer')
 require("@nomiclabs/hardhat-etherscan");
+require('hardhat-abi-exporter');
 
 const INFURA_PROJECT_ID = process.env.INFURA_PROJECT_ID;
 const KO_DEPLOYER_PRIVATE_KEY = process.env.KO_DEPLOYER_PRIVATE_KEY;
@@ -52,5 +53,21 @@ module.exports = {
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_KEY
+  },
+  abiExporter: {
+    path: './abis',
+    clear: false,
+    flat: true,
+    only: [
+      'ClaimableFundsReceiverV1',
+      'ClaimableFundsSplitterV1',
+      'CollabRoyaltiesRegistry',
+      'KnownOriginDigitalAssetV3',
+      'KOAccessControls',
+      'KODAV3PrimaryMarketplace',
+      'KODAV3SecondaryMarketplace',
+      'MintingFactory',
+    ],
+    spacing: 2
   }
 };

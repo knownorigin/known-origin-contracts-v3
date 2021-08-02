@@ -12,7 +12,6 @@ interface IBuyNowMarketplace {
     function listForBuyNow(address _creator, uint256 _id, uint128 _listingPrice, uint128 _startDate) external;
 
     function buyEditionToken(uint256 _id) external payable;
-
     function buyEditionTokenFor(uint256 _id, address _recipient) external payable;
 
     function setBuyNowPriceListing(uint256 _editionId, uint128 _listingPrice) external;
@@ -29,7 +28,6 @@ interface IEditionOffersMarketplace {
     function enableEditionOffers(uint256 _editionId, uint128 _startDate) external;
 
     function placeEditionBid(uint256 _editionId) external payable;
-
     function placeEditionBidFor(uint256 _editionId, address _bidder) external payable;
 
     function withdrawEditionBid(uint256 _editionId) external;
@@ -49,6 +47,7 @@ interface IEditionSteppedMarketplace {
     function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate) external;
 
     function buyNextStep(uint256 _editionId) external payable;
+    function buyNextStepFor(uint256 _editionId, address _buyer) external payable;
 
     function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
 
@@ -105,7 +104,6 @@ interface ITokenOffersMarketplace {
     function withdrawTokenBid(uint256 _tokenId) external;
 
     function placeTokenBid(uint256 _tokenId) external payable;
-
     function placeTokenBidFor(uint256 _tokenId, address _bidder) external payable;
 }
 
@@ -119,7 +117,6 @@ interface IEditionOffersSecondaryMarketplace {
     event EditionBidAccepted(uint256 indexed _tokenId, address _currentOwner, address _bidder, uint256 _amount);
 
     function placeEditionBid(uint256 _editionId) external payable;
-
     function placeEditionBidFor(uint256 _editionId, address _bidder) external payable;
 
     function withdrawEditionBid(uint256 _editionId) external;
@@ -1567,7 +1564,7 @@ ReserveAuctionMarketplace {
 
         // send money back to top bidder if existing offer found
         if (offer.offer > 0) {
-            _refundBidder(_editionId, offer.bidder, offer.offer, _msgSender(), msg.value);
+            _refundBidder(_editionId, offer.bidder, offer.offer, _bidder, msg.value);
         }
 
         // setup offer
@@ -1585,7 +1582,7 @@ ReserveAuctionMarketplace {
 
         // send money back to top bidder if existing offer found
         if (offer.offer > 0) {
-            _refundBidder(_tokenId, offer.bidder, offer.offer, _msgSender(), msg.value);
+            _refundBidder(_tokenId, offer.bidder, offer.offer, _bidder, msg.value);
         }
 
         // setup offer

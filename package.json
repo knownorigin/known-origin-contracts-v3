@@ -32,6 +32,7 @@
     "ethereumjs-util": "^7.0.8",
     "ethers": "5.3.1",
     "hardhat": "2.4.1",
+    "hardhat-abi-exporter": "^2.2.1",
     "hardhat-gas-reporter": "1.0.4",
     "lodash": "4.17.21",
     "solidity-coverage": "^0.7.16",

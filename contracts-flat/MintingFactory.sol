@@ -27,7 +27,7 @@ abstract contract Context {
 
 // File: contracts/core/IKODAV3Minter.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -42,7 +42,7 @@ interface IKODAV3Minter {
 
 // File: contracts/access/IKOAccessControlsLookup.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -62,7 +62,7 @@ interface IKOAccessControlsLookup {
 
 // File: @openzeppelin/contracts/utils/introspection/IERC165.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -89,7 +89,7 @@ interface IERC165 {
 
 // File: @openzeppelin/contracts/token/ERC721/IERC721.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -220,7 +220,7 @@ interface IERC721 is IERC165 {
 
 // File: contracts/core/IERC2309.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -249,7 +249,7 @@ interface IERC2309 {
 
 // File: contracts/core/IERC2981.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -294,7 +294,7 @@ interface IERC2981 is IERC165, IERC2981EditionExtension {
 
 // File: contracts/core/IHasSecondarySaleFees.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -312,7 +312,7 @@ interface IHasSecondarySaleFees is IERC165 {
 
 // File: contracts/core/IKODAV3.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -390,7 +390,7 @@ IHasSecondarySaleFees // Rariable / Foundation royalties
 
 // File: contracts/marketplace/IKODAV3Marketplace.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 interface IBuyNowMarketplace {
@@ -402,7 +402,6 @@ interface IBuyNowMarketplace {
     function listForBuyNow(address _creator, uint256 _id, uint128 _listingPrice, uint128 _startDate) external;
 
     function buyEditionToken(uint256 _id) external payable;
-
     function buyEditionTokenFor(uint256 _id, address _recipient) external payable;
 
     function setBuyNowPriceListing(uint256 _editionId, uint128 _listingPrice) external;
@@ -419,7 +418,6 @@ interface IEditionOffersMarketplace {
     function enableEditionOffers(uint256 _editionId, uint128 _startDate) external;
 
     function placeEditionBid(uint256 _editionId) external payable;
-
     function placeEditionBidFor(uint256 _editionId, address _bidder) external payable;
 
     function withdrawEditionBid(uint256 _editionId) external;
@@ -439,6 +437,7 @@ interface IEditionSteppedMarketplace {
     function listSteppedEditionAuction(address _creator, uint256 _editionId, uint128 _basePrice, uint128 _stepPrice, uint128 _startDate) external;
 
     function buyNextStep(uint256 _editionId) external payable;
+    function buyNextStepFor(uint256 _editionId, address _buyer) external payable;
 
     function convertSteppedAuctionToListing(uint256 _editionId, uint128 _listingPrice, uint128 _startDate) external;
 
@@ -495,7 +494,6 @@ interface ITokenOffersMarketplace {
     function withdrawTokenBid(uint256 _tokenId) external;
 
     function placeTokenBid(uint256 _tokenId) external payable;
-
     function placeTokenBidFor(uint256 _tokenId, address _bidder) external payable;
 }
 
@@ -509,7 +507,6 @@ interface IEditionOffersSecondaryMarketplace {
     event EditionBidAccepted(uint256 indexed _tokenId, address _currentOwner, address _bidder, uint256 _amount);
 
     function placeEditionBid(uint256 _editionId) external payable;
-
     function placeEditionBidFor(uint256 _editionId, address _bidder) external payable;
 
     function withdrawEditionBid(uint256 _editionId) external;
@@ -525,7 +522,7 @@ interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffe
 
 // File: @openzeppelin/contracts/security/ReentrancyGuard.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -590,7 +587,7 @@ abstract contract ReentrancyGuard {
 
 // File: @openzeppelin/contracts/security/Pausable.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -682,7 +679,7 @@ abstract contract Pausable is Context {
 
 // File: @openzeppelin/contracts/token/ERC20/IERC20.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity ^0.8.0;
 
@@ -762,7 +759,7 @@ interface IERC20 {
 
 // File: contracts/marketplace/BaseMarketplace.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -902,7 +899,7 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
 
 // File: contracts/marketplace/BuyNowMarketplace.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -989,7 +986,7 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
 
 // File: contracts/marketplace/ReserveAuctionMarketplace.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -1230,7 +1227,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
 
 // File: contracts/marketplace/KODAV3PrimaryMarketplace.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -1522,6 +1519,19 @@ BuyNowMarketplace {
     payable
     whenNotPaused
     nonReentrant {
+        _buyNextStep(_editionId, _msgSender(), _msgSender());
+    }
+
+    function buyNextStepFor(uint256 _editionId, address _buyer)
+    public
+    override
+    payable
+    whenNotPaused
+    nonReentrant {
+        _buyNextStep(_editionId, _msgSender(), _buyer);
+    }
+
+    function _buyNextStep(uint256 _editionId, address _invoker, address _buyer) internal {
         Stepped storage steppedAuction = editionStep[_editionId];
         require(steppedAuction.seller != address(0), "Edition not listed for stepped auction");
         require(steppedAuction.startDate <= block.timestamp, "Not started yet");
@@ -1529,7 +1539,7 @@ BuyNowMarketplace {
         uint256 expectedPrice = _getNextEditionSteppedPrice(_editionId);
         require(msg.value >= expectedPrice, "Expected price not met");
 
-        uint256 tokenId = _facilitateNextPrimarySale(_editionId, expectedPrice, _msgSender(), true);
+        uint256 tokenId = _facilitateNextPrimarySale(_editionId, expectedPrice, _buyer, true);
 
         // Bump the current step
         uint16 step = steppedAuction.currentStep;
@@ -1539,11 +1549,11 @@ BuyNowMarketplace {
 
         // send back excess if supplied - will allow UX flow of setting max price to pay
         if (msg.value > expectedPrice) {
-            (bool success,) = _msgSender().call{value : msg.value - expectedPrice}("");
+            (bool success,) = _invoker.call{value : msg.value - expectedPrice}("");
             require(success, "failed to send overspend back");
         }
 
-        emit EditionSteppedSaleBuy(_editionId, tokenId, _msgSender(), expectedPrice, step);
+        emit EditionSteppedSaleBuy(_editionId, tokenId, _buyer, expectedPrice, step);
     }
 
     // creates an exit from a step if required but forces a buy now price
@@ -1766,7 +1776,7 @@ BuyNowMarketplace {
 
 // File: contracts/collab/ICollabRoyaltiesRegistry.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 /// @notice Common interface to the edition royalties registry
@@ -1810,7 +1820,7 @@ interface ICollabRoyaltiesRegistry {
 
 // File: contracts/minter/MintingFactory.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
