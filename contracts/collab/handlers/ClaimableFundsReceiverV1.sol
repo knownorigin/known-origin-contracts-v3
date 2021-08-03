@@ -37,8 +37,7 @@ contract ClaimableFundsReceiverV1 is ReentrancyGuard, CollabFundsHandlerBase, IC
 
             // Deal with the first recipient later (see comment below)
             if (i != 0) {
-                (bool success,) = payable(recipients[i]).call{value : shares[i]}("");
-                require(success, "Unable to pay recipient");
+                payable(recipients[i]).call{value : shares[i]}("");
             }
 
             sumPaidOut += shares[i];
@@ -47,8 +46,7 @@ contract ClaimableFundsReceiverV1 is ReentrancyGuard, CollabFundsHandlerBase, IC
         // The first recipient is a special address as it receives any dust left over from splitting up the funds
         uint256 remainingBalance = balance - sumPaidOut;
         // Either going to be a zero or non-zero value
-        (bool success,) = payable(recipients[0]).call{value : remainingBalance + shares[0]}("");
-        require(success, "Unable to pay recipient");
+        payable(recipients[0]).call{value : remainingBalance + shares[0]}("");
 
         emit FundsDrained(balance, recipients, shares, address(0));
     }
