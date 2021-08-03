@@ -304,6 +304,7 @@ BuyNowMarketplace {
         _buyNextStep(_editionId, _msgSender(), _buyer);
     }
 
+    // QQ - invoker is always msg sender so why pass it in?
     function _buyNextStep(uint256 _editionId, address _invoker, address _buyer) internal {
         Stepped storage steppedAuction = editionStep[_editionId];
         require(steppedAuction.seller != address(0), "Edition not listed for stepped auction");
