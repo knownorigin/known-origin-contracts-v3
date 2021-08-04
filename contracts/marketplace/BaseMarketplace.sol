@@ -74,7 +74,8 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     }
 
     function recoverStuckETH(address payable _recipient, uint256 _amount) public onlyAdmin {
-        _recipient.call{value : _amount}("");
+        (bool success,) = _recipient.call{value : _amount}("");
+        require(success, "Unable to send recipient ETH");
         emit AdminRecoverETH(_recipient, _amount);
     }
 

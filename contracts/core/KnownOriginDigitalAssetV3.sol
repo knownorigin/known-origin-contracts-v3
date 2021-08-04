@@ -430,7 +430,7 @@ contract KnownOriginDigitalAssetV3 is
         return feeRecipients;
     }
 
-    function getFeeBps(uint256 _tokenId) external view override returns (uint[] memory) {
+    function getFeeBps(uint256) external view override returns (uint[] memory) {
         uint[] memory feeBps = new uint[](1);
         feeBps[0] = uint(secondarySaleRoyalty) / basisPointsModulo;
         // convert to basis points

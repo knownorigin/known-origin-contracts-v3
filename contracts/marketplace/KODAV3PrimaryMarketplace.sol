@@ -292,7 +292,7 @@ BuyNowMarketplace {
     payable
     whenNotPaused
     nonReentrant {
-        _buyNextStep(_editionId, _msgSender(), _msgSender());
+        _buyNextStep(_editionId, _msgSender());
     }
 
     function buyNextStepFor(uint256 _editionId, address _buyer)
@@ -301,10 +301,10 @@ BuyNowMarketplace {
     payable
     whenNotPaused
     nonReentrant {
-        _buyNextStep(_editionId, _msgSender(), _buyer);
+        _buyNextStep(_editionId, _buyer);
     }
 
-    function _buyNextStep(uint256 _editionId, address _invoker, address _buyer) internal {
+    function _buyNextStep(uint256 _editionId, address _buyer) internal {
         Stepped storage steppedAuction = editionStep[_editionId];
         require(steppedAuction.seller != address(0), "Edition not listed for stepped auction");
         require(steppedAuction.startDate <= block.timestamp, "Not started yet");
@@ -322,7 +322,7 @@ BuyNowMarketplace {
 
         // send back excess if supplied - will allow UX flow of setting max price to pay
         if (msg.value > expectedPrice) {
-            (bool success,) = _invoker.call{value : msg.value - expectedPrice}("");
+            (bool success,) = _msgSender().call{value : msg.value - expectedPrice}("");
             require(success, "failed to send overspend back");
         }
 
