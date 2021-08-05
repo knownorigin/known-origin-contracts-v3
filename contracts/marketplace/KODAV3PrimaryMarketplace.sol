@@ -196,7 +196,7 @@ BuyNowMarketplace {
     }
 
     // emergency admin "reject" button for stuck bids
-    function adminRejectEditionBid(uint256 _editionId) public onlyAdmin {
+    function adminRejectEditionBid(uint256 _editionId) public onlyAdmin nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
 
