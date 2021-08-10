@@ -1364,10 +1364,10 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       );
     });
 
-    it.only('Reverts when not creator of edition', async () => {
+    it('Reverts when not creator of edition', async () => {
       await expectRevert(
         this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: contract}),
-        'Not creator'
+        'Only creator or proxy'
       );
     });
 
