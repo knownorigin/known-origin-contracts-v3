@@ -645,7 +645,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // exceeds tokens and reverts
       await expectRevert(
         this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId),
-        'Primary market exhuasted'
+        'Primary market exhausted'
       );
     });
 
@@ -678,7 +678,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('reverts if no edition ID found', async () => {
       await expectRevert(
         this.token.getNextAvailablePrimarySaleToken.call(nonExistentTokenId),
-        'Primary market exhuasted'
+        'Primary market exhausted'
       );
     });
 
@@ -702,7 +702,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId),
-        'Primary market exhuasted'
+        'Primary market exhausted'
       );
     });
 
@@ -790,7 +790,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // exceeds tokens and reverts
       await expectRevert(
         this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId),
-        'Primary market exhuasted'
+        'Primary market exhausted'
       );
     });
 
@@ -819,14 +819,14 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // exceeds tokens and reverts
       await expectRevert(
         this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId),
-        'Primary market exhuasted'
+        'Primary market exhausted'
       );
     });
 
     it('reverts if no edition ID found', async () => {
       await expectRevert(
         this.token.getReverseAvailablePrimarySaleToken.call(nonExistentTokenId),
-        'Primary market exhuasted'
+        'Primary market exhausted'
       );
     });
 
@@ -848,7 +848,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId),
-        'Primary market exhuasted'
+        'Primary market exhausted'
       );
     });
 
@@ -1360,7 +1360,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('Reverts when edition does not exist', async () => {
       await expectRevert(
         this.token.updateURIIfNoSaleMade(secondEditionTokenId, 'random', {from: owner}),
-        'Edition does not exist'
+        'Only creator or proxy'
       );
     });
 

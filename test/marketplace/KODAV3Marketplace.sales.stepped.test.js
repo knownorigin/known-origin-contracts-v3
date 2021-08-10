@@ -264,7 +264,7 @@ contract('KODAV3Marketplace', function (accounts) {
               from: collectorD,
               value: token4Price
             }),
-            'Primary market exhuasted'
+            'Primary market exhausted'
           );
 
         });
@@ -531,7 +531,7 @@ contract('KODAV3Marketplace', function (accounts) {
               from: contract,
               value: token4Price
             }),
-            'Primary market exhuasted'
+            'Primary market exhausted'
           );
 
         });

@@ -365,7 +365,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
         await expectRevert.unspecified(
           this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: _0_1_ETH}),
-          'Primary market exhuasted'
+          'Primary market exhausted'
         );
       });
 
@@ -445,7 +445,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
         await expectRevert.unspecified(
           this.marketplace.buyEditionTokenFor(firstEditionTokenId, collectorA, {from: collectorA, value: _0_1_ETH}),
-          'Primary market exhuasted'
+          'Primary market exhausted'
         );
       });
 
