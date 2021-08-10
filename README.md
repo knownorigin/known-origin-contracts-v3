@@ -38,8 +38,6 @@
 * Contract size report found [here](./contract-size.md) or generated on demand via `npm run contract-size`
 * Code coverage generation via `npm run coverage` output in `./coverage` folder
 
-![alt text](./code-coverage.png)
-
 ## Deployments
 
 ### Rinkeby
