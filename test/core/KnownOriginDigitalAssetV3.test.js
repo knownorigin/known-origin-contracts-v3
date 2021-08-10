@@ -160,7 +160,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('batch minted - cannot send to zero address', async () => {
       await expectRevert(
         this.token.transferFrom(owner, ZERO_ADDRESS, firstEditionTokenId, {from: owner}),
-        'ERC721_Invalid to address'
+        'Invalid to address'
       );
     });
 
@@ -301,7 +301,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('batch minted - cannot send to zero address', async () => {
       await expectRevert(
         this.token.transferFrom(owner, ZERO_ADDRESS, firstEditionTokenId, {from: owner}),
-        'ERC721_Invalid to address'
+        'Invalid to address'
       );
     });
 
@@ -748,7 +748,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // covering this here to prove you can not reset the zero address and go back to a token already with a primary sale
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA}); // sell one
       await expectRevert(this.token.transferFrom(collectorB, ZERO_ADDRESS, firstEditionTokenId, {from: collectorB}),
-        'ERC721_Invalid to address'
+        'Invalid to address'
       ); // send back
     });
   });
@@ -893,7 +893,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // covering this here to prove you can not reset the zero address and go back to a token already with a primary sale
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA}); // sell one
       await expectRevert(this.token.transferFrom(collectorB, ZERO_ADDRESS, firstEditionTokenId, {from: collectorB}),
-        'ERC721_Invalid to address'
+        'Invalid to address'
       ); // send back
     });
   });

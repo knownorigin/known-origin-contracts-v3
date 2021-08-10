@@ -419,7 +419,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, ZERO_ADDRESS, tokenId, {from: owner}),
-              'ERC721_Invalid to address',
+              'Invalid to address',
             );
           });
         });
@@ -944,7 +944,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, ZERO_ADDRESS, tokenId, {from: owner}),
-              'ERC721_Invalid to address',
+              'Invalid to address',
             );
           });
         });
@@ -1469,7 +1469,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, ZERO_ADDRESS, tokenId, {from: owner}),
-              'ERC721_Invalid to address',
+              'Invalid to address',
             );
           });
         });

@@ -317,7 +317,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, ZERO_ADDRESS, tokenId, {from: owner}),
-              wrapReason('ERC721_Invalid to address'),
+              wrapReason('Invalid to address'),
             );
           });
         });
