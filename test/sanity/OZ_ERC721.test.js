@@ -152,7 +152,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
       context('when querying the zero address', () => {
         it('throws', async () => {
           await expectRevert(
-            this.token.balanceOf(ZERO_ADDRESS), wrapReason('ERC721_ZERO_OWNER'),
+            this.token.balanceOf(ZERO_ADDRESS), wrapReason('Invalid owner'),
           );
         });
       });
@@ -172,7 +172,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
 
         it('reverts', async () => {
           await expectRevert(
-            this.token.ownerOf(tokenId), wrapReason('ERC721_ZERO_OWNER'),
+            this.token.ownerOf(tokenId), wrapReason('Invalid owner'),
           );
         });
       });
@@ -308,7 +308,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, other, nonExistentTokenId, {from: owner}),
-              wrapReason('ERC721_ZERO_OWNER'),
+              wrapReason('Invalid owner'),
             );
           });
         });
@@ -383,7 +383,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
                     nonExistentTokenId,
                     {from: owner},
                   ),
-                  wrapReason('ERC721_ZERO_OWNER'),
+                  wrapReason('Invalid owner'),
                 );
               });
             });
@@ -558,7 +558,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
       context('when the given token ID does not exist', () => {
         it('reverts', async () => {
           await expectRevert(this.token.approve(approved, nonExistentTokenId, {from: operator}),
-            'ERC721_ZERO_OWNER');
+            'Invalid owner');
         });
       });
     });

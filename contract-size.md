@@ -1,22 +1,23 @@
-
 ·------------------------------|-------------·
 |  Contract Name               ·  Size (Kb)  │
+·······························|··············
+|  KOCreate2OmniDeployer       ·       0.41  │
 ·······························|··············
 |  ClaimableFundsReceiverV1    ·       3.70  │
 ·······························|··············
 |  ClaimableFundsSplitterV1    ·       3.71  │
 ·······························|··············
+|  EditionRoyaltiesRegistry    ·       3.81  │
+·······························|··············
 |  KOAccessControls            ·       4.79  │
 ·······························|··············
-|  CollabRoyaltiesRegistry     ·       7.74  │
+|  CollabRoyaltiesRegistry     ·       7.26  │
 ·······························|··············
-|  MintingFactory              ·       8.79  │
+|  MintingFactory              ·       8.78  │
 ·······························|··············
-|  MockMintingFactory          ·       8.92  │
+|  KODAV3SecondaryMarketplace  ·      18.36  │
 ·······························|··············
-|  KODAV3SecondaryMarketplace  ·      18.03  │
+|  KODAV3PrimaryMarketplace    ·      21.93  │
 ·······························|··············
-|  KODAV3PrimaryMarketplace    ·      21.67  │
-·······························|··············
-|  KnownOriginDigitalAssetV3   ·      22.52  │
+|  KnownOriginDigitalAssetV3   ·      24.00  │
 ·------------------------------|-------------·

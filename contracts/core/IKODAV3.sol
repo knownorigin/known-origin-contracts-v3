@@ -73,4 +73,8 @@ IHasSecondarySaleFees // Rariable / Foundation royalties
     function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint16 _size, uint256 _editionId, string memory _uri);
 
     function hadPrimarySaleOfToken(uint256 _tokenId) external view returns (bool);
+
+    // composability helpers
+
+    function composeERC20sAsCreator(uint16 _editionId, address[] calldata _erc20s, uint256[] calldata _amounts) external;
 }

@@ -47,6 +47,15 @@ contract KnownOriginDigitalAssetV3 is
         require(_editionExists(_editionId), "Edition does not exist");
     }
 
+    modifier validateCreator(uint256 _editionId) {
+        address creator = getCreatorOfEdition(_editionId);
+        require(
+            _msgSender() == creator || accessControls.isVerifiedArtistProxy(creator, _msgSender()),
+            "Unable to set when not creator"
+        );
+        _;
+    }
+
     /// @notice Token name
     string public constant name = "KnownOriginDigitalAsset";
 
@@ -92,9 +101,6 @@ contract KnownOriginDigitalAssetV3 is
     /// @notice Optional one time use storage slot for additional token metadata such ass peramweb metadata
     mapping(uint256 => string) public sealedTokenMetaData;
 
-    /// @notice Optional storage slot for additional unlockable content
-    mapping(uint256 => string) public additionalEditionUnlockableSlot;
-
     /// @notice Allows a creator to disable sales of their edition
     mapping(uint256 => bool) public editionSalesDisabled;
 
@@ -103,7 +109,7 @@ contract KnownOriginDigitalAssetV3 is
         IERC2981 _royaltiesRegistryProxy,
         uint256 _editionPointer
     ) BaseKoda(_accessControls) {
-
+        // starting point for new edition IDs
         editionPointer = _editionPointer;
 
         // optional registry address - can be constructed as zero address
@@ -132,7 +138,6 @@ contract KnownOriginDigitalAssetV3 is
     }
 
     /// @notice Mints an edition token batch and composes ERC20s for every token in the edition
-    /// @dev there is a limit on the number of ERC20s that can be embedded in an edition
     function mintBatchEditionAndComposeERC20s(
         uint16 _editionSize,
         address _to,
@@ -154,7 +159,7 @@ contract KnownOriginDigitalAssetV3 is
     }
 
     function _mintBatchEdition(uint16 _editionSize, address _to, string calldata _uri) internal returns (uint256) {
-        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid edition size");
+        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid size");
 
         uint256 start = generateNextEditionNumber();
 
@@ -180,7 +185,7 @@ contract KnownOriginDigitalAssetV3 is
     override
     onlyContract
     returns (uint256 _editionId) {
-        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid edition size");
+        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid size");
 
         uint256 start = generateNextEditionNumber();
 
@@ -200,10 +205,9 @@ contract KnownOriginDigitalAssetV3 is
 
     /// @notice Allows the creator of an edition to update the token URI provided that no primary sales have been made
     function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external override {
-        require(_msgSender() == editionDetails[_editionId].creator, "Not creator");
         require(
             !hasMadePrimarySale(_editionId) && (!tokenUriResolverActive() || !tokenUriResolver.isDefined(_editionId, 0)),
-            "Invalid Edition state"
+            "Invalid state"
         );
 
         editionDetails[_editionId].uri = _newURI;
@@ -277,6 +281,7 @@ contract KnownOriginDigitalAssetV3 is
         );
     }
 
+
     /// @notice If primary sales for an edition are disabled
     function isEditionSalesDisabled(uint256 _editionId) external view override returns (bool) {
         return editionSalesDisabled[_editionId];
@@ -293,7 +298,7 @@ contract KnownOriginDigitalAssetV3 is
 
         require(
             creator == _msgSender() || accessControls.hasAdminRole(_msgSender()),
-            "Only creator or platform admin"
+            "Only creator or admin"
         );
 
         emit EditionSalesDisabledToggled(_editionId, editionSalesDisabled[_editionId], !editionSalesDisabled[_editionId]);
@@ -552,7 +557,6 @@ contract KnownOriginDigitalAssetV3 is
                 return true;
             }
         }
-
         return false;
     }
 
@@ -651,7 +655,7 @@ contract KnownOriginDigitalAssetV3 is
 
         // Ensure the owner is the sender
         address owner = _ownerOf(_tokenId, _editionFromTokenId(_tokenId));
-        require(owner != address(0), "ERC721_ZERO_OWNER");
+        require(owner != address(0), "Invalid owner");
         require(_from == owner, "ERC721_OWNER_MISMATCH");
 
         address spender = _msgSender();
@@ -683,7 +687,7 @@ contract KnownOriginDigitalAssetV3 is
     function ownerOf(uint256 _tokenId) override public view returns (address) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         address owner = _ownerOf(_tokenId, editionId);
-        require(owner != address(0), "ERC721_ZERO_OWNER");
+        require(owner != address(0), "Invalid owner");
         return owner;
     }
 
@@ -742,7 +746,7 @@ contract KnownOriginDigitalAssetV3 is
     /// @param _owner An address for whom to query the balance
     /// @return The number of NFTs owned by `_owner`, possibly zero
     function balanceOf(address _owner) override external view returns (uint256) {
-        require(_owner != address(0), "ERC721_ZERO_OWNER");
+        require(_owner != address(0), "Invalid owner");
         return balances[_owner];
     }
 
@@ -798,38 +802,36 @@ contract KnownOriginDigitalAssetV3 is
     // Creator functions //
     ///////////////////////
 
-    /// @notice Optional metadata storage slot which allows the creator to set an additional metadata blob on the edition
-    function lockInAdditionalMetaData(uint256 _editionId, string calldata _metadata) external {
-        address creator = getCreatorOfEdition(_editionId);
-        require(
-            _msgSender() == creator || accessControls.isVerifiedArtistProxy(creator, _msgSender()),
-            "Unable to set when not creator"
-        );
+    function composeERC20sAsCreator(uint16 _editionId, address[] calldata _erc20s, uint256[] calldata _amounts)
+    external
+    override
+    validateCreator(_editionId) {
+        require(!isEditionSoldOut(_editionId), "Edition soldout");
 
-        require(bytes(sealedEditionMetaData[_editionId]).length == 0, "can only be set once");
-        sealedEditionMetaData[_editionId] = _metadata;
-        emit SealedEditionMetaDataSet(_editionId);
+        uint256 totalErc20s = _erc20s.length;
+        require(totalErc20s > 0 && totalErc20s == _amounts.length, "Tokens invalid");
+
+        for (uint i = 0; i < totalErc20s; i++) {
+            _composeERC20IntoEdition(_msgSender(), _editionId, _erc20s[i], _amounts[i]);
+        }
     }
 
-    /// @notice Optional storage slot which allows the creator to set an additional unlockable blob on the edition
-    function lockInUnlockableContent(uint256 _editionId, string calldata _content) external {
-        address creator = getCreatorOfEdition(_editionId);
-        require(
-            _msgSender() == creator || accessControls.isVerifiedArtistProxy(creator, _msgSender()),
-            "Unable to set when not creator"
-        );
-
-        additionalEditionUnlockableSlot[_editionId] = _content;
-        emit AdditionalEditionUnlockableSet(_editionId);
+    /// @notice Optional metadata storage slot which allows the creator to set an additional metadata blob on the edition
+    function lockInAdditionalMetaData(uint256 _editionId, string calldata _metadata)
+    external
+    validateCreator(_editionId) {
+        require(bytes(sealedEditionMetaData[_editionId]).length == 0, "Already set");
+        sealedEditionMetaData[_editionId] = _metadata;
+        emit SealedEditionMetaDataSet(_editionId);
     }
 
     /// @notice Optional metadata storage slot which allows a token owner to set an additional metadata blob on the token
     function lockInAdditionalTokenMetaData(uint256 _tokenId, string calldata _metadata) external {
         require(
             _msgSender() == ownerOf(_tokenId) || accessControls.hasContractRole(_msgSender()),
-            "Unable to set when not owner or contract"
+            "Only owner or contract"
         );
-        require(bytes(sealedTokenMetaData[_tokenId]).length == 0, "can only be set once");
+        require(bytes(sealedTokenMetaData[_tokenId]).length == 0, "Already set");
         sealedTokenMetaData[_tokenId] = _metadata;
         emit SealedTokenMetaDataSet(_tokenId);
     }

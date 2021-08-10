@@ -248,7 +248,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when querying the zero address', () => {
         it('throws', async () => {
           await expectRevert(
-            this.token.balanceOf(ZERO_ADDRESS), 'ERC721_ZERO_OWNER',
+            this.token.balanceOf(ZERO_ADDRESS), 'Invalid owner',
           );
         });
       });
@@ -410,7 +410,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, other, nonExistentTokenId, {from: owner}),
-              'ERC721_ZERO_OWNER',
+              'Invalid owner',
             );
           });
         });
@@ -485,7 +485,7 @@ contract('ERC721 baseline tests', function (accounts) {
                     nonExistentTokenId,
                     {from: owner},
                   ),
-                  'ERC721_ZERO_OWNER',
+                  'Invalid owner',
                 );
               });
             });
@@ -638,7 +638,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when the given token ID does not exist', () => {
         it('reverts', async () => {
           await expectRevert(this.token.approve(approved, nonExistentTokenId, {from: operator}),
-            'ERC721_ZERO_OWNER');
+            'Invalid owner');
         });
       });
     });
@@ -773,7 +773,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when querying the zero address', () => {
         it('throws', async () => {
           await expectRevert(
-            this.token.balanceOf(ZERO_ADDRESS), 'ERC721_ZERO_OWNER',
+            this.token.balanceOf(ZERO_ADDRESS), 'Invalid owner',
           );
         });
       });
@@ -935,7 +935,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, other, nonExistentTokenId, {from: owner}),
-              'ERC721_ZERO_OWNER',
+              'Invalid owner',
             );
           });
         });
@@ -1010,7 +1010,7 @@ contract('ERC721 baseline tests', function (accounts) {
                     nonExistentTokenId,
                     {from: owner},
                   ),
-                  'ERC721_ZERO_OWNER',
+                  'Invalid owner',
                 );
               });
             });
@@ -1163,7 +1163,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when the given token ID does not exist', () => {
         it('reverts', async () => {
           await expectRevert(this.token.approve(approved, nonExistentTokenId, {from: operator}),
-            'ERC721_ZERO_OWNER');
+            'Invalid owner');
         });
       });
     });
@@ -1298,7 +1298,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when querying the zero address', () => {
         it('throws', async () => {
           await expectRevert(
-            this.token.balanceOf(ZERO_ADDRESS), 'ERC721_ZERO_OWNER',
+            this.token.balanceOf(ZERO_ADDRESS), 'Invalid owner',
           );
         });
       });
@@ -1460,7 +1460,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, other, nonExistentTokenId, {from: owner}),
-              'ERC721_ZERO_OWNER',
+              'Invalid owner',
             );
           });
         });
@@ -1535,7 +1535,7 @@ contract('ERC721 baseline tests', function (accounts) {
                     nonExistentTokenId,
                     {from: owner},
                   ),
-                  'ERC721_ZERO_OWNER',
+                  'Invalid owner',
                 );
               });
             });
@@ -1688,7 +1688,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when the given token ID does not exist', () => {
         it('reverts', async () => {
           await expectRevert(this.token.approve(approved, nonExistentTokenId, {from: operator}),
-            'ERC721_ZERO_OWNER');
+            'Invalid owner');
         });
       });
     });

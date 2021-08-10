@@ -84,7 +84,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // fails at sending one more than batch
       await expectRevert(
         this.token.transferFrom(owner, collectorA, end + 1, {from: owner}),
-        'ERC721_ZERO_OWNER'
+        'Invalid owner'
       );
     });
 
@@ -167,7 +167,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('batch minted - cannot send a token which does not exist', async () => {
       await expectRevert(
         this.token.transferFrom(owner, collectorA, thirdEditionTokenId, {from: owner}),
-        'ERC721_ZERO_OWNER'
+        'Invalid owner'
       );
     });
 
@@ -188,7 +188,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.transferFrom(owner, collectorA, tokenId, {from: owner}),
-        'ERC721_ZERO_OWNER'
+        'Invalid owner'
       );
     });
 
@@ -225,7 +225,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // fails at sending one more than batch
       await expectRevert(
         this.token.transferFrom(owner, collectorA, end + 1, {from: owner}),
-        'ERC721_ZERO_OWNER'
+        'Invalid owner'
       );
     });
 
@@ -308,7 +308,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('batch minted - cannot send a token which does not exist', async () => {
       await expectRevert(
         this.token.transferFrom(owner, collectorA, thirdEditionTokenId, {from: owner}),
-        'ERC721_ZERO_OWNER'
+        'Invalid owner'
       );
     });
 
@@ -329,7 +329,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.transferFrom(owner, collectorA, tokenId, {from: owner}),
-        'ERC721_ZERO_OWNER'
+        'Invalid owner'
       );
     });
 
@@ -403,7 +403,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if edtion size to big', async () => {
       await expectRevert(
         this.token.mintConsecutiveBatchEdition(this.MAX_EDITION_SIZE.add(ONE), owner, TOKEN_URI, {from: contract}),
-        'Invalid edition size'
+        'Invalid size'
       );
     });
   });
@@ -442,7 +442,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if edtion size to big', async () => {
       await expectRevert(
         this.token.mintBatchEdition(this.MAX_EDITION_SIZE.add(ONE), owner, TOKEN_URI, {from: contract}),
-        'Invalid edition size'
+        'Invalid size'
       );
     });
   });
@@ -997,7 +997,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       await this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: owner});
       await expectRevert(
         this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello again', {from: owner}),
-        'can only be set once'
+        'Already set'
       );
     });
   });
@@ -1024,7 +1024,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
       await expectRevert(
         this.token.lockInAdditionalTokenMetaData(firstEditionTokenId, 'hello', {from: collabDao}),
-        'Unable to set when not owner'
+        'Only owner or contract'
       );
     });
 
@@ -1038,7 +1038,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       await this.token.lockInAdditionalTokenMetaData(firstEditionTokenId, 'hello', {from: owner});
       await expectRevert(
         this.token.lockInAdditionalTokenMetaData(firstEditionTokenId, 'hello again', {from: owner}),
-        'can only be set once'
+        'Already set'
       );
     });
   });
@@ -1219,7 +1219,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('reverts if a token does not exist', async () => {
       await expectRevert(
         this.token.consecutiveBatchTransferFrom(owner, collectorA, firstEditionTokenId, secondEditionTokenId, {from: owner}),
-        'ERC721_ZERO_OWNER'
+        'Invalid owner'
       );
     });
   });
@@ -1360,7 +1360,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('Reverts when edition does not exist', async () => {
       await expectRevert(
         this.token.updateURIIfNoSaleMade(secondEditionTokenId, 'random', {from: owner}),
-        'Not creator'
+        'Edition does not exist'
       );
     });
 
@@ -1376,7 +1376,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: owner}),
-        'Invalid Edition state'
+        'Invalid state'
       );
     });
 
@@ -1395,7 +1395,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // try set it and expect failure
       await expectRevert(
         this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: owner}),
-        'Invalid Edition state'
+        'Invalid state'
       );
     });
   });
@@ -1455,48 +1455,9 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('Reverts when not creator or platform', async () => {
       await expectRevert(
         this.token.toggleEditionSalesDisabled(firstEditionTokenId, {from: collectorA}),
-        'Only creator or platform admin'
+        'Only creator or admin'
       );
     });
   });
 
-  describe('lockInUnlockableContent()', () => {
-    it('Can call as creator', async () => {
-      await this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: contract});
-
-      const content = 'random';
-      const {receipt} = await this.token.lockInUnlockableContent(firstEditionTokenId, content, {from: owner});
-      await expectEvent(receipt, 'AdditionalEditionUnlockableSet', {
-        _editionId: firstEditionTokenId
-      });
-
-      expect(await this.token.additionalEditionUnlockableSlot(firstEditionTokenId)).to.be.equal(content);
-    });
-
-    it('can call as proxy', async () => {
-      await this.accessControls.setVerifiedArtistProxy(
-        proxy,
-        this.merkleProof.claims[owner].index,
-        this.merkleProof.claims[owner].proof,
-        {from: owner}
-      );
-
-      await this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: contract});
-
-      const content = 'random';
-      const {receipt} = await this.token.lockInUnlockableContent(firstEditionTokenId, content, {from: proxy});
-      await expectEvent(receipt, 'AdditionalEditionUnlockableSet', {
-        _editionId: firstEditionTokenId
-      });
-
-      expect(await this.token.additionalEditionUnlockableSlot(firstEditionTokenId)).to.be.equal(content);
-    });
-
-    it('Reverts when not creator', async () => {
-      await expectRevert(
-        this.token.lockInUnlockableContent(firstEditionTokenId, 'collector a is the best', {from: collectorA}),
-        'Unable to set when not creator'
-      );
-    });
-  });
 });
