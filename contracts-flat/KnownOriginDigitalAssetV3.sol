@@ -119,7 +119,12 @@ interface IERC721Receiver {
      *
      * The selector can be obtained in Solidity with `IERC721.onERC721Received.selector`.
      */
-    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) external returns (bytes4);
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external returns (bytes4);
 }
 
 // File: @openzeppelin/contracts/utils/Address.sol
@@ -155,8 +160,9 @@ library Address {
         // constructor execution.
 
         uint256 size;
-        // solhint-disable-next-line no-inline-assembly
-        assembly { size := extcodesize(account) }
+        assembly {
+            size := extcodesize(account)
+        }
         return size > 0;
     }
 
@@ -179,14 +185,13 @@ library Address {
     function sendValue(address payable recipient, uint256 amount) internal {
         require(address(this).balance >= amount, "Address: insufficient balance");
 
-        // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
-        (bool success, ) = recipient.call{ value: amount }("");
+        (bool success, ) = recipient.call{value: amount}("");
         require(success, "Address: unable to send value, recipient may have reverted");
     }
 
     /**
      * @dev Performs a Solidity function call using a low level `call`. A
-     * plain`call` is an unsafe replacement for a function call: use this
+     * plain `call` is an unsafe replacement for a function call: use this
      * function instead.
      *
      * If `target` reverts with a revert reason, it is bubbled up by this
@@ -203,7 +208,7 @@ library Address {
      * _Available since v3.1._
      */
     function functionCall(address target, bytes memory data) internal returns (bytes memory) {
-      return functionCall(target, data, "Address: low-level call failed");
+        return functionCall(target, data, "Address: low-level call failed");
     }
 
     /**
@@ -212,7 +217,11 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
+    function functionCall(
+        address target,
+        bytes memory data,
+        string memory errorMessage
+    ) internal returns (bytes memory) {
         return functionCallWithValue(target, data, 0, errorMessage);
     }
 
@@ -227,7 +236,11 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCallWithValue(address target, bytes memory data, uint256 value) internal returns (bytes memory) {
+    function functionCallWithValue(
+        address target,
+        bytes memory data,
+        uint256 value
+    ) internal returns (bytes memory) {
         return functionCallWithValue(target, data, value, "Address: low-level call with value failed");
     }
 
@@ -237,12 +250,16 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCallWithValue(address target, bytes memory data, uint256 value, string memory errorMessage) internal returns (bytes memory) {
+    function functionCallWithValue(
+        address target,
+        bytes memory data,
+        uint256 value,
+        string memory errorMessage
+    ) internal returns (bytes memory) {
         require(address(this).balance >= value, "Address: insufficient balance for call");
         require(isContract(target), "Address: call to non-contract");
 
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory returndata) = target.call{ value: value }(data);
+        (bool success, bytes memory returndata) = target.call{value: value}(data);
         return _verifyCallResult(success, returndata, errorMessage);
     }
 
@@ -262,10 +279,13 @@ library Address {
      *
      * _Available since v3.3._
      */
-    function functionStaticCall(address target, bytes memory data, string memory errorMessage) internal view returns (bytes memory) {
+    function functionStaticCall(
+        address target,
+        bytes memory data,
+        string memory errorMessage
+    ) internal view returns (bytes memory) {
         require(isContract(target), "Address: static call to non-contract");
 
-        // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returndata) = target.staticcall(data);
         return _verifyCallResult(success, returndata, errorMessage);
     }
@@ -286,15 +306,22 @@ library Address {
      *
      * _Available since v3.4._
      */
-    function functionDelegateCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
+    function functionDelegateCall(
+        address target,
+        bytes memory data,
+        string memory errorMessage
+    ) internal returns (bytes memory) {
         require(isContract(target), "Address: delegate call to non-contract");
 
-        // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returndata) = target.delegatecall(data);
         return _verifyCallResult(success, returndata, errorMessage);
     }
 
-    function _verifyCallResult(bool success, bytes memory returndata, string memory errorMessage) private pure returns(bytes memory) {
+    function _verifyCallResult(
+        bool success,
+        bytes memory returndata,
+        string memory errorMessage
+    ) private pure returns (bytes memory) {
         if (success) {
             return returndata;
         } else {
@@ -302,7 +329,6 @@ library Address {
             if (returndata.length > 0) {
                 // The easiest way to bubble the revert reason is using memory via assembly
 
-                // solhint-disable-next-line no-inline-assembly
                 assembly {
                     let returndata_size := mload(returndata)
                     revert(add(32, returndata), returndata_size)
@@ -472,7 +498,11 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
 
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
@@ -543,7 +573,11 @@ interface IERC721 is IERC165 {
      *
      * Emits a {Transfer} event.
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId) external;
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) external;
 
     /**
      * @dev Transfers `tokenId` token from `from` to `to`.
@@ -559,7 +593,11 @@ interface IERC721 is IERC165 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address from, address to, uint256 tokenId) external;
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) external;
 
     /**
      * @dev Gives permission to `to` to transfer `tokenId` token to another account.
@@ -605,19 +643,24 @@ interface IERC721 is IERC165 {
     function isApprovedForAll(address owner, address operator) external view returns (bool);
 
     /**
-      * @dev Safely transfers `tokenId` token from `from` to `to`.
-      *
-      * Requirements:
-      *
-      * - `from` cannot be the zero address.
-      * - `to` cannot be the zero address.
-      * - `tokenId` token must exist and be owned by `from`.
-      * - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}.
-      * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
-      *
-      * Emits a {Transfer} event.
-      */
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external;
+     * @dev Safely transfers `tokenId` token from `from` to `to`.
+     *
+     * Requirements:
+     *
+     * - `from` cannot be the zero address.
+     * - `to` cannot be the zero address.
+     * - `tokenId` token must exist and be owned by `from`.
+     * - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}.
+     * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
+     *
+     * Emits a {Transfer} event.
+     */
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes calldata data
+    ) external;
 }
 
 // File: @openzeppelin/contracts/utils/structs/EnumerableSet.sol
@@ -663,10 +706,9 @@ library EnumerableSet {
     struct Set {
         // Storage of set values
         bytes32[] _values;
-
         // Position of the value in the `values` array, plus 1 because index 0
         // means a value is not in the set.
-        mapping (bytes32 => uint256) _indexes;
+        mapping(bytes32 => uint256) _indexes;
     }
 
     /**
@@ -697,7 +739,8 @@ library EnumerableSet {
         // We read and store the value's index to prevent multiple reads from the same storage slot
         uint256 valueIndex = set._indexes[value];
 
-        if (valueIndex != 0) { // Equivalent to contains(set, value)
+        if (valueIndex != 0) {
+            // Equivalent to contains(set, value)
             // To delete an element from the _values array in O(1), we swap the element to delete with the last one in
             // the array, and then remove the last element (sometimes called as 'swap and pop').
             // This modifies the order of the array, as noted in {at}.
@@ -705,15 +748,14 @@ library EnumerableSet {
             uint256 toDeleteIndex = valueIndex - 1;
             uint256 lastIndex = set._values.length - 1;
 
-            // When the value to delete is the last one, the swap operation is unnecessary. However, since this occurs
-            // so rarely, we still do the swap anyway to avoid the gas cost of adding an 'if' statement.
+            if (lastIndex != toDeleteIndex) {
+                bytes32 lastvalue = set._values[lastIndex];
 
-            bytes32 lastvalue = set._values[lastIndex];
-
-            // Move the last value to the index where the value to delete is
-            set._values[toDeleteIndex] = lastvalue;
-            // Update the index for the moved value
-            set._indexes[lastvalue] = valueIndex; // Replace lastvalue's index to valueIndex
+                // Move the last value to the index where the value to delete is
+                set._values[toDeleteIndex] = lastvalue;
+                // Update the index for the moved value
+                set._indexes[lastvalue] = valueIndex; // Replace lastvalue's index to valueIndex
+            }
 
             // Delete the slot where the moved value was stored
             set._values.pop();
@@ -741,18 +783,17 @@ library EnumerableSet {
         return set._values.length;
     }
 
-   /**
-    * @dev Returns the value stored at position `index` in the set. O(1).
-    *
-    * Note that there are no guarantees on the ordering of values inside the
-    * array, and it may change when more values are added or removed.
-    *
-    * Requirements:
-    *
-    * - `index` must be strictly less than {length}.
-    */
+    /**
+     * @dev Returns the value stored at position `index` in the set. O(1).
+     *
+     * Note that there are no guarantees on the ordering of values inside the
+     * array, and it may change when more values are added or removed.
+     *
+     * Requirements:
+     *
+     * - `index` must be strictly less than {length}.
+     */
     function _at(Set storage set, uint256 index) private view returns (bytes32) {
-        require(set._values.length > index, "EnumerableSet: index out of bounds");
         return set._values[index];
     }
 
@@ -796,16 +837,16 @@ library EnumerableSet {
         return _length(set._inner);
     }
 
-   /**
-    * @dev Returns the value stored at position `index` in the set. O(1).
-    *
-    * Note that there are no guarantees on the ordering of values inside the
-    * array, and it may change when more values are added or removed.
-    *
-    * Requirements:
-    *
-    * - `index` must be strictly less than {length}.
-    */
+    /**
+     * @dev Returns the value stored at position `index` in the set. O(1).
+     *
+     * Note that there are no guarantees on the ordering of values inside the
+     * array, and it may change when more values are added or removed.
+     *
+     * Requirements:
+     *
+     * - `index` must be strictly less than {length}.
+     */
     function at(Bytes32Set storage set, uint256 index) internal view returns (bytes32) {
         return _at(set._inner, index);
     }
@@ -850,20 +891,19 @@ library EnumerableSet {
         return _length(set._inner);
     }
 
-   /**
-    * @dev Returns the value stored at position `index` in the set. O(1).
-    *
-    * Note that there are no guarantees on the ordering of values inside the
-    * array, and it may change when more values are added or removed.
-    *
-    * Requirements:
-    *
-    * - `index` must be strictly less than {length}.
-    */
+    /**
+     * @dev Returns the value stored at position `index` in the set. O(1).
+     *
+     * Note that there are no guarantees on the ordering of values inside the
+     * array, and it may change when more values are added or removed.
+     *
+     * Requirements:
+     *
+     * - `index` must be strictly less than {length}.
+     */
     function at(AddressSet storage set, uint256 index) internal view returns (address) {
         return address(uint160(uint256(_at(set._inner, index))));
     }
-
 
     // UintSet
 
@@ -905,16 +945,16 @@ library EnumerableSet {
         return _length(set._inner);
     }
 
-   /**
-    * @dev Returns the value stored at position `index` in the set. O(1).
-    *
-    * Note that there are no guarantees on the ordering of values inside the
-    * array, and it may change when more values are added or removed.
-    *
-    * Requirements:
-    *
-    * - `index` must be strictly less than {length}.
-    */
+    /**
+     * @dev Returns the value stored at position `index` in the set. O(1).
+     *
+     * Note that there are no guarantees on the ordering of values inside the
+     * array, and it may change when more values are added or removed.
+     *
+     * Requirements:
+     *
+     * - `index` must be strictly less than {length}.
+     */
     function at(UintSet storage set, uint256 index) internal view returns (uint256) {
         return uint256(_at(set._inner, index));
     }
@@ -959,7 +999,7 @@ abstract contract ReentrancyGuard {
 
     uint256 private _status;
 
-    constructor () {
+    constructor() {
         _status = _NOT_ENTERED;
     }
 
@@ -1007,7 +1047,6 @@ abstract contract Context {
     }
 
     function _msgData() internal view virtual returns (bytes calldata) {
-        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
         return msg.data;
     }
 }
@@ -1135,6 +1174,7 @@ IHasSecondarySaleFees // Rariable / Foundation royalties
     function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint16 _size, uint256 _editionId, string memory _uri);
 
     function hadPrimarySaleOfToken(uint256 _tokenId) external view returns (bool);
+
 }
 
 // File: contracts/core/composable/TopDownERC20Composable.sol
@@ -1233,8 +1273,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         );
         require(_from == _msgSender(), "Must be token owner");
 
-        IKODAV3 koda = IKODAV3(address(this));
-        uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+        uint256 editionId = IKODAV3(address(this)).getEditionIdOfToken(_tokenId);
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[editionId].contains(_erc20Contract);
         bool nftAlreadyContainsERC20 = ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract);
 
@@ -1256,8 +1295,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     function _composeERC20IntoEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) internal nonReentrant {
         require(_value > 0, "Value cannot be zero");
 
-        bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract);
-        require(!editionAlreadyContainsERC20, "Edition already contains ERC20");
+        require(!ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract), "Edition already contains ERC20");
 
         ERC20sEmbeddedInEdition[_editionId].add(_erc20Contract);
         editionTokenERC20Balances[_editionId][_erc20Contract] = editionTokenERC20Balances[_editionId][_erc20Contract] + _value;
@@ -1268,16 +1306,14 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function totalERC20Contracts(uint256 _tokenId) override public view returns (uint256) {
-        IKODAV3 koda = IKODAV3(address(this));
-        uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+        uint256 editionId = IKODAV3(address(this)).getEditionIdOfToken(_tokenId);
         return ERC20sEmbeddedInNft[_tokenId].length() + ERC20sEmbeddedInEdition[editionId].length();
     }
 
     function erc20ContractByIndex(uint256 _tokenId, uint256 _index) override external view returns (address) {
         uint256 numOfERC20sInNFT = ERC20sEmbeddedInNft[_tokenId].length();
         if (_index >= numOfERC20sInNFT) {
-            IKODAV3 koda = IKODAV3(address(this));
-            uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+            uint256 editionId =  IKODAV3(address(this)).getEditionIdOfToken(_tokenId);
             return ERC20sEmbeddedInEdition[editionId].at(_index - numOfERC20sInNFT);
         }
 
@@ -1555,11 +1591,11 @@ pragma solidity 0.8.4;
 /// @notice EIP-2309 Consecutive batch mint
 /// @notice ERC-998 Top-down ERC-20 composable
 contract KnownOriginDigitalAssetV3 is
-    TopDownERC20Composable,
-    TopDownSimpleERC721Composable,
-    BaseKoda,
-    ERC165Storage,
-    IKODAV3Minter {
+TopDownERC20Composable,
+TopDownSimpleERC721Composable,
+BaseKoda,
+ERC165Storage,
+IKODAV3Minter {
 
     event EditionURIUpdated(uint256 indexed _editionId);
     event EditionSalesDisabledToggled(uint256 indexed _editionId, bool _oldValue, bool _newValue);
@@ -1576,6 +1612,15 @@ contract KnownOriginDigitalAssetV3 is
 
     function _validateEdition(uint256 _editionId) private view {
         require(_editionExists(_editionId), "Edition does not exist");
+    }
+
+    modifier validateCreator(uint256 _editionId) {
+        address creator = getCreatorOfEdition(_editionId);
+        require(
+            _msgSender() == creator || accessControls.isVerifiedArtistProxy(creator, _msgSender()),
+            "Only creator or proxy"
+        );
+        _;
     }
 
     /// @notice Token name
@@ -1623,9 +1668,6 @@ contract KnownOriginDigitalAssetV3 is
     /// @notice Optional one time use storage slot for additional token metadata such ass peramweb metadata
     mapping(uint256 => string) public sealedTokenMetaData;
 
-    /// @notice Optional storage slot for additional unlockable content
-    mapping(uint256 => string) public additionalEditionUnlockableSlot;
-
     /// @notice Allows a creator to disable sales of their edition
     mapping(uint256 => bool) public editionSalesDisabled;
 
@@ -1634,7 +1676,7 @@ contract KnownOriginDigitalAssetV3 is
         IERC2981 _royaltiesRegistryProxy,
         uint256 _editionPointer
     ) BaseKoda(_accessControls) {
-
+        // starting point for new edition IDs
         editionPointer = _editionPointer;
 
         // optional registry address - can be constructed as zero address
@@ -1663,7 +1705,6 @@ contract KnownOriginDigitalAssetV3 is
     }
 
     /// @notice Mints an edition token batch and composes ERC20s for every token in the edition
-    /// @dev there is a limit on the number of ERC20s that can be embedded in an edition
     function mintBatchEditionAndComposeERC20s(
         uint16 _editionSize,
         address _to,
@@ -1685,7 +1726,7 @@ contract KnownOriginDigitalAssetV3 is
     }
 
     function _mintBatchEdition(uint16 _editionSize, address _to, string calldata _uri) internal returns (uint256) {
-        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid edition size");
+        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid size");
 
         uint256 start = generateNextEditionNumber();
 
@@ -1711,7 +1752,7 @@ contract KnownOriginDigitalAssetV3 is
     override
     onlyContract
     returns (uint256 _editionId) {
-        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid edition size");
+        require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid size");
 
         uint256 start = generateNextEditionNumber();
 
@@ -1730,11 +1771,13 @@ contract KnownOriginDigitalAssetV3 is
     }
 
     /// @notice Allows the creator of an edition to update the token URI provided that no primary sales have been made
-    function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external override {
-        require(_msgSender() == editionDetails[_editionId].creator, "Not creator");
+    function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI)
+    external
+    override
+    validateCreator(_editionId) {
         require(
             !hasMadePrimarySale(_editionId) && (!tokenUriResolverActive() || !tokenUriResolver.isDefined(_editionId, 0)),
-            "Invalid Edition state"
+            "Invalid state"
         );
 
         editionDetails[_editionId].uri = _newURI;
@@ -1808,6 +1851,7 @@ contract KnownOriginDigitalAssetV3 is
         );
     }
 
+
     /// @notice If primary sales for an edition are disabled
     function isEditionSalesDisabled(uint256 _editionId) external view override returns (bool) {
         return editionSalesDisabled[_editionId];
@@ -1824,7 +1868,7 @@ contract KnownOriginDigitalAssetV3 is
 
         require(
             creator == _msgSender() || accessControls.hasAdminRole(_msgSender()),
-            "Only creator or platform admin"
+            "Only creator or admin"
         );
 
         emit EditionSalesDisabledToggled(_editionId, editionSalesDisabled[_editionId], !editionSalesDisabled[_editionId]);
@@ -1961,7 +2005,7 @@ contract KnownOriginDigitalAssetV3 is
         return feeRecipients;
     }
 
-    function getFeeBps(uint256 _tokenId) external view override returns (uint[] memory) {
+    function getFeeBps(uint256) external view override returns (uint[] memory) {
         uint[] memory feeBps = new uint[](1);
         feeBps[0] = uint(secondarySaleRoyalty) / basisPointsModulo;
         // convert to basis points
@@ -2006,7 +2050,7 @@ contract KnownOriginDigitalAssetV3 is
     view
     override
     returns (address receiver, address creator, uint256 tokenId) {
-        require(!editionSalesDisabled[_editionId], "Edition sales disabled");
+        require(!editionSalesDisabled[_editionId], "Edition disabled");
 
         uint256 _tokenId = getNextAvailablePrimarySaleToken(_editionId);
         address _creator = _getCreatorOfEdition(_editionId);
@@ -2030,7 +2074,7 @@ contract KnownOriginDigitalAssetV3 is
                 return tokenId;
             }
         }
-        revert("No tokens left on the primary market");
+        revert("Primary market exhausted");
     }
 
     /// @notice Starting from the last token in an edition and going down the first, returns the next unsold token (if any)
@@ -2045,7 +2089,7 @@ contract KnownOriginDigitalAssetV3 is
             }
             highestTokenId--;
         }
-        revert("No tokens left on the primary market");
+        revert("Primary market exhausted");
     }
 
     /// @notice Using the reverse token ID logic of an edition, returns next token ID and associated royalty information
@@ -2054,7 +2098,7 @@ contract KnownOriginDigitalAssetV3 is
     view
     override
     returns (address receiver, address creator, uint256 tokenId) {
-        require(!editionSalesDisabled[_editionId], "Edition sales disabled");
+        require(!editionSalesDisabled[_editionId], "Edition disabled");
 
         uint256 _tokenId = getReverseAvailablePrimarySaleToken(_editionId);
         address _creator = _getCreatorOfEdition(_editionId);
@@ -2083,7 +2127,6 @@ contract KnownOriginDigitalAssetV3 is
                 return true;
             }
         }
-
         return false;
     }
 
@@ -2154,7 +2197,7 @@ contract KnownOriginDigitalAssetV3 is
             );
             require(
                 selector == ERC721_RECEIVED,
-                "ERC721_INVALID_SELECTOR"
+                "Invalid selector"
             );
         }
     }
@@ -2178,12 +2221,12 @@ contract KnownOriginDigitalAssetV3 is
 
     function _transferFrom(address _from, address _to, uint256 _tokenId) private {
         // enforce not being able to send to zero as we have explicit rules what a minted but unbound owner is
-        require(_to != address(0), "ERC721_ZERO_TO_ADDRESS");
+        require(_to != address(0), "Invalid to address");
 
         // Ensure the owner is the sender
         address owner = _ownerOf(_tokenId, _editionFromTokenId(_tokenId));
-        require(owner != address(0), "ERC721_ZERO_OWNER");
-        require(_from == owner, "ERC721_OWNER_MISMATCH");
+        require(owner != address(0), "Invalid owner");
+        require(_from == owner, "Owner mismatch");
 
         address spender = _msgSender();
         address approvedAddress = getApproved(_tokenId);
@@ -2191,7 +2234,7 @@ contract KnownOriginDigitalAssetV3 is
             spender == owner // sending to myself
             || isApprovedForAll(owner, spender)  // is approved to send any behalf of owner
             || approvedAddress == spender, // is approved to move this token ID
-            "ERC721_INVALID_SPENDER"
+            "Invalid spender"
         );
 
         // Ensure approval for token ID is cleared
@@ -2214,7 +2257,7 @@ contract KnownOriginDigitalAssetV3 is
     function ownerOf(uint256 _tokenId) override public view returns (address) {
         uint256 editionId = _editionFromTokenId(_tokenId);
         address owner = _ownerOf(_tokenId, editionId);
-        require(owner != address(0), "ERC721_ZERO_OWNER");
+        require(owner != address(0), "Invalid owner");
         return owner;
     }
 
@@ -2246,8 +2289,8 @@ contract KnownOriginDigitalAssetV3 is
     /// @param _tokenId The NFT to approve
     function approve(address _approved, uint256 _tokenId) override external {
         address owner = ownerOf(_tokenId);
-        require(_approved != owner, "ERC721_APPROVED_IS_OWNER");
-        require(_msgSender() == owner || isApprovedForAll(owner, _msgSender()), "ERC721_INVALID_SENDER");
+        require(_approved != owner, "Approved in owner");
+        require(_msgSender() == owner || isApprovedForAll(owner, _msgSender()), "Invalid sender");
         approvals[_tokenId] = _approved;
         emit Approval(owner, _approved, _tokenId);
     }
@@ -2273,7 +2316,7 @@ contract KnownOriginDigitalAssetV3 is
     /// @param _owner An address for whom to query the balance
     /// @return The number of NFTs owned by `_owner`, possibly zero
     function balanceOf(address _owner) override external view returns (uint256) {
-        require(_owner != address(0), "ERC721_ZERO_OWNER");
+        require(_owner != address(0), "Invalid owner");
         return balances[_owner];
     }
 
@@ -2329,38 +2372,35 @@ contract KnownOriginDigitalAssetV3 is
     // Creator functions //
     ///////////////////////
 
-    /// @notice Optional metadata storage slot which allows the creator to set an additional metadata blob on the edition
-    function lockInAdditionalMetaData(uint256 _editionId, string calldata _metadata) external {
-        address creator = getCreatorOfEdition(_editionId);
-        require(
-            _msgSender() == creator || accessControls.isVerifiedArtistProxy(creator, _msgSender()),
-            "Unable to set when not creator"
-        );
+    function composeERC20sAsCreator(uint16 _editionId, address[] calldata _erc20s, uint256[] calldata _amounts)
+    external
+    validateCreator(_editionId) {
+        require(!isEditionSoldOut(_editionId), "Edition soldout");
 
-        require(bytes(sealedEditionMetaData[_editionId]).length == 0, "can only be set once");
-        sealedEditionMetaData[_editionId] = _metadata;
-        emit SealedEditionMetaDataSet(_editionId);
+        uint256 totalErc20s = _erc20s.length;
+        require(totalErc20s > 0 && totalErc20s == _amounts.length, "Tokens invalid");
+
+        for (uint i = 0; i < totalErc20s; i++) {
+            _composeERC20IntoEdition(_msgSender(), _editionId, _erc20s[i], _amounts[i]);
+        }
     }
 
-    /// @notice Optional storage slot which allows the creator to set an additional unlockable blob on the edition
-    function lockInUnlockableContent(uint256 _editionId, string calldata _content) external {
-        address creator = getCreatorOfEdition(_editionId);
-        require(
-            _msgSender() == creator || accessControls.isVerifiedArtistProxy(creator, _msgSender()),
-            "Unable to set when not creator"
-        );
-
-        additionalEditionUnlockableSlot[_editionId] = _content;
-        emit AdditionalEditionUnlockableSet(_editionId);
+    /// @notice Optional metadata storage slot which allows the creator to set an additional metadata blob on the edition
+    function lockInAdditionalMetaData(uint256 _editionId, string calldata _metadata)
+    external
+    validateCreator(_editionId) {
+        require(bytes(sealedEditionMetaData[_editionId]).length == 0, "Already set");
+        sealedEditionMetaData[_editionId] = _metadata;
+        emit SealedEditionMetaDataSet(_editionId);
     }
 
     /// @notice Optional metadata storage slot which allows a token owner to set an additional metadata blob on the token
     function lockInAdditionalTokenMetaData(uint256 _tokenId, string calldata _metadata) external {
         require(
             _msgSender() == ownerOf(_tokenId) || accessControls.hasContractRole(_msgSender()),
-            "Unable to set when not owner or contract"
+            "Only owner or contract"
         );
-        require(bytes(sealedTokenMetaData[_tokenId]).length == 0, "can only be set once");
+        require(bytes(sealedTokenMetaData[_tokenId]).length == 0, "Already set");
         sealedTokenMetaData[_tokenId] = _metadata;
         emit SealedTokenMetaDataSet(_tokenId);
     }
