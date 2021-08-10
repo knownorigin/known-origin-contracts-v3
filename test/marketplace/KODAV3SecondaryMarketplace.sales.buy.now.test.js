@@ -288,7 +288,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
         await expectRevert(
           this.marketplace.buyEditionToken(token1, {from: collectorD, value: _0_1_ETH}),
-          'ERC721_OWNER_MISMATCH'
+          'Owner mismatch'
         );
 
       });
@@ -390,7 +390,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
         await expectRevert(
           this.marketplace.buyEditionTokenFor(token1, collectorD, {from: collectorD, value: _0_1_ETH}),
-          'ERC721_OWNER_MISMATCH'
+          'Owner mismatch'
         );
 
       });

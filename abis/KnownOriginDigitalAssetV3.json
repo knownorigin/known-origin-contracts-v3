@@ -558,25 +558,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "additionalEditionUnlockableSlot",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "_approved",
         "type": "address"
@@ -667,6 +648,29 @@
       }
     ],
     "name": "batchTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "_editionId",
+        "type": "uint16"
+      },
+      {
+        "internalType": "address[]",
+        "name": "_erc20s",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_amounts",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "composeERC20sAsCreator",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1525,24 +1529,6 @@
       }
     ],
     "name": "lockInAdditionalTokenMetaData",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_editionId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "string",
-        "name": "_content",
-        "type": "string"
-      }
-    ],
-    "name": "lockInUnlockableContent",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

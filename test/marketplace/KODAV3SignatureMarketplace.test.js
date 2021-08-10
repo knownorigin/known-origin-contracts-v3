@@ -204,7 +204,7 @@ contract('KODAV3SignatureMarketplace tests (ERC-2612)', function (accounts) {
               from: random
             }
           ),
-          'ERC721_OWNER_MISMATCH'
+          'Owner mismatch'
         );
       });
 

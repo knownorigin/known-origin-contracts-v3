@@ -248,7 +248,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when querying the zero address', () => {
         it('throws', async () => {
           await expectRevert(
-            this.token.balanceOf(ZERO_ADDRESS), 'ERC721_ZERO_OWNER',
+            this.token.balanceOf(ZERO_ADDRESS), 'Invalid owner',
           );
         });
       });
@@ -392,7 +392,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, other, other, tokenId, {from: owner}),
-              'ERC721_OWNER_MISMATCH',
+              'Owner mismatch',
             );
           });
         });
@@ -401,7 +401,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, other, tokenId, {from: other}),
-              'ERC721_INVALID_SPENDER',
+              'Invalid spender',
             );
           });
         });
@@ -410,7 +410,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, other, nonExistentTokenId, {from: owner}),
-              'ERC721_ZERO_OWNER',
+              'Invalid owner',
             );
           });
         });
@@ -419,7 +419,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, ZERO_ADDRESS, tokenId, {from: owner}),
-              'ERC721_ZERO_TO_ADDRESS',
+              'Invalid to address',
             );
           });
         });
@@ -485,7 +485,7 @@ contract('ERC721 baseline tests', function (accounts) {
                     nonExistentTokenId,
                     {from: owner},
                   ),
-                  'ERC721_ZERO_OWNER',
+                  'Invalid owner',
                 );
               });
             });
@@ -505,7 +505,7 @@ contract('ERC721 baseline tests', function (accounts) {
             const invalidReceiver = await ERC721ReceiverMock.new('0x42', Error.None);
             await expectRevert(
               this.token.safeTransferFrom(owner, invalidReceiver.address, tokenId, {from: owner}),
-              'ERC721_INVALID_SELECTOR',
+              'Invalid selector',
             );
           });
         });
@@ -613,7 +613,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when the sender does not own the given token ID', () => {
         it('reverts', async () => {
           await expectRevert(this.token.approve(approved, tokenId, {from: other}),
-            'ERC721_INVALID_SENDER');
+            'Invalid sender');
         });
       });
 
@@ -621,7 +621,7 @@ contract('ERC721 baseline tests', function (accounts) {
         it('reverts', async () => {
           await this.token.approve(approved, tokenId, {from: owner});
           await expectRevert(this.token.approve(anotherApproved, tokenId, {from: approved}),
-            'ERC721_INVALID_SENDER');
+            'Invalid sender');
         });
       });
 
@@ -638,7 +638,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when the given token ID does not exist', () => {
         it('reverts', async () => {
           await expectRevert(this.token.approve(approved, nonExistentTokenId, {from: operator}),
-            'ERC721_ZERO_OWNER');
+            'Invalid owner');
         });
       });
     });
@@ -773,7 +773,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when querying the zero address', () => {
         it('throws', async () => {
           await expectRevert(
-            this.token.balanceOf(ZERO_ADDRESS), 'ERC721_ZERO_OWNER',
+            this.token.balanceOf(ZERO_ADDRESS), 'Invalid owner',
           );
         });
       });
@@ -917,7 +917,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, other, other, tokenId, {from: owner}),
-              'ERC721_OWNER_MISMATCH',
+              'Owner mismatch',
             );
           });
         });
@@ -926,7 +926,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, other, tokenId, {from: other}),
-              'ERC721_INVALID_SPENDER',
+              'Invalid spender',
             );
           });
         });
@@ -935,7 +935,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, other, nonExistentTokenId, {from: owner}),
-              'ERC721_ZERO_OWNER',
+              'Invalid owner',
             );
           });
         });
@@ -944,7 +944,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, ZERO_ADDRESS, tokenId, {from: owner}),
-              'ERC721_ZERO_TO_ADDRESS',
+              'Invalid to address',
             );
           });
         });
@@ -1010,7 +1010,7 @@ contract('ERC721 baseline tests', function (accounts) {
                     nonExistentTokenId,
                     {from: owner},
                   ),
-                  'ERC721_ZERO_OWNER',
+                  'Invalid owner',
                 );
               });
             });
@@ -1030,7 +1030,7 @@ contract('ERC721 baseline tests', function (accounts) {
             const invalidReceiver = await ERC721ReceiverMock.new('0x42', Error.None);
             await expectRevert(
               this.token.safeTransferFrom(owner, invalidReceiver.address, tokenId, {from: owner}),
-              'ERC721_INVALID_SELECTOR',
+              'Invalid selector',
             );
           });
         });
@@ -1138,7 +1138,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when the sender does not own the given token ID', () => {
         it('reverts', async () => {
           await expectRevert(this.token.approve(approved, tokenId, {from: other}),
-            'ERC721_INVALID_SENDER');
+            'Invalid sender');
         });
       });
 
@@ -1146,7 +1146,7 @@ contract('ERC721 baseline tests', function (accounts) {
         it('reverts', async () => {
           await this.token.approve(approved, tokenId, {from: owner});
           await expectRevert(this.token.approve(anotherApproved, tokenId, {from: approved}),
-            'ERC721_INVALID_SENDER');
+            'Invalid sender');
         });
       });
 
@@ -1163,7 +1163,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when the given token ID does not exist', () => {
         it('reverts', async () => {
           await expectRevert(this.token.approve(approved, nonExistentTokenId, {from: operator}),
-            'ERC721_ZERO_OWNER');
+            'Invalid owner');
         });
       });
     });
@@ -1298,7 +1298,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when querying the zero address', () => {
         it('throws', async () => {
           await expectRevert(
-            this.token.balanceOf(ZERO_ADDRESS), 'ERC721_ZERO_OWNER',
+            this.token.balanceOf(ZERO_ADDRESS), 'Invalid owner',
           );
         });
       });
@@ -1442,7 +1442,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, other, other, tokenId, {from: owner}),
-              'ERC721_OWNER_MISMATCH',
+              'Owner mismatch',
             );
           });
         });
@@ -1451,7 +1451,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, other, tokenId, {from: other}),
-              'ERC721_INVALID_SPENDER',
+              'Invalid spender',
             );
           });
         });
@@ -1460,7 +1460,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, other, nonExistentTokenId, {from: owner}),
-              'ERC721_ZERO_OWNER',
+              'Invalid owner',
             );
           });
         });
@@ -1469,7 +1469,7 @@ contract('ERC721 baseline tests', function (accounts) {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, ZERO_ADDRESS, tokenId, {from: owner}),
-              'ERC721_ZERO_TO_ADDRESS',
+              'Invalid to address',
             );
           });
         });
@@ -1535,7 +1535,7 @@ contract('ERC721 baseline tests', function (accounts) {
                     nonExistentTokenId,
                     {from: owner},
                   ),
-                  'ERC721_ZERO_OWNER',
+                  'Invalid owner',
                 );
               });
             });
@@ -1555,7 +1555,7 @@ contract('ERC721 baseline tests', function (accounts) {
             const invalidReceiver = await ERC721ReceiverMock.new('0x42', Error.None);
             await expectRevert(
               this.token.safeTransferFrom(owner, invalidReceiver.address, tokenId, {from: owner}),
-              'ERC721_INVALID_SELECTOR',
+              'Invalid selector',
             );
           });
         });
@@ -1663,7 +1663,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when the sender does not own the given token ID', () => {
         it('reverts', async () => {
           await expectRevert(this.token.approve(approved, tokenId, {from: other}),
-            'ERC721_INVALID_SENDER');
+            'Invalid sender');
         });
       });
 
@@ -1671,7 +1671,7 @@ contract('ERC721 baseline tests', function (accounts) {
         it('reverts', async () => {
           await this.token.approve(approved, tokenId, {from: owner});
           await expectRevert(this.token.approve(anotherApproved, tokenId, {from: approved}),
-            'ERC721_INVALID_SENDER');
+            'Invalid sender');
         });
       });
 
@@ -1688,7 +1688,7 @@ contract('ERC721 baseline tests', function (accounts) {
       context('when the given token ID does not exist', () => {
         it('reverts', async () => {
           await expectRevert(this.token.approve(approved, nonExistentTokenId, {from: operator}),
-            'ERC721_ZERO_OWNER');
+            'Invalid owner');
         });
       });
     });

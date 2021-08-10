@@ -20,7 +20,6 @@ abstract contract Context {
     }
 
     function _msgData() internal view virtual returns (bytes calldata) {
-        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
         return msg.data;
     }
 }
@@ -141,7 +140,11 @@ interface IERC721 is IERC165 {
      *
      * Emits a {Transfer} event.
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId) external;
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) external;
 
     /**
      * @dev Transfers `tokenId` token from `from` to `to`.
@@ -157,7 +160,11 @@ interface IERC721 is IERC165 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address from, address to, uint256 tokenId) external;
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) external;
 
     /**
      * @dev Gives permission to `to` to transfer `tokenId` token to another account.
@@ -203,19 +210,24 @@ interface IERC721 is IERC165 {
     function isApprovedForAll(address owner, address operator) external view returns (bool);
 
     /**
-      * @dev Safely transfers `tokenId` token from `from` to `to`.
-      *
-      * Requirements:
-      *
-      * - `from` cannot be the zero address.
-      * - `to` cannot be the zero address.
-      * - `tokenId` token must exist and be owned by `from`.
-      * - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}.
-      * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
-      *
-      * Emits a {Transfer} event.
-      */
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external;
+     * @dev Safely transfers `tokenId` token from `from` to `to`.
+     *
+     * Requirements:
+     *
+     * - `from` cannot be the zero address.
+     * - `to` cannot be the zero address.
+     * - `tokenId` token must exist and be owned by `from`.
+     * - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}.
+     * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
+     *
+     * Emits a {Transfer} event.
+     */
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes calldata data
+    ) external;
 }
 
 // File: contracts/core/IERC2309.sol
@@ -386,6 +398,7 @@ IHasSecondarySaleFees // Rariable / Foundation royalties
     function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint16 _size, uint256 _editionId, string memory _uri);
 
     function hadPrimarySaleOfToken(uint256 _tokenId) external view returns (bool);
+
 }
 
 // File: contracts/marketplace/IKODAV3Marketplace.sol
@@ -559,7 +572,7 @@ abstract contract ReentrancyGuard {
 
     uint256 private _status;
 
-    constructor () {
+    constructor() {
         _status = _NOT_ENTERED;
     }
 
@@ -617,7 +630,7 @@ abstract contract Pausable is Context {
     /**
      * @dev Initializes the contract in unpaused state.
      */
-    constructor () {
+    constructor() {
         _paused = false;
     }
 
@@ -740,7 +753,11 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
 
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
@@ -833,7 +850,8 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     }
 
     function recoverStuckETH(address payable _recipient, uint256 _amount) public onlyAdmin {
-        _recipient.call{value : _amount}("");
+        (bool success,) = _recipient.call{value : _amount}("");
+        require(success, "Unable to send recipient ETH");
         emit AdminRecoverETH(_recipient, _amount);
     }
 
@@ -1071,7 +1089,7 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         // if we are near the end, we have bids, then extend the bidding end
         bool isCountDownTriggered = originalBiddingEnd > 0;
 
-        if (reserveAuction.bid + msg.value >= reserveAuction.reservePrice && !isCountDownTriggered) {
+        if (msg.value >= reserveAuction.reservePrice && !isCountDownTriggered) {
             reserveAuction.biddingEnd = uint128(block.timestamp) + reserveAuctionLengthOnceReserveMet;
         }
         else if (isCountDownTriggered) {
@@ -1423,7 +1441,7 @@ BuyNowMarketplace {
     }
 
     // emergency admin "reject" button for stuck bids
-    function adminRejectEditionBid(uint256 _editionId) public onlyAdmin {
+    function adminRejectEditionBid(uint256 _editionId) public onlyAdmin nonReentrant {
         Offer storage offer = editionOffers[_editionId];
         require(offer.bidder != address(0), "No open bid");
 
@@ -1519,7 +1537,7 @@ BuyNowMarketplace {
     payable
     whenNotPaused
     nonReentrant {
-        _buyNextStep(_editionId, _msgSender(), _msgSender());
+        _buyNextStep(_editionId, _msgSender());
     }
 
     function buyNextStepFor(uint256 _editionId, address _buyer)
@@ -1528,10 +1546,10 @@ BuyNowMarketplace {
     payable
     whenNotPaused
     nonReentrant {
-        _buyNextStep(_editionId, _msgSender(), _buyer);
+        _buyNextStep(_editionId, _buyer);
     }
 
-    function _buyNextStep(uint256 _editionId, address _invoker, address _buyer) internal {
+    function _buyNextStep(uint256 _editionId, address _buyer) internal {
         Stepped storage steppedAuction = editionStep[_editionId];
         require(steppedAuction.seller != address(0), "Edition not listed for stepped auction");
         require(steppedAuction.startDate <= block.timestamp, "Not started yet");
@@ -1549,7 +1567,7 @@ BuyNowMarketplace {
 
         // send back excess if supplied - will allow UX flow of setting max price to pay
         if (msg.value > expectedPrice) {
-            (bool success,) = _invoker.call{value : msg.value - expectedPrice}("");
+            (bool success,) = _msgSender().call{value : msg.value - expectedPrice}("");
             require(success, "failed to send overspend back");
         }
 

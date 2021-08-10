@@ -264,7 +264,7 @@ contract('KODAV3Marketplace', function (accounts) {
               from: collectorD,
               value: token4Price
             }),
-            'No tokens left on the primary market'
+            'Primary market exhausted'
           );
 
         });
@@ -531,7 +531,7 @@ contract('KODAV3Marketplace', function (accounts) {
               from: contract,
               value: token4Price
             }),
-            'No tokens left on the primary market'
+            'Primary market exhausted'
           );
 
         });
@@ -725,7 +725,7 @@ contract('KODAV3Marketplace', function (accounts) {
         // any further sale should fail
         await expectRevert(
           this.marketplace.buyNextStep(edition, {from: collectorA, value: ether('3')}),
-          'Edition sales disabled'
+          'Edition disabled'
         );
       });
     });

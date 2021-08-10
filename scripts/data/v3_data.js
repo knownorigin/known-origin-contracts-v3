@@ -5,7 +5,7 @@ module.exports = {
   },
   // See /utils/v3-migration scripts for details
   artistMerkelData: {
-    root: '0x11d1a0e15b4a7ce75597bf776af99482158f39e6a0460f5037db03982a7de611',
-    ipfsHash: 'Qmb8TxLesWrmjhPNFikdLdSYLbGQUGnBTXkRqoEmXLy7o2'
+    root: '0xdeb34449286ee2b70ae4a63867fcf883625733113bc1345d3b3095569eaf8b39',
+    ipfsHash: 'QmWv6VpU956AYuKwE5SeLTyTFLZypxQGDLBaWnQvzY2qYw'
   }
 };

@@ -73,4 +73,5 @@ IHasSecondarySaleFees // Rariable / Foundation royalties
     function getEditionDetails(uint256 _tokenId) external view returns (address _originalCreator, address _owner, uint16 _size, uint256 _editionId, string memory _uri);
 
     function hadPrimarySaleOfToken(uint256 _tokenId) external view returns (bool);
+
 }
