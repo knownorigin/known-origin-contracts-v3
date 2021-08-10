@@ -521,7 +521,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
         it('reverts', async () => {
           await expectRevert(
             this.token.approve(owner, tokenId, {from: owner}),
-            'Approved in owner',
+            'Approved is owner',
           );
         });
       });

@@ -8,7 +8,7 @@ module.exports = {
     rinkeby: '0x1c9817aEdeC8Af91e439c228b70AEb9145ae5508'
   },
   starting_edition_id: {
-    mainnet: '500000', // TODO UPDATE THIS BEFORE GO LIVE!
-    rinkeby: '100000'
+    mainnet: '800000', // TODO UPDATE THIS BEFORE GO LIVE!
+    rinkeby: '120000'
   }
 };

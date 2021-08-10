@@ -722,7 +722,7 @@ IKODAV3Minter {
     /// @param _tokenId The NFT to approve
     function approve(address _approved, uint256 _tokenId) override external {
         address owner = ownerOf(_tokenId);
-        require(_approved != owner, "Approved in owner");
+        require(_approved != owner, "Approved is owner");
         require(_msgSender() == owner || isApprovedForAll(owner, _msgSender()), "Invalid sender");
         approvals[_tokenId] = _approved;
         emit Approval(owner, _approved, _tokenId);
