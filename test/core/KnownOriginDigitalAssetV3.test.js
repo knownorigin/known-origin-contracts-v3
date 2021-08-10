@@ -160,7 +160,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('batch minted - cannot send to zero address', async () => {
       await expectRevert(
         this.token.transferFrom(owner, ZERO_ADDRESS, firstEditionTokenId, {from: owner}),
-        'ERC721_ZERO_TO_ADDRESS'
+        'ERC721_Invalid to address'
       );
     });
 
@@ -179,7 +179,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.transferFrom(owner, collectorB, firstEditionTokenId, {from: owner}),
-        'ERC721_OWNER_MISMATCH'
+        'Owner mismatch'
       );
     });
 
@@ -301,7 +301,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('batch minted - cannot send to zero address', async () => {
       await expectRevert(
         this.token.transferFrom(owner, ZERO_ADDRESS, firstEditionTokenId, {from: owner}),
-        'ERC721_ZERO_TO_ADDRESS'
+        'ERC721_Invalid to address'
       );
     });
 
@@ -320,7 +320,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.transferFrom(owner, collectorB, firstEditionTokenId, {from: owner}),
-        'ERC721_OWNER_MISMATCH'
+        'Owner mismatch'
       );
     });
 
@@ -645,7 +645,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // exceeds tokens and reverts
       await expectRevert(
         this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId),
-        'No tokens left on the primary market'
+        'Primary market exhuasted'
       );
     });
 
@@ -678,7 +678,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('reverts if no edition ID found', async () => {
       await expectRevert(
         this.token.getNextAvailablePrimarySaleToken.call(nonExistentTokenId),
-        'No tokens left on the primary market'
+        'Primary market exhuasted'
       );
     });
 
@@ -702,7 +702,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.getNextAvailablePrimarySaleToken.call(firstEditionTokenId),
-        'No tokens left on the primary market'
+        'Primary market exhuasted'
       );
     });
 
@@ -748,7 +748,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // covering this here to prove you can not reset the zero address and go back to a token already with a primary sale
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA}); // sell one
       await expectRevert(this.token.transferFrom(collectorB, ZERO_ADDRESS, firstEditionTokenId, {from: collectorB}),
-        'ERC721_ZERO_TO_ADDRESS'
+        'ERC721_Invalid to address'
       ); // send back
     });
   });
@@ -790,7 +790,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // exceeds tokens and reverts
       await expectRevert(
         this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId),
-        'No tokens left on the primary market'
+        'Primary market exhuasted'
       );
     });
 
@@ -819,14 +819,14 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // exceeds tokens and reverts
       await expectRevert(
         this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId),
-        'No tokens left on the primary market'
+        'Primary market exhuasted'
       );
     });
 
     it('reverts if no edition ID found', async () => {
       await expectRevert(
         this.token.getReverseAvailablePrimarySaleToken.call(nonExistentTokenId),
-        'No tokens left on the primary market'
+        'Primary market exhuasted'
       );
     });
 
@@ -848,7 +848,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.getReverseAvailablePrimarySaleToken.call(firstEditionTokenId),
-        'No tokens left on the primary market'
+        'Primary market exhuasted'
       );
     });
 
@@ -893,7 +893,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       // covering this here to prove you can not reset the zero address and go back to a token already with a primary sale
       await this.token.transferFrom(collectorA, collectorB, firstEditionTokenId, {from: collectorA}); // sell one
       await expectRevert(this.token.transferFrom(collectorB, ZERO_ADDRESS, firstEditionTokenId, {from: collectorB}),
-        'ERC721_ZERO_TO_ADDRESS'
+        'ERC721_Invalid to address'
       ); // send back
     });
   });
@@ -983,7 +983,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
       await expectRevert(
         this.token.lockInAdditionalMetaData(firstEditionTokenId, 'hello', {from: collabDao}),
-        'Unable to set when not creator'
+        'Only creator or proxy'
       );
     });
 
@@ -1156,7 +1156,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
 
       await expectRevert(
         this.token.batchTransferFrom(collectorA, owner, collectorATokensToMove, {from: collectorA}),
-        'ERC721_OWNER_MISMATCH'
+        'Owner mismatch'
       );
     });
   });
@@ -1364,7 +1364,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       );
     });
 
-    it('Reverts when not creator of edition', async () => {
+    it.only('Reverts when not creator of edition', async () => {
       await expectRevert(
         this.token.updateURIIfNoSaleMade(firstEditionTokenId, 'random', {from: contract}),
         'Not creator'

@@ -290,7 +290,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, other, other, tokenId, {from: owner}),
-              wrapReason('ERC721_OWNER_MISMATCH'),
+              wrapReason('Owner mismatch'),
             );
           });
         });
@@ -299,7 +299,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, other, tokenId, {from: other}),
-              wrapReason('ERC721_INVALID_SPENDER'),
+              wrapReason('Invalid spender'),
             );
           });
         });
@@ -317,7 +317,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
           it('reverts', async () => {
             await expectRevert(
               transferFunction.call(this, owner, ZERO_ADDRESS, tokenId, {from: owner}),
-              wrapReason('ERC721_ZERO_TO_ADDRESS'),
+              wrapReason('ERC721_Invalid to address'),
             );
           });
         });
@@ -403,7 +403,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
             const invalidReceiver = await ERC721ReceiverMock.new('0x42', Error.None);
             await expectRevert(
               this.token.safeTransferFrom(owner, invalidReceiver.address, tokenId, {from: owner}),
-              wrapReason('ERC721_INVALID_SELECTOR'),
+              wrapReason('Invalid selector'),
             );
           });
         });
@@ -521,7 +521,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
         it('reverts', async () => {
           await expectRevert(
             this.token.approve(owner, tokenId, {from: owner}),
-            'ERC721_APPROVED_IS_OWNER',
+            'Approved in owner',
           );
         });
       });
@@ -530,7 +530,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
         it('reverts', async () => {
           await expectRevert(
             this.token.approve(approved, tokenId, {from: other}),
-            'ERC721_INVALID_SENDER'
+            'Invalid sender'
           );
         });
       });
@@ -540,7 +540,7 @@ contract('OpenZeppelin ERC721 spec test', (accounts) => {
           await this.token.approve(approved, tokenId, {from: owner});
           await expectRevert(
             this.token.approve(anotherApproved, tokenId, {from: approved}),
-            'ERC721_INVALID_SENDER'
+            'Invalid sender'
           );
         });
       });

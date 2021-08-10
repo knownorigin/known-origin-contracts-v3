@@ -93,8 +93,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         );
         require(_from == _msgSender(), "Must be token owner");
 
-        IKODAV3 koda = IKODAV3(address(this));
-        uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+        uint256 editionId = IKODAV3(address(this)).getEditionIdOfToken(_tokenId);
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[editionId].contains(_erc20Contract);
         bool nftAlreadyContainsERC20 = ERC20sEmbeddedInNft[_tokenId].contains(_erc20Contract);
 
@@ -116,8 +115,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     function _composeERC20IntoEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) internal nonReentrant {
         require(_value > 0, "Value cannot be zero");
 
-        bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract);
-        require(!editionAlreadyContainsERC20, "Edition already contains ERC20");
+        require(!ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract), "Edition already contains ERC20");
 
         ERC20sEmbeddedInEdition[_editionId].add(_erc20Contract);
         editionTokenERC20Balances[_editionId][_erc20Contract] = editionTokenERC20Balances[_editionId][_erc20Contract] + _value;
@@ -128,16 +126,14 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function totalERC20Contracts(uint256 _tokenId) override public view returns (uint256) {
-        IKODAV3 koda = IKODAV3(address(this));
-        uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+        uint256 editionId = IKODAV3(address(this)).getEditionIdOfToken(_tokenId);
         return ERC20sEmbeddedInNft[_tokenId].length() + ERC20sEmbeddedInEdition[editionId].length();
     }
 
     function erc20ContractByIndex(uint256 _tokenId, uint256 _index) override external view returns (address) {
         uint256 numOfERC20sInNFT = ERC20sEmbeddedInNft[_tokenId].length();
         if (_index >= numOfERC20sInNFT) {
-            IKODAV3 koda = IKODAV3(address(this));
-            uint256 editionId = koda.getEditionIdOfToken(_tokenId);
+            uint256 editionId =  IKODAV3(address(this)).getEditionIdOfToken(_tokenId);
             return ERC20sEmbeddedInEdition[editionId].at(_index - numOfERC20sInNFT);
         }
 

@@ -161,7 +161,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
         // any further sale should fail
         await expectRevert(
           this.marketplace.resultReserveAuction(EDITION_ONE_ID, {from: bidder2}),
-          'Edition sales disabled'
+          'Edition disabled'
         );
       });
     });
@@ -273,7 +273,7 @@ contract('KODAV3Marketplace reserve auction tests', function (accounts) {
         // any further sale should fail
         await expectRevert(
           this.marketplace.resultReserveAuction(EDITION_ONE_ID, {from: bidder2}),
-          'Edition sales disabled'
+          'Edition disabled'
         );
       });
     });

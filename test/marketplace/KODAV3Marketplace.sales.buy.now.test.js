@@ -365,7 +365,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
         await expectRevert.unspecified(
           this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: _0_1_ETH}),
-          'No tokens left on the primary market'
+          'Primary market exhuasted'
         );
       });
 
@@ -445,7 +445,7 @@ contract('KODAV3Marketplace', function (accounts) {
 
         await expectRevert.unspecified(
           this.marketplace.buyEditionTokenFor(firstEditionTokenId, collectorA, {from: collectorA, value: _0_1_ETH}),
-          'No tokens left on the primary market'
+          'Primary market exhuasted'
         );
       });
 
@@ -589,7 +589,7 @@ contract('KODAV3Marketplace', function (accounts) {
         // any further sale should fail
         await expectRevert(
           this.marketplace.buyEditionToken(firstEditionTokenId, {from: collectorA, value: _0_1_ETH}),
-          'Edition sales disabled'
+          'Edition disabled'
         );
       });
     });

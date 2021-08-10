@@ -24,11 +24,11 @@ import {BaseKoda} from "./BaseKoda.sol";
 /// @notice EIP-2309 Consecutive batch mint
 /// @notice ERC-998 Top-down ERC-20 composable
 contract KnownOriginDigitalAssetV3 is
-    TopDownERC20Composable,
-    TopDownSimpleERC721Composable,
-    BaseKoda,
-    ERC165Storage,
-    IKODAV3Minter {
+TopDownERC20Composable,
+TopDownSimpleERC721Composable,
+BaseKoda,
+ERC165Storage,
+IKODAV3Minter {
 
     event EditionURIUpdated(uint256 indexed _editionId);
     event EditionSalesDisabledToggled(uint256 indexed _editionId, bool _oldValue, bool _newValue);
@@ -51,7 +51,7 @@ contract KnownOriginDigitalAssetV3 is
         address creator = getCreatorOfEdition(_editionId);
         require(
             _msgSender() == creator || accessControls.isVerifiedArtistProxy(creator, _msgSender()),
-            "Unable to set when not creator"
+            "Only creator or proxy"
         );
         _;
     }
@@ -204,7 +204,10 @@ contract KnownOriginDigitalAssetV3 is
     }
 
     /// @notice Allows the creator of an edition to update the token URI provided that no primary sales have been made
-    function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI) external override {
+    function updateURIIfNoSaleMade(uint256 _editionId, string calldata _newURI)
+    external
+    override
+    validateCreator(_editionId) {
         require(
             !hasMadePrimarySale(_editionId) && (!tokenUriResolverActive() || !tokenUriResolver.isDefined(_editionId, 0)),
             "Invalid state"
@@ -480,7 +483,7 @@ contract KnownOriginDigitalAssetV3 is
     view
     override
     returns (address receiver, address creator, uint256 tokenId) {
-        require(!editionSalesDisabled[_editionId], "Edition sales disabled");
+        require(!editionSalesDisabled[_editionId], "Edition disabled");
 
         uint256 _tokenId = getNextAvailablePrimarySaleToken(_editionId);
         address _creator = _getCreatorOfEdition(_editionId);
@@ -504,7 +507,7 @@ contract KnownOriginDigitalAssetV3 is
                 return tokenId;
             }
         }
-        revert("No tokens left on the primary market");
+        revert("Primary market exhausted");
     }
 
     /// @notice Starting from the last token in an edition and going down the first, returns the next unsold token (if any)
@@ -519,7 +522,7 @@ contract KnownOriginDigitalAssetV3 is
             }
             highestTokenId--;
         }
-        revert("No tokens left on the primary market");
+        revert("Primary market exhausted");
     }
 
     /// @notice Using the reverse token ID logic of an edition, returns next token ID and associated royalty information
@@ -528,7 +531,7 @@ contract KnownOriginDigitalAssetV3 is
     view
     override
     returns (address receiver, address creator, uint256 tokenId) {
-        require(!editionSalesDisabled[_editionId], "Edition sales disabled");
+        require(!editionSalesDisabled[_editionId], "Edition disabled");
 
         uint256 _tokenId = getReverseAvailablePrimarySaleToken(_editionId);
         address _creator = _getCreatorOfEdition(_editionId);
@@ -627,7 +630,7 @@ contract KnownOriginDigitalAssetV3 is
             );
             require(
                 selector == ERC721_RECEIVED,
-                "ERC721_INVALID_SELECTOR"
+                "Invalid selector"
             );
         }
     }
@@ -651,12 +654,12 @@ contract KnownOriginDigitalAssetV3 is
 
     function _transferFrom(address _from, address _to, uint256 _tokenId) private {
         // enforce not being able to send to zero as we have explicit rules what a minted but unbound owner is
-        require(_to != address(0), "ERC721_ZERO_TO_ADDRESS");
+        require(_to != address(0), "Invalid to address");
 
         // Ensure the owner is the sender
         address owner = _ownerOf(_tokenId, _editionFromTokenId(_tokenId));
         require(owner != address(0), "Invalid owner");
-        require(_from == owner, "ERC721_OWNER_MISMATCH");
+        require(_from == owner, "Owner mismatch");
 
         address spender = _msgSender();
         address approvedAddress = getApproved(_tokenId);
@@ -664,7 +667,7 @@ contract KnownOriginDigitalAssetV3 is
             spender == owner // sending to myself
             || isApprovedForAll(owner, spender)  // is approved to send any behalf of owner
             || approvedAddress == spender, // is approved to move this token ID
-            "ERC721_INVALID_SPENDER"
+            "Invalid spender"
         );
 
         // Ensure approval for token ID is cleared
@@ -719,8 +722,8 @@ contract KnownOriginDigitalAssetV3 is
     /// @param _tokenId The NFT to approve
     function approve(address _approved, uint256 _tokenId) override external {
         address owner = ownerOf(_tokenId);
-        require(_approved != owner, "ERC721_APPROVED_IS_OWNER");
-        require(_msgSender() == owner || isApprovedForAll(owner, _msgSender()), "ERC721_INVALID_SENDER");
+        require(_approved != owner, "Approved in owner");
+        require(_msgSender() == owner || isApprovedForAll(owner, _msgSender()), "Invalid sender");
         approvals[_tokenId] = _approved;
         emit Approval(owner, _approved, _tokenId);
     }
@@ -804,7 +807,6 @@ contract KnownOriginDigitalAssetV3 is
 
     function composeERC20sAsCreator(uint16 _editionId, address[] calldata _erc20s, uint256[] calldata _amounts)
     external
-    override
     validateCreator(_editionId) {
         require(!isEditionSoldOut(_editionId), "Edition soldout");
 

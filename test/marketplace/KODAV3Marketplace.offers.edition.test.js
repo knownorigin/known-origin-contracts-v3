@@ -1044,7 +1044,7 @@ contract('KODAV3Marketplace', function (accounts) {
         // any further sale should fail
         await expectRevert(
           this.marketplace.acceptEditionBid(edition, _0_5_ETH, {from: minter}),
-          'Edition sales disabled'
+          'Edition disabled'
         );
       });
     });
