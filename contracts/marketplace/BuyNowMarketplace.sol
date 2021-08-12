@@ -79,6 +79,8 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
         uint256 tokenId = _processSale(_id, msg.value, _recipient, listing.seller);
 
         emit BuyNowPurchased(tokenId, _recipient, listing.seller, msg.value);
+
+        delete editionOrTokenListings[_id];
     }
 
     function _isBuyNowListingPermitted(uint256 _id) internal virtual returns (bool);
