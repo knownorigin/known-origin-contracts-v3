@@ -43,6 +43,10 @@ async function main() {
   await collabRoyaltiesRegistry.setKoda(kodaV3Deployment.address);
   console.log('KODA on collab registry set!');
 
+  console.log('Setting registry on KODA', kodaV3Deployment.address);
+  await kodaV3Deployment.setRoyaltiesRegistryProxy(collabRoyaltiesRegistry.address);
+  console.log('Collab registry set on KODA!');
+
   console.log('Finished!');
 }
 
