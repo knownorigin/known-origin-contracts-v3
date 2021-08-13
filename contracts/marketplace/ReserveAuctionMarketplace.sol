@@ -196,7 +196,9 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         bool isSeller = reserveAuction.seller == _msgSender();
         bool isBidder = reserveAuction.bidder == _msgSender();
         require(
-            isSeller || isBidder || accessControls.isVerifiedArtistProxy(reserveAuction.seller, _msgSender())
+            isSeller
+            || isBidder
+            || accessControls.isVerifiedArtistProxy(reserveAuction.seller, _msgSender())
             || accessControls.hasContractOrAdminRole(_msgSender()),
             "Only seller, bidder, contract or platform admin"
         );

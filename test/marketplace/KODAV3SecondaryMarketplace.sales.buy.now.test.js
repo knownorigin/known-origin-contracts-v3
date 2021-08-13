@@ -92,6 +92,14 @@ contract('KODAV3Marketplace', function (accounts) {
         )
       })
 
+      it('Reverts when already listed for reserve', async () => {
+        await this.marketplace.listForReserveAuction(collectorA, firstEditionTokenId, ether('0.25'), '0', {from: collectorA})
+        await expectRevert(
+          this.marketplace.listTokenForBuyNow(firstEditionTokenId, _0_1_ETH, '0', {from: collectorA}),
+          "Listing is not permitted"
+        )
+      })
+
       it('User can withdraw their bid if a token is listed for buy now', async () => {
         const tokenBid = ether('0.2')
         await this.marketplace.placeTokenBid(firstEditionTokenId, {from: collectorA, value: tokenBid});
