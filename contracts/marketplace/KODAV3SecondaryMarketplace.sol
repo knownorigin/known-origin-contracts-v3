@@ -333,19 +333,13 @@ ReserveAuctionMarketplace {
     function _isTokenListed(uint256 _tokenId) internal view returns (bool) {
         address currentOwner = koda.ownerOf(_tokenId);
 
-        // ownership has changed since previous listing
-        if (editionOrTokenListings[_tokenId].seller != currentOwner
-            && editionOrTokenWithReserveAuctions[_tokenId].seller != currentOwner) {
-            return false;
-        }
-
         // listing not set
-        if (editionOrTokenListings[_tokenId].seller != address(0)) {
+        if (editionOrTokenListings[_tokenId].seller == currentOwner) {
             return true;
         }
 
         // listing not set
-        if (editionOrTokenWithReserveAuctions[_tokenId].seller != address(0)) {
+        if (editionOrTokenWithReserveAuctions[_tokenId].seller == currentOwner) {
             return true;
         }
 
