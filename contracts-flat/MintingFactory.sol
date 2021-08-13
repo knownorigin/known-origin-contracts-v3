@@ -897,9 +897,9 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     function _refundBidder(uint256 _id, address _receiver, uint256 _paymentAmount, address _newBidder, uint256 _newOffer) internal {
         (bool success,) = _receiver.call{value : _paymentAmount}("");
         if (!success) {
-            emit BidderRefunded(_id, _receiver, _paymentAmount, _newBidder, _newOffer);
-        } else {
             emit BidderRefundedFailed(_id, _receiver, _paymentAmount, _newBidder, _newOffer);
+        } else {
+            emit BidderRefunded(_id, _receiver, _paymentAmount, _newBidder, _newOffer);
         }
     }
 
@@ -1200,7 +1200,9 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
         bool isSeller = reserveAuction.seller == _msgSender();
         bool isBidder = reserveAuction.bidder == _msgSender();
         require(
-            isSeller || isBidder || accessControls.isVerifiedArtistProxy(reserveAuction.seller, _msgSender())
+            isSeller
+            || isBidder
+            || accessControls.isVerifiedArtistProxy(reserveAuction.seller, _msgSender())
             || accessControls.hasContractOrAdminRole(_msgSender()),
             "Only seller, bidder, contract or platform admin"
         );
