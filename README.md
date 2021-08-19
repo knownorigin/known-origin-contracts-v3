@@ -1,6 +1,21 @@
-# KnownOrigin V3 Smart Contracts
+
+<h1 align="center">KnownOrigin V3 Smart Contracts</h1>
+<div align="center">
+  Discover, buy and collect rare digital artwork
+</div>
+
+<br />
+
+<div align="center">
+  <a href="https://www.ethereum.org/" target="_blank"><img src="https://img.shields.io/badge/platform-Ethereum-brightgreen.svg?style=flat-square" alt="Ethereum" /></a>
+  <a href="http://erc721.org/" target="_blank"><img src="https://img.shields.io/badge/token-ERC721-ff69b4.svg?style=flat-square" alt="Token ERC721" /> </a>
+  <img src="https://img.shields.io/badge/contributions-welcome-orange.svg?style=flat-square" alt="Contributions Welcome" />
+</div>
+
+<br />
 
 ## Core Guiding Principles & Features
+
 
 * GAS efficient - every byte counts, store only what is required `creator`, `edition size` & `metadata` but ensuring onchain provence
 * [ERC-721](https://eips.ethereum.org/EIPS/eip-721) compliant NFTs
@@ -37,6 +52,16 @@
 * `GAS` report can be found [here](./gas-report-output.md) and generated on demand via `npm run gas`
 * Contract size report found [here](./contract-size.md) or generated on demand via `npm run contract-size`
 * Code coverage generation via `npm run coverage` output in `./coverage` folder
+
+### Audits
+
+* Public audits can be seen in `audits` - more info from CoinFabrik cna be seen [here](https://blog.coinfabrik.com/known-origin-digital-asset-audit/) 
+
+### Subgraph
+
+* KO uses a mixture of public Subgraph and a currently private indexer to create a view on-top of these contracts 
+  * Subgraph can be accessed [here](https://thegraph.com/legacy-explorer/subgraph/knownorigin/known-origin)
+  * Subgraph source code be accessed [here](https://github.com/knownorigin/known-origin-subgraph)
 
 ## Deployments
 
