@@ -20,22 +20,28 @@ abstract contract TopDownSimpleERC721Composable is Context {
     event ReceivedChild(address indexed _from, uint256 indexed _tokenId, address indexed _childContract, uint256 _childTokenId);
     event TransferChild(uint256 indexed _tokenId, address indexed _to, address indexed _childContract, uint256 _childTokenId);
 
-    /// @notice compose a child ERC721 into a KODA token
+    /// @notice compose a set of the same child ERC721s into a KODA tokens
     /// @notice Caller must own both KODA and child NFT tokens
-    function composeNFTIntoKodaToken(uint256 _kodaTokenId, address _nft, uint256 _nftTokenId) external {
-        require(kodaTokenComposedNFT[_kodaTokenId].nft == address(0), "Max 1 NFT");
+    function composeNFTsIntoKodaTokens(uint256[] calldata _kodaTokenIds, address _nft, uint256[] calldata _nftTokenIds) external {
+        require(_kodaTokenIds.length > 0 && _kodaTokenIds.length == _nftTokenIds.length, "Invalid list");
 
         IERC721 nftContract = IERC721(_nft);
-        require(
-            IERC721(address(this)).ownerOf(_kodaTokenId) == nftContract.ownerOf(_nftTokenId),
-            "Need to own both tokens"
-        );
 
-        kodaTokenComposedNFT[_kodaTokenId] = ComposedNFT(_nft, _nftTokenId);
-        composedNFTsToKodaToken[_nft][_nftTokenId] = _kodaTokenId;
+        for (uint i = 0; i < _kodaTokenIds.length; i++) {
+            uint256 _kodaTokenId = _kodaTokenIds[i];
+            uint256 _nftTokenId = _nftTokenIds[i];
 
-        nftContract.transferFrom(_msgSender(), address(this), _nftTokenId);
-        emit ReceivedChild(_msgSender(), _kodaTokenId, _nft, _nftTokenId);
+            require(
+                IERC721(address(this)).ownerOf(_kodaTokenId) == nftContract.ownerOf(_nftTokenId),
+                "Owner mismatch"
+            );
+
+            kodaTokenComposedNFT[_kodaTokenId] = ComposedNFT(_nft, _nftTokenId);
+            composedNFTsToKodaToken[_nft][_nftTokenId] = _kodaTokenId;
+
+            nftContract.transferFrom(_msgSender(), address(this), _nftTokenId);
+            emit ReceivedChild(_msgSender(), _kodaTokenId, _nft, _nftTokenId);
+        }
     }
 
     /// @notice Transfer a child 721 wrapped within a KODA token to a given recipient

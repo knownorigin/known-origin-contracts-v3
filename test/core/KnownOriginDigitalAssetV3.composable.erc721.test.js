@@ -61,14 +61,14 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     await this.otherToken.mint(anotherOwner, '2', {from: anotherOwner});
   });
 
-  describe('composeNFTIntoKodaToken', () => {
+  describe.only('composeNFTsIntoKodaTokens', () => {
     it('can wrap any 721 in a KODA', async () => {
       await this.otherToken.approve(this.token.address, '1', {from: owner});
 
-      const {receipt} = await this.token.composeNFTIntoKodaToken(
-        firstEditionTokenId,
+      const {receipt} = await this.token.composeNFTsIntoKodaTokens(
+        [firstEditionTokenId],
         this.otherToken.address,
-        '1',
+        ['1'],
         {from: owner}
       );
 
@@ -96,9 +96,13 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
       ).to.be.equal(this.token.address);
     });
 
+    it('can wrap multiple 721s from the same address into KODA tokens', async ()=>{
+
+    });
+
     it('reverts if nft is zero address', async () => {
       await expectRevert(
-        this.token.composeNFTIntoKodaToken(firstEditionTokenId, ZERO_ADDRESS, '1'),
+        this.token.composeNFTsIntoKodaTokens([firstEditionTokenId], ZERO_ADDRESS, ['1']),
         'function call to a non-contract account'
       );
     });
@@ -106,21 +110,21 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     it('reverts when koda already has an NFT', async () => {
       await this.otherToken.approve(this.token.address, '1', {from: owner});
 
-      await this.token.composeNFTIntoKodaToken(
-        firstEditionTokenId,
+      await this.token.composeNFTsIntoKodaTokens(
+        [firstEditionTokenId],
         this.otherToken.address,
-        '1',
+        ['1'],
         {from: owner}
       );
 
       await expectRevert(
-        this.token.composeNFTIntoKodaToken(
-          firstEditionTokenId,
+        this.token.composeNFTsIntoKodaTokens(
+          [firstEditionTokenId],
           this.otherToken.address,
-          '1',
+          ['1'],
           {from: owner}
         ),
-        'Max 1 NFT'
+        'Owner mismatch'
       );
     });
 
@@ -130,13 +134,13 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
       await this.otherToken.approve(this.token.address, '1', {from: owner});
 
       await expectRevert(
-        this.token.composeNFTIntoKodaToken(
-          firstEditionTokenId,
+        this.token.composeNFTsIntoKodaTokens(
+          [firstEditionTokenId],
           this.otherToken.address,
-          '1',
+          ['1'],
           {from: owner}
         ),
-        'Need to own both tokens'
+        'Owner mismatch'
       );
     });
 
@@ -144,10 +148,10 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
       await this.otherToken.transferFrom(owner, random, '1', {from: owner});
 
       await expectRevert(
-        this.token.composeNFTIntoKodaToken(
-          firstEditionTokenId,
+        this.token.composeNFTsIntoKodaTokens(
+          [firstEditionTokenId],
           this.otherToken.address,
-          '1',
+          ['1'],
           {from: owner}
         ),
         'Need to own both tokens'
@@ -156,10 +160,10 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
 
     it('Reverts when koda does not exist but child does', async () => {
       await expectRevert(
-        this.token.composeNFTIntoKodaToken(
-          firstEditionTokenId.addn(1),
+        this.token.composeNFTsIntoKodaTokens(
+          [firstEditionTokenId.addn(1)],
           this.otherToken.address,
-          '1',
+          ['1'],
           {from: owner}
         ),
         'Invalid owner'
@@ -168,10 +172,10 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
 
     it('Reverts when child does not exist but KODA does', async () => {
       await expectRevert(
-        this.token.composeNFTIntoKodaToken(
-          firstEditionTokenId,
+        this.token.composeNFTsIntoKodaTokens(
+          [firstEditionTokenId],
           this.otherToken.address,
-          '2',
+          ['2'],
           {from: owner}
         ),
         'Need to own both tokens'
@@ -180,14 +184,26 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
 
     it('Reverts when does not own either token', async () => {
       await expectRevert(
-        this.token.composeNFTIntoKodaToken(
-          secondEditionTokenId,
+        this.token.composeNFTsIntoKodaTokens(
+          [secondEditionTokenId],
           this.otherToken.address,
-          '2',
+          ['2'],
           {from: owner}
         ),
         'ERC721: transfer caller is not owner nor approved'
       );
+    });
+
+    it('Reverts when KODA tokens and 721 tokens dont match in size', async () => {
+
+    });
+
+    it('Reverts when sender does not own all of the KODA tokens', async () => {
+
+    });
+
+    it('Reverts when sender does not own all of the 721 tokens', async () => {
+
     });
   });
 
@@ -195,10 +211,10 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     it('can transfer wrapped child', async () => {
       await this.otherToken.approve(this.token.address, '1', {from: owner});
 
-      await this.token.composeNFTIntoKodaToken(
-        firstEditionTokenId,
+      await this.token.composeNFTsIntoKodaTokens(
+        [firstEditionTokenId],
         this.otherToken.address,
-        '1',
+        ['1'],
         {from: owner}
       );
 
@@ -223,10 +239,10 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     it('if child transferred, can wrap again', async () => {
       await this.otherToken.approve(this.token.address, '1', {from: owner});
 
-      await this.token.composeNFTIntoKodaToken(
-        firstEditionTokenId,
+      await this.token.composeNFTsIntoKodaTokens(
+        [firstEditionTokenId],
         this.otherToken.address,
-        '1',
+        ['1'],
         {from: owner}
       );
 
@@ -239,10 +255,10 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
       await this.otherToken.mint(owner, '3', {from: owner});
       await this.otherToken.approve(this.token.address, '3', {from: owner});
 
-      const {receipt} = await this.token.composeNFTIntoKodaToken(
-        firstEditionTokenId,
+      const {receipt} = await this.token.composeNFTsIntoKodaTokens(
+        [firstEditionTokenId],
         this.otherToken.address,
-        '3',
+        ['3'],
         {from: owner}
       );
 
