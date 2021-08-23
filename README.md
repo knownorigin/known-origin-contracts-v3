@@ -83,7 +83,7 @@ V1 funds receiver          - 0xb4bb0960b5095e5a0abd07d18803f45c4c4eadf6 = (verif
 
 ```
 Core NFT                   - 
-AccessControls             - 
+AccessControls             - 0x9028b16494a9363F3EAaf381a6Fde67296abc68C = (verified) 
 Minting Factory            - 
 Primary marketplace        - 
 Secondary marketplace      - 
