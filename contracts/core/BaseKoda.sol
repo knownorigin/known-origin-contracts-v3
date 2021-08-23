@@ -26,7 +26,7 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     }
 
     function _onlyContract() private view {
-        require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
+        require(accessControls.hasContractRole(_msgSender()), "Must be contract");
     }
 
     modifier onlyAdmin(){
@@ -35,7 +35,7 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     }
 
     function _onlyAdmin() private view {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+        require(accessControls.hasAdminRole(_msgSender()), "Must be admin");
     }
 
     IKOAccessControlsLookup public accessControls;
@@ -71,13 +71,13 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     }
 
     function updateBasisPointsModulo(uint256 _basisPointsModulo) onlyAdmin public {
-        require(_basisPointsModulo > 0, "Basis point cannot be zero");
+        require(_basisPointsModulo > 0, "Is zero");
         basisPointsModulo = _basisPointsModulo;
         emit AdminUpdateBasisPointsModulo(_basisPointsModulo);
     }
 
     function updateModulo(uint256 _modulo) onlyAdmin public {
-        require(_modulo > 0, "Modulo point cannot be zero");
+        require(_modulo > 0, "Is zero");
         modulo = _modulo;
         emit AdminUpdateModulo(_modulo);
     }
@@ -88,7 +88,7 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     }
 
     function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {
-        require(_accessControls.hasAdminRole(_msgSender()), "Sender must have admin role in new contract");
+        require(_accessControls.hasAdminRole(_msgSender()), "Must be admin");
         emit AdminUpdateAccessControls(accessControls, _accessControls);
         accessControls = _accessControls;
     }

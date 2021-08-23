@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.4;
 
-import {IERC721Ownable} from "../../../core/IERC721Ownable.sol";
+import {IERC721Ownable} from "./IERC721Ownable.sol";
 
 // Based on https://eips.ethereum.org/EIPS/eip-2612 ERC-20 permit style but for erc-721 tokens
 // Variant assumes "value" param replaced with "tokenId" due to non-fungible nature

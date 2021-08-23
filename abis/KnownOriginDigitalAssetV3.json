@@ -678,9 +678,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_kodaTokenId",
-        "type": "uint256"
+        "internalType": "uint256[]",
+        "name": "_kodaTokenIds",
+        "type": "uint256[]"
       },
       {
         "internalType": "address",
@@ -688,12 +688,12 @@
         "type": "address"
       },
       {
-        "internalType": "uint256",
-        "name": "_nftTokenId",
-        "type": "uint256"
+        "internalType": "uint256[]",
+        "name": "_nftTokenIds",
+        "type": "uint256[]"
       }
     ],
-    "name": "composeNFTIntoKodaToken",
+    "name": "composeNFTsIntoKodaTokens",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

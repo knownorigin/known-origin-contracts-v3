@@ -396,7 +396,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if no contract role', async () => {
       await expectRevert(
         this.token.mintConsecutiveBatchEdition(10, owner, TOKEN_URI, {from: collabDao}),
-        'Caller must have contract role'
+        'Must be contract'
       );
     });
 
@@ -435,7 +435,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if no contract role', async () => {
       await expectRevert(
         this.token.mintBatchEdition(10, owner, TOKEN_URI, {from: collabDao}),
-        'Caller must have contract role'
+        'Must be contract'
       );
     });
 
@@ -920,7 +920,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if not admin', async () => {
       await expectRevert(
         this.token.reportEditionId(STARTING_EDITION, true, {from: collabDao}),
-        'Caller must have admin role'
+        'Must be admin'
       );
     });
   });
@@ -937,7 +937,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('revert if not admin', async () => {
       await expectRevert(
         this.token.reportArtistAccount(minter, true, {from: collabDao}),
-        'Caller must have admin role'
+        'Must be admin'
       );
     });
   });
@@ -1024,7 +1024,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
       });
       await expectRevert(
         this.token.lockInAdditionalTokenMetaData(firstEditionTokenId, 'hello', {from: collabDao}),
-        'Only owner or contract'
+        'Invalid caller'
       );
     });
 
@@ -1241,7 +1241,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('reverts if not admin', async () => {
       await expectRevert(
         this.token.withdrawStuckTokens(this.token.address, '1000', minter, {from: collectorA}),
-        'Caller must have admin role'
+        'Must be admin'
       );
     });
   });
@@ -1261,7 +1261,7 @@ contract('KnownOriginDigitalAssetV3 test', function (accounts) {
     it('reverts if not admin', async () => {
       await expectRevert(
         this.token.updateSecondaryRoyalty('10000', {from: collectorA}),
-        'Caller must have admin role'
+        'Must be admin'
       );
     });
   });

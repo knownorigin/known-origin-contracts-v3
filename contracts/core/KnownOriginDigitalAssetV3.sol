@@ -831,7 +831,7 @@ IKODAV3Minter {
     function lockInAdditionalTokenMetaData(uint256 _tokenId, string calldata _metadata) external {
         require(
             _msgSender() == ownerOf(_tokenId) || accessControls.hasContractRole(_msgSender()),
-            "Only owner or contract"
+            "Invalid caller"
         );
         require(bytes(sealedTokenMetaData[_tokenId]).length == 0, "Already set");
         sealedTokenMetaData[_tokenId] = _metadata;

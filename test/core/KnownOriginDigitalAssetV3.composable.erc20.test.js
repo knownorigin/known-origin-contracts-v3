@@ -485,7 +485,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
             owner,
             contract
           ),
-          'Value cannot be zero'
+          'Value zero'
         );
       });
 
@@ -498,7 +498,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
             owner,
             contract
           ),
-          'Edition already contains ERC20'
+          'Edition contains ERC20'
         );
       });
     });
@@ -519,7 +519,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           '0',
           {from: owner}
         ),
-        'Value cannot be zero'
+        'Value zero'
       );
     });
 
@@ -533,7 +533,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           ONE_THOUSAND_TOKENS,
           {from: random}
         ),
-        'Only token owner'
+        'Only owner'
       );
     });
 
@@ -546,7 +546,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           ONE_THOUSAND_TOKENS,
           {from: owner}
         ),
-        'Must be token owner'
+        'Only owner'
       );
     });
 
@@ -559,7 +559,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           ONE_THOUSAND_TOKENS,
           {from: owner}
         ),
-        'Amount exceeds allowance'
+        'Exceeds allowance'
       );
     });
   });
@@ -573,7 +573,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           this.erc20Token2.address,
           ONE_THOUSAND_TOKENS
         ),
-        'Empty values provided'
+        'Empty values'
       );
     });
 
@@ -585,7 +585,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
           this.erc20Token2.address,
           '0'
         ),
-        'Empty values provided'
+        'Empty values'
       );
     });
   });
@@ -607,21 +607,21 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     it('Reverts if amount is zero', async () => {
       await expectRevert(
         this.token.transferERC20(firstEditionTokenId, random, this.erc20Token1.address, '0'),
-        'Value cannot be zero'
+        'Value zero'
       );
     });
 
     it('Reverts if token is not wrapped in NFT', async () => {
       await expectRevert(
         this.token.transferERC20(firstEditionTokenId, random, this.erc20Token5.address, ONE_THOUSAND_TOKENS),
-        'No such ERC20 wrapped in token'
+        'No such ERC20'
       );
     });
 
     it('Reverts if trying to send tokens to the zero address', async () => {
       await expectRevert(
         this.token.transferERC20(firstEditionTokenId, constants.ZERO_ADDRESS, this.erc20Token1.address, ONE_THOUSAND_TOKENS),
-        'To cannot be zero address'
+        'Zero address'
       );
     });
 
@@ -635,7 +635,7 @@ contract('KnownOriginDigitalAssetV3 composable tests (ERC-998)', function (accou
     it('Reverts when transferring more than token balance', async () => {
       await expectRevert(
         this.token.transferERC20(firstEditionTokenId, random, this.erc20Token1.address, ONE_THOUSAND_TOKENS.muln(5), {from: owner}),
-        'Transfer amount exceeds balance'
+        'Exceeds balance'
       );
     });
   });

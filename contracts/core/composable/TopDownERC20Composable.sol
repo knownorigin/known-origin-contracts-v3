@@ -71,7 +71,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     /// @notice An NFT token owner (or approved) can compose multiple ERC20s in their NFT
     function getERC20s(address _from, uint256[] calldata _tokenIds, address _erc20Contract, uint256 _totalValue) external {
         uint256 totalTokens = _tokenIds.length;
-        require(totalTokens > 0 && _totalValue > 0, "Empty values provided");
+        require(totalTokens > 0 && _totalValue > 0, "Empty values");
 
         uint256 valuePerToken = _totalValue / totalTokens;
         for (uint i = 0; i < totalTokens; i++) {
@@ -81,7 +81,8 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
     /// @notice A NFT token owner (or approved address) can compose any ERC20 in their NFT
     function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) public override nonReentrant {
-        require(_value > 0, "Value cannot be zero");
+        require(_value > 0, "Value zero");
+        require(_from == _msgSender(), "Only owner");
 
         address spender = _msgSender();
         IERC721 self = IERC721(address(this));
@@ -89,9 +90,8 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         address owner = self.ownerOf(_tokenId);
         require(
             owner == spender || self.isApprovedForAll(owner, spender) || self.getApproved(_tokenId) == spender,
-            "Only token owner"
+            "Invalid spender"
         );
-        require(_from == _msgSender(), "Must be token owner");
 
         uint256 editionId = IKODAV3(address(this)).getEditionIdOfToken(_tokenId);
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[editionId].contains(_erc20Contract);
@@ -105,7 +105,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract] + _value;
 
         IERC20 token = IERC20(_erc20Contract);
-        require(token.allowance(_from, address(this)) >= _value, "Amount exceeds allowance");
+        require(token.allowance(_from, address(this)) >= _value, "Exceeds allowance");
 
         token.transferFrom(_from, address(this), _value);
 
@@ -113,9 +113,9 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function _composeERC20IntoEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) internal nonReentrant {
-        require(_value > 0, "Value cannot be zero");
+        require(_value > 0, "Value zero");
 
-        require(!ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract), "Edition already contains ERC20");
+        require(!ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract), "Edition contains ERC20");
 
         ERC20sEmbeddedInEdition[_editionId].add(_erc20Contract);
         editionTokenERC20Balances[_editionId][_erc20Contract] = editionTokenERC20Balances[_editionId][_erc20Contract] + _value;
@@ -145,8 +145,8 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     function _prepareERC20LikeTransfer(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) private {
         // To avoid stack too deep, do input checks within this scope
         {
-            require(_value > 0, "Value cannot be zero");
-            require(_to != address(0), "To cannot be zero address");
+            require(_value > 0, "Value zero");
+            require(_to != address(0), "Zero address");
 
             IERC721 self = IERC721(address(this));
 
@@ -163,10 +163,10 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         IKODAV3 koda = IKODAV3(address(this));
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
         bool editionContainsERC20 = ERC20sEmbeddedInEdition[editionId].contains(_erc20Contract);
-        require(nftContainsERC20 || editionContainsERC20, "No such ERC20 wrapped in token");
+        require(nftContainsERC20 || editionContainsERC20, "No such ERC20");
 
         // Check there is enough balance to transfer out
-        require(balanceOfERC20(_tokenId, _erc20Contract) >= _value, "Transfer amount exceeds balance");
+        require(balanceOfERC20(_tokenId, _erc20Contract) >= _value, "Exceeds balance");
 
         uint256 editionSize = koda.getSizeOfEdition(editionId);
         uint256 tokenInitialBalance = editionTokenERC20Balances[editionId][_erc20Contract] / editionSize;
