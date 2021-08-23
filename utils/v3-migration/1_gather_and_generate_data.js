@@ -19,6 +19,7 @@ const axios = require('axios');
         "0xa2cd656f8461d2c186d69ffb8a4a5c10eff0914d", // Aktiv
         "0xd9c575163c3fc0948490b02cce19acf8d9ec8427", // luke
         "0x70482d3bd44fbef402a0cee6d9bea516d12be128", // bren
+        "0x681a7040477be268a4b9a02c5e8263fd9febf0a9", // Liam
       ].indexOf(address) > -1;
     })
     .map((data) => {
