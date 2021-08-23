@@ -82,14 +82,14 @@ V1 funds receiver          - 0xb4bb0960b5095e5a0abd07d18803f45c4c4eadf6 = (verif
 ### Mainnet
 
 ```
-Core NFT                   - 
+Core NFT                   - 0xABB3738f04Dc2Ec20f4AE4462c3d069d02AE045B = (verified)  
 AccessControls             - 0x9028b16494a9363F3EAaf381a6Fde67296abc68C = (verified) 
-Minting Factory            - 
-Primary marketplace        - 
-Secondary marketplace      - 
-Collab royalties registry  - 
-Omni deployer              -
-V1 funds splitter          - 
+Minting Factory            - 0x36CF31019816E9490959F75Ba9164eDd304De01D = (verified) 
+Primary marketplace        - 0xf11ED77fD65840b64602526DDC38311E9923c81B =
+Secondary marketplace      - 0x0Eb65B4c3d3dE340e1b15384f8F211784247a37A = 
+Collab royalties registry  - 0xe28e054d596576841682e8c993E415B3ccB2EBeB = (verified)  
+Omni deployer              - 0x0FE06547a21AdfbA812E7d986de4369b2cB3dde2 = 
+V1 funds splitter          - 0xbc20c6582259f440ae628819be80062a576f06ed = (verified) 
 ```
 
 ### How to?

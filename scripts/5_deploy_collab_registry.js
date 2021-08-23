@@ -3,7 +3,6 @@ const hre = require('hardhat');
 
 const KOAccessControls = require('../artifacts/contracts/access/KOAccessControls.sol/KOAccessControls.json');
 const KnownOriginDigitalAssetV3 = require('../artifacts/contracts/core/KnownOriginDigitalAssetV3.sol/KnownOriginDigitalAssetV3.json');
-const CollabRoyaltiesRegistry = require('../artifacts/contracts/collab/CollabRoyaltiesRegistry.sol/CollabRoyaltiesRegistry.json');
 
 async function main() {
   const [deployer] = await ethers.getSigners();
