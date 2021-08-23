@@ -1251,7 +1251,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     /// @notice An NFT token owner (or approved) can compose multiple ERC20s in their NFT
     function getERC20s(address _from, uint256[] calldata _tokenIds, address _erc20Contract, uint256 _totalValue) external {
         uint256 totalTokens = _tokenIds.length;
-        require(totalTokens > 0 && _totalValue > 0, "Empty values provided");
+        require(totalTokens > 0 && _totalValue > 0, "Empty values");
 
         uint256 valuePerToken = _totalValue / totalTokens;
         for (uint i = 0; i < totalTokens; i++) {
@@ -1261,7 +1261,8 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
 
     /// @notice A NFT token owner (or approved address) can compose any ERC20 in their NFT
     function getERC20(address _from, uint256 _tokenId, address _erc20Contract, uint256 _value) public override nonReentrant {
-        require(_value > 0, "Value cannot be zero");
+        require(_value > 0, "Value zero");
+        require(_from == _msgSender(), "Only owner");
 
         address spender = _msgSender();
         IERC721 self = IERC721(address(this));
@@ -1269,9 +1270,8 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         address owner = self.ownerOf(_tokenId);
         require(
             owner == spender || self.isApprovedForAll(owner, spender) || self.getApproved(_tokenId) == spender,
-            "Only token owner"
+            "Invalid spender"
         );
-        require(_from == _msgSender(), "Must be token owner");
 
         uint256 editionId = IKODAV3(address(this)).getEditionIdOfToken(_tokenId);
         bool editionAlreadyContainsERC20 = ERC20sEmbeddedInEdition[editionId].contains(_erc20Contract);
@@ -1285,7 +1285,7 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         ERC20Balances[_tokenId][_erc20Contract] = ERC20Balances[_tokenId][_erc20Contract] + _value;
 
         IERC20 token = IERC20(_erc20Contract);
-        require(token.allowance(_from, address(this)) >= _value, "Amount exceeds allowance");
+        require(token.allowance(_from, address(this)) >= _value, "Exceeds allowance");
 
         token.transferFrom(_from, address(this), _value);
 
@@ -1293,9 +1293,9 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     }
 
     function _composeERC20IntoEdition(address _from, uint256 _editionId, address _erc20Contract, uint256 _value) internal nonReentrant {
-        require(_value > 0, "Value cannot be zero");
+        require(_value > 0, "Value zero");
 
-        require(!ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract), "Edition already contains ERC20");
+        require(!ERC20sEmbeddedInEdition[_editionId].contains(_erc20Contract), "Edition contains ERC20");
 
         ERC20sEmbeddedInEdition[_editionId].add(_erc20Contract);
         editionTokenERC20Balances[_editionId][_erc20Contract] = editionTokenERC20Balances[_editionId][_erc20Contract] + _value;
@@ -1325,8 +1325,8 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
     function _prepareERC20LikeTransfer(uint256 _tokenId, address _to, address _erc20Contract, uint256 _value) private {
         // To avoid stack too deep, do input checks within this scope
         {
-            require(_value > 0, "Value cannot be zero");
-            require(_to != address(0), "To cannot be zero address");
+            require(_value > 0, "Value zero");
+            require(_to != address(0), "Zero address");
 
             IERC721 self = IERC721(address(this));
 
@@ -1343,10 +1343,10 @@ abstract contract TopDownERC20Composable is ERC998ERC20TopDown, ERC998ERC20TopDo
         IKODAV3 koda = IKODAV3(address(this));
         uint256 editionId = koda.getEditionIdOfToken(_tokenId);
         bool editionContainsERC20 = ERC20sEmbeddedInEdition[editionId].contains(_erc20Contract);
-        require(nftContainsERC20 || editionContainsERC20, "No such ERC20 wrapped in token");
+        require(nftContainsERC20 || editionContainsERC20, "No such ERC20");
 
         // Check there is enough balance to transfer out
-        require(balanceOfERC20(_tokenId, _erc20Contract) >= _value, "Transfer amount exceeds balance");
+        require(balanceOfERC20(_tokenId, _erc20Contract) >= _value, "Exceeds balance");
 
         uint256 editionSize = koda.getSizeOfEdition(editionId);
         uint256 tokenInitialBalance = editionTokenERC20Balances[editionId][_erc20Contract] / editionSize;
@@ -1408,22 +1408,29 @@ abstract contract TopDownSimpleERC721Composable is Context {
     event ReceivedChild(address indexed _from, uint256 indexed _tokenId, address indexed _childContract, uint256 _childTokenId);
     event TransferChild(uint256 indexed _tokenId, address indexed _to, address indexed _childContract, uint256 _childTokenId);
 
-    /// @notice compose a child ERC721 into a KODA token
+    /// @notice compose a set of the same child ERC721s into a KODA tokens
     /// @notice Caller must own both KODA and child NFT tokens
-    function composeNFTIntoKodaToken(uint256 _kodaTokenId, address _nft, uint256 _nftTokenId) external {
-        require(kodaTokenComposedNFT[_kodaTokenId].nft == address(0), "Max 1 NFT");
+    function composeNFTsIntoKodaTokens(uint256[] calldata _kodaTokenIds, address _nft, uint256[] calldata _nftTokenIds) external {
+        uint256 totalKodaTokens = _kodaTokenIds.length;
+        require(totalKodaTokens > 0 && totalKodaTokens == _nftTokenIds.length, "Invalid list");
 
         IERC721 nftContract = IERC721(_nft);
-        require(
-            IERC721(address(this)).ownerOf(_kodaTokenId) == nftContract.ownerOf(_nftTokenId),
-            "Need to own both tokens"
-        );
 
-        kodaTokenComposedNFT[_kodaTokenId] = ComposedNFT(_nft, _nftTokenId);
-        composedNFTsToKodaToken[_nft][_nftTokenId] = _kodaTokenId;
+        for (uint i = 0; i < totalKodaTokens; i++) {
+            uint256 _kodaTokenId = _kodaTokenIds[i];
+            uint256 _nftTokenId = _nftTokenIds[i];
 
-        nftContract.transferFrom(_msgSender(), address(this), _nftTokenId);
-        emit ReceivedChild(_msgSender(), _kodaTokenId, _nft, _nftTokenId);
+            require(
+                IERC721(address(this)).ownerOf(_kodaTokenId) == nftContract.ownerOf(_nftTokenId),
+                "Owner mismatch"
+            );
+
+            kodaTokenComposedNFT[_kodaTokenId] = ComposedNFT(_nft, _nftTokenId);
+            composedNFTsToKodaToken[_nft][_nftTokenId] = _kodaTokenId;
+
+            nftContract.transferFrom(_msgSender(), address(this), _nftTokenId);
+            emit ReceivedChild(_msgSender(), _kodaTokenId, _nft, _nftTokenId);
+        }
     }
 
     /// @notice Transfer a child 721 wrapped within a KODA token to a given recipient
@@ -1491,7 +1498,7 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     }
 
     function _onlyContract() private view {
-        require(accessControls.hasContractRole(_msgSender()), "Caller must have contract role");
+        require(accessControls.hasContractRole(_msgSender()), "Must be contract");
     }
 
     modifier onlyAdmin(){
@@ -1500,7 +1507,7 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     }
 
     function _onlyAdmin() private view {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller must have admin role");
+        require(accessControls.hasAdminRole(_msgSender()), "Must be admin");
     }
 
     IKOAccessControlsLookup public accessControls;
@@ -1536,13 +1543,13 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     }
 
     function updateBasisPointsModulo(uint256 _basisPointsModulo) onlyAdmin public {
-        require(_basisPointsModulo > 0, "Basis point cannot be zero");
+        require(_basisPointsModulo > 0, "Is zero");
         basisPointsModulo = _basisPointsModulo;
         emit AdminUpdateBasisPointsModulo(_basisPointsModulo);
     }
 
     function updateModulo(uint256 _modulo) onlyAdmin public {
-        require(_modulo > 0, "Modulo point cannot be zero");
+        require(_modulo > 0, "Is zero");
         modulo = _modulo;
         emit AdminUpdateModulo(_modulo);
     }
@@ -1553,7 +1560,7 @@ abstract contract BaseKoda is Konstants, Context, IKODAV3 {
     }
 
     function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {
-        require(_accessControls.hasAdminRole(_msgSender()), "Sender must have admin role in new contract");
+        require(_accessControls.hasAdminRole(_msgSender()), "Must be admin");
         emit AdminUpdateAccessControls(accessControls, _accessControls);
         accessControls = _accessControls;
     }
@@ -2398,7 +2405,7 @@ IKODAV3Minter {
     function lockInAdditionalTokenMetaData(uint256 _tokenId, string calldata _metadata) external {
         require(
             _msgSender() == ownerOf(_tokenId) || accessControls.hasContractRole(_msgSender()),
-            "Only owner or contract"
+            "Invalid caller"
         );
         require(bytes(sealedTokenMetaData[_tokenId]).length == 0, "Already set");
         sealedTokenMetaData[_tokenId] = _metadata;
