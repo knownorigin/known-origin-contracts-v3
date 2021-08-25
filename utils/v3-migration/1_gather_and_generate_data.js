@@ -11,17 +11,6 @@ const axios = require('axios');
   const allActiveEnabledArtists = _.chain(allArtists)
     .filter({enabled: true})
     .filter({isArtist: true})
-    .filter(({address}) => {
-      // TODO remove once fully live
-      return [
-        "0x3f8c962eb167ad2f80c72b5f933511ccdf0719d4",// KO
-        "0xe85f832d9f551cf445a6e8ceaaee73ef88a340d6", // Griff
-        "0xa2cd656f8461d2c186d69ffb8a4a5c10eff0914d", // Aktiv
-        "0xd9c575163c3fc0948490b02cce19acf8d9ec8427", // luke
-        "0x70482d3bd44fbef402a0cee6d9bea516d12be128", // bren
-        "0x681a7040477be268a4b9a02c5e8263fd9febf0a9", // Liam
-      ].indexOf(address) > -1;
-    })
     .map((data) => {
       return {
         ..._.pick(data, ['address', 'created', 'updated', 'username']),
