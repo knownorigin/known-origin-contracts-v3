@@ -28,7 +28,7 @@ async function main() {
   // grab the roles
   const DEFAULT_ADMIN_ROLE = await accessControls.DEFAULT_ADMIN_ROLE();
 
-  const legacyAdminAccount = v3_data.commission_account[network];
+  const legacyAdminAccount = legacy_data.admin_account[network];
   if (!legacyAdminAccount) {
     console.error(`Unable to find legacy admin account [${network}]`);
     process.exit(-1);
