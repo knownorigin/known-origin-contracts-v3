@@ -9,6 +9,8 @@
 <div align="center">
   <a href="https://www.ethereum.org/" target="_blank"><img src="https://img.shields.io/badge/platform-Ethereum-brightgreen.svg?style=flat-square" alt="Ethereum" /></a>
   <a href="http://erc721.org/" target="_blank"><img src="https://img.shields.io/badge/token-ERC721-ff69b4.svg?style=flat-square" alt="Token ERC721" /> </a>
+  <a href="https://eips.ethereum.org/EIPS/eip-2981" target="_blank"><img src="https://img.shields.io/badge/token-ERC2891-ff69b4.svg?style=flat-square" alt="ERC2891 Compliant" /> </a>
+  <a href="https://eips.ethereum.org/EIPS/eip-998" target="_blank"><img src="https://img.shields.io/badge/token-ERC998-ff69b4.svg?style=flat-square" alt="ERC998 Composable" /> </a>
   <img src="https://img.shields.io/badge/contributions-welcome-orange.svg?style=flat-square" alt="Contributions Welcome" />
 </div>
 
@@ -100,16 +102,3 @@ Use `hardhat` deploy for - see `/scripts` folder for more info e.g.
 
 To verify also try hardhat but this sometimes fails, and you need to use the flat contracts.
 
-### Minting controls via merkle tree
-
-1. Get enabled creators
-```
-node ./utils/v3-migration/1_gather_and_generate_data.js
-```
-
-2. Create proofs
-```
-node ./utils/v3-migration/2_create_and_store_merkle_tree.js
-```
-
-3. Update access controls with these values - refresh the web app
