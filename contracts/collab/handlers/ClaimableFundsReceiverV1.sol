@@ -10,7 +10,7 @@ import {ICollabFundsDrainable} from "./ICollabFundsDrainable.sol";
 
 /// @title Allows funds to be received and then split later on using a pull pattern, holding a balance until drained.
 /// @notice Supports claiming/draining all balances at one
-/// @notice Doe not an individual shares
+/// @notice Does not an individual shares
 ///
 /// @author KnownOrigin Labs - https://knownorigin.io/
 contract ClaimableFundsReceiverV1 is ReentrancyGuard, CollabFundsHandlerBase, ICollabFundsDrainable {
