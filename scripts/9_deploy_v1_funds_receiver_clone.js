@@ -19,9 +19,7 @@ async function main() {
   );
 
   const salt = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('ClaimableFundsReceiverV1'));
-
-  console.log(salt);
-
+  
   prompt(`Using keccak256("ClaimableFundsReceiverV1") to generate [${salt}] - click enter to continue ... ?`);
 
   await omniDeployer.deploy(ClaimableFundsReceiverV1.bytecode, salt);
