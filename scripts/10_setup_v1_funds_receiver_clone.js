@@ -10,7 +10,6 @@ async function main() {
   const {name: network} = hre.network;
   console.log(`Running on network [${network}]`);
 
-  // 0x9b4E02227952214e1cD4aE60ed757589f2DF9661 RINKEBY
   const collabRoyaltiesRegistryAddress = prompt(`collabRoyaltiesRegistry deployer address? `);
   const collabRoyaltiesRegistry = new ethers.Contract(
     collabRoyaltiesRegistryAddress,
@@ -18,7 +17,6 @@ async function main() {
     deployer
   );
 
-  // 0x2e9B9Eea4611163C38F5831fCbdBD113424772f7 RINKEBY
   const handlerAddress = prompt(`new handler address? `);
   await collabRoyaltiesRegistry.addHandler(handlerAddress);
 

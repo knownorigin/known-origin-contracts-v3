@@ -92,6 +92,7 @@ Secondary marketplace      - 0x0Eb65B4c3d3dE340e1b15384f8F211784247a37A = (verif
 Collab royalties registry  - 0xe28e054d596576841682e8c993E415B3ccB2EBeB = (verified)  
 Omni deployer              - 0x0FE06547a21AdfbA812E7d986de4369b2cB3dde2 = 
 V1 funds splitter          - 0xbc20c6582259f440ae628819be80062a576f06ed = (verified) 
+V1 funds receiver          - 0x643ea212F5B9E5BE9f3A000430DCc80E01C78C2C = (verified) 
 ```
 
 ### How to?

@@ -22,7 +22,10 @@ async function main() {
   
   prompt(`Using keccak256("ClaimableFundsReceiverV1") to generate [${salt}] - click enter to continue ... ?`);
 
-  await omniDeployer.deploy(ClaimableFundsReceiverV1.bytecode, salt);
+  // Deployed on MAINNET - don't override
+  // await omniDeployer.deploy(ClaimableFundsReceiverV1.bytecode, salt);
+
+  console.log('already on mainnet');
 
   console.log('Finished! - now go white list the handler');
 }

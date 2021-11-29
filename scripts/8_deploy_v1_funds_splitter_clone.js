@@ -21,7 +21,10 @@ async function main() {
   const salt = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('ClaimableFundsSplitterV1'));
   prompt(`Using keccak256("ClaimableFundsSplitterV1") to generate [${salt}] - click enter to continue ... ?`);
 
-  await omniDeployer.deploy(ClaimableFundsSplitterV1.bytecode, salt)
+  // Deployed on MAINNET - don't override
+  // await omniDeployer.deploy(ClaimableFundsSplitterV1.bytecode, salt)
+
+  console.log('already on mainnet');
 
   console.log('Finished! - now go white list the handler');
 }
