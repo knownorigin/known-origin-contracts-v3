@@ -70,12 +70,12 @@
 ### Rinkeby
 
 ```
-Core NFT                   - 0x109F508D59736cB7f27ec6f6bA83F4C49053bfe8 = (verified)
-AccessControls             - 0xa992e8E7c0259e0757A1CBd5B7f181EEfF0Ec499 = (verified)
-Minting Factory            - 0xA69F885ce6E55F397D9012a3177001b25bD5A979 = (verified)
-Primary marketplace        - 0xC89A48D4903Df3f92dc93df88403F5ea136b92ae = (verified)
-Secondary marketplace      - 0xc67bdA619E9e41239fABD091533652362a962b2c = (verified)
-Collab royalties registry  - 0x9b4E02227952214e1cD4aE60ed757589f2DF9661 = (verified)
+Core NFT                   - 0x3abC8C65A9516D5B487A9F7423aE2C4c6a3Adf51 = (verified)  
+AccessControls             - 0x64699bC10a4E4639eD319397200CF16fa0aD1Fc9 = (verified) 
+Minting Factory            - 0x35668a2Fd45452231a2639edcb887cD45951e597 = (verified) 
+Primary marketplace        - 0x4B7A8Ce7d004C5c68207F355F6A838C941FF6B96 = (verified) 
+Secondary marketplace      - 0x1f31f522b51cd5cB847c7228fE3bF9916800aaDe = (verified) 
+Collab royalties registry  - 0x3005BB70CF6099e919Fb2E846abC8Fa1C710f613 = (verified)  
 Omni deployer              - 0x90764bB20aC05A53eBE03dF17fc61abAbC1Ee059 = (verified)
 V1 funds splitter          - 0x119f6fb742b9ace412f177875a169b23487fa664 = (verified) 
 V1 funds receiver          - 0xb4bb0960b5095e5a0abd07d18803f45c4c4eadf6 = (verified) 

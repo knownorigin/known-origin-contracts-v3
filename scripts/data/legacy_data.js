@@ -9,6 +9,6 @@ module.exports = {
   },
   starting_edition_id: {
     mainnet: '800000',
-    rinkeby: '120000'
+    rinkeby: '250000'
   }
 };
