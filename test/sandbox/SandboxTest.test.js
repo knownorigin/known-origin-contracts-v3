@@ -4,7 +4,7 @@ const {ethers} = require("hardhat");
 const NumberManipulator = artifacts.require('NumberManipulator');
 
 contract('Sandbox Test Tests...', function () {
-    describe.only('Implementation', () => {
+    describe('Implementation', () => {
 
         context('NumberManipulator: giveMeNumDoubled', async () => {
 
