@@ -25,7 +25,7 @@ async function mockTime() {
 
 contract('BasicGatedSale Test Tests...', function (accounts) {
 
-    const [admin, andy, liam, james, artist1, artist2, artist3] = accounts;
+    const [admin, andy, liam, james, artist1, artist2, artist3, artistDodgy] = accounts;
 
     beforeEach(async () => {
         this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
@@ -229,6 +229,18 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
             it('can create a new merkle tree', async () => {
                 this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
                 console.log(this.merkleProof);
+
+                expect(await this.basicGatedSale.onPrelist.call(
+                  this.merkleProof.claims[artist1].index,
+                  artist1,
+                  this.merkleProof.claims[artist1].proof)
+                ).to.be.equal(true);
+
+                expect(await this.basicGatedSale.onPrelist.call(
+                  this.merkleProof.claims[artist1].index,
+                  artistDodgy,
+                  this.merkleProof.claims[artist1].proof)
+                ).to.be.equal(false);
             })
         })
 
