@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+
 contract BasicGatedSale {
 
     uint256 idCounter; // FIXME should this be public or private?
@@ -16,7 +18,12 @@ contract BasicGatedSale {
     mapping(uint256 => mapping(address => bool)) public preList; //FIXME could argue this could be private and use the getter?
     mapping(uint256 => Sale) public sales;
 
-    constructor() {}
+    // A publicly available root merkle proof
+    bytes32 public prelistMerkleRoot;
+
+    constructor(bytes32 _prelistMerkleRoot) {
+        prelistMerkleRoot = _prelistMerkleRoot;
+    }
 
     // FIXME next ID?
     function _getLatestID() private returns (uint256) {
@@ -72,5 +79,11 @@ contract BasicGatedSale {
         sale.mints = sale.mints - _mintCount;
 
         // TODO trigger some sort of NFT transfer on mint and emit event
+    }
+
+    function onPrelist(uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (bool) {
+        // assume balance of 1 for enabled artists
+        bytes32 node = keccak256(abi.encodePacked(_index, _account, uint256(1)));
+        return MerkleProof.verify(_merkleProof, prelistMerkleRoot, node);
     }
 }
