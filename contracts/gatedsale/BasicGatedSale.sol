@@ -53,28 +53,20 @@ contract BasicGatedSale {
 
     function mintFromSale(uint256 _saleID, address _mintingAddress, uint256 _mintCount) public {
         // Check if the address is present in the prelist
-        if(!getMintingStatus(_saleID, _mintingAddress)) {
+        if(getMintingStatus(_saleID, _mintingAddress) != true) {
             revert('address not able to mint from sale');
         }
 
         // Get the sale object
         Sale storage sale = sales[_saleID];
 
-        require(sale.id != 0, 'sale does not exist');
         require(sale.mints != 0, 'sale is sold out');
-        require(sale.start < block.timestamp, 'sale has not started yet');
-        require(sale.end < block.timestamp, 'sale has ended');
+        require(block.timestamp > sale.start, 'sale has not started yet');
+        require(block.timestamp < sale.end, 'sale has ended');
         require(_mintCount > 0 && _mintCount <= sale.mintLimit, 'number of mints must be below mint limit');
 
         sale.mints = sale.mints - _mintCount;
 
         // TODO trigger some sort of NFT transfer on mint and emit event
     }
-
-    // set up sale so each sale has it's own prelist and we can prove who is on it...
-    // sale should have a start, end, and number of mints (for starters)
-
-    // function setUpSale
-
-    // function buyFromSale
 }

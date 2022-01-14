@@ -11,7 +11,7 @@ async function mockTime() {
     const saleStart = new Date(Number(timeNow.toString()));
     saleStart.setDate(saleStart.getDate() + 1);
     const saleEnd = new Date(Number(timeNow.toString()));
-    saleEnd.setDate(saleEnd.getDate() + 2);
+    saleEnd.setDate(saleEnd.getDate() + 3);
 
     return {
         timeNow: timeNow,
@@ -105,7 +105,7 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
                 const basicGatedSale = await BasicGatedSale.new();
                 await basicGatedSale.createSale(saleStart, saleEnd, 5, 1, [liam, andy])
 
-                await time.increase(saleStart.toString())
+                await time.increaseTo(saleStart.toString())
                 await time.increase(time.duration.hours(1))
 
                 await basicGatedSale.mintFromSale(1, liam, 1)
@@ -121,7 +121,7 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
                 const basicGatedSale = await BasicGatedSale.new();
                 await basicGatedSale.createSale(saleStart, saleEnd, 5, 3, [liam, andy])
 
-                await time.increase(saleStart.toString())
+                await time.increaseTo(saleStart.toString())
                 await time.increase(time.duration.hours(1))
 
                 await basicGatedSale.mintFromSale(1, liam, 3)
@@ -137,12 +137,89 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
                 const basicGatedSale = await BasicGatedSale.new();
                 await basicGatedSale.createSale(saleStart, saleEnd, 5, 3, [liam, andy])
 
-                await time.increase(saleStart.toString())
+                await time.increaseTo(saleStart.toString())
                 await time.increase(time.duration.hours(1))
 
                 await expectRevert(
                     basicGatedSale.mintFromSale(1, james, 1),
                     'address not able to mint from sale'
+                )
+            })
+
+            it('reverts if the sale id is not valid', async () => {
+                const { saleStart, saleEnd} = await mockTime()
+
+                const basicGatedSale = await BasicGatedSale.new();
+                await basicGatedSale.createSale(saleStart, saleEnd, 5, 3, [liam, andy])
+
+                await time.increaseTo(saleStart.toString())
+                await time.increase(time.duration.hours(1))
+
+                await expectRevert(
+                    basicGatedSale.mintFromSale(2, liam, 1),
+                    'address not able to mint from sale'
+                )
+            })
+
+            it('reverts if the sale is sold out', async () => {
+                const { saleStart, saleEnd} = await mockTime()
+
+                const basicGatedSale = await BasicGatedSale.new();
+                await basicGatedSale.createSale(saleStart, saleEnd, 3, 3, [liam, andy])
+
+                await time.increaseTo(saleStart.toString())
+                await time.increase(time.duration.hours(1))
+
+                await basicGatedSale.mintFromSale(1, liam, 3)
+
+                await expectRevert(
+                    basicGatedSale.mintFromSale(1, andy, 1),
+                    'sale is sold out'
+                )
+            })
+
+            it('reverts if the sale has not started yet', async () => {
+                const {saleStart, saleEnd} = await mockTime()
+
+                const basicGatedSale = await BasicGatedSale.new();
+                await basicGatedSale.createSale(saleStart, saleEnd, 10, 1, [liam, andy])
+
+                const timeNow = await time.latest()
+                await time.increaseTo(timeNow.toString())
+
+                await expectRevert(
+                    basicGatedSale.mintFromSale(1, andy, 1),
+                    'sale has not started yet'
+                )
+            })
+
+            it('reverts if the sale has ended', async () => {
+                const { saleStart, saleEnd} = await mockTime()
+
+                const basicGatedSale = await BasicGatedSale.new();
+                await basicGatedSale.createSale(saleStart, saleEnd, 10, 1, [liam, andy])
+
+                await time.increaseTo(saleEnd.toString())
+                await time.increase(time.duration.hours(24))
+
+                await expectRevert(
+                    basicGatedSale.mintFromSale(1, andy, 1),
+                    'sale has ended'
+                )
+            })
+
+            it('reverts if you try to mint more than allowed', async () => {
+                const { saleStart, saleEnd} = await mockTime()
+
+                const basicGatedSale = await BasicGatedSale.new();
+                await basicGatedSale.createSale(saleStart, saleEnd, 5, 1, [liam, andy])
+
+                await time.increaseTo(saleStart.toString())
+                await time.increase(time.duration.hours(1))
+
+                await expectRevert(
+                    basicGatedSale.mintFromSale(1, andy, 2),
+                    'number of mints must be below mint limit'
                 )
             })
         })
