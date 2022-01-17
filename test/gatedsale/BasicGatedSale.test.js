@@ -1,6 +1,5 @@
 const {expect} = require("chai");
-const {ethers} = require("hardhat");
-const {expectRevert, time} = require('@openzeppelin/test-helpers');
+const {expectEvent, expectRevert, time} = require('@openzeppelin/test-helpers');
 const {BigNumber} = require("ethers");
 
 const {parseBalanceMap} = require('../utils/parse-balance-map');
@@ -25,11 +24,11 @@ async function mockTime() {
 
 contract('BasicGatedSale Test Tests...', function (accounts) {
 
-    const [admin, andy, liam, james, artist1, artist2, artist3, artistDodgy] = accounts;
+    const [admin, artist1, artist2, artist3, artistDodgy] = accounts;
 
     beforeEach(async () => {
         this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
-        this.basicGatedSale = await BasicGatedSale.new(this.merkleProof.merkleRoot, {from: admin});
+        this.basicGatedSale = await BasicGatedSale.new();
     });
 
     describe.only('BasicGatedSale', async () => {
@@ -39,20 +38,16 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
             it('can create a new sale with correct arguments', async () => {
                 const {saleStart, saleEnd} = await mockTime()
 
+               const receipt = await this.basicGatedSale.createSale(saleStart, saleEnd, 1, this.merkleProof.merkleRoot)
 
-
-                await this.basicGatedSale.createSale(saleStart, saleEnd, 100, 1, [liam, andy])
-
-                const {id, start, end, mints, mintLimit} = await basicGatedSale.sales(1)
+                const {id, start, end, mintLimit} = await this.basicGatedSale.sales(1)
 
                 expect(id.toString()).to.be.equal('1')
                 expect(start.toString()).to.be.equal(`${saleStart.toString()}`)
                 expect(end.toString()).to.be.equal(`${saleEnd.toString()}`)
-                expect(mints.toString()).to.be.equal('100')
                 expect(mintLimit.toString()).to.be.equal('1')
 
-                expect(await this.basicGatedSale.getMintingStatus(1, liam)).to.be.true
-                expect(await this.basicGatedSale.getMintingStatus(1, andy)).to.be.true
+                expectEvent(receipt, 'SaleCreated', {id: id});
             })
 
             it('will revert if given start date which is before the current block timestamp', async () => {
@@ -62,7 +57,7 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
                 saleStart.setDate(saleStart.getDate() - 4);
 
                 await expectRevert(
-                    this.basicGatedSale.createSale(BigNumber.from(saleStart.getTime()), saleEnd, 100, 1, [liam, andy]),
+                    this.basicGatedSale.createSale(BigNumber.from(saleStart.getTime()), saleEnd, 1, this.merkleProof.merkleRoot),
                     'sale start time must be in the future'
                 )
             })
@@ -76,28 +71,8 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
 
 
                 await expectRevert(
-                  this.basicGatedSale.createSale(saleStart, BigNumber.from(saleEnd.getTime()), 100, 1, [liam, andy]),
+                  this.basicGatedSale.createSale(saleStart, BigNumber.from(saleEnd.getTime()), 1, this.merkleProof.merkleRoot),
                     'sale end time must be after the sale start time'
-                )
-            })
-
-            it('will revert if a mints number less than 1', async () => {
-                const { saleStart, saleEnd} = await mockTime()
-
-
-                await expectRevert(
-                  this.basicGatedSale.createSale(saleStart, saleEnd, 0, 1, [liam, andy]),
-                    'total mints must be greater than 0'
-                )
-            })
-
-            it('will revert if a not given any addresses', async () => {
-                const { saleStart, saleEnd} = await mockTime()
-
-
-                await expectRevert(
-                  this.basicGatedSale.createSale(saleStart, saleEnd, 10, 1, []),
-                    'addresses count must be greater than 0'
                 )
             })
         })
@@ -106,43 +81,55 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
             it('can mint one item from a valid sale', async () => {
                 const { saleStart, saleEnd} = await mockTime()
 
-                await this.basicGatedSale.createSale(saleStart, saleEnd, 5, 1, [liam, andy])
+                const receipt = await this.basicGatedSale.createSale(saleStart, saleEnd, 1, this.merkleProof.merkleRoot)
+                const {id} = receipt.logs[0].args
 
                 await time.increaseTo(saleStart.toString())
                 await time.increase(time.duration.hours(1))
 
-                await this.basicGatedSale.mintFromSale(1, liam, 1)
+                const salesReceipt = await this.basicGatedSale.mintFromSale(id.toNumber(), 1, this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {from: artist1})
 
-                const {mints} = await this.basicGatedSale.sales(1)
+                await this.basicGatedSale.sales(1)
 
-                expect(mints.toString()).to.be.equal('4')
+                expectEvent(salesReceipt, 'MintFromSale', {
+                    saleID: id,
+                    account: artist1,
+                    mintCount: BigNumber.from("1").toString()
+                });
+
             })
 
             it('can mint multiple items from a valid sale', async () => {
                 const { saleStart, saleEnd} = await mockTime()
 
-                await this.basicGatedSale.createSale(saleStart, saleEnd, 5, 3, [liam, andy])
+                const receipt = await this.basicGatedSale.createSale(saleStart, saleEnd, 3, this.merkleProof.merkleRoot)
+                const {id} = receipt.logs[0].args
 
                 await time.increaseTo(saleStart.toString())
                 await time.increase(time.duration.hours(1))
 
-                await this.basicGatedSale.mintFromSale(1, liam, 3)
+                const salesReceipt = await this.basicGatedSale.mintFromSale(id.toNumber(), 3, this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {from: artist1})
 
-                const {mints} = await this.basicGatedSale.sales(1)
+                await this.basicGatedSale.sales(1)
 
-                expect(mints.toString()).to.be.equal('2')
+                expectEvent(salesReceipt, 'MintFromSale', {
+                    saleID: id,
+                    account: artist1,
+                    mintCount: BigNumber.from("3").toString()
+                });
             })
 
             it('reverts if the address is not in the pre list', async () => {
                 const { saleStart, saleEnd} = await mockTime()
 
-                await this.basicGatedSale.createSale(saleStart, saleEnd, 5, 3, [liam, andy])
+                const receipt = await this.basicGatedSale.createSale(saleStart, saleEnd, 3, this.merkleProof.merkleRoot)
+                const {id} = receipt.logs[0].args
 
                 await time.increaseTo(saleStart.toString())
                 await time.increase(time.duration.hours(1))
 
                 await expectRevert(
-                  this.basicGatedSale.mintFromSale(1, james, 1),
+                    this.basicGatedSale.mintFromSale(id.toNumber(), 1, 4, this.merkleProof.claims[artist1].proof, {from: artistDodgy}),
                     'address not able to mint from sale'
                 )
             })
@@ -150,43 +137,28 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
             it('reverts if the sale id is not valid', async () => {
                 const { saleStart, saleEnd} = await mockTime()
 
-                await this.basicGatedSale.createSale(saleStart, saleEnd, 5, 3, [liam, andy])
+                await this.basicGatedSale.createSale(saleStart, saleEnd, 3, this.merkleProof.merkleRoot)
 
                 await time.increaseTo(saleStart.toString())
                 await time.increase(time.duration.hours(1))
 
                 await expectRevert(
-                  this.basicGatedSale.mintFromSale(2, liam, 1),
+                    this.basicGatedSale.mintFromSale(55, 1, 4, this.merkleProof.claims[artist1].proof, {from: artistDodgy}),
                     'address not able to mint from sale'
                 )
             })
 
-            it('reverts if the sale is sold out', async () => {
+            it('reverts if the sale has not started yet', async () => {
                 const { saleStart, saleEnd} = await mockTime()
 
-                await this.basicGatedSale.createSale(saleStart, saleEnd, 3, 3, [liam, andy])
-
-                await time.increaseTo(saleStart.toString())
-                await time.increase(time.duration.hours(1))
-
-                await this.basicGatedSale.mintFromSale(1, liam, 3)
-
-                await expectRevert(
-                    this.basicGatedSale.mintFromSale(1, andy, 1),
-                    'sale is sold out'
-                )
-            })
-
-            it('reverts if the sale has not started yet', async () => {
-                const {saleStart, saleEnd} = await mockTime()
-
-                await this.basicGatedSale.createSale(saleStart, saleEnd, 10, 1, [liam, andy])
+                const receipt = await this.basicGatedSale.createSale(saleStart, saleEnd, 3, this.merkleProof.merkleRoot)
+                const {id} = receipt.logs[0].args
 
                 const timeNow = await time.latest()
                 await time.increaseTo(timeNow.toString())
 
                 await expectRevert(
-                  this.basicGatedSale.mintFromSale(1, andy, 1),
+                    this.basicGatedSale.mintFromSale(id.toNumber(), 1, this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {from: artist1}),
                     'sale has not started yet'
                 )
             })
@@ -194,13 +166,14 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
             it('reverts if the sale has ended', async () => {
                 const { saleStart, saleEnd} = await mockTime()
 
-                await this.basicGatedSale.createSale(saleStart, saleEnd, 10, 1, [liam, andy])
+                const receipt = await this.basicGatedSale.createSale(saleStart, saleEnd, 3, this.merkleProof.merkleRoot)
+                const {id} = receipt.logs[0].args
 
                 await time.increaseTo(saleEnd.toString())
                 await time.increase(time.duration.hours(24))
 
                 await expectRevert(
-                  this.basicGatedSale.mintFromSale(1, andy, 1),
+                    this.basicGatedSale.mintFromSale(id.toNumber(), 1, this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {from: artist1}),
                     'sale has ended'
                 )
             })
@@ -208,13 +181,14 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
             it('reverts if you try to mint more than allowed', async () => {
                 const { saleStart, saleEnd} = await mockTime()
 
-                await this.basicGatedSale.createSale(saleStart, saleEnd, 5, 1, [liam, andy])
+                const receipt = await this.basicGatedSale.createSale(saleStart, saleEnd, 1, this.merkleProof.merkleRoot)
+                const {id} = receipt.logs[0].args
 
                 await time.increaseTo(saleStart.toString())
                 await time.increase(time.duration.hours(1))
 
                 await expectRevert(
-                  this.basicGatedSale.mintFromSale(1, andy, 2),
+                    this.basicGatedSale.mintFromSale(id.toNumber(), 50, this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {from: artist1}),
                     'number of mints must be below mint limit'
                 )
             })
@@ -222,7 +196,7 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
     });
 
 
-    describe.only('MerkleTree', async () => {
+    describe('MerkleTree', async () => {
 
         context('createMerkleTree', async () => {
 
