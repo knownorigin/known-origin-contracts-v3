@@ -5,7 +5,7 @@ import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProo
 
 contract BasicGatedSale {
 
-    event SaleCreated(uint256 id);
+    event SaleCreated(uint256 id); // FIXME read up on index log/event properties
     event MintFromSale(uint256 saleID, address account, uint256 mintCount);
 
     uint256 private idCounter;
@@ -30,7 +30,7 @@ contract BasicGatedSale {
         require(_end > _start, 'sale end time must be after the sale start time');
 
         // If no mint limit is provided then set it to 1
-        if(_mintLimit == 0) _mintLimit = 1;
+        if (_mintLimit == 0) _mintLimit = 1; // FIXME this is taking gas - maybe revert if zero instead (which also take gas but better)?
 
         // Get the latest sale ID
         uint256 id = _nextID();
@@ -45,11 +45,11 @@ contract BasicGatedSale {
         require(onPrelist(_saleID, _index, msg.sender, _merkleProof), 'address not able to mint from sale');
 
         // Get the sale object
-        Sale storage sale = sales[_saleID];
+        Sale storage sale = sales[_saleID]; // FIXME don't need to load from storage as not changing anything use memory
 
         require(block.timestamp >= sale.start, 'sale has not started yet');
         require(block.timestamp < sale.end, 'sale has ended');
-        require(_mintCount > 0 && _mintCount <= sale.mintLimit, 'number of mints must be below mint limit');
+        require(_mintCount > 0 && _mintCount <= sale.mintLimit, 'number of mints must be below mint limit'); //FIXME yeah OK but what if I have 1 and call it 10 times?
 
         // TODO get NFT and transfer to msg.sender
 
