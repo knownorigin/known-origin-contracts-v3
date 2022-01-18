@@ -13,6 +13,7 @@ const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls')
 const MockERC20 = artifacts.require('MockERC20');
 
 const STARTING_EDITION = '10000';
+const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
 async function mockTime() {
     const timeNow = await time.latest()
@@ -31,7 +32,7 @@ async function mockTime() {
 
 contract('BasicGatedSale Test Tests...', function (accounts) {
 
-    const [owner, minter, admin, koCommission, contract, artist1, artist2, artist3, artistDodgy, newAccessControls] = accounts;
+    const [owner, admin, koCommission, contract, artist1, artist2, artist3, artistDodgy, newAccessControls] = accounts;
 
     beforeEach(async () => {
         this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
@@ -52,18 +53,27 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
           {from: owner}
         );
 
-        // Set contract roles
-        // await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: owner});
-        // await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
+        await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: owner});
+
+        // Note: this is a test hack so we can mint tokens direct
+        await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
 
         this.basicGatedSale = await BasicGatedSale.new(this.accessControls.address, this.token.address, koCommission, {from: owner});
         await this.accessControls.grantRole(this.CONTRACT_ROLE, this.basicGatedSale.address, {from: owner});
+
+        // create 3 tokens to the minter
+        await this.token.mintBatchEdition(3, artist1, TOKEN_URI, {from: contract});
+
+        // Ensure basic gated sale has approval to sell tokens
+        await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist1});
+
+        this.start = await time.latest();
 
         // just for stuck tests
         this.erc20Token = await MockERC20.new({from: owner});
     });
 
-    describe.only('BasicGatedSale', async () => {
+    describe('BasicGatedSale', async () => {
 
         beforeEach(async () => {
             const receipt = await this.basicGatedSale.createSale(STARTING_EDITION, {from: admin});
@@ -81,8 +91,6 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
         });
 
         context('createSale', async () => {
-
-
 
             it('can create a new sale with correct arguments', async () => {
 
@@ -236,8 +244,7 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
         })
     });
 
-
-    describe.only('MerkleTree', async () => {
+    describe('MerkleTree', async () => {
 
         context('createMerkleTree', async () => {
 
@@ -261,7 +268,7 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
 
     });
 
-    describe.only('core base tests', () => {
+    describe('core base tests', () => {
         describe('recoverERC20', () => {
             const _0_1_Tokens = ether('0.1');
 
