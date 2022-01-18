@@ -72,6 +72,7 @@ contract BasicGatedSale is BaseMarketplace {
         return MerkleProof.verify(_merkleProof, sale.merkleRoot, node);
     }
 
+    // shall we use?
     function _processSale(
         uint256 _tokenId,
         uint256 _paymentAmount,
