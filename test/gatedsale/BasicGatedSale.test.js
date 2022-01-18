@@ -1,11 +1,18 @@
 const {expect} = require("chai");
-const {expectEvent, expectRevert, time} = require('@openzeppelin/test-helpers');
+const {expectEvent, expectRevert, time, constants} = require('@openzeppelin/test-helpers');
 const {BigNumber} = require("ethers");
+const {ZERO_ADDRESS} = constants;
 
 const {parseBalanceMap} = require('../utils/parse-balance-map');
 const {buildArtistMerkleInput} = require('../utils/merkle-tools');
 
 const BasicGatedSale = artifacts.require('BasicGatedSale');
+
+const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
+const KOAccessControls = artifacts.require('KOAccessControls');
+const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
+
+const STARTING_EDITION = '10000';
 
 async function mockTime() {
     const timeNow = await time.latest()
@@ -24,11 +31,32 @@ async function mockTime() {
 
 contract('BasicGatedSale Test Tests...', function (accounts) {
 
-    const [admin, artist1, artist2, artist3, artistDodgy] = accounts;
+    const [owner, minter, admin, koCommission, artist1, artist2, artist3, artistDodgy] = accounts;
 
     beforeEach(async () => {
         this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
-        this.basicGatedSale = await BasicGatedSale.new();
+
+        this.legacyAccessControls = await SelfServiceAccessControls.new();
+        // setup access controls
+        this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner});
+
+        // grab the roles
+        this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
+
+        // Create token V3
+        this.token = await KnownOriginDigitalAssetV3.new(
+          this.accessControls.address,
+          ZERO_ADDRESS, // no royalties address
+          STARTING_EDITION,
+          {from: owner}
+        );
+
+        // Set contract roles
+        await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: owner});
+        // await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
+
+        this.basicGatedSale = await BasicGatedSale.new(this.accessControls.address, this.token.address, koCommission, {from: owner});
+        await this.accessControls.grantRole(this.CONTRACT_ROLE, this.basicGatedSale.address, {from: owner});
     });
 
     describe.only('BasicGatedSale', async () => {

@@ -2,8 +2,12 @@
 pragma solidity 0.8.4;
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import {BaseMarketplace} from "../marketplace/BaseMarketplace.sol";
 
-contract BasicGatedSale {
+import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
+import {IKODAV3} from "../core/IKODAV3.sol";
+
+contract BasicGatedSale is BaseMarketplace {
 
     event SaleCreated(uint256 id); // FIXME read up on index log/event properties
     event MintFromSale(uint256 saleID, address account, uint256 mintCount);
@@ -19,6 +23,10 @@ contract BasicGatedSale {
     }
 
     mapping(uint256 => Sale) public sales;
+
+    constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
+        BaseMarketplace(_accessControls, _koda, _platformAccount) {
+    }
 
     function _nextID() private returns (uint256) {
         idCounter = idCounter + 1;
@@ -62,5 +70,20 @@ contract BasicGatedSale {
         // assume balance of 1 for enabled artists
         bytes32 node = keccak256(abi.encodePacked(_index, _account, uint256(1)));
         return MerkleProof.verify(_merkleProof, sale.merkleRoot, node);
+    }
+
+    function _processSale(
+        uint256 _tokenId,
+        uint256 _paymentAmount,
+        address _buyer,
+        address _seller
+    ) internal override returns (uint256) {
+//        _facilitateSecondarySale(_tokenId, _paymentAmount, _seller, _buyer);
+        return _tokenId;
+    }
+
+    // not used
+    function _isListingPermitted(uint256 _editionId) internal view override returns (bool) {
+        return false;
     }
 }
