@@ -79,8 +79,6 @@ contract BasicGatedSale is BaseMarketplace {
 
         // Check the phase exists and it is in progress
         require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale phase not in progress');
-
-        // Check enough wei was sent
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
 
         // Check the msg sender is on the pre list
@@ -100,7 +98,7 @@ contract BasicGatedSale is BaseMarketplace {
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, msg.sender, tokenId);
 
-        emit MintFromSale(_saleId, msg.sender, _mintCount);
+        emit MintFromSale(_saleId, msg.sender, _mintCount); // TODO add editionId
     }
 
     function canMint(uint256 _saleId, uint _salePhaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (bool) {
