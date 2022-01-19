@@ -25,5 +25,8 @@ module.exports = {
     'spikes/programmable/TokenUriResolverRegistry.sol',
     'spikes/marketplace/KODAV3SignatureMarketplace.sol',
     'spikes/deployer/ContractDeployer.sol',
+
+    // commented
+    'koda-common/CommonKodaV1.sol',
   ]
 };
