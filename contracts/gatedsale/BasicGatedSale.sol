@@ -86,13 +86,7 @@ contract BasicGatedSale is BaseMarketplace {
 
         // sort payments
         Sale memory sale = sales[_saleId];
-        (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(sale.editionId);
-
-        // split money
-        _handleEditionSaleFunds(sale.editionId, creator, receiver, msg.value);
-
-        // send token to buyer (assumes approval has been made, if not then this will fail)
-        koda.safeTransferFrom(creator, msg.sender, tokenId);
+        _processSale(sale.editionId, msg.value, msg.sender, address(0x0));
 
         emit MintFromSale(_saleId, sale.editionId, msg.sender, _mintCount);
     }
@@ -105,15 +99,23 @@ contract BasicGatedSale is BaseMarketplace {
         return MerkleProof.verify(_merkleProof, phase.merkleRoot, node);
     }
 
-    // shall we use?
+    // TODO speak to James about the whole point of this...
     function _processSale(
-        uint256 _tokenId,
+        uint256 _editionId,
         uint256 _paymentAmount,
         address _buyer,
         address _seller
     ) internal override returns (uint256) {
-        //        _facilitateSecondarySale(_tokenId, _paymentAmount, _seller, _buyer);
-        return _tokenId;
+
+        (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
+
+        // split money
+        _handleEditionSaleFunds(_editionId, creator, receiver, _paymentAmount);
+
+        // send token to buyer (assumes approval has been made, if not then this will fail)
+        koda.safeTransferFrom(creator, _buyer, tokenId);
+
+        return tokenId;
     }
 
     // not used

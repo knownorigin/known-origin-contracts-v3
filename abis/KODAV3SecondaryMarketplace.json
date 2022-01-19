@@ -933,6 +933,58 @@
   {
     "inputs": [
       {
+        "internalType": "bytes32",
+        "name": "c__0x9ad9605b",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0x9ad9605b",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "c__0xa627f642",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0xa627f642",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "c__0xb122077c",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0xb122077c",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "c__0xb1758a51",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0xb1758a51",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "_tokenId",
         "type": "uint256"

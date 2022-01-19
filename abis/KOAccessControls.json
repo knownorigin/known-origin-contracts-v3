@@ -231,6 +231,19 @@
     "inputs": [
       {
         "internalType": "bytes32",
+        "name": "c__0xf51ad2cc",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0xf51ad2cc",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
         "name": "role",
         "type": "bytes32"
       }
