@@ -43,7 +43,7 @@ contract BasicGatedSale is BaseMarketplace {
     mapping(uint256 => mapping(uint256 => mapping(address => uint))) private totalMints;
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
-        BaseMarketplace(_accessControls, _koda, _platformAccount) {
+    BaseMarketplace(_accessControls, _koda, _platformAccount) {
     }
 
     function createSaleWithPhase(uint256 _editionId, uint256 _startTime, uint256 _endTime, uint256 _mintLimit, bytes32 _merkleRoot, uint256 _priceInWei) public onlyAdmin {
@@ -52,7 +52,7 @@ contract BasicGatedSale is BaseMarketplace {
         require(_endTime > _startTime, 'phase end time must be after start time');
         require(_mintLimit > 0, 'phase mint limit must be greater than 0');
         console.log('MERKLE ROOT LENGTH : ', _merkleRoot.length);
-        require(_merkleRoot.length != 0, 'phase must have a valid merkle root'); // TODO is this right?
+        require(_merkleRoot.length != 0, 'phase must have a valid merkle root');  // TODO is this right?
 
         // Get the latest sale ID
         uint256 saleId = _nextSaleId();
@@ -60,17 +60,16 @@ contract BasicGatedSale is BaseMarketplace {
         // Assign the sale to the sales mapping
         sales[saleId] = Sale({id : saleId, editionId : _editionId});
 
+        phases[saleId].push(Phase({
+            startTime : _startTime,
+            endTime : _endTime,
+            mintLimit : _mintLimit,
+            merkleRoot : _merkleRoot,
+            priceInWei : _priceInWei
+            }));
+
+        // TODO maybe one event?
         emit SaleCreated(saleId, _editionId);
-
-        phases[saleId].push(
-            Phase({
-        startTime : _startTime,
-        endTime : _endTime,
-        mintLimit : _mintLimit,
-        merkleRoot : _merkleRoot,
-        priceInWei : _priceInWei
-        }));
-
         emit PhaseCreated(saleId, _editionId, _startTime, _endTime, _mintLimit, _merkleRoot, _priceInWei);
     }
 
@@ -109,22 +108,22 @@ contract BasicGatedSale is BaseMarketplace {
         return MerkleProof.verify(_merkleProof, phase.merkleRoot, node);
     }
 
-    // TODO are these needed?
-//    // shall we use?
-//    function _processSale(
-//        uint256 _tokenId,
-//        uint256 _paymentAmount,
-//        address _buyer,
-//        address _seller
-//    ) internal override returns (uint256) {
-////        _facilitateSecondarySale(_tokenId, _paymentAmount, _seller, _buyer);
-//        return _tokenId;
-//    }
-//
-//    // not used
-//    function _isListingPermitted(uint256 _editionId) internal view override returns (bool) {
-//        return false;
-//    }
+    // TODO are these needed? -- YEAH NEED THESE as we extend Base contract - will decide how to use or just ignore
+    // shall we use?
+    function _processSale(
+        uint256 _tokenId,
+        uint256 _paymentAmount,
+        address _buyer,
+        address _seller
+    ) internal override returns (uint256) {
+        //        _facilitateSecondarySale(_tokenId, _paymentAmount, _seller, _buyer);
+        return _tokenId;
+    }
+
+    // not used
+    function _isListingPermitted(uint256 _editionId) internal view override returns (bool) {
+        return false;
+    }
 
     function _handleEditionSaleFunds(uint256 _editionId, address _creator, address _receiver, uint256 _paymentAmount) internal {
         uint256 koCommission = (_paymentAmount / modulo) * platformPrimarySaleCommission;
