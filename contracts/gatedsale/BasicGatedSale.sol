@@ -52,7 +52,8 @@ contract BasicGatedSale is BaseMarketplace {
         require(_mintLimit > 0, 'phase mint limit must be greater than 0');
 
         // Get the latest sale ID
-        uint256 saleId = _nextSaleId();
+        saleIdCounter += 1;
+        uint256 saleId = saleIdCounter;
 
         // Assign the sale to the sales mapping
         sales[saleId] = Sale({id : saleId, editionId : _editionId});
@@ -134,11 +135,5 @@ contract BasicGatedSale is BaseMarketplace {
     function updatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission) public onlyAdmin {
         platformPrimarySaleCommission = _platformPrimarySaleCommission;
         emit AdminUpdatePlatformPrimarySaleCommission(_platformPrimarySaleCommission);
-    }
-
-    /// @dev _nextSaleID generates the next available SaleID
-    function _nextSaleId() private returns (uint256) {
-        saleIdCounter += 1;
-        return saleIdCounter;
     }
 }
