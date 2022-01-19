@@ -7,6 +7,10 @@ import {BaseMarketplace} from "../marketplace/BaseMarketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
+import "hardhat/console.sol";
+import "../spikes/core/mixins/NFTPermit.sol";
+import "../marketplace/IKODAV3Marketplace.sol";
+
 contract BasicGatedSale is BaseMarketplace {
 
     event SaleCreated(uint256 indexed id);
@@ -27,6 +31,9 @@ contract BasicGatedSale is BaseMarketplace {
         uint256 editionId;
     }
 
+    /// @notice KO commission on every sale
+    uint256 public platformPrimarySaleCommission = 15_00000;  // 15.00000%
+
     // Sale id return Sale
     mapping(uint256 => Sale) public sales;
     // Sale id => Phases
@@ -43,6 +50,7 @@ contract BasicGatedSale is BaseMarketplace {
         saleIdCounter = saleIdCounter + 1;
         return saleIdCounter;
     }
+
 
     function createSale(uint256 _editionId) public onlyAdmin {
 
@@ -72,7 +80,7 @@ contract BasicGatedSale is BaseMarketplace {
             }));
     }
 
-    function mintFromSale(uint256 _saleId, uint _salePhaseId, uint256 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant {
+    function mintFromSale(uint256 _saleId, uint256 _salePhaseId, uint256 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant {
         // Get the sale object
         SalePhase memory phase = phases[_saleId][_salePhaseId];
 
@@ -88,6 +96,16 @@ contract BasicGatedSale is BaseMarketplace {
         require(totalMints[_saleId][_salePhaseId][msg.sender] + _mintCount <= phase.mintLimit, 'cannot exceed total mints for sale phase');
 
         totalMints[_saleId][_salePhaseId][msg.sender] += _mintCount;
+
+        // sort payments
+        Sale memory sale = sales[_saleId];
+        (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(sale.editionId);
+
+        // split money
+        _handleEditionSaleFunds(sale.editionId, creator, receiver, msg.value); // FIXME should be mint total * price - refunds?
+
+        // send token to buyer (assumes approval has been made, if not then this will fail)
+        koda.safeTransferFrom(creator, msg.sender, tokenId);
 
         emit MintFromSale(_saleId, msg.sender, _mintCount);
     }
@@ -114,5 +132,16 @@ contract BasicGatedSale is BaseMarketplace {
     // not used
     function _isListingPermitted(uint256 _editionId) internal view override returns (bool) {
         return false;
+    }
+
+    function _handleEditionSaleFunds(uint256 _editionId, address _creator, address _receiver, uint256 _paymentAmount) internal {
+        uint256 koCommission = (_paymentAmount / modulo) * platformPrimarySaleCommission;
+        if (koCommission > 0) {
+            (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
+            require(koCommissionSuccess, "Edition commission payment failed");
+        }
+
+        (bool success,) = _receiver.call{value : _paymentAmount - koCommission}("");
+        require(success, "Edition payment failed");
     }
 }
