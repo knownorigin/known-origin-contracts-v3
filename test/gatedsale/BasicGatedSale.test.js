@@ -382,44 +382,40 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
                 });
             });
 
-            // describe('recoverStuckETH', () => {
-            //     const _0_5_ETH = ether('0.5');
-            //
-            //     it('Can recover eth if problem with contract', async () => {
-            //
-            //         let {saleStart} = await mockTime()
-            //
-            //         await time.increaseTo(saleStart.toString())
-            //         await time.increase(time.duration.hours(1))
-            //
-            //         await this.basicGatedSale.mintFromSale.call(
-            //             new BN('1'),
-            //             0,
-            //             new BN('3'),
-            //             this.merkleProof.claims[artist1].index,
-            //             this.merkleProof.claims[artist1].proof,
-            //             {from: artist1, value: _0_5_ETH}
-            //         )
-            //
-            //         // something wrong, recover the eth
-            //         const adminBalTracker = await balance.tracker(admin);
-            //
-            //         const {receipt} = await this.basicGatedSale.recoverStuckETH(admin, _0_5_ETH, {from: owner});
-            //         await expectEvent(receipt, 'AdminRecoverETH', {
-            //             _recipient: admin,
-            //             _amount: _0_5_ETH
-            //         });
-            //
-            //         expect(await adminBalTracker.delta()).to.be.bignumber.equal(_0_5_ETH);
-            //     });
-            //
-            //     it('Reverts if not admin', async () => {
-            //         await expectRevert(
-            //             this.basicGatedSale.recoverStuckETH(admin, ether('1'), {from: artist1}),
-            //             'Caller not admin'
-            //         );
-            //     });
-            // });
+            describe('recoverStuckETH', () => {
+                const _0_5_ETH = ether('0.5');
+
+                it.skip('Can recover eth if problem with contract', async () => {
+
+                    // send money to pre-determined address
+                    const [ownerSigner] = await ethers.getSigners();
+                    await ownerSigner.sendTransaction({
+                        to: this.basicGatedSale.address,
+                        value: ethers.utils.parseEther('1')
+                    });
+                    expect(
+                      await balance.current(expectedDeploymentAddress)
+                    ).to.bignumber.equal(ethers.utils.parseEther('1').toString());
+
+                    // something wrong, recover the eth
+                    const adminBalTracker = await balance.tracker(admin);
+
+                    const {receipt} = await this.basicGatedSale.recoverStuckETH(admin, _0_5_ETH, {from: owner});
+                    await expectEvent(receipt, 'AdminRecoverETH', {
+                        _recipient: admin,
+                        _amount: _0_5_ETH
+                    });
+
+                    expect(await adminBalTracker.delta()).to.be.bignumber.equal(_0_5_ETH);
+                });
+
+                it('Reverts if not admin', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.recoverStuckETH(admin, ether('1'), {from: artist1}),
+                        'Caller not admin'
+                    );
+                });
+            });
 
             describe('updateModulo()', () => {
                 const new_modulo = new BN('10000');
