@@ -13,7 +13,7 @@ import "../marketplace/IKODAV3Marketplace.sol";
 
 contract BasicGatedSale is BaseMarketplace {
 
-    event SaleWithPhaseCreated(uint256 indexed saleID, uint256 editionID, uint256 startTime, uint256 endTime, uint256 mintLimit, bytes32 merkleRoot, string dataIPFSHash, uint256 priceInWei);
+    event SaleWithPhaseCreated(uint256 indexed saleID, uint256 editionID, uint256 startTime, uint256 endTime, uint256 mintLimit, bytes32 merkleRoot, string merkleIPFSHash, uint256 priceInWei);
     event MintFromSale(uint256 saleID, uint256 editionID, address account, uint256 mintCount);
 
     uint256 private saleIdCounter;
@@ -50,9 +50,6 @@ contract BasicGatedSale is BaseMarketplace {
         require(_startTime > block.timestamp, 'phase start time must be in the future');
         require(_endTime > _startTime, 'phase end time must be after start time');
         require(_mintLimit > 0, 'phase mint limit must be greater than 0');
-        console.log('MERKLE ROOT LENGTH : ', _merkleRoot.length);
-        require(_merkleRoot.length != 0, 'phase must have a valid merkle root');
-        // TODO is this right?
 
         // Get the latest sale ID
         uint256 saleId = _nextSaleId();
@@ -70,7 +67,6 @@ contract BasicGatedSale is BaseMarketplace {
         }));
 
         emit SaleWithPhaseCreated(saleId, _editionId, _startTime, _endTime, _mintLimit, _merkleRoot, _merkleIPFSHash, _priceInWei);
-
     }
 
     function mint(uint256 _saleId, uint256 _salePhaseId, uint256 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant {

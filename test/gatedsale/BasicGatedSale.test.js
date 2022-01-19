@@ -1,10 +1,9 @@
 const {expect} = require("chai");
-const {BN, expectEvent, expectRevert, time, constants, ether, balance} = require('@openzeppelin/test-helpers');
+const {BN, expectEvent, expectRevert, time, constants, ether} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
 const {parseBalanceMap} = require('../utils/parse-balance-map');
 const {buildArtistMerkleInput} = require('../utils/merkle-tools');
-const {ethers} = require("ethers");
 
 const BasicGatedSale = artifacts.require('BasicGatedSale');
 
@@ -12,9 +11,6 @@ const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3')
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 const MockERC20 = artifacts.require('MockERC20');
-
-const STARTING_EDITION = '10000';
-const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
 async function mockTime() {
     const timeNow = await time.latest()
@@ -31,11 +27,20 @@ async function mockTime() {
     }
 }
 
-contract('BasicGatedSale Test Tests...', function (accounts) {
-
+contract('BasicGatedSale tests...', function (accounts) {
     const [owner, admin, koCommission, contract, artist1, artist2, artist3, artistDodgy, newAccessControls] = accounts;
 
-    beforeEach(async () => {
+    const STARTING_EDITION = '10000';
+    const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
+    const MOCK_MERKLE_HASH = '0x7B502C3A1F48C8609AE212CDFB639DEE39673F5E'
+    const ONE_HUNDRED = new BN('100');
+    const ZERO = new BN('0');
+    const ONE = new BN('1');
+
+    // TODO this is the ID thats minted
+    const FIRST_EDITION_TOKEN_ID = new BN('11000'); // this is implied
+
+    before(async () => {
         this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
 
         this.legacyAccessControls = await SelfServiceAccessControls.new();
@@ -44,8 +49,8 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
         this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner});
 
         // grab the roles
-        this.DEFAULT_ADMIN_ROLE = await this.accessControls.DEFAULT_ADMIN_ROLE();
         this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
+        this.DEFAULT_ADMIN_ROLE = await this.accessControls.DEFAULT_ADMIN_ROLE();
 
         // Create token V3
         this.token = await KnownOriginDigitalAssetV3.new(
@@ -55,130 +60,130 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
             {from: owner}
         );
 
-        // Set contract roles
         await this.accessControls.grantRole(this.DEFAULT_ADMIN_ROLE, admin, {from: owner});
-
         await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: owner});
 
         // Note: this is a test hack so we can mint tokens direct
         await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
 
         this.basicGatedSale = await BasicGatedSale.new(this.accessControls.address, this.token.address, koCommission, {from: owner});
+
         await this.accessControls.grantRole(this.CONTRACT_ROLE, this.basicGatedSale.address, {from: owner});
 
-        // create 3 tokens to the minter
-        await this.token.mintBatchEdition(3, artist1, TOKEN_URI, {from: contract});
+        // create 100 tokens to the minter
+        await this.token.mintBatchEdition(100, artist1, TOKEN_URI, {from: contract});
 
         // Ensure basic gated sale has approval to sell tokens
         await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist1});
 
-        this.start = await time.latest();
-
         // just for stuck tests
         this.erc20Token = await MockERC20.new({from: owner});
+
+        const {saleStart, saleEnd} = await mockTime();
+
+        const receipt = await this.basicGatedSale.createSaleWithPhase(
+            FIRST_EDITION_TOKEN_ID,
+            saleStart,
+            saleEnd,
+            new BN('10'),
+            this.merkleProof.merkleRoot,
+            MOCK_MERKLE_HASH,
+            ether('0.1'),
+            {from: admin});
+
+        expectEvent(receipt, 'SaleWithPhaseCreated', {
+            saleID: new BN('1'),
+            editionID: FIRST_EDITION_TOKEN_ID,
+            startTime: saleStart,
+            endTime: saleEnd,
+            mintLimit: new BN('10'),
+            merkleRoot: this.merkleProof.merkleRoot,
+            merkleIPFSHash: MOCK_MERKLE_HASH,
+            priceInWei: ether('0.1')
+        });
     });
 
     describe.only('BasicGatedSale', async () => {
 
-        beforeEach(async () => {
-            const receipt = await this.basicGatedSale.createSale(STARTING_EDITION, {from: admin});
-            expectEvent(receipt, 'SaleCreated', {id: new BN('1')});
+        describe('createSaleWithPhase', async () => {
 
-            const {saleStart, saleEnd} = await mockTime();
-
-            await this.basicGatedSale.addPhase(
-                new BN('1'),
-                saleStart,
-                saleEnd,
-                new BN('10'),
-                this.merkleProof.merkleRoot,
-                ether('0.1'),
-                {from: admin}
-            )
-        });
-
-        describe('createSale', async () => {
-
-            it('can create a new sale with correct arguments', async () => {
+            it('can create a new sale and phase with correct arguments', async () => {
                 const {id, editionId} = await this.basicGatedSale.sales(1)
 
                 expect(id.toString()).to.be.equal('1')
-                expect(editionId.toString()).to.be.equal(STARTING_EDITION)
-            });
+                expect(editionId.toString()).to.be.equal(FIRST_EDITION_TOKEN_ID.toString())
 
-            it('cannot create a sale without the right role', async () => {
-                await expectRevert(
-                    this.basicGatedSale.createSale(STARTING_EDITION, {from: artistDodgy}),
-                    'Caller not admin'
-                )
-            });
-        })
-
-        describe('addPhase', async () => {
-            it('can create a new phase of a sale', async () => {
-                const {startTime, endTime, mintLimit, merkleRoot, priceInWei} = await this.basicGatedSale.phases(1, 0);
-
+                const {
+                    startTime,
+                    endTime,
+                    mintLimit,
+                    merkleRoot,
+                    merkleIPFSHash,
+                    priceInWei
+                } = await this.basicGatedSale.phases(1, 0)
                 expect(startTime.toString()).to.not.equal('0')
                 expect(endTime.toString()).to.not.equal('0')
                 expect(mintLimit.toString()).to.be.equal('10')
                 expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot)
+                expect(merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH)
                 expect(priceInWei.toString()).to.be.equal(ether('0.1').toString())
-            });
+            })
 
-            it('cannot create a phase without the right role', async () => {
-                let {saleStart, saleEnd} = await mockTime()
+
+            it('cannot create a sale without the right role', async () => {
+                const {saleStart, saleEnd} = await mockTime();
 
                 await expectRevert(
-                    this.basicGatedSale.addPhase(
-                        new BN('1'),
+                    this.basicGatedSale.createSaleWithPhase(
+                        FIRST_EDITION_TOKEN_ID,
                         saleStart,
                         saleEnd,
                         new BN('10'),
                         this.merkleProof.merkleRoot,
+                        MOCK_MERKLE_HASH,
                         ether('0.1'),
-                        {from: artistDodgy}
-                    ),
+                        {from: artistDodgy}),
                     'Caller not admin'
                 )
             });
 
             it('should revert if given an invalid start time', async () => {
-                let {timeNow, saleStart} = await mockTime()
-
-                const saleEnd = new Date(Number(timeNow.toString()));
-                saleEnd.setDate(saleEnd.getDate() - 4);
-
-                await expectRevert(
-                    this.basicGatedSale.addPhase(
-                        new BN('1'),
-                        saleStart,
-                        new BN(saleEnd.getTime().toString()),
-                        new BN('10'),
-                        this.merkleProof.merkleRoot,
-                        ether('0.1'),
-                        {from: admin}
-                    ),
-                    'phase end time must be after start time'
-                )
-            });
-
-            it('should revert if given an end time before the start time', async () => {
                 let {timeNow, saleEnd} = await mockTime()
 
                 const saleStart = new Date(Number(timeNow.toString()));
                 saleStart.setDate(saleStart.getDate() - 4);
 
                 await expectRevert(
-                    this.basicGatedSale.addPhase(
-                        new BN('1'),
+                    this.basicGatedSale.createSaleWithPhase(
+                        FIRST_EDITION_TOKEN_ID,
                         new BN(saleStart.getTime().toString()),
                         saleEnd,
                         new BN('10'),
                         this.merkleProof.merkleRoot,
+                        MOCK_MERKLE_HASH,
                         ether('0.1'),
-                        {from: admin}
-                    ),
+                        {from: admin}),
                     'phase start time must be in the future'
+                )
+            });
+
+            it('should revert if given an invalid end time', async () => {
+                const {timeNow, saleStart} = await mockTime();
+
+                const saleEnd = new Date(Number(timeNow.toString()));
+                saleEnd.setDate(saleEnd.getDate() - 4);
+
+                await expectRevert(
+                    this.basicGatedSale.createSaleWithPhase(
+                        FIRST_EDITION_TOKEN_ID,
+                        saleStart,
+                        new BN(saleEnd.getTime().toString()),
+                        new BN('10'),
+                        this.merkleProof.merkleRoot,
+                        MOCK_MERKLE_HASH,
+                        ether('0.1'),
+                        {from: admin}),
+                    'phase end time must be after start time'
                 )
             });
 
@@ -186,157 +191,136 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
                 let {saleStart, saleEnd} = await mockTime()
 
                 await expectRevert(
-                    this.basicGatedSale.addPhase(
-                        new BN('1'),
+                    this.basicGatedSale.createSaleWithPhase(
+                        FIRST_EDITION_TOKEN_ID,
                         saleStart,
                         saleEnd,
                         new BN('0'),
                         this.merkleProof.merkleRoot,
+                        '',
                         ether('0.1'),
-                        {from: admin}
-                    ),
+                        {from: admin}),
                     'phase mint limit must be greater than 0'
                 )
             });
+        });
 
-            it('should revert if given an invalid merkle root', async () => {
-                let {saleStart, saleEnd} = await mockTime()
+        describe('mint', async () => {
+            before(async () => {
+                let {saleStart} = await mockTime()
 
-                await expectRevert(
-                    this.basicGatedSale.addPhase(
-                        new BN('1'),
-                        saleStart,
-                        saleEnd,
-                        new BN('10'),
-                        ethers.utils.formatBytes32String(""),
-                        ether('0.1'),
-                        {from: admin}
-                    ),
-                    'phase must have a valid merkle root'
-                )
-            });
-
-            it('should revert if given an invalid price', async () => {
-                let {saleStart, saleEnd} = await mockTime()
-
-                await expectRevert(
-                    this.basicGatedSale.addPhase(
-                        new BN('1'),
-                        saleStart,
-                        saleEnd,
-                        new BN('10'),
-                        this.merkleProof.merkleRoot,
-                        ether('0'),
-                        {from: admin}
-                    ),
-                    'phase price must be greater than 0'
-                )
-            });
-        })
-
-        describe('mintFromSale', async () => {
-            let {saleStart} = await mockTime()
-
-            await time.increaseTo(saleStart.toString())
-            await time.increase(time.duration.hours(1))
+                await time.increaseTo(saleStart.toString())
+                await time.increase(time.duration.hours(1))
+            })
 
             it('can mint one item from a valid sale', async () => {
 
-                const salesReceipt = await this.basicGatedSale.mintFromSale(new BN('1'), 0, new BN('1'), this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {
+                const salesReceipt = await this.basicGatedSale.mint(new BN('1'), 0, new BN('1'), this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {
                     from: artist1,
                     value: ether('0.1')
                 })
 
                 expectEvent(salesReceipt, 'MintFromSale', {
                     saleID: new BN('1'),
+                    editionID: FIRST_EDITION_TOKEN_ID,
                     account: artist1,
                     mintCount: new BN('1')
                 });
+            });
 
-                it('can mint multiple items from a valid sale', async () => {
+            it('can mint multiple items from a valid sale', async () => {
 
-                    const salesReceipt = await this.basicGatedSale.mintFromSale(new BN('1'), 0, new BN('3'), this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {
+                const salesReceipt = await this.basicGatedSale.mint(
+                    new BN('1'),
+                    0,
+                    new BN('3'),
+                    this.merkleProof.claims[artist1].index,
+                    this.merkleProof.claims[artist1].proof,
+                    {
                         from: artist1,
                         value: ether('0.3')
                     })
 
-                    expectEvent(salesReceipt, 'MintFromSale', {
-                        saleID: new BN('1'),
-                        account: artist1,
-                        mintCount: new BN('3')
-                    });
-                })
-
-                it('reverts if the given sale phase is not in progress', async () => {
-                    await expectRevert(
-                        this.basicGatedSale.mintFromSale(
-                            new BN('1'),
-                            1,
-                            new BN('1'),
-                            this.merkleProof.claims[artist1].index,
-                            this.merkleProof.claims[artist1].proof,
-                            {from: artist1, value: ether('0.1')}
-                        ),
-                        'sale phase not in progress'
-                    )
-                })
-
-                it('reverts if not enough eth is sent', async () => {
-                    await expectRevert(
-                        this.basicGatedSale.mintFromSale(
-                            new BN('1'),
-                            0,
-                            new BN('3'),
-                            this.merkleProof.claims[artist1].index,
-                            this.merkleProof.claims[artist1].proof,
-                            {from: artist1, value: ether('0.2')}
-                        ),
-                        'not enough wei sent to complete mint'
-                    )
-                })
-
-                it('reverts if the address is not on the prelist', async () => {
-                    await expectRevert(
-                        this.basicGatedSale.mintFromSale(
-                            new BN('1'),
-                            0,
-                            new BN('1'),
-                            this.merkleProof.claims[artistDodgy].index,
-                            this.merkleProof.claims[artistDodgy].proof,
-                            {from: artistDodgy, value: ether('0.1')}
-                        ),
-                        'address not able to mint from sale'
-                    )
-                })
-
-                it('reverts if an address has exceeded its mint limit', async () => {
-
-                    const salesReceipt = await this.basicGatedSale.mintFromSale(new BN('1'), 0, new BN('9'), this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {
-                        from: artist1,
-                        value: ether('0.9')
-                    })
-
-                    expectEvent(salesReceipt, 'MintFromSale', {
-                        saleID: new BN('1'),
-                        account: artist1,
-                        mintCount: new BN('9')
-                    });
-
-                    await expectRevert(
-                        this.basicGatedSale.mintFromSale(
-                            new BN('1'),
-                            0,
-                            new BN('2'),
-                            this.merkleProof.claims[artist1].index,
-                            this.merkleProof.claims[artist1].proof,
-                            {from: artist1, value: ether('0.2')}
-                        ),
-                        'cannot exceed total mints for sale phase'
-                    )
-                })
+                expectEvent(salesReceipt, 'MintFromSale', {
+                    saleID: new BN('1'),
+                    editionID: FIRST_EDITION_TOKEN_ID,
+                    account: artist1,
+                    mintCount: new BN('3')
+                });
             })
-        })
 
+
+            // TODO how do you properly check for the existence of array index in mapping?
+            // it('reverts if the given sale phase is not in progress', async () => {
+            //     console.log('MERKLE PROOF : ', artist1, this.merkleProof)
+            //     await expectRevert(
+            //         this.basicGatedSale.mint(
+            //             new BN('1'),
+            //             1,
+            //             new BN('1'),
+            //             this.merkleProof.claims[artist1].index,
+            //             this.merkleProof.claims[artist1].proof,
+            //             {from: artist1, value: ether('0.1')}
+            //         ),
+            //         'sale phase not in progress'
+            //     )
+            // })
+
+            it('reverts if not enough eth is sent', async () => {
+                await expectRevert(
+                    this.basicGatedSale.mint(
+                        new BN('1'),
+                        0,
+                        new BN('3'),
+                        this.merkleProof.claims[artist1].index,
+                        this.merkleProof.claims[artist1].proof,
+                        {from: artist1, value: ether('0.2')}
+                    ),
+                    'not enough wei sent to complete mint'
+                )
+            })
+
+            it('reverts if the address is not on the prelist', async () => {
+                await expectRevert(
+                    this.basicGatedSale.mint(
+                        new BN('1'),
+                        0,
+                        new BN('1'),
+                        this.merkleProof.claims[artist1].index,
+                        this.merkleProof.claims[artist1].proof,
+                        {from: artistDodgy, value: ether('0.1')}
+                    ),
+                    'address not able to mint from sale'
+                )
+            })
+
+            it('reverts if an address has exceeded its mint limit', async () => {
+
+                const salesReceipt = await this.basicGatedSale.mint(new BN('1'), 0, new BN('9'), this.merkleProof.claims[artist2].index, this.merkleProof.claims[artist2].proof, {
+                    from: artist2,
+                    value: ether('0.9')
+                })
+
+                expectEvent(salesReceipt, 'MintFromSale', {
+                    saleID: new BN('1'),
+                    editionID: FIRST_EDITION_TOKEN_ID,
+                    account: artist2,
+                    mintCount: new BN('9')
+                });
+
+                await expectRevert(
+                    this.basicGatedSale.mint(
+                        new BN('1'),
+                        0,
+                        new BN('2'),
+                        this.merkleProof.claims[artist2].index,
+                        this.merkleProof.claims[artist2].proof,
+                        {from: artist2, value: ether('0.2')}
+                    ),
+                    'cannot exceed total mints for sale phase'
+                )
+            })
+        });
 
         describe('core base tests', () => {
 
@@ -394,7 +378,7 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
                         value: ethers.utils.parseEther('1')
                     });
                     expect(
-                      await balance.current(expectedDeploymentAddress)
+                        await balance.current(expectedDeploymentAddress)
                     ).to.bignumber.equal(ethers.utils.parseEther('1').toString());
 
                     // something wrong, recover the eth
@@ -535,7 +519,7 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
                 it('can create a new merkle tree', async () => {
                     this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
 
-                    expect(await this.basicGatedSale.onPreList.call(
+                    expect(await this.basicGatedSale.canMint(
                         new BN('1'),
                         0,
                         this.merkleProof.claims[artist1].index,
@@ -543,7 +527,7 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
                         this.merkleProof.claims[artist1].proof)
                     ).to.be.equal(true);
 
-                    expect(await this.basicGatedSale.onPreList.call(
+                    expect(await this.basicGatedSale.canMint(
                         new BN('1'),
                         0,
                         this.merkleProof.claims[artist1].index,
@@ -553,5 +537,6 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
                 })
             })
         });
-    });
-});
+
+    })
+})
