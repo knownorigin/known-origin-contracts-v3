@@ -13,8 +13,8 @@ import "../marketplace/IKODAV3Marketplace.sol";
 
 contract BasicGatedSale is BaseMarketplace {
 
-    event SaleWithPhaseCreated(uint256 indexed saleID, uint256 editionID, uint256 startTime, uint256 endTime, uint256 mintLimit, bytes32 merkleRoot, string merkleIPFSHash, uint256 priceInWei);
-    event MintFromSale(uint256 saleID, uint256 editionID, address account, uint256 mintCount);
+    event SaleWithPhaseCreated(uint256 indexed saleID, uint256 indexed editionID, uint256 startTime, uint256 endTime, uint256 mintLimit, bytes32 merkleRoot, string merkleIPFSHash, uint256 priceInWei);
+    event MintFromSale(uint256 indexed saleID, uint256 indexed editionID, address account, uint256 mintCount);
 
     uint256 private saleIdCounter;
 
@@ -35,7 +35,7 @@ contract BasicGatedSale is BaseMarketplace {
     }
 
     /// @notice KO commission on every sale
-    uint256 public platformPrimarySaleCommission = 15_00000;  // 15.00000%
+    uint256 public platformPrimarySaleCommission = 15_00000;  // 15.00000% // FIXME Q - do we have this per sale? Might make more sense?
 
     mapping(uint256 => Sale) public sales;
     mapping(uint256 => Phase[]) public phases;
@@ -73,24 +73,21 @@ contract BasicGatedSale is BaseMarketplace {
     function mint(uint256 _saleId, uint256 _salePhaseId, uint256 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant {
         Phase memory phase = phases[_saleId][_salePhaseId];
 
-        // Check the phase exists and it is in progress
         require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale phase not in progress');
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
-
-        // Check the msg sender is on the pre list
-        require(canMint(_saleId, _salePhaseId, _index, msg.sender, _merkleProof), 'address not able to mint from sale');
-
+        require(canMint(_saleId, _salePhaseId, _index, msg.sender, _merkleProof), 'address not able to mint from sale');         // Check the msg sender is on the pre list
         require(totalMints[_saleId][_salePhaseId][msg.sender] + _mintCount <= phase.mintLimit, 'cannot exceed total mints for sale phase');
 
         totalMints[_saleId][_salePhaseId][msg.sender] += _mintCount;
 
         // sort payments
         Sale memory sale = sales[_saleId];
-        _processSale(sale.editionId, msg.value, msg.sender, address(0x0));
+        _processSale(sale.editionId, msg.value, msg.sender, address(0x0)); // FIXME do we just send all the money?
 
         emit MintFromSale(_saleId, sale.editionId, msg.sender, _mintCount);
     }
 
+    // FIXME need internal and public?
     function canMint(uint256 _saleId, uint _salePhaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (bool) {
         Phase memory phase = phases[_saleId][_salePhaseId];
 
@@ -127,11 +124,11 @@ contract BasicGatedSale is BaseMarketplace {
         uint256 koCommission = (_paymentAmount / modulo) * platformPrimarySaleCommission;
         if (koCommission > 0) {
             (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
-            require(koCommissionSuccess, "Edition commission payment failed");
+            require(koCommissionSuccess, "commission payment failed");
         }
 
         (bool success,) = _receiver.call{value : _paymentAmount - koCommission}("");
-        require(success, "Edition payment failed");
+        require(success, "payment failed");
     }
 
     function updatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission) public onlyAdmin {
