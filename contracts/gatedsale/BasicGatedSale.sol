@@ -87,11 +87,8 @@ contract BasicGatedSale is BaseMarketplace {
     // TODO I don't like this name - maybe just mint?
     function mintFromSale(uint256 _saleId, uint256 _salePhaseId, uint256 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant {
         SalePhase memory phase = phases[_saleId][_salePhaseId];
-
-        // Check the phase exists and it is in progress
+        
         require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale phase not in progress');
-
-        // Check enough wei was sent
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
 
         // Check the msg sender is on the pre list
@@ -111,7 +108,7 @@ contract BasicGatedSale is BaseMarketplace {
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, msg.sender, tokenId);
 
-        emit MintFromSale(_saleId, msg.sender, _mintCount);
+        emit MintFromSale(_saleId, msg.sender, _mintCount); // TODO add editionId
     }
 
     // TODO one for discussion - might need an internal and a public for gas reasons - discuss with James/Vince
