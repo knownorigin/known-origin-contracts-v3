@@ -102,7 +102,7 @@ contract BasicGatedSale is BaseMarketplace {
         (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(sale.editionId);
 
         // split money
-        _handleEditionSaleFunds(sale.editionId, creator, receiver, msg.value); // FIXME should be mint total * price - refunds?
+        _handleEditionSaleFunds(sale.editionId, creator, receiver, phase.priceInWei * _mintCount); // FIXME should be mint total * price - refunds?
 
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, msg.sender, tokenId);

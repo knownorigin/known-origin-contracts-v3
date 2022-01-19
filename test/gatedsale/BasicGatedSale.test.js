@@ -78,13 +78,14 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
         this.erc20Token = await MockERC20.new({from: owner});
     });
 
-    describe('BasicGatedSale', async () => {
+    describe.only('BasicGatedSale', async () => {
 
         beforeEach(async () => {
             const receipt = await this.basicGatedSale.createSale(STARTING_EDITION, {from: admin});
             expectEvent(receipt, 'SaleCreated', {id: new BN('1')});
 
             const {saleStart, saleEnd} = await mockTime();
+
             await this.basicGatedSale.addPhase(
                 new BN('1'),
                 saleStart,
@@ -96,7 +97,7 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
             )
         });
 
-        context('createSale', async () => {
+        describe('createSale', async () => {
 
             it('can create a new sale with correct arguments', async () => {
                 const {id, editionId} = await this.basicGatedSale.sales(1)
@@ -113,7 +114,7 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
             });
         })
 
-        context('addPhase', async () => {
+        describe('addPhase', async () => {
             it('can create a new phase of a sale', async () => {
                 const {startTime, endTime, mintLimit, merkleRoot, priceInWei} = await this.basicGatedSale.phases(1, 0);
 
@@ -233,7 +234,7 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
             });
         })
 
-        context('mintFromSale', async () => {
+        describe('mintFromSale', async () => {
             let {saleStart} = await mockTime()
 
             await time.increaseTo(saleStart.toString())
@@ -335,219 +336,226 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
                 })
             })
         })
-    });
 
-    describe('core base tests', () => {
 
-        describe('recoverERC20', () => {
-            const _0_1_Tokens = ether('0.1');
+        describe('core base tests', () => {
 
-            it('Can recover an amount of ERC20 as admin', async () => {
-                //send tokens 'accidentally' to the marketplace
-                await this.erc20Token.transfer(this.basicGatedSale.address, _0_1_Tokens, {from: owner});
+            describe('recoverERC20', () => {
+                const _0_1_Tokens = ether('0.1');
 
-                expect(await this.erc20Token.balanceOf(this.basicGatedSale.address)).to.be.bignumber.equal(_0_1_Tokens);
+                it('Can recover an amount of ERC20 as admin', async () => {
+                    //send tokens 'accidentally' to the marketplace
+                    await this.erc20Token.transfer(this.basicGatedSale.address, _0_1_Tokens, {from: owner});
 
-                // recover the tokens to an admin controlled address
-                const {receipt} = await this.basicGatedSale.recoverERC20(
-                    this.erc20Token.address,
-                    admin,
-                    _0_1_Tokens,
-                    {
-                        from: owner
-                    }
-                );
+                    expect(await this.erc20Token.balanceOf(this.basicGatedSale.address)).to.be.bignumber.equal(_0_1_Tokens);
 
-                await expectEvent(receipt, 'AdminRecoverERC20', {
-                    _recipient: admin,
-                    _amount: _0_1_Tokens
-                });
-
-                expect(await this.erc20Token.balanceOf(admin)).to.be.bignumber.equal(_0_1_Tokens);
-            });
-
-            it('Reverts if not admin', async () => {
-                await expectRevert(
-                    this.basicGatedSale.recoverERC20(
+                    // recover the tokens to an admin controlled address
+                    const {receipt} = await this.basicGatedSale.recoverERC20(
                         this.erc20Token.address,
                         admin,
                         _0_1_Tokens,
                         {
-                            from: contract
+                            from: owner
                         }
-                    ),
-                    'Caller not admin'
-                );
-            });
-        });
+                    );
 
-        describe('recoverStuckETH', () => {
-            const _0_5_ETH = ether('0.5');
+                    await expectEvent(receipt, 'AdminRecoverERC20', {
+                        _recipient: admin,
+                        _amount: _0_1_Tokens
+                    });
 
-            it('Can recover eth if problem with contract', async () => {
-                await this.basicGatedSale.mintFromSale.call(
-                    new BN('1'),
-                    0,
-                    new BN('3'),
-                    this.merkleProof.claims[artist1].index,
-                    this.merkleProof.claims[artist1].proof,
-                    {from: artist1, value: _0_5_ETH}
-                )
-
-                // something wrong, recover the eth
-                const adminBalTracker = await balance.tracker(admin);
-
-                const {receipt} = await this.basicGatedSale.recoverStuckETH(admin, _0_5_ETH, {from: owner});
-                await expectEvent(receipt, 'AdminRecoverETH', {
-                    _recipient: admin,
-                    _amount: _0_5_ETH
+                    expect(await this.erc20Token.balanceOf(admin)).to.be.bignumber.equal(_0_1_Tokens);
                 });
 
-                expect(await adminBalTracker.delta()).to.be.bignumber.equal(_0_5_ETH);
-            });
-
-            it('Reverts if not admin', async () => {
-                await expectRevert(
-                    this.basicGatedSale.recoverStuckETH(admin, ether('1'), {from: artist1}),
-                    'Caller not admin'
-                );
-            });
-        });
-
-        describe('updateModulo()', () => {
-            const new_modulo = new BN('10000');
-
-            it('updates the reserve auction length as admin', async () => {
-                const {receipt} = await this.basicGatedSale.updateModulo(new_modulo, {from: owner});
-
-                await expectEvent(receipt, 'AdminUpdateModulo', {
-                    _modulo: new_modulo
+                it('Reverts if not admin', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.recoverERC20(
+                            this.erc20Token.address,
+                            admin,
+                            _0_1_Tokens,
+                            {
+                                from: contract
+                            }
+                        ),
+                        'Caller not admin'
+                    );
                 });
             });
 
-            it('Reverts when not admin', async () => {
-                await expectRevert(
-                    this.basicGatedSale.updateModulo(new_modulo, {from: artist1}),
-                    'Caller not admin'
-                );
-            });
-        });
+            // describe('recoverStuckETH', () => {
+            //     const _0_5_ETH = ether('0.5');
+            //
+            //     it('Can recover eth if problem with contract', async () => {
+            //
+            //         let {saleStart} = await mockTime()
+            //
+            //         await time.increaseTo(saleStart.toString())
+            //         await time.increase(time.duration.hours(1))
+            //
+            //         await this.basicGatedSale.mintFromSale.call(
+            //             new BN('1'),
+            //             0,
+            //             new BN('3'),
+            //             this.merkleProof.claims[artist1].index,
+            //             this.merkleProof.claims[artist1].proof,
+            //             {from: artist1, value: _0_5_ETH}
+            //         )
+            //
+            //         // something wrong, recover the eth
+            //         const adminBalTracker = await balance.tracker(admin);
+            //
+            //         const {receipt} = await this.basicGatedSale.recoverStuckETH(admin, _0_5_ETH, {from: owner});
+            //         await expectEvent(receipt, 'AdminRecoverETH', {
+            //             _recipient: admin,
+            //             _amount: _0_5_ETH
+            //         });
+            //
+            //         expect(await adminBalTracker.delta()).to.be.bignumber.equal(_0_5_ETH);
+            //     });
+            //
+            //     it('Reverts if not admin', async () => {
+            //         await expectRevert(
+            //             this.basicGatedSale.recoverStuckETH(admin, ether('1'), {from: artist1}),
+            //             'Caller not admin'
+            //         );
+            //     });
+            // });
 
-        describe('updateMinBidAmount()', () => {
-            const new_min_bid = ether('0.3');
+            describe('updateModulo()', () => {
+                const new_modulo = new BN('10000');
 
-            it('updates the reserve auction length as admin', async () => {
-                const {receipt} = await this.basicGatedSale.updateMinBidAmount(new_min_bid, {from: owner});
+                it('updates the reserve auction length as admin', async () => {
+                    const {receipt} = await this.basicGatedSale.updateModulo(new_modulo, {from: owner});
 
-                await expectEvent(receipt, 'AdminUpdateMinBidAmount', {
-                    _minBidAmount: new_min_bid
+                    await expectEvent(receipt, 'AdminUpdateModulo', {
+                        _modulo: new_modulo
+                    });
+                });
+
+                it('Reverts when not admin', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.updateModulo(new_modulo, {from: artist1}),
+                        'Caller not admin'
+                    );
                 });
             });
 
-            it('Reverts when not admin', async () => {
-                await expectRevert(
-                    this.basicGatedSale.updateMinBidAmount(new_min_bid, {from: artist1}),
-                    'Caller not admin'
-                );
-            });
-        });
+            describe('updateMinBidAmount()', () => {
+                const new_min_bid = ether('0.3');
 
-        describe('updateAccessControls()', () => {
-            it('updates the reserve auction length as admin', async () => {
-                const oldAccessControlAddress = this.accessControls.address;
-                this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner});
-                const {receipt} = await this.basicGatedSale.updateAccessControls(this.accessControls.address, {from: owner});
+                it('updates the reserve auction length as admin', async () => {
+                    const {receipt} = await this.basicGatedSale.updateMinBidAmount(new_min_bid, {from: owner});
 
-                await expectEvent(receipt, 'AdminUpdateAccessControls', {
-                    _oldAddress: oldAccessControlAddress,
-                    _newAddress: this.accessControls.address
+                    await expectEvent(receipt, 'AdminUpdateMinBidAmount', {
+                        _minBidAmount: new_min_bid
+                    });
+                });
+
+                it('Reverts when not admin', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.updateMinBidAmount(new_min_bid, {from: artist1}),
+                        'Caller not admin'
+                    );
                 });
             });
 
-            it('Reverts when not admin', async () => {
-                await expectRevert(
-                    this.basicGatedSale.updateAccessControls(newAccessControls, {from: artist1}),
-                    'Caller not admin'
-                );
-            });
+            describe('updateAccessControls()', () => {
+                it('updates the reserve auction length as admin', async () => {
+                    const oldAccessControlAddress = this.accessControls.address;
+                    this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner});
+                    const {receipt} = await this.basicGatedSale.updateAccessControls(this.accessControls.address, {from: owner});
 
-            it('Reverts when updating to an EOA', async () => {
-                await expectRevert(
-                    this.basicGatedSale.updateAccessControls(newAccessControls, {from: owner}),
-                    'function call to a non-contract account'
-                );
-            });
+                    await expectEvent(receipt, 'AdminUpdateAccessControls', {
+                        _oldAddress: oldAccessControlAddress,
+                        _newAddress: this.accessControls.address
+                    });
+                });
 
-            it('Reverts when to a contract where sender is not admin', async () => {
-                this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: artist1});
-                await expectRevert(
-                    this.basicGatedSale.updateAccessControls(this.accessControls.address, {from: owner}),
-                    'Sender must have admin role in new contract'
-                );
-            });
-        });
+                it('Reverts when not admin', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.updateAccessControls(newAccessControls, {from: artist1}),
+                        'Caller not admin'
+                    );
+                });
 
-        describe('updateBidLockupPeriod()', () => {
-            const new_lock_up = ether((6 * 60).toString());
+                it('Reverts when updating to an EOA', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.updateAccessControls(newAccessControls, {from: owner}),
+                        'function call to a non-contract account'
+                    );
+                });
 
-            it('updates the reserve auction length as admin', async () => {
-                const {receipt} = await this.basicGatedSale.updateBidLockupPeriod(new_lock_up, {from: owner});
-
-                await expectEvent(receipt, 'AdminUpdateBidLockupPeriod', {
-                    _bidLockupPeriod: new_lock_up
+                it('Reverts when to a contract where sender is not admin', async () => {
+                    this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: artist1});
+                    await expectRevert(
+                        this.basicGatedSale.updateAccessControls(this.accessControls.address, {from: owner}),
+                        'Sender must have admin role in new contract'
+                    );
                 });
             });
 
-            it('Reverts when not admin', async () => {
-                await expectRevert(
-                    this.basicGatedSale.updateBidLockupPeriod(new_lock_up, {from: artist1}),
-                    'Caller not admin'
-                );
-            });
-        });
+            describe('updateBidLockupPeriod()', () => {
+                const new_lock_up = ether((6 * 60).toString());
 
-        describe('updatePlatformAccount()', () => {
-            it('updates the reserve auction length as admin', async () => {
-                const {receipt} = await this.basicGatedSale.updatePlatformAccount(owner, {from: owner});
+                it('updates the reserve auction length as admin', async () => {
+                    const {receipt} = await this.basicGatedSale.updateBidLockupPeriod(new_lock_up, {from: owner});
 
-                await expectEvent(receipt, 'AdminUpdatePlatformAccount', {
-                    _oldAddress: koCommission,
-                    _newAddress: owner
+                    await expectEvent(receipt, 'AdminUpdateBidLockupPeriod', {
+                        _bidLockupPeriod: new_lock_up
+                    });
+                });
+
+                it('Reverts when not admin', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.updateBidLockupPeriod(new_lock_up, {from: artist1}),
+                        'Caller not admin'
+                    );
                 });
             });
 
-            it('Reverts when not admin', async () => {
-                await expectRevert(
-                    this.basicGatedSale.updatePlatformAccount(owner, {from: artist1}),
-                    'Caller not admin'
-                );
+            describe('updatePlatformAccount()', () => {
+                it('updates the reserve auction length as admin', async () => {
+                    const {receipt} = await this.basicGatedSale.updatePlatformAccount(owner, {from: owner});
+
+                    await expectEvent(receipt, 'AdminUpdatePlatformAccount', {
+                        _oldAddress: koCommission,
+                        _newAddress: owner
+                    });
+                });
+
+                it('Reverts when not admin', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.updatePlatformAccount(owner, {from: artist1}),
+                        'Caller not admin'
+                    );
+                });
             });
+        });
+
+        describe('MerkleTree', async () => {
+
+            describe('createMerkleTree', async () => {
+
+                it('can create a new merkle tree', async () => {
+                    this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
+
+                    expect(await this.basicGatedSale.onPreList.call(
+                        new BN('1'),
+                        0,
+                        this.merkleProof.claims[artist1].index,
+                        artist1,
+                        this.merkleProof.claims[artist1].proof)
+                    ).to.be.equal(true);
+
+                    expect(await this.basicGatedSale.onPreList.call(
+                        new BN('1'),
+                        0,
+                        this.merkleProof.claims[artist1].index,
+                        artistDodgy,
+                        this.merkleProof.claims[artist1].proof)
+                    ).to.be.equal(false);
+                })
+            })
         });
     });
-
-    // describe.only('MerkleTree', async () => {
-    //
-    //     describe('createMerkleTree', async () => {
-    //
-    //         it('can create a new merkle tree', async () => {
-    //             this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
-    //
-    //             expect(await this.basicGatedSale.onPreList.call(
-    //                 new BN('1'),
-    //                 0,
-    //                 this.merkleProof.claims[artist1].index,
-    //                 artist1,
-    //                 this.merkleProof.claims[artist1].proof)
-    //             ).to.be.equal(true);
-    //
-    //             expect(await this.basicGatedSale.onPreList.call(
-    //                 new BN('1'),
-    //                 0,
-    //                 this.merkleProof.claims[artist1].index,
-    //                 artistDodgy,
-    //                 this.merkleProof.claims[artist1].proof)
-    //             ).to.be.equal(false);
-    //         })
-    //     })
-    // });
 });
