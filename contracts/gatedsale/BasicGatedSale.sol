@@ -30,7 +30,7 @@ contract BasicGatedSale is BaseMarketplace {
     // Sale id return Sale
     mapping(uint256 => Sale) public sales;
     // Sale id => Phases
-    mapping(uint256 => SalePhase[]) private phases;
+    mapping(uint256 => SalePhase[]) public phases; // TODO had to make this public for testing?
     // Sale id => Phase id => address returns a total mints
     mapping(uint256 => mapping(uint256 => mapping(address => uint))) private totalMints;
 
@@ -44,9 +44,7 @@ contract BasicGatedSale is BaseMarketplace {
         return saleIdCounter;
     }
 
-
-    // FIXME role based access
-    function createSale(uint256 _editionId) public {
+    function createSale(uint256 _editionId) public onlyAdmin {
 
         // Get the latest sale ID
         uint256 saleId = _nextSaleId();
@@ -57,12 +55,13 @@ contract BasicGatedSale is BaseMarketplace {
         emit SaleCreated(saleId);
     }
 
-    // FIXME role based access
-    function addPhase(uint256 _saleId, uint256 _startTime, uint256 _endTime, uint256 _mintLimit, bytes32 _merkleRoot, uint256 _priceInWei) public {
+    function addPhase(uint256 _saleId, uint256 _startTime, uint256 _endTime, uint256 _mintLimit, bytes32 _merkleRoot, uint256 _priceInWei) public onlyAdmin {
+        require(_startTime > block.timestamp, 'phase start time must be in the future');
+        require(_endTime > _startTime, 'phase end time must be after start time');
+        require(_mintLimit > 0, 'phase mint limit must be greater than 0');
+        require(_merkleRoot != 0, 'phase must have a valid merkle root');
+        require(_priceInWei > 0, 'phase price must be greater than 0');
 
-        //        require(_start > block.timestamp, 'sale start time must be in the future');
-
-        // FIXME add requires
         phases[_saleId].push(
             SalePhase({
             startTime : _startTime,
@@ -77,14 +76,16 @@ contract BasicGatedSale is BaseMarketplace {
         // Get the sale object
         SalePhase memory phase = phases[_saleId][_salePhaseId];
 
-        require(msg.value >= phase.priceInWei, 'at least one sale phase must be provided');
+        // Check the phase exists and it is in progress
+        require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale phase not in progress');
 
-        require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale has not started yet');
+        // Check enough wei was sent
+        require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
 
-        // Check if the address can mint in this phase
+        // Check the msg sender is on the pre list
         require(onPreList(_saleId, _salePhaseId, _index, msg.sender, _merkleProof), 'address not able to mint from sale');
 
-        require(totalMints[_saleId][_salePhaseId][msg.sender] + _mintCount > phase.mintLimit, 'cannot exceed total mints for sale phase');
+        require(totalMints[_saleId][_salePhaseId][msg.sender] + _mintCount <= phase.mintLimit, 'cannot exceed total mints for sale phase');
 
         totalMints[_saleId][_salePhaseId][msg.sender] += _mintCount;
 

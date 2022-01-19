@@ -1,9 +1,10 @@
 const {expect} = require("chai");
-const {BN, expectEvent, expectRevert, time, constants, ether} = require('@openzeppelin/test-helpers');
+const {BN, expectEvent, expectRevert, time, constants, ether, balance} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
 const {parseBalanceMap} = require('../utils/parse-balance-map');
 const {buildArtistMerkleInput} = require('../utils/merkle-tools');
+const {ethers} = require("ethers");
 
 const BasicGatedSale = artifacts.require('BasicGatedSale');
 
@@ -24,7 +25,7 @@ async function mockTime() {
 
     return {
         timeNow: timeNow,
-        saleStart:new BN(saleStart.getTime().toString()),
+        saleStart: new BN(saleStart.getTime().toString()),
         saleEnd: new BN(saleEnd.getTime().toString())
     }
 }
@@ -42,17 +43,19 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
         this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner});
 
         // grab the roles
+        this.DEFAULT_ADMIN_ROLE = await this.accessControls.DEFAULT_ADMIN_ROLE();
         this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
 
         // Create token V3
         this.token = await KnownOriginDigitalAssetV3.new(
-          this.accessControls.address,
-          ZERO_ADDRESS, // no royalties address
-          STARTING_EDITION,
-          {from: owner}
+            this.accessControls.address,
+            ZERO_ADDRESS, // no royalties address
+            STARTING_EDITION,
+            {from: owner}
         );
 
         // Set contract roles
+        await this.accessControls.grantRole(this.DEFAULT_ADMIN_ROLE, admin, {from: owner});
         // await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: owner});
         // await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
 
@@ -71,197 +74,259 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
 
             const {saleStart, saleEnd} = await mockTime();
             await this.basicGatedSale.addPhase(
-              new BN('1'),
-              saleStart,
-              saleEnd,
-              new BN('10'),
-              this.merkleProof.merkleRoot,
-              ether('0.1')
+                new BN('1'),
+                saleStart,
+                saleEnd,
+                new BN('10'),
+                this.merkleProof.merkleRoot,
+                ether('0.1'),
+                {from: admin}
             )
         });
 
         context('createSale', async () => {
 
-
-
             it('can create a new sale with correct arguments', async () => {
-
-                const {id, start, end, mintLimit} = await this.basicGatedSale.sales(1)
+                const {id, editionId} = await this.basicGatedSale.sales(1)
 
                 expect(id.toString()).to.be.equal('1')
-                // expect(start.toString()).to.be.equal(`${saleStart.toString()}`)
-                // expect(end.toString()).to.be.equal(`${saleEnd.toString()}`)
-                // expect(mintLimit.toString()).to.be.equal('1')
-
+                expect(editionId.toString()).to.be.equal(STARTING_EDITION)
             });
 
-            // it('will revert if given start date which is before the current block timestamp', async () => {
-            //     let {timeNow, saleEnd} = await mockTime()
-            //
-            //     const saleStart = new Date(Number(timeNow.toString()));
-            //     saleStart.setDate(saleStart.getDate() - 4);
-            //
-            //     await expectRevert(
-            //         this.basicGatedSale.createSale(saleStart.getTime(), saleEnd, 1, this.merkleProof.merkleRoot),
-            //         'sale start time must be in the future'
-            //     )
-            // })
+            it('cannot create a sale without the right role', async () => {
+                await expectRevert(
+                    this.basicGatedSale.createSale(STARTING_EDITION, {from: artistDodgy}),
+                    'Caller not admin'
+                )
+            });
+        })
 
-            // it('will revert if given an end date before the start date', async () => {
-            //     let {timeNow, saleStart} = await mockTime()
-            //
-            //     const saleEnd = new Date(Number(timeNow.toString()));
-            //     saleEnd.setDate(saleEnd.getDate() - 4);
-            //
-            //
-            //
-            //     await expectRevert(
-            //       this.basicGatedSale.createSale(saleStart, BigNumber.from(saleEnd.getTime()), 1, this.merkleProof.merkleRoot),
-            //         'sale end time must be after the sale start time'
-            //     )
-            // })
+        context('addPhase', async () => {
+            it('can create a new phase of a sale', async () => {
+                const {startTime, endTime, mintLimit, merkleRoot, priceInWei} = await this.basicGatedSale.phases(1, 0);
+
+                expect(startTime.toString()).to.not.equal('0')
+                expect(endTime.toString()).to.not.equal('0')
+                expect(mintLimit.toString()).to.be.equal('10')
+                expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot)
+                expect(priceInWei.toString()).to.be.equal(ether('0.1').toString())
+            });
+
+            it('cannot create a phase without the right role', async () => {
+                let {saleStart, saleEnd} = await mockTime()
+
+                await expectRevert(
+                    this.basicGatedSale.addPhase(
+                        new BN('1'),
+                        saleStart,
+                        saleEnd,
+                        new BN('10'),
+                        this.merkleProof.merkleRoot,
+                        ether('0.1'),
+                        {from: artistDodgy}
+                    ),
+                    'Caller not admin'
+                )
+            });
+
+            it('should revert if given an invalid start time', async () => {
+                let {timeNow, saleStart} = await mockTime()
+
+                const saleEnd = new Date(Number(timeNow.toString()));
+                saleEnd.setDate(saleEnd.getDate() - 4);
+
+                await expectRevert(
+                    this.basicGatedSale.addPhase(
+                        new BN('1'),
+                        saleStart,
+                        new BN(saleEnd.getTime().toString()),
+                        new BN('10'),
+                        this.merkleProof.merkleRoot,
+                        ether('0.1'),
+                        {from: admin}
+                    ),
+                    'phase end time must be after start time'
+                )
+            });
+
+            it('should revert if given an end time before the start time', async () => {
+                let {timeNow, saleEnd} = await mockTime()
+
+                const saleStart = new Date(Number(timeNow.toString()));
+                saleStart.setDate(saleStart.getDate() - 4);
+
+                await expectRevert(
+                    this.basicGatedSale.addPhase(
+                        new BN('1'),
+                        new BN(saleStart.getTime().toString()),
+                        saleEnd,
+                        new BN('10'),
+                        this.merkleProof.merkleRoot,
+                        ether('0.1'),
+                        {from: admin}
+                    ),
+                    'phase start time must be in the future'
+                )
+            });
+
+            it('should revert if given an invalid mint limit', async () => {
+                let {saleStart, saleEnd} = await mockTime()
+
+                await expectRevert(
+                    this.basicGatedSale.addPhase(
+                        new BN('1'),
+                        saleStart,
+                        saleEnd,
+                        new BN('0'),
+                        this.merkleProof.merkleRoot,
+                        ether('0.1'),
+                        {from: admin}
+                    ),
+                    'phase mint limit must be greater than 0'
+                )
+            });
+
+            it('should revert if given an invalid merkle root', async () => {
+                let {saleStart, saleEnd} = await mockTime()
+
+                await expectRevert(
+                    this.basicGatedSale.addPhase(
+                        new BN('1'),
+                        saleStart,
+                        saleEnd,
+                        new BN('10'),
+                        ethers.utils.formatBytes32String(""),
+                        ether('0.1'),
+                        {from: admin}
+                    ),
+                    'phase must have a valid merkle root'
+                )
+            });
+
+            it('should revert if given an invalid price', async () => {
+                let {saleStart, saleEnd} = await mockTime()
+
+                await expectRevert(
+                    this.basicGatedSale.addPhase(
+                        new BN('1'),
+                        saleStart,
+                        saleEnd,
+                        new BN('10'),
+                        this.merkleProof.merkleRoot,
+                        ether('0'),
+                        {from: admin}
+                    ),
+                    'phase price must be greater than 0'
+                )
+            });
         })
 
         context('mintFromSale', async () => {
+            let {saleStart} = await mockTime()
+
+            await time.increaseTo(saleStart.toString())
+            await time.increase(time.duration.hours(1))
+
             it('can mint one item from a valid sale', async () => {
 
-                await time.increaseTo(saleStart.toString())
-                await time.increase(time.duration.hours(1))
-
-                const salesReceipt = await this.basicGatedSale.mintFromSale(id.toNumber(), 1, this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {from: artist1})
-
-                await this.basicGatedSale.sales(1)
+                const salesReceipt = await this.basicGatedSale.mintFromSale(new BN('1'), 0, new BN('1'), this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {
+                    from: artist1,
+                    value: ether('0.1')
+                })
 
                 expectEvent(salesReceipt, 'MintFromSale', {
-                    saleID: id,
+                    saleID: new BN('1'),
                     account: artist1,
-                    mintCount: BigNumber.from("1").toString()
+                    mintCount: new BN('1')
                 });
 
-            })
+                it('can mint multiple items from a valid sale', async () => {
 
-            it('can mint multiple items from a valid sale', async () => {
-                const { saleStart, saleEnd} = await mockTime()
+                    const salesReceipt = await this.basicGatedSale.mintFromSale(new BN('1'), 0, new BN('3'), this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {
+                        from: artist1,
+                        value: ether('0.3')
+                    })
 
-                // const receipt = await this.basicGatedSale.createSale(saleStart, saleEnd, 3, this.merkleProof.merkleRoot)
-                // const {id} = receipt.logs[0].args
+                    expectEvent(salesReceipt, 'MintFromSale', {
+                        saleID: new BN('1'),
+                        account: artist1,
+                        mintCount: new BN('3')
+                    });
+                })
 
-                await time.increaseTo(saleStart.toString())
-                await time.increase(time.duration.hours(1))
+                it('reverts if the given sale phase is not in progress', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.mintFromSale(
+                            new BN('1'),
+                            1,
+                            new BN('1'),
+                            this.merkleProof.claims[artist1].index,
+                            this.merkleProof.claims[artist1].proof,
+                            {from: artist1, value: ether('0.1')}
+                        ),
+                        'sale phase not in progress'
+                    )
+                })
 
-                const salesReceipt = await this.basicGatedSale.mintFromSale(id.toNumber(), 3, this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {from: artist1})
+                it('reverts if not enough eth is sent', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.mintFromSale(
+                            new BN('1'),
+                            0,
+                            new BN('3'),
+                            this.merkleProof.claims[artist1].index,
+                            this.merkleProof.claims[artist1].proof,
+                            {from: artist1, value: ether('0.2')}
+                        ),
+                        'not enough wei sent to complete mint'
+                    )
+                })
 
-                await this.basicGatedSale.sales(1)
+                it('reverts if the address is not on the prelist', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.mintFromSale(
+                            new BN('1'),
+                            0,
+                            new BN('1'),
+                            this.merkleProof.claims[artistDodgy].index,
+                            this.merkleProof.claims[artistDodgy].proof,
+                            {from: artistDodgy, value: ether('0.1')}
+                        ),
+                        'address not able to mint from sale'
+                    )
+                })
 
-                expectEvent(salesReceipt, 'MintFromSale', {
-                    saleID: id,
-                    account: artist1,
-                    mintCount: BigNumber.from("3").toString()
-                });
-            })
+                it('reverts if an address has exceeded its mint limit', async () => {
 
-            it('reverts if the address is not in the pre list', async () => {
-                const { saleStart, saleEnd} = await mockTime()
+                    const salesReceipt = await this.basicGatedSale.mintFromSale(new BN('1'), 0, new BN('9'), this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {
+                        from: artist1,
+                        value: ether('0.9')
+                    })
 
-                // const receipt = await this.basicGatedSale.createSale(saleStart, saleEnd, 3, this.merkleProof.merkleRoot)
-                // const {id} = receipt.logs[0].args
+                    expectEvent(salesReceipt, 'MintFromSale', {
+                        saleID: new BN('1'),
+                        account: artist1,
+                        mintCount: new BN('9')
+                    });
 
-                await time.increaseTo(saleStart.toString())
-                await time.increase(time.duration.hours(1))
-
-                await expectRevert(
-                    this.basicGatedSale.mintFromSale(id.toNumber(), 1, 4, this.merkleProof.claims[artist1].proof, {from: artistDodgy}),
-                    'address not able to mint from sale'
-                )
-            })
-
-            it('reverts if the sale id is not valid', async () => {
-                const { saleStart, saleEnd} = await mockTime()
-
-                // await this.basicGatedSale.createSale(saleStart, saleEnd, 3, this.merkleProof.merkleRoot)
-
-                await time.increaseTo(saleStart.toString())
-                await time.increase(time.duration.hours(1))
-
-                await expectRevert(
-                    this.basicGatedSale.mintFromSale(55, 1, 4, this.merkleProof.claims[artist1].proof, {from: artistDodgy}),
-                    'address not able to mint from sale'
-                )
-            })
-
-            it('reverts if the sale has not started yet', async () => {
-                const { saleStart, saleEnd} = await mockTime()
-
-                // const receipt = await this.basicGatedSale.createSale(saleStart, saleEnd, 3, this.merkleProof.merkleRoot)
-                // const {id} = receipt.logs[0].args
-
-                const timeNow = await time.latest()
-                await time.increaseTo(timeNow.toString())
-
-                await expectRevert(
-                    this.basicGatedSale.mintFromSale(id.toNumber(), 1, this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {from: artist1}),
-                    'sale has not started yet'
-                )
-            })
-
-            it('reverts if the sale has ended', async () => {
-                const { saleStart, saleEnd} = await mockTime()
-
-                // const receipt = await this.basicGatedSale.createSale(saleStart, saleEnd, 3, this.merkleProof.merkleRoot)
-                // const {id} = receipt.logs[0].args
-
-                await time.increaseTo(saleEnd.toString())
-                await time.increase(time.duration.hours(24))
-
-                await expectRevert(
-                    this.basicGatedSale.mintFromSale(id.toNumber(), 1, this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {from: artist1}),
-                    'sale has ended'
-                )
-            })
-
-            it('reverts if you try to mint more than allowed', async () => {
-                const { saleStart, saleEnd} = await mockTime()
-
-                // const receipt = await this.basicGatedSale.createSale(saleStart, saleEnd, 1, this.merkleProof.merkleRoot)
-                // const {id} = receipt.logs[0].args
-
-                await time.increaseTo(saleStart.toString())
-                await time.increase(time.duration.hours(1))
-
-                await expectRevert(
-                    this.basicGatedSale.mintFromSale(id.toNumber(), 50, this.merkleProof.claims[artist1].index, this.merkleProof.claims[artist1].proof, {from: artist1}),
-                    'number of mints must be below mint limit'
-                )
+                    await expectRevert(
+                        this.basicGatedSale.mintFromSale(
+                            new BN('1'),
+                            0,
+                            new BN('2'),
+                            this.merkleProof.claims[artist1].index,
+                            this.merkleProof.claims[artist1].proof,
+                            {from: artist1, value: ether('0.2')}
+                        ),
+                        'cannot exceed total mints for sale phase'
+                    )
+                })
             })
         })
-    });
-
-
-    describe.only('MerkleTree', async () => {
-
-        context('createMerkleTree', async () => {
-
-            it.skip('can create a new merkle tree', async () => {
-                this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
-                console.log(this.merkleProof);
-
-                expect(await this.basicGatedSale.onPrelist.call(
-                  this.merkleProof.claims[artist1].index,
-                  artist1,
-                  this.merkleProof.claims[artist1].proof)
-                ).to.be.equal(true);
-
-                expect(await this.basicGatedSale.onPrelist.call(
-                  this.merkleProof.claims[artist1].index,
-                  artistDodgy,
-                  this.merkleProof.claims[artist1].proof)
-                ).to.be.equal(false);
-            })
-        })
-
     });
 
     describe.only('core base tests', () => {
+
         describe('recoverERC20', () => {
             const _0_1_Tokens = ether('0.1');
 
@@ -273,12 +338,12 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
 
                 // recover the tokens to an admin controlled address
                 const {receipt} = await this.basicGatedSale.recoverERC20(
-                  this.erc20Token.address,
-                  admin,
-                  _0_1_Tokens,
-                  {
-                      from: owner
-                  }
+                    this.erc20Token.address,
+                    admin,
+                    _0_1_Tokens,
+                    {
+                        from: owner
+                    }
                 );
 
                 await expectEvent(receipt, 'AdminRecoverERC20', {
@@ -291,15 +356,15 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
 
             it('Reverts if not admin', async () => {
                 await expectRevert(
-                  this.basicGatedSale.recoverERC20(
-                    this.erc20Token.address,
-                    admin,
-                    _0_1_Tokens,
-                    {
-                        from: contract
-                    }
-                  ),
-                  'Caller not admin'
+                    this.basicGatedSale.recoverERC20(
+                        this.erc20Token.address,
+                        admin,
+                        _0_1_Tokens,
+                        {
+                            from: contract
+                        }
+                    ),
+                    'Caller not admin'
                 );
             });
         });
@@ -307,9 +372,15 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
         describe('recoverStuckETH', () => {
             const _0_5_ETH = ether('0.5');
 
-            it.skip('Can recover eth if problem with contract', async () => {
-
-                // TODO send ETH direct to the contract (BasicGatedSale)
+            it('Can recover eth if problem with contract', async () => {
+                await this.basicGatedSale.mintFromSale.call(
+                    new BN('1'),
+                    0,
+                    new BN('3'),
+                    this.merkleProof.claims[artist1].index,
+                    this.merkleProof.claims[artist1].proof,
+                    {from: artist1, value: _0_5_ETH}
+                )
 
                 // something wrong, recover the eth
                 const adminBalTracker = await balance.tracker(admin);
@@ -325,8 +396,8 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
 
             it('Reverts if not admin', async () => {
                 await expectRevert(
-                  this.basicGatedSale.recoverStuckETH(admin, ether('1'), {from: artist1}),
-                  'Caller not admin'
+                    this.basicGatedSale.recoverStuckETH(admin, ether('1'), {from: artist1}),
+                    'Caller not admin'
                 );
             });
         });
@@ -344,8 +415,8 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
 
             it('Reverts when not admin', async () => {
                 await expectRevert(
-                  this.basicGatedSale.updateModulo(new_modulo, {from: artist1}),
-                  'Caller not admin'
+                    this.basicGatedSale.updateModulo(new_modulo, {from: artist1}),
+                    'Caller not admin'
                 );
             });
         });
@@ -363,8 +434,8 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
 
             it('Reverts when not admin', async () => {
                 await expectRevert(
-                  this.basicGatedSale.updateMinBidAmount(new_min_bid, {from: artist1}),
-                  'Caller not admin'
+                    this.basicGatedSale.updateMinBidAmount(new_min_bid, {from: artist1}),
+                    'Caller not admin'
                 );
             });
         });
@@ -383,23 +454,23 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
 
             it('Reverts when not admin', async () => {
                 await expectRevert(
-                  this.basicGatedSale.updateAccessControls(newAccessControls, {from: artist1}),
-                  'Caller not admin'
+                    this.basicGatedSale.updateAccessControls(newAccessControls, {from: artist1}),
+                    'Caller not admin'
                 );
             });
 
             it('Reverts when updating to an EOA', async () => {
                 await expectRevert(
-                  this.basicGatedSale.updateAccessControls(newAccessControls, {from: owner}),
-                  'function call to a non-contract account'
+                    this.basicGatedSale.updateAccessControls(newAccessControls, {from: owner}),
+                    'function call to a non-contract account'
                 );
             });
 
             it('Reverts when to a contract where sender is not admin', async () => {
                 this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: artist1});
                 await expectRevert(
-                  this.basicGatedSale.updateAccessControls(this.accessControls.address, {from: owner}),
-                  'Sender must have admin role in new contract'
+                    this.basicGatedSale.updateAccessControls(this.accessControls.address, {from: owner}),
+                    'Sender must have admin role in new contract'
                 );
             });
         });
@@ -417,8 +488,8 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
 
             it('Reverts when not admin', async () => {
                 await expectRevert(
-                  this.basicGatedSale.updateBidLockupPeriod(new_lock_up, {from: artist1}),
-                  'Caller not admin'
+                    this.basicGatedSale.updateBidLockupPeriod(new_lock_up, {from: artist1}),
+                    'Caller not admin'
                 );
             });
         });
@@ -435,10 +506,36 @@ contract('BasicGatedSale Test Tests...', function (accounts) {
 
             it('Reverts when not admin', async () => {
                 await expectRevert(
-                  this.basicGatedSale.updatePlatformAccount(owner, {from: artist1}),
-                  'Caller not admin'
+                    this.basicGatedSale.updatePlatformAccount(owner, {from: artist1}),
+                    'Caller not admin'
                 );
             });
         });
     });
+
+    // describe.only('MerkleTree', async () => {
+    //
+    //     describe('createMerkleTree', async () => {
+    //
+    //         it('can create a new merkle tree', async () => {
+    //             this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
+    //
+    //             expect(await this.basicGatedSale.onPreList.call(
+    //                 new BN('1'),
+    //                 0,
+    //                 this.merkleProof.claims[artist1].index,
+    //                 artist1,
+    //                 this.merkleProof.claims[artist1].proof)
+    //             ).to.be.equal(true);
+    //
+    //             expect(await this.basicGatedSale.onPreList.call(
+    //                 new BN('1'),
+    //                 0,
+    //                 this.merkleProof.claims[artist1].index,
+    //                 artistDodgy,
+    //                 this.merkleProof.claims[artist1].proof)
+    //             ).to.be.equal(false);
+    //         })
+    //     })
+    // });
 });
