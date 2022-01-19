@@ -36,6 +36,7 @@ contract('BasicGatedSale tests...', function (accounts) {
     const ONE_HUNDRED = new BN('100');
     const ZERO = new BN('0');
     const ONE = new BN('1');
+    const TWO = new BN('2');
 
     // TODO this is the ID thats minted
     const FIRST_EDITION_TOKEN_ID = new BN('11000'); // this is implied
@@ -226,6 +227,9 @@ contract('BasicGatedSale tests...', function (accounts) {
                     account: artist1,
                     mintCount: new BN('1')
                 });
+
+                expect(await this.token.ownerOf(FIRST_EDITION_TOKEN_ID)).to.be.equal(artist1);
+
             });
 
             it('can mint multiple items from a valid sale', async () => {
@@ -247,6 +251,10 @@ contract('BasicGatedSale tests...', function (accounts) {
                     account: artist1,
                     mintCount: new BN('3')
                 });
+
+                expect(await this.token.ownerOf(FIRST_EDITION_TOKEN_ID)).to.be.equal(artist1);
+                expect(await this.token.ownerOf(FIRST_EDITION_TOKEN_ID.add(ONE))).to.be.equal(artist1);
+                expect(await this.token.ownerOf(FIRST_EDITION_TOKEN_ID.add(TWO))).to.be.equal(artist1);
             })
 
 
@@ -401,7 +409,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                 });
             });
 
-            describe('updateModulo()', () => {
+            describe('updateModulo', () => {
                 const new_modulo = new BN('10000');
 
                 it('updates the reserve auction length as admin', async () => {
@@ -420,7 +428,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                 });
             });
 
-            describe('updateMinBidAmount()', () => {
+            describe('updateMinBidAmount', () => {
                 const new_min_bid = ether('0.3');
 
                 it('updates the reserve auction length as admin', async () => {
@@ -439,7 +447,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                 });
             });
 
-            describe('updateAccessControls()', () => {
+            describe('updateAccessControls', () => {
                 it('updates the reserve auction length as admin', async () => {
                     const oldAccessControlAddress = this.accessControls.address;
                     this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner});
@@ -474,7 +482,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                 });
             });
 
-            describe('updateBidLockupPeriod()', () => {
+            describe('updateBidLockupPeriod', () => {
                 const new_lock_up = ether((6 * 60).toString());
 
                 it('updates the reserve auction length as admin', async () => {
@@ -493,7 +501,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                 });
             });
 
-            describe('updatePlatformAccount()', () => {
+            describe('updatePlatformAccount', () => {
                 it('updates the reserve auction length as admin', async () => {
                     const {receipt} = await this.basicGatedSale.updatePlatformAccount(owner, {from: owner});
 
@@ -506,6 +514,25 @@ contract('BasicGatedSale tests...', function (accounts) {
                 it('Reverts when not admin', async () => {
                     await expectRevert(
                         this.basicGatedSale.updatePlatformAccount(owner, {from: artist1}),
+                        'Caller not admin'
+                    );
+                });
+            });
+
+            describe('updatePlatformPrimarySaleCommission', () => {
+                const new_commission = new BN('1550000');
+
+                it('updates the reserve auction length as admin', async () => {
+                    const {receipt} = await this.basicGatedSale.updatePlatformPrimarySaleCommission(new_commission, {from: owner});
+
+                    await expectEvent(receipt, 'AdminUpdatePlatformPrimarySaleCommission', {
+                        _platformPrimarySaleCommission: new_commission
+                    });
+                });
+
+                it('Reverts when not admin', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.updatePlatformPrimarySaleCommission(new_commission, {from: artist3}),
                         'Caller not admin'
                     );
                 });

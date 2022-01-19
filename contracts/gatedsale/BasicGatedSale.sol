@@ -131,7 +131,6 @@ contract BasicGatedSale is BaseMarketplace {
         require(success, "Edition payment failed");
     }
 
-    // TODO copy test from KODAV3PrimaryMarketplace
     function updatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission) public onlyAdmin {
         platformPrimarySaleCommission = _platformPrimarySaleCommission;
         emit AdminUpdatePlatformPrimarySaleCommission(_platformPrimarySaleCommission);
