@@ -13,9 +13,8 @@ import "../marketplace/IKODAV3Marketplace.sol";
 
 contract BasicGatedSale is BaseMarketplace {
 
-    event SaleCreated(uint256 indexed id, uint256 editionID);
-    event PhaseCreated(uint256 indexed saleID, uint256 editionID, uint256 startTime, uint256 endTime, uint256 mintLimit, bytes32 merkleRoot, string dataIPFSHash, uint256 priceInWei);
-    event MintFromSale(uint256 saleID, address account, uint256 mintCount);
+    event SaleWithPhaseCreated(uint256 indexed saleID, uint256 editionID, uint256 startTime, uint256 endTime, uint256 mintLimit, bytes32 merkleRoot, string dataIPFSHash, uint256 priceInWei);
+    event MintFromSale(uint256 saleID, uint256 editionID, address account, uint256 mintCount);
 
     uint256 private saleIdCounter;
 
@@ -25,7 +24,7 @@ contract BasicGatedSale is BaseMarketplace {
         uint256 endTime; // The end time of the sale phase, also the beginning of the next phase if applicable
         uint256 mintLimit; // The mint limit per wallet for the phase
         bytes32 merkleRoot; // The merkle tree root for the phase
-        string dataIPFSHash; // The IPFS hash referencing the merkle tree
+        string merkleIPFSHash; // The IPFS hash referencing the merkle tree
         uint256 priceInWei; // Price in wei for one mint
     }
 
@@ -46,13 +45,14 @@ contract BasicGatedSale is BaseMarketplace {
     BaseMarketplace(_accessControls, _koda, _platformAccount) {
     }
 
-    function createSaleWithPhase(uint256 _editionId, uint256 _startTime, uint256 _endTime, uint256 _mintLimit, bytes32 _merkleRoot, uint256 _priceInWei) public onlyAdmin {
+    function createSaleWithPhase(uint256 _editionId, uint256 _startTime, uint256 _endTime, uint256 _mintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint256 _priceInWei) public onlyAdmin {
         require(koda.editionExists(_editionId), 'edition does not exist');
         require(_startTime > block.timestamp, 'phase start time must be in the future');
         require(_endTime > _startTime, 'phase end time must be after start time');
         require(_mintLimit > 0, 'phase mint limit must be greater than 0');
         console.log('MERKLE ROOT LENGTH : ', _merkleRoot.length);
-        require(_merkleRoot.length != 0, 'phase must have a valid merkle root');  // TODO is this right?
+        require(_merkleRoot.length != 0, 'phase must have a valid merkle root');
+        // TODO is this right?
 
         // Get the latest sale ID
         uint256 saleId = _nextSaleId();
@@ -61,16 +61,16 @@ contract BasicGatedSale is BaseMarketplace {
         sales[saleId] = Sale({id : saleId, editionId : _editionId});
 
         phases[saleId].push(Phase({
-            startTime : _startTime,
-            endTime : _endTime,
-            mintLimit : _mintLimit,
-            merkleRoot : _merkleRoot,
-            priceInWei : _priceInWei
-            }));
+        startTime : _startTime,
+        endTime : _endTime,
+        mintLimit : _mintLimit,
+        merkleRoot : _merkleRoot,
+        merkleIPFSHash : _merkleIPFSHash,
+        priceInWei : _priceInWei
+        }));
 
-        // TODO maybe one event?
-        emit SaleCreated(saleId, _editionId);
-        emit PhaseCreated(saleId, _editionId, _startTime, _endTime, _mintLimit, _merkleRoot, _priceInWei);
+        emit SaleWithPhaseCreated(saleId, _editionId, _startTime, _endTime, _mintLimit, _merkleRoot, _merkleIPFSHash, _priceInWei);
+
     }
 
     function mint(uint256 _saleId, uint256 _salePhaseId, uint256 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant {
@@ -97,7 +97,7 @@ contract BasicGatedSale is BaseMarketplace {
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, msg.sender, tokenId);
 
-        emit MintFromSale(_saleId, msg.sender, _mintCount); // TODO add editionId
+        emit MintFromSale(_saleId, sale.editionId, msg.sender, _mintCount);
     }
 
     function canMint(uint256 _saleId, uint _salePhaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (bool) {
@@ -108,7 +108,6 @@ contract BasicGatedSale is BaseMarketplace {
         return MerkleProof.verify(_merkleProof, phase.merkleRoot, node);
     }
 
-    // TODO are these needed? -- YEAH NEED THESE as we extend Base contract - will decide how to use or just ignore
     // shall we use?
     function _processSale(
         uint256 _tokenId,
@@ -132,7 +131,7 @@ contract BasicGatedSale is BaseMarketplace {
             require(koCommissionSuccess, "Edition commission payment failed");
         }
 
-        (bool success) = _receiver.call{value : _paymentAmount - koCommission}("");
+        (bool success,) = _receiver.call{value : _paymentAmount - koCommission}("");
         require(success, "Edition payment failed");
     }
 
