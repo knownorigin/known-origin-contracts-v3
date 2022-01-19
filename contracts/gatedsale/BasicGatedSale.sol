@@ -2,14 +2,12 @@
 pragma solidity 0.8.4;
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {BaseMarketplace} from "../marketplace/BaseMarketplace.sol";
 
+import {BaseMarketplace} from "../marketplace/BaseMarketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
 import "hardhat/console.sol";
-import "../spikes/core/mixins/NFTPermit.sol";
-import "../marketplace/IKODAV3Marketplace.sol";
 
 contract BasicGatedSale is BaseMarketplace {
 
@@ -32,18 +30,18 @@ contract BasicGatedSale is BaseMarketplace {
     struct Sale {
         uint256 id; // The ID of the sale
         uint256 editionId; // The ID of the edition the sale will mint
+        uint256 platformPrimarySaleCommission;  // percentage to platform
     }
 
     /// @notice KO commission on every sale
-    uint256 public platformPrimarySaleCommission = 15_00000;  // 15.00000% // FIXME Q - do we have this per sale? Might make more sense?
+    uint256 constant internal defaultPlatformPrimarySaleCommission = 15_00000;  // 15.00000%, KO standard
 
     mapping(uint256 => Sale) public sales;
     mapping(uint256 => Phase[]) public phases;
     mapping(uint256 => mapping(uint256 => mapping(address => uint))) private totalMints;
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
-    BaseMarketplace(_accessControls, _koda, _platformAccount) {
-    }
+    BaseMarketplace(_accessControls, _koda, _platformAccount) {}
 
     function createSaleWithPhase(uint256 _editionId, uint256 _startTime, uint256 _endTime, uint256 _mintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint256 _priceInWei) public onlyAdmin {
         require(koda.editionExists(_editionId), 'edition does not exist');
@@ -56,7 +54,7 @@ contract BasicGatedSale is BaseMarketplace {
         uint256 saleId = saleIdCounter;
 
         // Assign the sale to the sales mapping
-        sales[saleId] = Sale({id : saleId, editionId : _editionId});
+        sales[saleId] = Sale({id : saleId, editionId : _editionId, platformPrimarySaleCommission: defaultPlatformPrimarySaleCommission});
 
         phases[saleId].push(Phase({
         startTime : _startTime,
@@ -82,7 +80,16 @@ contract BasicGatedSale is BaseMarketplace {
 
         // sort payments
         Sale memory sale = sales[_saleId];
-        _processSale(sale.editionId, msg.value, msg.sender, address(0x0)); // FIXME do we just send all the money?
+        (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(sale.editionId);
+
+        // split money // FIXME do we just send all the money?
+        _handleEditionSaleFunds(sale.editionId, creator, receiver, msg.value, sale.platformPrimarySaleCommission);
+
+        // send token to buyer (assumes approval has been made, if not then this will fail)
+        koda.safeTransferFrom(creator, msg.sender, tokenId);
+
+        // FIXME this is a bit pointless - maybe move back...
+        _processSale(sale.editionId, msg.value, msg.sender, creator); // FIXME do we just send all the money?
 
         emit MintFromSale(_saleId, sale.editionId, msg.sender, _mintCount);
     }
@@ -103,16 +110,7 @@ contract BasicGatedSale is BaseMarketplace {
         address _buyer,
         address _seller
     ) internal override returns (uint256) {
-
-        (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
-
-        // split money
-        _handleEditionSaleFunds(_editionId, creator, receiver, _paymentAmount);
-
-        // send token to buyer (assumes approval has been made, if not then this will fail)
-        koda.safeTransferFrom(creator, _buyer, tokenId);
-
-        return tokenId;
+        return 0;
     }
 
     // not used
@@ -120,8 +118,8 @@ contract BasicGatedSale is BaseMarketplace {
         return false;
     }
 
-    function _handleEditionSaleFunds(uint256 _editionId, address _creator, address _receiver, uint256 _paymentAmount) internal {
-        uint256 koCommission = (_paymentAmount / modulo) * platformPrimarySaleCommission;
+    function _handleEditionSaleFunds(uint256 _editionId, address _creator, address _receiver, uint256 _paymentAmount, uint256 _platformPrimarySaleCommission) internal {
+        uint256 koCommission = (_paymentAmount / modulo) * _platformPrimarySaleCommission;
         if (koCommission > 0) {
             (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
             require(koCommissionSuccess, "commission payment failed");
@@ -131,8 +129,9 @@ contract BasicGatedSale is BaseMarketplace {
         require(success, "payment failed");
     }
 
-    function updatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission) public onlyAdmin {
-        platformPrimarySaleCommission = _platformPrimarySaleCommission;
-        emit AdminUpdatePlatformPrimarySaleCommission(_platformPrimarySaleCommission);
+    function updatePlatformPrimarySaleCommission(uint256 _saleId, uint256 _platformPrimarySaleCommission) public onlyAdmin {
+        Sale storage sale = sales[_saleId];
+        sale.platformPrimarySaleCommission = _platformPrimarySaleCommission;
+        emit AdminUpdatePlatformPrimarySaleCommission(_platformPrimarySaleCommission); // FIXME needs new event with both params
     }
 }

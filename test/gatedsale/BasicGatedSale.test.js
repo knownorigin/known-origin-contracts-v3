@@ -522,8 +522,9 @@ contract('BasicGatedSale tests...', function (accounts) {
             describe('updatePlatformPrimarySaleCommission', () => {
                 const new_commission = new BN('1550000');
 
-                it('updates the reserve auction length as admin', async () => {
-                    const {receipt} = await this.basicGatedSale.updatePlatformPrimarySaleCommission(new_commission, {from: owner});
+                // FIXME bit weak - read again to check it
+                it('updates the platform primary sale commission as admin', async () => {
+                    const {receipt} = await this.basicGatedSale.updatePlatformPrimarySaleCommission(ONE, new_commission, {from: owner});
 
                     await expectEvent(receipt, 'AdminUpdatePlatformPrimarySaleCommission', {
                         _platformPrimarySaleCommission: new_commission
@@ -532,7 +533,7 @@ contract('BasicGatedSale tests...', function (accounts) {
 
                 it('Reverts when not admin', async () => {
                     await expectRevert(
-                        this.basicGatedSale.updatePlatformPrimarySaleCommission(new_commission, {from: artist3}),
+                        this.basicGatedSale.updatePlatformPrimarySaleCommission(ONE, new_commission, {from: artist3}),
                         'Caller not admin'
                     );
                 });
