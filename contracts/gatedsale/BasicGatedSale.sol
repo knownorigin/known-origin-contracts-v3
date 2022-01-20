@@ -41,12 +41,14 @@ contract BasicGatedSale is BaseMarketplace {
     /// @notice KO commission on every sale
     uint256 constant internal defaultPlatformPrimarySaleCommission = 15_00000;  // 15.00000%, KO standard
 
+    /// @dev sales is a mapping of sale id => Sale
     mapping(uint256 => Sale) public sales;
+    /// @dev phases is a mapping of sale id => array of associated phases
     mapping(uint256 => Phase[]) public phases;
+    /// @dev totalMints is a mapping of sale id => phase id => address => total minted by that address
     mapping(uint256 => mapping(uint256 => mapping(address => uint))) private totalMints;
-
-    // editionid => saleID for lookup, with getter
-    // TODO mapping of edition to ID, to check if gated sale
+    /// @dev editionToSale is a mapping of edition id => sale id
+    mapping(uint256 => uint256) public editionToSale;
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
     BaseMarketplace(_accessControls, _koda, _platformAccount) {}
@@ -61,9 +63,11 @@ contract BasicGatedSale is BaseMarketplace {
         saleIdCounter += 1;
         uint256 saleId = saleIdCounter;
 
-        // Assign the sale to the sales mapping
+        // Assign the sale to the sales and editionToSale mappings
         sales[saleId] = Sale({id : saleId, editionId : _editionId, platformPrimarySaleCommission: defaultPlatformPrimarySaleCommission});
+        editionToSale[_editionId] = saleId;
 
+        // Add the phase to the phases mapping
         phases[saleId].push(Phase({
         startTime : _startTime,
         endTime : _endTime,
@@ -99,7 +103,7 @@ contract BasicGatedSale is BaseMarketplace {
         koda.safeTransferFrom(creator, msg.sender, tokenId);
 
         // FIXME this is a bit pointless - maybe move back...
-        _processSale(sale.editionId, msg.value, msg.sender, creator); // FIXME do we just send all the money?
+//        _processSale(sale.editionId, msg.value, msg.sender, creator); // FIXME do we just send all the money?
 
         emit MintFromSale(_saleId, sale.editionId, msg.sender, _mintCount);
     }

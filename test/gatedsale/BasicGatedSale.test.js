@@ -27,6 +27,7 @@ const MockERC20 = artifacts.require('MockERC20');
 //     }
 // }
 
+this.erc20Token = undefined;
 contract('BasicGatedSale tests...', function (accounts) {
     const [owner, admin, koCommission, contract, artist1, artist2, artist3, artistDodgy, newAccessControls] = accounts;
 
@@ -124,17 +125,20 @@ contract('BasicGatedSale tests...', function (accounts) {
                     merkleIPFSHash,
                     priceInWei
                 } = await this.basicGatedSale.phases(1, 0)
+
                 expect(startTime.toString()).to.not.equal('0')
                 expect(endTime.toString()).to.not.equal('0')
                 expect(mintLimit.toString()).to.be.equal('10')
                 expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot)
                 expect(merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH)
                 expect(priceInWei.toString()).to.be.equal(ether('0.1').toString())
+
+                const mappingId = await this.basicGatedSale.editionToSale(editionId)
+                expect(mappingId.toString()).to.be.equal(id.toString())
             })
 
 
             it('cannot create a sale without the right role', async () => {
-
                 await expectRevert(
                     this.basicGatedSale.createSaleWithPhase(
                         FIRST_MINTED_TOKEN_ID,
@@ -146,6 +150,21 @@ contract('BasicGatedSale tests...', function (accounts) {
                         ether('0.1'),
                         {from: artistDodgy}),
                     'Caller not admin'
+                )
+            });
+
+            it('should revert if given a non existent edition ID', async () => {
+                await expectRevert(
+                    this.basicGatedSale.createSaleWithPhase(
+                        FIRST_MINTED_TOKEN_ID.add(new BN('5000')),
+                        this.saleStart,
+                        this.saleEnd,
+                        new BN('10'),
+                        this.merkleProof.merkleRoot,
+                        MOCK_MERKLE_HASH,
+                        ether('0.1'),
+                        {from: admin}),
+                    'edition does not exist'
                 )
             });
 
