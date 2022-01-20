@@ -26,6 +26,11 @@ contract BasicGatedSale is BaseMarketplace {
         uint256 priceInWei; // Price in wei for one mint
     }
 
+    // TODO start and end 128
+    //    mint limit 16
+    //    price 128
+    //    move price up to next to mint, ordered in 32 size slots
+
     /// @notice Sale represents a gated sale, with mapping links to different sale phases
     struct Sale {
         uint256 id; // The ID of the sale
@@ -39,6 +44,9 @@ contract BasicGatedSale is BaseMarketplace {
     mapping(uint256 => Sale) public sales;
     mapping(uint256 => Phase[]) public phases;
     mapping(uint256 => mapping(uint256 => mapping(address => uint))) private totalMints;
+
+    // editionid => saleID for lookup, with getter
+    // TODO mapping of edition to ID, to check if gated sale
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
     BaseMarketplace(_accessControls, _koda, _platformAccount) {}
@@ -68,7 +76,9 @@ contract BasicGatedSale is BaseMarketplace {
         emit SaleWithPhaseCreated(saleId, _editionId, _startTime, _endTime, _mintLimit, _merkleRoot, _merkleIPFSHash, _priceInWei);
     }
 
-    function mint(uint256 _saleId, uint256 _salePhaseId, uint256 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant {
+    function mint(uint256 _saleId, uint256 _salePhaseId, uint256 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant whenNotPaused {
+        require(_salePhaseId <= phases[_saleId].length - 1, 'phase id does not exist');
+
         Phase memory phase = phases[_saleId][_salePhaseId];
 
         require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale phase not in progress');
