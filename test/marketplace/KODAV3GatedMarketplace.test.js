@@ -548,110 +548,111 @@ contract('BasicGatedSale tests...', function (accounts) {
                 });
             });
 
-            describe('updatePlatformPrimarySaleCommission', () => {
-                const new_commission = new BN('1550000');
 
-                it('updates the platform primary sale commission as admin', async () => {
-                    const {receipt} = await this.basicGatedSale.updatePlatformPrimarySaleCommission(ONE, new_commission, {from: admin});
+            describe('pause & unpause', async () => {
 
-                    await expectEvent(receipt, 'AdminUpdatePlatformPrimarySaleCommissionGatedSale', {
-                        saleId: ONE,
-                        platformPrimarySaleCommission: new_commission
+                it('can be paused and unpaused by admin', async () => {
+                    let receipt = await this.basicGatedSale.pause({from: admin});
+                    expectEvent(receipt, 'Paused', {
+                        account: admin
                     });
+
+                    let isPaused = await this.basicGatedSale.paused();
+                    expect(isPaused).to.be.equal(true);
+
+
+                    receipt = await this.basicGatedSale.unpause({from: admin});
+                    expectEvent(receipt, 'Unpaused', {
+                        account: admin
+                    });
+
+                    isPaused = await this.basicGatedSale.paused();
+                    expect(isPaused).to.be.equal(false);
                 });
 
-                it('Reverts when not admin', async () => {
+                it('pause - reverts when not admin', async () => {
                     await expectRevert(
-                        this.basicGatedSale.updatePlatformPrimarySaleCommission(ONE, new_commission, {from: artist3}),
-                        'Caller not admin'
-                    );
+                        this.basicGatedSale.pause({from: artist3}),
+                        "Caller not admin"
+                    )
                 });
+
+                it('unpause - reverts when not admin', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.unpause({from: artist3}),
+                        "Caller not admin"
+                    )
+                });
+
+                it('minting is disabled when the contract is paused', async () => {
+                    await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
+
+                    let receipt = await this.basicGatedSale.pause({from: admin});
+                    expectEvent(receipt, 'Paused', {
+                        account: admin
+                    });
+
+                    let isPaused = await this.basicGatedSale.paused();
+                    expect(isPaused).to.be.equal(true);
+
+                    await expectRevert(
+                        this.basicGatedSale.mint(
+                            ONE,
+                            0,
+                            ONE,
+                            this.merkleProof.claims[artist2].index,
+                            this.merkleProof.claims[artist2].proof,
+                            {
+                                from: artist2,
+                                value: ether('0.1')
+                            }),
+                        'Pausable: paused'
+                    )
+
+                    receipt = await this.basicGatedSale.unpause({from: admin});
+                    expectEvent(receipt, 'Unpaused', {
+                        account: admin
+                    });
+
+                    isPaused = await this.basicGatedSale.paused();
+                    expect(isPaused).to.be.equal(false);
+
+
+                    const salesReceipt = await this.basicGatedSale.mint(ONE, 0, ONE, this.merkleProof.claims[artist2].index, this.merkleProof.claims[artist2].proof, {
+                        from: artist2,
+                        value: ether('0.1')
+                    })
+
+                    expectEvent(salesReceipt, 'MintFromSale', {
+                        saleId: ONE,
+                        editionId: FIRST_MINTED_TOKEN_ID,
+                        account: artist2,
+                        mintCount: ONE
+                    });
+
+                    expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2);
+                })
             });
         });
 
-        describe('pause & unpause', async () => {
+        describe('updatePlatformPrimarySaleCommission', () => {
+            const new_commission = new BN('1550000');
 
-            it('can be paused and unpaused by admin', async () => {
-                let receipt = await this.basicGatedSale.pause({from: admin});
-                expectEvent(receipt, 'Paused', {
-                    account: admin
-                });
+            it('updates the platform primary sale commission as admin', async () => {
+                const {receipt} = await this.basicGatedSale.updatePlatformPrimarySaleCommission(ONE, new_commission, {from: admin});
 
-                let isPaused = await this.basicGatedSale.paused();
-                expect(isPaused).to.be.equal(true);
-
-
-                receipt = await this.basicGatedSale.unpause({from: admin});
-                expectEvent(receipt, 'Unpaused', {
-                    account: admin
-                });
-
-                isPaused = await this.basicGatedSale.paused();
-                expect(isPaused).to.be.equal(false);
-            });
-
-            it('pause - reverts when not admin', async () => {
-                await expectRevert(
-                    this.basicGatedSale.pause({from: artist3}),
-                    "Caller not admin"
-                )
-            });
-
-            it('unpause - reverts when not admin', async () => {
-                await expectRevert(
-                    this.basicGatedSale.unpause({from: artist3}),
-                    "Caller not admin"
-                )
-            });
-
-            it('minting is disabled when the contract is paused', async () => {
-                await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
-
-                let receipt = await this.basicGatedSale.pause({from: admin});
-                expectEvent(receipt, 'Paused', {
-                    account: admin
-                });
-
-                let isPaused = await this.basicGatedSale.paused();
-                expect(isPaused).to.be.equal(true);
-
-                await expectRevert(
-                    this.basicGatedSale.mint(
-                        ONE,
-                        0,
-                        ONE,
-                        this.merkleProof.claims[artist2].index,
-                        this.merkleProof.claims[artist2].proof,
-                        {
-                            from: artist2,
-                            value: ether('0.1')
-                        }),
-                    'Pausable: paused'
-                )
-
-                receipt = await this.basicGatedSale.unpause({from: admin});
-                expectEvent(receipt, 'Unpaused', {
-                    account: admin
-                });
-
-                isPaused = await this.basicGatedSale.paused();
-                expect(isPaused).to.be.equal(false);
-
-
-                const salesReceipt = await this.basicGatedSale.mint(ONE, 0, ONE, this.merkleProof.claims[artist2].index, this.merkleProof.claims[artist2].proof, {
-                    from: artist2,
-                    value: ether('0.1')
-                })
-
-                expectEvent(salesReceipt, 'MintFromSale', {
+                await expectEvent(receipt, 'AdminUpdatePlatformPrimarySaleCommissionGatedSale', {
                     saleId: ONE,
-                    editionId: FIRST_MINTED_TOKEN_ID,
-                    account: artist2,
-                    mintCount: ONE
+                    platformPrimarySaleCommission: new_commission
                 });
+            });
 
-                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2);
-            })
+            it('Reverts when not admin', async () => {
+                await expectRevert(
+                    this.basicGatedSale.updatePlatformPrimarySaleCommission(ONE, new_commission, {from: artist3}),
+                    'Caller not admin'
+                );
+            });
         });
 
         describe('MerkleTree', async () => {

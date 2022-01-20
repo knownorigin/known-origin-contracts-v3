@@ -9,9 +9,11 @@ import {IKODAV3} from "../core/IKODAV3.sol";
 
 import "hardhat/console.sol";
 
-contract KODAV3GatedMarketplace  is BaseMarketplace {
+contract KODAV3GatedMarketplace is BaseMarketplace {
     /// @notice emitted when a sale, with a single phase, is created
     event SaleWithPhaseCreated(uint256 indexed saleId, uint256 indexed editionId);
+    /// @notice emitted when a new phase is added to a sale
+    event PhaseCreated(uint256 indexed saleId, uint256 indexed editionId);
     /// @notice emitted when someone mints from a sale
     event MintFromSale(uint256 indexed saleId, uint256 indexed editionId, address account, uint256 mintCount);
     /// @notice emitted when primary sales commission is updated for a sale
@@ -65,7 +67,8 @@ contract KODAV3GatedMarketplace  is BaseMarketplace {
     onlyCreatorOrAdmin(_editionId) {
         require(koda.editionExists(_editionId), 'edition does not exist');
         require(_endTime > _startTime, 'phase end time must be after start time');
-        require(_mintLimit > 0 && _mintLimit < koda.getSizeOfEdition(_editionId), 'phase mint limit must be greater than 0'); // TODO should this be per phase or overall sale?
+        require(_mintLimit > 0 && _mintLimit < koda.getSizeOfEdition(_editionId), 'phase mint limit must be greater than 0');
+        // TODO should this be per phase or overall sale?
 
         uint256 saleId = saleIdCounter += 1;
 
@@ -95,7 +98,8 @@ contract KODAV3GatedMarketplace  is BaseMarketplace {
         require(totalMints[_saleId][_salePhaseId][_msgSender()] + _mintCount <= phase.mintLimit, 'cannot exceed total mints for sale phase');
         require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale phase not in progress');
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
-        require(canMint(_saleId, _salePhaseId, _index, _msgSender(), _merkleProof), 'address not able to mint from sale');         // Check the msg sender is on the pre list
+        require(canMint(_saleId, _salePhaseId, _index, _msgSender(), _merkleProof), 'address not able to mint from sale');
+        // Check the msg sender is on the pre list
 
         // Up the mint count for the user
         totalMints[_saleId][_salePhaseId][_msgSender()] += _mintCount;
@@ -104,16 +108,44 @@ contract KODAV3GatedMarketplace  is BaseMarketplace {
         Sale memory sale = sales[_saleId];
         (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(sale.editionId);
 
-        // split money // TODO dont pass msg.value, send sender (context)
+        // split money
         _handleEditionSaleFunds(_saleId, sale.editionId, creator, receiver, msg.value);
 
         // send token to buyer (assumes approval has been made, if not then this will fail)
-        koda.safeTransferFrom(creator, _msgSender(), tokenId); // TODO need to handle multiple mints
+        koda.safeTransferFrom(creator, _msgSender(), tokenId);
+        // TODO need to handle multiple mints
 
         emit MintFromSale(_saleId, sale.editionId, _msgSender(), _mintCount);
     }
 
-    // TODO remove phase, pause phase, pause sale?
+    function createPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _mintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei)
+    public
+    whenNotPaused
+    onlyCreatorOrAdmin(_editionId) {
+        require(koda.editionExists(_editionId), 'edition does not exist');
+        require(_endTime > _startTime, 'phase end time must be after start time');
+        require(_mintLimit > 0 && _mintLimit < koda.getSizeOfEdition(_editionId), 'phase mint limit must be greater than 0');
+        // TODO do we need to tot up all mint limits for this check?
+
+        uint256 saleId = editionToSale[_editionId];
+        require(saleId > 0, 'no sale associated with edition id');
+
+        Sale memory sale = sales[saleId];
+
+        // Add the phase to the phases mapping
+        phases[sale.id].push(Phase({
+        startTime : _startTime,
+        endTime : _endTime,
+        mintLimit : _mintLimit,
+        merkleRoot : _merkleRoot,
+        merkleIPFSHash : _merkleIPFSHash,
+        priceInWei : _priceInWei
+        }));
+
+        emit PhaseCreated(sale.id, _editionId);
+    }
+
+    //  TODO functions: addPhase, removePhase, pauseSale, endPhase?
 
     // FIXME need internal and public, profile first and make decision?
     function canMint(uint256 _saleId, uint _salePhaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (bool) {
