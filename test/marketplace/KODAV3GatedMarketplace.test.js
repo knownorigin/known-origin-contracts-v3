@@ -82,12 +82,12 @@ contract('BasicGatedSale tests...', function (accounts) {
             {from: artist1});
 
         expectEvent(receipt, 'SaleWithPhaseCreated', {
-            saleId: new BN('1'),
+            saleId: ONE,
             editionId: FIRST_MINTED_TOKEN_ID
         });
     });
 
-    describe('BasicGatedSale', async () => {
+    describe.only('BasicGatedSale', async () => {
 
         describe('createSaleWithPhase', async () => {
 
@@ -202,9 +202,9 @@ contract('BasicGatedSale tests...', function (accounts) {
                 await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
 
                 const salesReceipt = await this.basicGatedSale.mint(
-                    new BN('1'),
+                    ONE,
                     0,
-                    new BN('1'),
+                    ONE,
                     this.merkleProof.claims[artist1].index,
                     this.merkleProof.claims[artist1].proof,
                     {
@@ -213,10 +213,10 @@ contract('BasicGatedSale tests...', function (accounts) {
                     })
 
                 expectEvent(salesReceipt, 'MintFromSale', {
-                    saleId: new BN('1'),
+                    saleId: ONE,
                     editionId: FIRST_MINTED_TOKEN_ID,
                     account: artist1,
-                    mintCount: new BN('1')
+                    mintCount: ONE
                 });
 
                 expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist1);
@@ -227,7 +227,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                 await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
 
                 const salesReceipt = await this.basicGatedSale.mint(
-                    new BN('1'),
+                    ONE,
                     0,
                     new BN('3'),
                     this.merkleProof.claims[artist1].index,
@@ -238,7 +238,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                     })
 
                 expectEvent(salesReceipt, 'MintFromSale', {
-                    saleId: new BN('1'),
+                    saleId: ONE,
                     editionId: FIRST_MINTED_TOKEN_ID,
                     account: artist1,
                     mintCount: new BN('3')
@@ -255,9 +255,9 @@ contract('BasicGatedSale tests...', function (accounts) {
 
                 await expectRevert(
                     this.basicGatedSale.mint(
-                        new BN('1'),
+                        ONE,
                         0,
-                        new BN('1'),
+                        ONE,
                         this.merkleProof.claims[artist1].index,
                         this.merkleProof.claims[artist1].proof,
                         {from: artist1, value: ether('0.1')}
@@ -271,9 +271,9 @@ contract('BasicGatedSale tests...', function (accounts) {
 
                 await expectRevert(
                     this.basicGatedSale.mint(
-                        new BN('1'),
+                        ONE,
                         3,
-                        new BN('1'),
+                        ONE,
                         this.merkleProof.claims[artist1].index,
                         this.merkleProof.claims[artist1].proof,
                         {from: artist1, value: ether('0.1')}
@@ -287,9 +287,9 @@ contract('BasicGatedSale tests...', function (accounts) {
 
                 await expectRevert(
                     this.basicGatedSale.mint(
-                        new BN('1'),
+                        ONE,
                         0,
-                        new BN('1'),
+                        ONE,
                         this.merkleProof.claims[artist1].index,
                         this.merkleProof.claims[artist1].proof,
                         {from: artist1, value: ether('0.1')}
@@ -303,7 +303,7 @@ contract('BasicGatedSale tests...', function (accounts) {
 
                 await expectRevert(
                     this.basicGatedSale.mint(
-                        new BN('1'),
+                        ONE,
                         0,
                         new BN('3'),
                         this.merkleProof.claims[artist1].index,
@@ -319,9 +319,9 @@ contract('BasicGatedSale tests...', function (accounts) {
 
                 await expectRevert(
                     this.basicGatedSale.mint(
-                        new BN('1'),
+                        ONE,
                         0,
-                        new BN('1'),
+                        ONE,
                         this.merkleProof.claims[artist1].index,
                         this.merkleProof.claims[artist1].proof,
                         {from: artistDodgy, value: ether('0.1')}
@@ -333,13 +333,13 @@ contract('BasicGatedSale tests...', function (accounts) {
             it('reverts if an address has exceeded its mint limit', async () => {
                 await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
 
-                const salesReceipt = await this.basicGatedSale.mint(new BN('1'), 0, new BN('9'), this.merkleProof.claims[artist2].index, this.merkleProof.claims[artist2].proof, {
+                const salesReceipt = await this.basicGatedSale.mint(ONE, 0, new BN('9'), this.merkleProof.claims[artist2].index, this.merkleProof.claims[artist2].proof, {
                     from: artist2,
                     value: ether('0.9')
                 })
 
                 expectEvent(salesReceipt, 'MintFromSale', {
-                    saleId: new BN('1'),
+                    saleId: ONE,
                     editionId: FIRST_MINTED_TOKEN_ID,
                     account: artist2,
                     mintCount: new BN('9')
@@ -347,7 +347,7 @@ contract('BasicGatedSale tests...', function (accounts) {
 
                 await expectRevert(
                     this.basicGatedSale.mint(
-                        new BN('1'),
+                        ONE,
                         0,
                         new BN('2'),
                         this.merkleProof.claims[artist2].index,
@@ -551,12 +551,12 @@ contract('BasicGatedSale tests...', function (accounts) {
             describe('updatePlatformPrimarySaleCommission', () => {
                 const new_commission = new BN('1550000');
 
-                // FIXME bit weak - read again to check it
                 it('updates the platform primary sale commission as admin', async () => {
-                    const {receipt} = await this.basicGatedSale.updatePlatformPrimarySaleCommission(ONE, new_commission, {from: owner});
+                    const {receipt} = await this.basicGatedSale.updatePlatformPrimarySaleCommission(ONE, new_commission, {from: admin});
 
-                    await expectEvent(receipt, 'AdminUpdatePlatformPrimarySaleCommission', {
-                        _platformPrimarySaleCommission: new_commission
+                    await expectEvent(receipt, 'AdminUpdatePlatformPrimarySaleCommissionGatedSale', {
+                        saleId: ONE,
+                        platformPrimarySaleCommission: new_commission
                     });
                 });
 
@@ -617,9 +617,9 @@ contract('BasicGatedSale tests...', function (accounts) {
 
                 await expectRevert(
                     this.basicGatedSale.mint(
-                        new BN('1'),
+                        ONE,
                         0,
-                        new BN('1'),
+                        ONE,
                         this.merkleProof.claims[artist2].index,
                         this.merkleProof.claims[artist2].proof,
                         {
@@ -638,16 +638,16 @@ contract('BasicGatedSale tests...', function (accounts) {
                 expect(isPaused).to.be.equal(false);
 
 
-                const salesReceipt = await this.basicGatedSale.mint(new BN('1'), 0, new BN('1'), this.merkleProof.claims[artist2].index, this.merkleProof.claims[artist2].proof, {
+                const salesReceipt = await this.basicGatedSale.mint(ONE, 0, ONE, this.merkleProof.claims[artist2].index, this.merkleProof.claims[artist2].proof, {
                     from: artist2,
                     value: ether('0.1')
                 })
 
                 expectEvent(salesReceipt, 'MintFromSale', {
-                    saleId: new BN('1'),
+                    saleId: ONE,
                     editionId: FIRST_MINTED_TOKEN_ID,
                     account: artist2,
-                    mintCount: new BN('1')
+                    mintCount: ONE
                 });
 
                 expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2);
@@ -662,7 +662,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                     this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
 
                     expect(await this.basicGatedSale.canMint(
-                        new BN('1'),
+                        ONE,
                         0,
                         this.merkleProof.claims[artist1].index,
                         artist1,
@@ -670,7 +670,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                     ).to.be.equal(true);
 
                     expect(await this.basicGatedSale.canMint(
-                        new BN('1'),
+                        ONE,
                         0,
                         this.merkleProof.claims[artist1].index,
                         artistDodgy,

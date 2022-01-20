@@ -14,6 +14,8 @@ contract KODAV3GatedMarketplace  is BaseMarketplace {
     event SaleWithPhaseCreated(uint256 indexed saleId, uint256 indexed editionId);
     /// @notice emitted when someone mints from a sale
     event MintFromSale(uint256 indexed saleId, uint256 indexed editionId, address account, uint256 mintCount);
+    /// @notice emitted when primary sales commission is updated for a sale
+    event AdminUpdatePlatformPrimarySaleCommissionGatedSale(uint256 indexed saleId, uint256 platformPrimarySaleCommission);
 
     /// @dev incremental counter for the ID of a sale
     uint256 private saleIdCounter;
@@ -31,12 +33,8 @@ contract KODAV3GatedMarketplace  is BaseMarketplace {
     /// @notice Sale represents a gated sale, with mapping links to different sale phases
     struct Sale {
         uint256 id; // The ID of the sale
-        uint256 platformPrimarySaleCommission;  // percentage to platform // TODO change to default with override
         uint256 editionId; // The ID of the edition the sale will mint
     }
-
-    /// @notice KO commission on every sale
-    uint256 constant internal defaultPlatformPrimarySaleCommission = 15_00000;  // 15.00000%, KO standard
 
     // TODO can these mapping ids be smaller uints?
     /// @dev sales is a mapping of sale id => Sale
@@ -47,6 +45,8 @@ contract KODAV3GatedMarketplace  is BaseMarketplace {
     mapping(uint256 => mapping(uint256 => mapping(address => uint))) private totalMints;
     /// @dev editionToSale is a mapping of edition id => sale id
     mapping(uint256 => uint256) public editionToSale;
+    /// @dev saleCommission is a mapping of sale id => commission %, if 0 its default 15_00000 (15%)
+    mapping(uint256 => uint256) private saleCommission;
 
     modifier onlyCreatorOrAdmin(uint256 _editionId) {
         require(
@@ -70,7 +70,7 @@ contract KODAV3GatedMarketplace  is BaseMarketplace {
         uint256 saleId = saleIdCounter += 1;
 
         // Assign the sale to the sales and editionToSale mappings
-        sales[saleId] = Sale({id : saleId, editionId : _editionId, platformPrimarySaleCommission: defaultPlatformPrimarySaleCommission});
+        sales[saleId] = Sale({id : saleId, editionId : _editionId});
         editionToSale[_editionId] = saleId;
 
         // Add the phase to the phases mapping
@@ -105,7 +105,7 @@ contract KODAV3GatedMarketplace  is BaseMarketplace {
         (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(sale.editionId);
 
         // split money // TODO dont pass msg.value, send sender (context)
-        _handleEditionSaleFunds(sale.editionId, creator, receiver, msg.value, sale.platformPrimarySaleCommission);
+        _handleEditionSaleFunds(_saleId, sale.editionId, creator, receiver, msg.value);
 
         // send token to buyer (assumes approval has been made, if not then this will fail)
         koda.safeTransferFrom(creator, _msgSender(), tokenId); // TODO need to handle multiple mints
@@ -139,8 +139,9 @@ contract KODAV3GatedMarketplace  is BaseMarketplace {
         return false;
     }
 
-    function _handleEditionSaleFunds(uint256 _editionId, address _creator, address _receiver, uint256 _paymentAmount, uint256 _platformPrimarySaleCommission) internal {
-        uint256 koCommission = (_paymentAmount / modulo) * _platformPrimarySaleCommission;
+    function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _creator, address _receiver, uint256 _paymentAmount) internal {
+        uint256 platformPrimarySaleCommission = saleCommission[_saleId] > 0 ? saleCommission[_saleId] : 15_00000;
+        uint256 koCommission = (_paymentAmount / modulo) * platformPrimarySaleCommission;
         if (koCommission > 0) {
             (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
             require(koCommissionSuccess, "commission payment failed");
@@ -150,10 +151,9 @@ contract KODAV3GatedMarketplace  is BaseMarketplace {
         require(success, "payment failed");
     }
 
-    // TODO not on sale to update default with overrides
     function updatePlatformPrimarySaleCommission(uint256 _saleId, uint256 _platformPrimarySaleCommission) public onlyAdmin {
-        Sale storage sale = sales[_saleId];
-        sale.platformPrimarySaleCommission = _platformPrimarySaleCommission;
-        emit AdminUpdatePlatformPrimarySaleCommission(_platformPrimarySaleCommission); // FIXME needs new event with both params
+        saleCommission[_saleId] = _platformPrimarySaleCommission;
+
+        emit AdminUpdatePlatformPrimarySaleCommissionGatedSale(_saleId, _platformPrimarySaleCommission);
     }
 }
