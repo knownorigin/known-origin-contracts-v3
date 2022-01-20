@@ -5,29 +5,15 @@ const {ZERO_ADDRESS} = constants;
 const {parseBalanceMap} = require('../utils/parse-balance-map');
 const {buildArtistMerkleInput} = require('../utils/merkle-tools');
 
-const BasicGatedSale = artifacts.require('BasicGatedSale');
+const KODAV3GatedMarketplace = artifacts.require('KODAV3GatedMarketplace');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 const MockERC20 = artifacts.require('MockERC20');
-//
-// async function mockTime() {
-//     const timeNow = await time.latest()
-//
-//     const saleStart = new Date(Number(timeNow.toString()));
-//     saleStart.setDate(saleStart.getDate() + 1);
-//     const saleEnd = new Date(Number(timeNow.toString()));
-//     saleEnd.setDate(saleEnd.getDate() + 3);
-//
-//     return {
-//         timeNow: timeNow,
-//         saleStart: new BN(saleStart.getTime().toString()),
-//         saleEnd: new BN(saleEnd.getTime().toString())
-//     }
-// }
 
 this.erc20Token = undefined;
+
 contract('BasicGatedSale tests...', function (accounts) {
     const [owner, admin, koCommission, contract, artist1, artist2, artist3, artistDodgy, newAccessControls] = accounts;
 
@@ -67,7 +53,7 @@ contract('BasicGatedSale tests...', function (accounts) {
         // Note: this is a test hack so we can mint tokens direct
         await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
 
-        this.basicGatedSale = await BasicGatedSale.new(this.accessControls.address, this.token.address, koCommission, {from: owner});
+        this.basicGatedSale = await KODAV3GatedMarketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner});
 
         await this.accessControls.grantRole(this.CONTRACT_ROLE, this.basicGatedSale.address, {from: owner});
 
@@ -93,21 +79,15 @@ contract('BasicGatedSale tests...', function (accounts) {
             this.merkleProof.merkleRoot,
             MOCK_MERKLE_HASH,
             ether('0.1'),
-            {from: admin});
+            {from: artist1});
 
         expectEvent(receipt, 'SaleWithPhaseCreated', {
-            saleID: new BN('1'),
-            editionID: FIRST_MINTED_TOKEN_ID,
-            startTime: this.saleStart,
-            endTime: this.saleEnd,
-            mintLimit: new BN('10'),
-            merkleRoot: this.merkleProof.merkleRoot,
-            merkleIPFSHash: MOCK_MERKLE_HASH,
-            priceInWei: ether('0.1')
+            saleId: new BN('1'),
+            editionId: FIRST_MINTED_TOKEN_ID
         });
     });
 
-    describe.only('BasicGatedSale', async () => {
+    describe('BasicGatedSale', async () => {
 
         describe('createSaleWithPhase', async () => {
 
@@ -137,6 +117,23 @@ contract('BasicGatedSale tests...', function (accounts) {
                 expect(mappingId.toString()).to.be.equal(id.toString())
             })
 
+            it('can create a new sale and phase if admin', async () => {
+                const receipt = await this.basicGatedSale.createSaleWithPhase(
+                    FIRST_MINTED_TOKEN_ID,
+                    this.saleStart,
+                    this.saleEnd,
+                    new BN('10'),
+                    this.merkleProof.merkleRoot,
+                    MOCK_MERKLE_HASH,
+                    ether('0.1'),
+                    {from: admin})
+
+                expectEvent(receipt, 'SaleWithPhaseCreated', {
+                    saleId: new BN('2'),
+                    editionId: FIRST_MINTED_TOKEN_ID
+                });
+            })
+
 
             it('cannot create a sale without the right role', async () => {
                 await expectRevert(
@@ -149,7 +146,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                         MOCK_MERKLE_HASH,
                         ether('0.1'),
                         {from: artistDodgy}),
-                    'Caller not admin'
+                    'Caller not creator or admin'
                 )
             });
 
@@ -165,21 +162,6 @@ contract('BasicGatedSale tests...', function (accounts) {
                         ether('0.1'),
                         {from: admin}),
                     'edition does not exist'
-                )
-            });
-
-            it('should revert if given an invalid start time', async () => {
-                await expectRevert(
-                    this.basicGatedSale.createSaleWithPhase(
-                        FIRST_MINTED_TOKEN_ID,
-                        this.saleStart.sub(time.duration.days(7)),
-                        this.saleEnd,
-                        new BN('10'),
-                        this.merkleProof.merkleRoot,
-                        MOCK_MERKLE_HASH,
-                        ether('0.1'),
-                        {from: admin}),
-                    'phase start time must be in the future'
                 )
             });
 
@@ -231,8 +213,8 @@ contract('BasicGatedSale tests...', function (accounts) {
                     })
 
                 expectEvent(salesReceipt, 'MintFromSale', {
-                    saleID: new BN('1'),
-                    editionID: FIRST_MINTED_TOKEN_ID,
+                    saleId: new BN('1'),
+                    editionId: FIRST_MINTED_TOKEN_ID,
                     account: artist1,
                     mintCount: new BN('1')
                 });
@@ -256,8 +238,8 @@ contract('BasicGatedSale tests...', function (accounts) {
                     })
 
                 expectEvent(salesReceipt, 'MintFromSale', {
-                    saleID: new BN('1'),
-                    editionID: FIRST_MINTED_TOKEN_ID,
+                    saleId: new BN('1'),
+                    editionId: FIRST_MINTED_TOKEN_ID,
                     account: artist1,
                     mintCount: new BN('3')
                 });
@@ -357,8 +339,8 @@ contract('BasicGatedSale tests...', function (accounts) {
                 })
 
                 expectEvent(salesReceipt, 'MintFromSale', {
-                    saleID: new BN('1'),
-                    editionID: FIRST_MINTED_TOKEN_ID,
+                    saleId: new BN('1'),
+                    editionId: FIRST_MINTED_TOKEN_ID,
                     account: artist2,
                     mintCount: new BN('9')
                 });
@@ -662,8 +644,8 @@ contract('BasicGatedSale tests...', function (accounts) {
                 })
 
                 expectEvent(salesReceipt, 'MintFromSale', {
-                    saleID: new BN('1'),
-                    editionID: FIRST_MINTED_TOKEN_ID,
+                    saleId: new BN('1'),
+                    editionId: FIRST_MINTED_TOKEN_ID,
                     account: artist2,
                     mintCount: new BN('1')
                 });
