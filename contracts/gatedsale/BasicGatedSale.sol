@@ -9,33 +9,36 @@ import {IKODAV3} from "../core/IKODAV3.sol";
 
 import "hardhat/console.sol";
 
-contract BasicGatedSale is BaseMarketplace {
+// TODO move to marketplace
+// TODO ID should be lowercase d
 
+// TODO KODAV3 naming convention, KODAV3GatedMarketplace
+contract BasicGatedSale is BaseMarketplace {
+    // TODO this only needs to be saleid editionid
     event SaleWithPhaseCreated(uint256 indexed saleID, uint256 indexed editionID, uint256 startTime, uint256 endTime, uint256 mintLimit, bytes32 merkleRoot, string merkleIPFSHash, uint256 priceInWei);
     event MintFromSale(uint256 indexed saleID, uint256 indexed editionID, address account, uint256 mintCount);
 
     uint256 private saleIdCounter;
 
-    /// @notice Phase represents a time structured part of a sale, i.e. VIP, pre sale or open sale
-    struct Phase {
-        uint256 startTime; // The start time of the sale as a whole
-        uint256 endTime; // The end time of the sale phase, also the beginning of the next phase if applicable
-        uint256 mintLimit; // The mint limit per wallet for the phase
-        bytes32 merkleRoot; // The merkle tree root for the phase
-        string merkleIPFSHash; // The IPFS hash referencing the merkle tree
-        uint256 priceInWei; // Price in wei for one mint
-    }
-
     // TODO start and end 128
     //    mint limit 16
     //    price 128
     //    move price up to next to mint, ordered in 32 size slots
+    /// @notice Phase represents a time structured part of a sale, i.e. VIP, pre sale or open sale
+    struct Phase {
+        uint256 startTime; // The start time of the sale as a whole
+        uint256 endTime; // The end time of the sale phase, also the beginning of the next phase if applicable
+        uint256 mintLimit; // The mint limit per wallet for the phase //TODO require(_editionSize > 0 && _editionSize <= MAX_EDITION_SIZE, "Invalid size");
+        uint256 priceInWei; // Price in wei for one mint
+        bytes32 merkleRoot; // The merkle tree root for the phase
+        string merkleIPFSHash; // The IPFS hash referencing the merkle tree
+    }
 
     /// @notice Sale represents a gated sale, with mapping links to different sale phases
     struct Sale {
         uint256 id; // The ID of the sale
+        uint256 platformPrimarySaleCommission;  // percentage to platform // TODO change to default with override
         uint256 editionId; // The ID of the edition the sale will mint
-        uint256 platformPrimarySaleCommission;  // percentage to platform
     }
 
     /// @notice KO commission on every sale
@@ -53,14 +56,16 @@ contract BasicGatedSale is BaseMarketplace {
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
     BaseMarketplace(_accessControls, _koda, _platformAccount) {}
 
-    function createSaleWithPhase(uint256 _editionId, uint256 _startTime, uint256 _endTime, uint256 _mintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint256 _priceInWei) public onlyAdmin {
+    // TODO edit to mirror structs
+    function createSaleWithPhase(uint256 _editionId, uint256 _startTime, uint256 _endTime, uint256 _mintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint256 _priceInWei) public whenNotPaused onlyAdmin {
+       // TODO switch from onlyAdmin to only artist and check that the msg.sender owns the edition
         require(koda.editionExists(_editionId), 'edition does not exist');
-        require(_startTime > block.timestamp, 'phase start time must be in the future');
+//        require(_startTime > block.timestamp, 'phase start time must be in the future'); // TODO drop this
         require(_endTime > _startTime, 'phase end time must be after start time');
-        require(_mintLimit > 0, 'phase mint limit must be greater than 0');
+        require(_mintLimit > 0, 'phase mint limit must be greater than 0'); // TODO greater than 0 and less than edition size, should this be per phase or overall sale?
 
         // Get the latest sale ID
-        saleIdCounter += 1;
+        saleIdCounter += 1; // TODO can you compress this to one line with ++
         uint256 saleId = saleIdCounter;
 
         // Assign the sale to the sales and editionToSale mappings
@@ -77,7 +82,7 @@ contract BasicGatedSale is BaseMarketplace {
         priceInWei : _priceInWei
         }));
 
-        emit SaleWithPhaseCreated(saleId, _editionId, _startTime, _endTime, _mintLimit, _merkleRoot, _merkleIPFSHash, _priceInWei);
+        emit SaleWithPhaseCreated(saleId, _editionId, _startTime, _endTime, _mintLimit, _merkleRoot, _merkleIPFSHash, _priceInWei); // TODO clean this
     }
 
     function mint(uint256 _saleId, uint256 _salePhaseId, uint256 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant whenNotPaused {
@@ -85,22 +90,25 @@ contract BasicGatedSale is BaseMarketplace {
 
         Phase memory phase = phases[_saleId][_salePhaseId];
 
+        // TODO change msg.sender to _msg.sender
+
+        require(totalMints[_saleId][_salePhaseId][msg.sender] + _mintCount <= phase.mintLimit, 'cannot exceed total mints for sale phase');
         require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale phase not in progress');
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
         require(canMint(_saleId, _salePhaseId, _index, msg.sender, _merkleProof), 'address not able to mint from sale');         // Check the msg sender is on the pre list
-        require(totalMints[_saleId][_salePhaseId][msg.sender] + _mintCount <= phase.mintLimit, 'cannot exceed total mints for sale phase');
 
+        // Up the mint count for the user
         totalMints[_saleId][_salePhaseId][msg.sender] += _mintCount;
 
         // sort payments
         Sale memory sale = sales[_saleId];
         (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(sale.editionId);
 
-        // split money // FIXME do we just send all the money?
+        // split money // TODO dont pass msg.value, send sender (context)
         _handleEditionSaleFunds(sale.editionId, creator, receiver, msg.value, sale.platformPrimarySaleCommission);
 
         // send token to buyer (assumes approval has been made, if not then this will fail)
-        koda.safeTransferFrom(creator, msg.sender, tokenId);
+        koda.safeTransferFrom(creator, msg.sender, tokenId); // TODO need to handle multiple mints
 
         // FIXME this is a bit pointless - maybe move back...
 //        _processSale(sale.editionId, msg.value, msg.sender, creator); // FIXME do we just send all the money?
@@ -108,7 +116,9 @@ contract BasicGatedSale is BaseMarketplace {
         emit MintFromSale(_saleId, sale.editionId, msg.sender, _mintCount);
     }
 
-    // FIXME need internal and public?
+    // TODO remove phase, pause phase, pause sale?
+
+    // FIXME need internal and public, profile first and make decision?
     function canMint(uint256 _saleId, uint _salePhaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (bool) {
         Phase memory phase = phases[_saleId][_salePhaseId];
 
@@ -129,6 +139,7 @@ contract BasicGatedSale is BaseMarketplace {
 
     // not used
     function _isListingPermitted(uint256 _editionId) internal view override returns (bool) {
+        // TODO use this to check sales type etc, guard before create
         return false;
     }
 
@@ -143,6 +154,7 @@ contract BasicGatedSale is BaseMarketplace {
         require(success, "payment failed");
     }
 
+    // TODO not on sale to update default with overrides
     function updatePlatformPrimarySaleCommission(uint256 _saleId, uint256 _platformPrimarySaleCommission) public onlyAdmin {
         Sale storage sale = sales[_saleId];
         sale.platformPrimarySaleCommission = _platformPrimarySaleCommission;
