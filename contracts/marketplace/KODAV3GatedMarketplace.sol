@@ -92,19 +92,19 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
     }
 
     // TODO can the merkle tree element be smaller uints?
-    function mint(uint256 _saleId, uint256 _salePhaseId, uint16 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant whenNotPaused {
-        require(_salePhaseId <= phases[_saleId].length - 1, 'phase id does not exist');
+    function mint(uint256 _saleId, uint256 _phaseId, uint16 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant whenNotPaused {
+        require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist');
 
-        Phase memory phase = phases[_saleId][_salePhaseId];
+        Phase memory phase = phases[_saleId][_phaseId];
 
-        require(totalMints[_saleId][_salePhaseId][_msgSender()] + _mintCount <= phase.mintLimit, 'cannot exceed total mints for sale phase');
+        require(totalMints[_saleId][_phaseId][_msgSender()] + _mintCount <= phase.mintLimit, 'cannot exceed total mints for sale phase');
         require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale phase not in progress');
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
-        require(canMint(_saleId, _salePhaseId, _index, _msgSender(), _merkleProof), 'address not able to mint from sale');
+        require(canMint(_saleId, _phaseId, _index, _msgSender(), _merkleProof), 'address not able to mint from sale');
         // Check the msg sender is on the pre list
 
         // Up the mint count for the user
-        totalMints[_saleId][_salePhaseId][_msgSender()] += _mintCount;
+        totalMints[_saleId][_phaseId][_msgSender()] += _mintCount;
 
         // TODO here down to emit in an internal func to handle sale?
         // sort payments
@@ -118,7 +118,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         koda.safeTransferFrom(creator, _msgSender(), tokenId);
         // TODO need to handle multiple mints
 
-        emit MintFromSale(_saleId, sale.editionId, _salePhaseId, _msgSender(), _mintCount);
+        emit MintFromSale(_saleId, sale.editionId, _phaseId, _msgSender(), _mintCount);
     }
 
     function createPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _mintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei)
@@ -163,11 +163,43 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         emit PhaseRemoved(saleId, _editionId, _phaseId);
     }
 
-    //  TODO functions: pauseSale, endPhase?
+    function changePhaseTimes(uint256 _editionId, uint256 _phaseId, uint128 _startTime, uint128 _endTime)
+    public
+    whenNotPaused
+    onlyCreatorOrAdmin(_editionId)
+    {
+        require(koda.editionExists(_editionId), 'edition does not exist');
+
+        uint256 saleId = editionToSale[_editionId];
+        require(saleId > 0, 'no sale associated with edition id');
+
+        require(phases[saleId].length > _phaseId, 'phase does not exist');
+
+        Phase memory phase = phases[saleId][_phaseId];
+        require(phase.startTime > 0, 'phase does not exist');
+
+        if(_startTime > 0 && _endTime > 0) {
+            require(_endTime > _startTime, 'phase end time must be after start time');
+
+            phase.startTime = _startTime;
+            phase.endTime = _endTime;
+
+        } else if(_startTime > 0) {
+            phase.startTime = _startTime;
+        } else if(_endTime > 0) {
+            phase.endTime = _endTime;
+        }
+
+        phases[saleId][_phaseId] = phase;
+
+        // TODO do we care about emitting an event here?
+    }
+
+    //  TODO functions: pausePhase/Sale
 
     // FIXME need internal and public, profile first and make decision?
-    function canMint(uint256 _saleId, uint _salePhaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (bool) {
-        Phase memory phase = phases[_saleId][_salePhaseId];
+    function canMint(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (bool) {
+        Phase memory phase = phases[_saleId][_phaseId];
 
         // assume balance of 1 for enabled artists
         bytes32 node = keccak256(abi.encodePacked(_index, _account, uint256(1)));
