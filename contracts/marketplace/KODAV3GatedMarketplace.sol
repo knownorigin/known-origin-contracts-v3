@@ -15,7 +15,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
     /// @notice emitted when a new phase is added to a sale
     event PhaseCreated(uint256 indexed saleId, uint256 indexed editionId);
     /// @notice emitted when someone mints from a sale
-    event MintFromSale(uint256 indexed saleId, uint256 indexed editionId, address account, uint256 mintCount);
+    event MintFromSale(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId, address account, uint256 mintCount);
     /// @notice emitted when primary sales commission is updated for a sale
     event AdminUpdatePlatformPrimarySaleCommissionGatedSale(uint256 indexed saleId, uint256 platformPrimarySaleCommission);
 
@@ -104,6 +104,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         // Up the mint count for the user
         totalMints[_saleId][_salePhaseId][_msgSender()] += _mintCount;
 
+        // TODO here down to emit in an internal func to handle sale?
         // sort payments
         Sale memory sale = sales[_saleId];
         (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(sale.editionId);
@@ -115,7 +116,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         koda.safeTransferFrom(creator, _msgSender(), tokenId);
         // TODO need to handle multiple mints
 
-        emit MintFromSale(_saleId, sale.editionId, _msgSender(), _mintCount);
+        emit MintFromSale(_saleId, sale.editionId, _salePhaseId, _msgSender(), _mintCount);
     }
 
     function createPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _mintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei)

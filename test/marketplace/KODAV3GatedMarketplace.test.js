@@ -196,6 +196,165 @@ contract('BasicGatedSale tests...', function (accounts) {
             });
         });
 
+        describe.only('createPhase', async () => {
+
+            it('can create a new phase and mint from it', async () => {
+                const receipt = await this.basicGatedSale.createPhase(
+                    FIRST_MINTED_TOKEN_ID,
+                    this.saleStart.add(time.duration.days(6)),
+                    this.saleStart.add(time.duration.days(8)),
+                    new BN('5'),
+                    this.merkleProof.merkleRoot,
+                    MOCK_MERKLE_HASH,
+                    ether('0.3'),
+                    {from: artist1})
+
+                expectEvent(receipt, 'PhaseCreated', {
+                    saleId: new BN('1'),
+                    editionId: FIRST_MINTED_TOKEN_ID
+                });
+
+                const {
+                    startTime,
+                    endTime,
+                    mintLimit,
+                    merkleRoot,
+                    merkleIPFSHash,
+                    priceInWei
+                } = await this.basicGatedSale.phases(1, 1)
+
+                expect(startTime.toString()).to.not.equal('0')
+                expect(endTime.toString()).to.not.equal('0')
+                expect(mintLimit.toString()).to.be.equal('5')
+                expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot)
+                expect(merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH)
+                expect(priceInWei.toString()).to.be.equal(ether('0.3').toString())
+
+                await time.increaseTo(this.saleStart.add(time.duration.days(7)))
+
+                const salesReceipt = await this.basicGatedSale.mint(
+                    ONE,
+                    1,
+                    ONE,
+                    this.merkleProof.claims[artist3].index,
+                    this.merkleProof.claims[artist3].proof,
+                    {
+                        from: artist3,
+                        value: ether('0.3')
+                    })
+
+                expectEvent(salesReceipt, 'MintFromSale', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    phaseId: ONE,
+                    account: artist3,
+                    mintCount: ONE
+                });
+            })
+
+            it('reverts if not an admin or creator', async () => {
+                await expectRevert(this.basicGatedSale.createPhase(
+                    FIRST_MINTED_TOKEN_ID,
+                    this.saleStart,
+                    this.saleEnd,
+                    new BN('5'),
+                    this.merkleProof.merkleRoot,
+                    MOCK_MERKLE_HASH,
+                    ether('0.3'),
+                    {from: artist2}),
+                    'Caller not creator or admin')
+            })
+
+            it('reverts if the contract is paused', async () => {
+                let receipt = await this.basicGatedSale.pause({from: admin});
+                expectEvent(receipt, 'Paused', {
+                    account: admin
+                });
+
+                await expectRevert(this.basicGatedSale.createPhase(
+                        FIRST_MINTED_TOKEN_ID,
+                        this.saleStart,
+                        this.saleEnd,
+                        new BN('5'),
+                        this.merkleProof.merkleRoot,
+                        MOCK_MERKLE_HASH,
+                        ether('0.3'),
+                        {from: artist2}),
+                    'Pausable: paused')
+            })
+
+            it('reverts if given an invalid edition', async () => {
+                await expectRevert(this.basicGatedSale.createPhase(
+                        FIRST_MINTED_TOKEN_ID.add(new BN('5000')),
+                        this.saleStart,
+                        this.saleEnd,
+                        new BN('5'),
+                        this.merkleProof.merkleRoot,
+                        MOCK_MERKLE_HASH,
+                        ether('0.3'),
+                        {from: admin}),
+                    'edition does not exist')
+            })
+
+            it('reverts if given an end time', async () => {
+                await expectRevert(this.basicGatedSale.createPhase(
+                        FIRST_MINTED_TOKEN_ID,
+                        this.saleStart,
+                        this.saleEnd.sub(time.duration.days(8)),
+                        new BN('5'),
+                        this.merkleProof.merkleRoot,
+                        MOCK_MERKLE_HASH,
+                        ether('0.3'),
+                        {from: artist1}),
+                    'phase end time must be after start time')
+            })
+
+            it('reverts if given an invalid mint limit', async () => {
+                await expectRevert(this.basicGatedSale.createPhase(
+                        FIRST_MINTED_TOKEN_ID,
+                        this.saleStart,
+                        this.saleEnd,
+                        new BN('500'),
+                        this.merkleProof.merkleRoot,
+                        MOCK_MERKLE_HASH,
+                        ether('0.3'),
+                        {from: artist1}),
+                    'phase mint limit must be greater than 0')
+
+                await expectRevert(this.basicGatedSale.createPhase(
+                        FIRST_MINTED_TOKEN_ID,
+                        this.saleStart,
+                        this.saleEnd,
+                        new BN('0'),
+                        this.merkleProof.merkleRoot,
+                        MOCK_MERKLE_HASH,
+                        ether('0.3'),
+                        {from: artist1}),
+                    'phase mint limit must be greater than 0')
+            })
+
+            it('reverts if given an edition id with no associated sale', async () => {
+                // create 100 tokens to the minter
+                await this.token.mintBatchEdition(100, artist2, TOKEN_URI, {from: contract});
+
+                // Ensure basic gated sale has approval to sell tokens
+                await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist2});
+
+                await expectRevert(this.basicGatedSale.createPhase(
+                        FIRST_MINTED_TOKEN_ID.add(new BN('1000')),
+                        this.saleStart,
+                        this.saleEnd,
+                        new BN('5'),
+                        this.merkleProof.merkleRoot,
+                        MOCK_MERKLE_HASH,
+                        ether('0.3'),
+                        {from: artist2}),
+                    'no sale associated with edition id')
+            })
+
+
+        })
+
         describe('mint', async () => {
 
             it('can mint one item from a valid sale', async () => {
@@ -215,6 +374,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                 expectEvent(salesReceipt, 'MintFromSale', {
                     saleId: ONE,
                     editionId: FIRST_MINTED_TOKEN_ID,
+                    phaseId: ZERO,
                     account: artist1,
                     mintCount: ONE
                 });
@@ -240,6 +400,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                 expectEvent(salesReceipt, 'MintFromSale', {
                     saleId: ONE,
                     editionId: FIRST_MINTED_TOKEN_ID,
+                    phaseId: ZERO,
                     account: artist1,
                     mintCount: new BN('3')
                 });
@@ -341,6 +502,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                 expectEvent(salesReceipt, 'MintFromSale', {
                     saleId: ONE,
                     editionId: FIRST_MINTED_TOKEN_ID,
+                    phaseId: ZERO,
                     account: artist2,
                     mintCount: new BN('9')
                 });
@@ -626,6 +788,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                     expectEvent(salesReceipt, 'MintFromSale', {
                         saleId: ONE,
                         editionId: FIRST_MINTED_TOKEN_ID,
+                        phaseId: ZERO,
                         account: artist2,
                         mintCount: ONE
                     });
