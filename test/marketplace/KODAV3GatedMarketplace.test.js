@@ -63,6 +63,10 @@ contract('BasicGatedSale tests...', function (accounts) {
         // Ensure basic gated sale has approval to sell tokens
         await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist1});
 
+        // create  a second edition and approve it minter
+        await this.token.mintBatchEdition(100, artist2, TOKEN_URI, {from: contract});
+        await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist2});
+
         // just for stuck tests
         this.erc20Token = await MockERC20.new({from: owner});
 
@@ -196,7 +200,7 @@ contract('BasicGatedSale tests...', function (accounts) {
             });
         });
 
-        describe.only('createPhase', async () => {
+        describe('createPhase', async () => {
 
             it('can create a new phase and mint from it', async () => {
                 const receipt = await this.basicGatedSale.createPhase(
@@ -210,8 +214,9 @@ contract('BasicGatedSale tests...', function (accounts) {
                     {from: artist1})
 
                 expectEvent(receipt, 'PhaseCreated', {
-                    saleId: new BN('1'),
-                    editionId: FIRST_MINTED_TOKEN_ID
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    phaseId: ONE
                 });
 
                 const {
@@ -252,16 +257,16 @@ contract('BasicGatedSale tests...', function (accounts) {
                 });
             })
 
-            it('reverts if not an admin or creator', async () => {
+            it('reverts if not called by an admin or creator', async () => {
                 await expectRevert(this.basicGatedSale.createPhase(
-                    FIRST_MINTED_TOKEN_ID,
-                    this.saleStart,
-                    this.saleEnd,
-                    new BN('5'),
-                    this.merkleProof.merkleRoot,
-                    MOCK_MERKLE_HASH,
-                    ether('0.3'),
-                    {from: artist2}),
+                        FIRST_MINTED_TOKEN_ID,
+                        this.saleStart,
+                        this.saleEnd,
+                        new BN('5'),
+                        this.merkleProof.merkleRoot,
+                        MOCK_MERKLE_HASH,
+                        ether('0.3'),
+                        {from: artist2}),
                     'Caller not creator or admin')
             })
 
@@ -334,12 +339,6 @@ contract('BasicGatedSale tests...', function (accounts) {
             })
 
             it('reverts if given an edition id with no associated sale', async () => {
-                // create 100 tokens to the minter
-                await this.token.mintBatchEdition(100, artist2, TOKEN_URI, {from: contract});
-
-                // Ensure basic gated sale has approval to sell tokens
-                await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist2});
-
                 await expectRevert(this.basicGatedSale.createPhase(
                         FIRST_MINTED_TOKEN_ID.add(new BN('1000')),
                         this.saleStart,
@@ -351,7 +350,75 @@ contract('BasicGatedSale tests...', function (accounts) {
                         {from: artist2}),
                     'no sale associated with edition id')
             })
+        })
 
+        describe.only('remove phase', async () => {
+
+            it('can delete a phase if available', async () => {
+                const createReceipt = await this.basicGatedSale.createPhase(
+                    FIRST_MINTED_TOKEN_ID,
+                    this.saleStart.add(time.duration.days(6)),
+                    this.saleStart.add(time.duration.days(8)),
+                    new BN('5'),
+                    this.merkleProof.merkleRoot,
+                    MOCK_MERKLE_HASH,
+                    ether('0.3'),
+                    {from: artist1})
+
+                expectEvent(createReceipt, 'PhaseCreated', {
+                    saleId: ONE,
+                    phaseId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID
+                });
+
+                const deleteReceipt = await this.basicGatedSale.removePhase(
+                    FIRST_MINTED_TOKEN_ID,
+                    ONE,
+                    {from: artist1})
+
+                expectEvent(deleteReceipt, 'PhaseRemoved', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    phaseId: ONE
+                });
+            })
+
+            it('reverts if not called by a creator or admin', async () => {
+                await expectRevert(this.basicGatedSale.removePhase(
+                        FIRST_MINTED_TOKEN_ID,
+                        ONE,
+                        {from: artist3}),
+                    'Caller not creator or admin')
+            })
+
+            it('reverts if the contract is called', async () => {
+                let receipt = await this.basicGatedSale.pause({from: admin});
+                expectEvent(receipt, 'Paused', {
+                    account: admin
+                });
+
+                await expectRevert(this.basicGatedSale.removePhase(
+                        FIRST_MINTED_TOKEN_ID,
+                        ONE,
+                        {from: artist3}),
+                    'Pausable: paused')
+            })
+
+            it('reverts if given an invalid edition id', async () => {
+                await expectRevert(this.basicGatedSale.removePhase(
+                        FIRST_MINTED_TOKEN_ID.add(new BN('5000')),
+                        ONE,
+                        {from: admin}),
+                    'edition does not exist')
+            })
+
+            it('reverts if given an edition id with no associated sale', async () => {
+                await expectRevert(this.basicGatedSale.removePhase(
+                        FIRST_MINTED_TOKEN_ID.add(new BN('1000')),
+                        ONE,
+                        {from: artist2}),
+                    'no sale associated with edition id')
+            })
 
         })
 

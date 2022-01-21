@@ -13,7 +13,9 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
     /// @notice emitted when a sale, with a single phase, is created
     event SaleWithPhaseCreated(uint256 indexed saleId, uint256 indexed editionId);
     /// @notice emitted when a new phase is added to a sale
-    event PhaseCreated(uint256 indexed saleId, uint256 indexed editionId);
+    event PhaseCreated(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId);
+    /// @notice emitted when a phase is removed from a sale
+    event PhaseRemoved(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId);
     /// @notice emitted when someone mints from a sale
     event MintFromSale(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId, address account, uint256 mintCount);
     /// @notice emitted when primary sales commission is updated for a sale
@@ -143,10 +145,25 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         priceInWei : _priceInWei
         }));
 
-        emit PhaseCreated(sale.id, _editionId);
+        emit PhaseCreated(sale.id, _editionId, phases[saleId].length - 1);
     }
 
-    //  TODO functions: addPhase, removePhase, pauseSale, endPhase?
+    function removePhase(uint256 _editionId, uint256 _phaseId)
+    public
+    whenNotPaused
+    onlyCreatorOrAdmin(_editionId)
+    {
+        require(koda.editionExists(_editionId), 'edition does not exist');
+
+        uint256 saleId = editionToSale[_editionId];
+        require(saleId > 0, 'no sale associated with edition id');
+
+        delete phases[saleId][_phaseId];
+
+        emit PhaseRemoved(saleId, _editionId, _phaseId);
+    }
+
+    //  TODO functions: pauseSale, endPhase?
 
     // FIXME need internal and public, profile first and make decision?
     function canMint(uint256 _saleId, uint _salePhaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (bool) {
