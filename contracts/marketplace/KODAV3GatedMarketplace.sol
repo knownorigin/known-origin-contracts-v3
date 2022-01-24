@@ -67,9 +67,10 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
     public
     whenNotPaused
     onlyCreatorOrAdmin(_editionId) {
-        require(koda.editionExists(_editionId), 'edition does not exist');
+        uint256 editionSize = koda.getSizeOfEdition(_editionId);
+        require(editionSize > 0, 'edition does not exist');
         require(_endTime > _startTime, 'phase end time must be after start time');
-        require(_mintLimit > 0 && _mintLimit < koda.getSizeOfEdition(_editionId), 'phase mint limit must be greater than 0');
+        require(_mintLimit > 0 && _mintLimit < editionSize, 'phase mint limit must be greater than 0');
         // TODO should this be per phase or overall sale?
 
         uint256 saleId = saleIdCounter += 1;
@@ -106,28 +107,32 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         // Up the mint count for the user
         totalMints[_saleId][_phaseId][_msgSender()] += _mintCount;
 
-        // TODO here down to emit in an internal func to handle sale?
-        // sort payments
         Sale memory sale = sales[_saleId];
-        (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(sale.editionId);
-
-        // split money
-        _handleEditionSaleFunds(_saleId, sale.editionId, creator, receiver, msg.value);
-
-        // send token to buyer (assumes approval has been made, if not then this will fail)
-        koda.safeTransferFrom(creator, _msgSender(), tokenId);
-        // TODO need to handle multiple mints
+        handleMint(_saleId, sale.editionId, _mintCount, msg.value);
 
         emit MintFromSale(_saleId, sale.editionId, _phaseId, _msgSender(), _mintCount);
+    }
+
+    function handleMint(uint256 _saleId, uint256 _editionId, uint16 _mintCount, uint value) internal {
+        for(uint i = 0; i < _mintCount; i++) {
+            (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
+
+            // split money
+            _handleEditionSaleFunds(_saleId, _editionId, creator, receiver, value / _mintCount);
+
+            // send token to buyer (assumes approval has been made, if not then this will fail)
+            koda.safeTransferFrom(creator, _msgSender(), tokenId);
+        }
     }
 
     function createPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _mintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei)
     public
     whenNotPaused
     onlyCreatorOrAdmin(_editionId) {
-        require(koda.editionExists(_editionId), 'edition does not exist');
+        uint256 editionSize = koda.getSizeOfEdition(_editionId);
+        require(editionSize > 0, 'edition does not exist');
         require(_endTime > _startTime, 'phase end time must be after start time');
-        require(_mintLimit > 0 && _mintLimit < koda.getSizeOfEdition(_editionId), 'phase mint limit must be greater than 0');
+        require(_mintLimit > 0 && _mintLimit < editionSize, 'phase mint limit must be greater than 0');
         // TODO do we need to tot up all mint limits for this check?
 
         uint256 saleId = editionToSale[_editionId];

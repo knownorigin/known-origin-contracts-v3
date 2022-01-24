@@ -421,7 +421,7 @@ contract('BasicGatedSale tests...', function (accounts) {
             })
         })
 
-        describe.only('changePhaseTimes', async () => {
+        describe('changePhaseTimes', async () => {
 
             it('can change both the start and end time of a phase', async () => {
                 let newStart = this.saleStart.add(time.duration.days(1));
