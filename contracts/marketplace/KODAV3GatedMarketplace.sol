@@ -99,8 +99,8 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
 
         Phase memory phase = phases[_saleId][_phaseId];
 
-        require(totalMints[_saleId][_phaseId][_msgSender()] + _mintCount <= phase.mintLimit, 'cannot exceed total mints for sale phase');
         require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale phase not in progress');
+    require(totalMints[_saleId][_phaseId][_msgSender()] + _mintCount <= phase.mintLimit, 'cannot exceed total mints for sale phase');
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
         require(canMint(_saleId, _phaseId, _index, _msgSender(), _merkleProof), 'address not able to mint from sale');
         // Check the msg sender is on the pre list
@@ -115,6 +115,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
     }
 
     function handleMint(uint256 _saleId, uint256 _editionId, uint16 _mintCount, uint value) internal {
+        // TODO check that there are enough items in the edition left to actually mint
         for(uint i = 0; i < _mintCount; i++) {
             (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
 
