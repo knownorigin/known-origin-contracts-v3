@@ -40,7 +40,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         uint256 editionId; // The ID of the edition the sale will mint
     }
 
-    // TODO can these mapping ids be smaller uints?
+    // TODO can these mapping ids be smaller uints? AMG - I am not worried about this
     /// @dev sales is a mapping of sale id => Sale
     mapping(uint256 => Sale) public sales;
     /// @dev phases is a mapping of sale id => array of associated phases
@@ -128,7 +128,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         require(koda.editionExists(_editionId), 'edition does not exist');
         require(_endTime > _startTime, 'phase end time must be after start time');
         require(_mintLimit > 0 && _mintLimit < koda.getSizeOfEdition(_editionId), 'phase mint limit must be greater than 0');
-        // TODO do we need to tot up all mint limits for this check?
+        // TODO do we need to tot up all mint limits for this check? << I would say no - the creator/admin should get this right
 
         uint256 saleId = editionToSale[_editionId];
         require(saleId > 0, 'no sale associated with edition id');
@@ -173,26 +173,29 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         uint256 saleId = editionToSale[_editionId];
         require(saleId > 0, 'no sale associated with edition id');
 
-        require(phases[saleId].length > _phaseId, 'phase does not exist');
+        require(phases[saleId].length > _phaseId, 'phase does not exist'); // FIXME this feels a bit wrong
 
         Phase memory phase = phases[saleId][_phaseId];
         require(phase.startTime > 0, 'phase does not exist');
 
-        if(_startTime > 0 && _endTime > 0) {
+
+        // TODO could make the creator / admin repass both back in and always set? Suppose this is OK though as admin/creator
+        if (_startTime > 0 && _endTime > 0) {
             require(_endTime > _startTime, 'phase end time must be after start time');
 
             phase.startTime = _startTime;
             phase.endTime = _endTime;
 
-        } else if(_startTime > 0) {
+        } else if (_startTime > 0) {
             phase.startTime = _startTime;
-        } else if(_endTime > 0) {
+        } else if (_endTime > 0) {
             phase.endTime = _endTime;
         }
 
         phases[saleId][_phaseId] = phase;
 
         // TODO do we care about emitting an event here?
+        // FIXME I would do an event for logging to see if things have been messed with
     }
 
     //  TODO functions: pausePhase/Sale
