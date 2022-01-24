@@ -427,7 +427,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                 let newStart = this.saleStart.add(time.duration.days(1));
                 let newEnd = this.saleEnd.add(time.duration.days(1));
 
-                await this.basicGatedSale.changePhaseTimes(
+                const receipt = await this.basicGatedSale.changePhaseTimes(
                     FIRST_MINTED_TOKEN_ID,
                     ZERO,
                     newStart,
@@ -451,12 +451,18 @@ contract('BasicGatedSale tests...', function (accounts) {
                 expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot)
                 expect(merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH)
                 expect(priceInWei.toString()).to.be.equal(ether('0.1').toString())
+
+                expectEvent(receipt, 'PhaseTimeChanged', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    phaseId: ZERO
+                });
             })
 
             it('can change just the start time', async () => {
                 let newStart = this.saleStart.add(time.duration.minutes(5));
 
-                await this.basicGatedSale.changePhaseTimes(
+                const receipt = await this.basicGatedSale.changePhaseTimes(
                     FIRST_MINTED_TOKEN_ID,
                     ZERO,
                     newStart,
@@ -480,12 +486,18 @@ contract('BasicGatedSale tests...', function (accounts) {
                 expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot)
                 expect(merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH)
                 expect(priceInWei.toString()).to.be.equal(ether('0.1').toString())
+
+                expectEvent(receipt, 'PhaseTimeChanged', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    phaseId: ZERO
+                });
             })
 
             it('can change just the end time', async () => {
                 let newEnd = this.saleEnd.add(time.duration.minutes(5));
 
-                await this.basicGatedSale.changePhaseTimes(
+               const receipt = await this.basicGatedSale.changePhaseTimes(
                     FIRST_MINTED_TOKEN_ID,
                     ZERO,
                     ZERO,
@@ -509,6 +521,12 @@ contract('BasicGatedSale tests...', function (accounts) {
                 expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot)
                 expect(merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH)
                 expect(priceInWei.toString()).to.be.equal(ether('0.1').toString())
+
+                expectEvent(receipt, 'PhaseTimeChanged', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    phaseId: ZERO
+                });
             })
 
             it('reverts if not called by an admin or creator', async () => {

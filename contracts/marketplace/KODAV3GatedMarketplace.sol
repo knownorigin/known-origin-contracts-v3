@@ -20,6 +20,8 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
     event MintFromSale(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId, address account, uint256 mintCount);
     /// @notice emitted when primary sales commission is updated for a sale
     event AdminUpdatePlatformPrimarySaleCommissionGatedSale(uint256 indexed saleId, uint256 platformPrimarySaleCommission);
+    /// @notice emitted when a phase time is changed
+    event PhaseTimeChanged(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId);
 
     /// @dev incremental counter for the ID of a sale
     uint256 private saleIdCounter;
@@ -40,7 +42,6 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         uint256 editionId; // The ID of the edition the sale will mint
     }
 
-    // TODO can these mapping ids be smaller uints?
     /// @dev sales is a mapping of sale id => Sale
     mapping(uint256 => Sale) public sales;
     /// @dev phases is a mapping of sale id => array of associated phases
@@ -135,6 +136,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         require(_mintLimit > 0 && _mintLimit < editionSize, 'phase mint limit must be greater than 0');
         // TODO do we need to tot up all mint limits for this check?
 
+
         uint256 saleId = editionToSale[_editionId];
         require(saleId > 0, 'no sale associated with edition id');
 
@@ -183,21 +185,22 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         Phase memory phase = phases[saleId][_phaseId];
         require(phase.startTime > 0, 'phase does not exist');
 
-        if(_startTime > 0 && _endTime > 0) {
+        // TODO could make the creator / admin repass both back in and always set? Suppose this is OK though as admin/creator
+        if (_startTime > 0 && _endTime > 0) {
             require(_endTime > _startTime, 'phase end time must be after start time');
 
             phase.startTime = _startTime;
             phase.endTime = _endTime;
 
-        } else if(_startTime > 0) {
+        } else if (_startTime > 0) {
             phase.startTime = _startTime;
-        } else if(_endTime > 0) {
+        } else if (_endTime > 0) {
             phase.endTime = _endTime;
         }
 
         phases[saleId][_phaseId] = phase;
 
-        // TODO do we care about emitting an event here?
+        emit PhaseTimeChanged(saleId, _editionId, _phaseId);
     }
 
     //  TODO functions: pausePhase/Sale
