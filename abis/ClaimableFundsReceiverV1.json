@@ -31,6 +31,32 @@
     "type": "event"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "c__0x116399e1",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0x116399e1",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "c__0xac199285",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0xac199285",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "drain",
     "outputs": [],

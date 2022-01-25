@@ -91,7 +91,7 @@ contract('BasicGatedSale tests...', function (accounts) {
         });
     });
 
-    describe('BasicGatedSale', async () => {
+    describe.only('BasicGatedSale', async () => {
 
         describe('createSaleWithPhase', async () => {
 

@@ -72,7 +72,6 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         require(editionSize > 0, 'edition does not exist');
         require(_endTime > _startTime, 'phase end time must be after start time');
         require(_mintLimit > 0 && _mintLimit < editionSize, 'phase mint limit must be greater than 0');
-        // TODO should this be per phase or overall sale?
 
         uint256 saleId = saleIdCounter += 1;
 
@@ -93,18 +92,19 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         emit SaleWithPhaseCreated(saleId, _editionId);
     }
 
-    // TODO can the merkle tree element be smaller uints?
+
     function mint(uint256 _saleId, uint256 _phaseId, uint16 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant whenNotPaused {
         require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist');
 
         Phase memory phase = phases[_saleId][_phaseId];
 
+        // FIXME FAIL FAST - check if sold out?
+
         require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale phase not in progress');
-    require(totalMints[_saleId][_phaseId][_msgSender()] + _mintCount <= phase.mintLimit, 'cannot exceed total mints for sale phase');
+        require(totalMints[_saleId][_phaseId][_msgSender()] + _mintCount <= phase.mintLimit, 'cannot exceed total mints for sale phase');
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
         require(canMint(_saleId, _phaseId, _index, _msgSender(), _merkleProof), 'address not able to mint from sale');
-        // Check the msg sender is on the pre list
-
+        
         // Up the mint count for the user
         totalMints[_saleId][_phaseId][_msgSender()] += _mintCount;
 
@@ -119,6 +119,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         for(uint i = 0; i < _mintCount; i++) {
             (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
 
+            // FIXME - do payments at end in one go?
             // split money
             _handleEditionSaleFunds(_saleId, _editionId, creator, receiver, value / _mintCount);
 
@@ -135,8 +136,6 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         require(editionSize > 0, 'edition does not exist');
         require(_endTime > _startTime, 'phase end time must be after start time');
         require(_mintLimit > 0 && _mintLimit < editionSize, 'phase mint limit must be greater than 0');
-        // TODO do we need to tot up all mint limits for this check?
-
 
         uint256 saleId = editionToSale[_editionId];
         require(saleId > 0, 'no sale associated with edition id');
@@ -203,8 +202,6 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
 
         emit PhaseTimeChanged(saleId, _editionId, _phaseId);
     }
-
-    //  TODO functions: pausePhase/Sale
 
     // FIXME need internal and public, profile first and make decision?
     function canMint(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (bool) {
