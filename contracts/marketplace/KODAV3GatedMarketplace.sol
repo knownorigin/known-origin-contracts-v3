@@ -3,13 +3,14 @@ pragma solidity 0.8.4;
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-import {BaseMarketplace} from "../marketplace/BaseMarketplace.sol";
+import {BaseUpgradableMarketplace} from "../marketplace/BaseUpgradableMarketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
 import "hardhat/console.sol";
+import "./BaseUpgradableMarketplace.sol";
 
-contract KODAV3GatedMarketplace is BaseMarketplace {
+contract KODAV3GatedMarketplace is BaseUpgradableMarketplace {
     /// @notice emitted when a sale, with a single phase, is created
     event SaleWithPhaseCreated(uint256 indexed saleId, uint256 indexed editionId);
     /// @notice emitted when a new phase is added to a sale
@@ -60,9 +61,6 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         );
         _;
     }
-
-    constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
-    BaseMarketplace(_accessControls, _koda, _platformAccount) {}
 
     function createSaleWithPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _mintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei)
     public
