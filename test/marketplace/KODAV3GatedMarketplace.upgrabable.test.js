@@ -147,7 +147,8 @@ contract('KODAV3GatedMarketplace tests...', function (accounts) {
                 this.basicGatedSale = await KODAV3GatedMarketplaceV2.attach(this.basicGatedSale.address);
 
                 const res = await this.basicGatedSale.getGreatestFootballTeam();
-                console.log('new v2 function', res);
+                console.log('new v2 function res: ', res);
+                expect(res).to.be.equal('Hull City');
 
                 // and if by magic....we still have the state from v1...
 
