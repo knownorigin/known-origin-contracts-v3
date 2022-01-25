@@ -123,7 +123,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
             koda.safeTransferFrom(creator, _msgSender(), tokenId);
         }
 
-        _handleEditionSaleFunds(_saleId, _editionId, creator, receiver, value;
+        _handleEditionSaleFunds(_saleId, _editionId, creator, receiver, value);
     }
 
     function createPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _mintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei)
