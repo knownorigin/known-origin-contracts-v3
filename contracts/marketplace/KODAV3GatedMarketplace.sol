@@ -104,7 +104,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         require(totalMints[_saleId][_phaseId][_msgSender()] + _mintCount <= phase.mintLimit, 'cannot exceed total mints for sale phase');
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
         require(canMint(_saleId, _phaseId, _index, _msgSender(), _merkleProof), 'address not able to mint from sale');
-        
+
         // Up the mint count for the user
         totalMints[_saleId][_phaseId][_msgSender()] += _mintCount;
 
