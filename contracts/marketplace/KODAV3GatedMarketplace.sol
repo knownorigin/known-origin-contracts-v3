@@ -94,11 +94,13 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
 
 
     function mint(uint256 _saleId, uint256 _phaseId, uint16 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant whenNotPaused {
+        Sale memory sale = sales[_saleId];
+
+        require(!koda.isEditionSoldOut(sale.editionId), 'the sale is sold out');
+
         require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist');
 
         Phase memory phase = phases[_saleId][_phaseId];
-
-        // FIXME FAIL FAST - check if sold out?
 
         require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale phase not in progress');
         require(totalMints[_saleId][_phaseId][_msgSender()] + _mintCount <= phase.mintLimit, 'cannot exceed total mints for sale phase');
@@ -108,7 +110,6 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         // Up the mint count for the user
         totalMints[_saleId][_phaseId][_msgSender()] += _mintCount;
 
-        Sale memory sale = sales[_saleId];
         handleMint(_saleId, sale.editionId, _mintCount, msg.value);
 
         emit MintFromSale(_saleId, sale.editionId, _phaseId, _msgSender(), _mintCount);
@@ -118,14 +119,11 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         // TODO check that there are enough items in the edition left to actually mint
         for(uint i = 0; i < _mintCount; i++) {
             (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
-
-            // FIXME - do payments at end in one go?
-            // split money
-            _handleEditionSaleFunds(_saleId, _editionId, creator, receiver, value / _mintCount);
-
             // send token to buyer (assumes approval has been made, if not then this will fail)
             koda.safeTransferFrom(creator, _msgSender(), tokenId);
         }
+
+        _handleEditionSaleFunds(_saleId, _editionId, creator, receiver, value;
     }
 
     function createPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _mintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei)
