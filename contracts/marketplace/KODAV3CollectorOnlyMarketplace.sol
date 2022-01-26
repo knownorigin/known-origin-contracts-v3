@@ -21,7 +21,7 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
 
     struct Sale {
         uint256 id; // The ID of the sale
-        address owner; // The creator of the sale
+        address owner; // The creator of the sale  // FIXME use creator as var name?
         uint256 editionId; // The ID of the edition the sale will mint
         uint128 startTime; // The start time of the sale
         uint128 endTime; // The end time of the sale
@@ -39,6 +39,8 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
 
     /// @dev sales is a mapping of sale id => Sale
     mapping(uint256 => Sale) public sales;
+
+    // FIXME we can have an abstract class to hold some of this...
     /// @dev editionToSale is a mapping of edition id => sale id
     mapping(uint256 => uint256) public editionToSale;
     /// @dev totalMints is a mapping of sale id => address => total minted by that address
@@ -110,6 +112,8 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
             // send token to buyer (assumes approval has been made, if not then this will fail)
             koda.safeTransferFrom(creator, _msgSender(), tokenId);
         }
+
+        // FIXME presume the creator / receiver is correct
 
         _handleEditionSaleFunds(_saleId, _editionId, creator, receiver, value);
     }
