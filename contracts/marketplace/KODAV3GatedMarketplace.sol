@@ -96,13 +96,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
     function mint(uint256 _saleId, uint256 _phaseId, uint16 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant whenNotPaused {
         Sale memory sale = sales[_saleId];
 
-        // TODO do we need both checks, will the sold out check save gas of fetching token ids?
         require(!koda.isEditionSoldOut(sale.editionId), 'the sale is sold out');
-
-        uint256 nextAvailableToken = koda.getNextAvailablePrimarySaleToken(sale.editionId);
-        uint256 maxTokenAvailable = koda.maxTokenIdOfEdition(sale.editionId);
-        require((maxTokenAvailable - nextAvailableToken) >= _mintCount, 'not enough supply remaining to fulfil mint');
-
         require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist');
 
         Phase memory phase = phases[_saleId][_phaseId];

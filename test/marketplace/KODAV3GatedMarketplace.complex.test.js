@@ -61,7 +61,7 @@ contract('BasicGatedSale complex tests...', function (accounts) {
         await this.accessControls.grantRole(this.CONTRACT_ROLE, this.basicGatedSale.address, {from: owner});
 
         // create 100 tokens to the minter
-        await this.token.mintBatchEdition(30, artist, TOKEN_URI, {from: contract});
+        await this.token.mintBatchEdition(21, artist, TOKEN_URI, {from: contract});
 
         // Ensure basic gated sale has approval to sell tokens
         await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist});
@@ -415,13 +415,13 @@ contract('BasicGatedSale complex tests...', function (accounts) {
             await expectRevert(this.basicGatedSale.mint(
                 ONE,
                 THREE,
-                new BN('2'),
+                new BN('1'),
                 this.merkleProof3.claims[buyer1].index,
                 this.merkleProof3.claims[buyer1].proof,
                 {
                     from: buyer1,
-                    value: ether('1.4')
-                }), 'not enough supply remaining to fulfil mint')
+                    value: ether('0.7')
+                }), 'the sale is sold out')
         })
     });
 })

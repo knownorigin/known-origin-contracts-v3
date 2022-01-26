@@ -87,14 +87,7 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
         Sale memory sale = sales[_saleId];
 
         require(koda.getCreatorOfToken(_tokenId) == sale.owner, 'token creator does not match sale creator');
-
-        // TODO do we need both checks, will the sold out check save gas of fetching token ids?
         require(!koda.isEditionSoldOut(sale.editionId), 'the sale is sold out');
-
-        uint256 nextAvailableToken = koda.getNextAvailablePrimarySaleToken(sale.editionId);
-        uint256 maxTokenAvailable = koda.maxTokenIdOfEdition(sale.editionId);
-        require((maxTokenAvailable - nextAvailableToken) >= _mintCount, 'not enough supply remaining to fulfil mint');
-
         require(block.timestamp >= sale.startTime && block.timestamp < sale.endTime, 'sale not in progress');
         require(totalMints[_saleId][_msgSender()] + _mintCount <= sale.mintLimit, 'cannot exceed total mints for sale');
         require(msg.value >= sale.priceInWei * _mintCount, 'not enough wei sent to complete mint');

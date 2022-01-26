@@ -15,7 +15,7 @@ const MockERC20 = artifacts.require('MockERC20');
 let erc20Token;
 
 contract('CollectorOnlyMarketplace tests...', function (accounts) {
-    const [owner, admin, koCommission, contract, newAccessControls, artist1, artist2, buyer1, buyer2, buyer3] = accounts;
+    const [owner, admin, koCommission, contract, newAccessControls, artist1, artist2, buyer1, buyer2, buyer3, buyer4] = accounts;
 
     const STARTING_EDITION = '10000';
     const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
@@ -25,7 +25,9 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
     const ONE = new BN('1');
     const TWO = new BN('2');
 
-    const FIRST_MINTED_TOKEN_ID = new BN('11000'); // this is implied
+    const FIRST_MINTED_TOKEN_ID = new BN('11000');
+    const SECOND_MINTED_TOKEN_ID = new BN('12000');
+    const THIRD_MINTED_TOKEN_ID = new BN('13000');
 
     beforeEach(async () => {
         this.legacyAccessControls = await SelfServiceAccessControls.new();
@@ -61,6 +63,15 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
         // Ensure basic gated sale has approval to sell tokens
         await this.token.setApprovalForAll(this.collectorOnlySale.address, true, {from: artist1});
 
+
+        await this.token.mintBatchEdition(5, artist1, TOKEN_URI, {from: contract});
+        await this.token.transferFrom(artist1, buyer1, SECOND_MINTED_TOKEN_ID, {from: artist1})
+        await this.token.transferFrom(artist1, buyer2, SECOND_MINTED_TOKEN_ID.add(new BN('1')), {from: artist1})
+        await this.token.transferFrom(artist1, buyer3, SECOND_MINTED_TOKEN_ID.add(new BN('2')), {from: artist1})
+
+        await this.token.mintBatchEdition(5, artist2, TOKEN_URI, {from: contract});
+        await this.token.transferFrom(artist2, buyer1, THIRD_MINTED_TOKEN_ID, {from: artist2})
+
         // just for stuck tests
         this.erc20Token = await MockERC20.new({from: owner});
 
@@ -84,7 +95,7 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
 
     })
 
-    describe.only('CollectorOnlySale', async () => {
+    describe('CollectorOnlySale', async () => {
 
         describe('createSale', async () => {
 
@@ -162,6 +173,151 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
                     new BN('30'),
                     ether('0.1'),
                     {from: artist1}), 'mint limit must be greater than 0 and smaller than edition size')
+            })
+        })
+
+        describe.only('mint', async () => {
+
+            it('can mint one item from a sale', async () => {
+                await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
+
+                const salesReceipt = await this.collectorOnlySale.mint(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID,
+                    ONE,
+                    {from: buyer1, value: ether('0.1')})
+
+                expectEvent(salesReceipt, 'MintFromSale', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    account: buyer1,
+                    mintCount: ONE
+                });
+
+                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(buyer1);
+            })
+
+            it('can mint multiple items from a sale', async () => {
+                await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
+
+                const salesReceipt = await this.collectorOnlySale.mint(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID,
+                    TWO,
+                    {from: buyer1, value: ether('0.2')})
+
+                expectEvent(salesReceipt, 'MintFromSale', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    account: buyer1,
+                    mintCount: TWO
+                });
+
+                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(buyer1);
+                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(new BN('1')))).to.be.equal(buyer1);
+            })
+
+            it('reverts if the caller does not own the token', async () => {
+                await expectRevert(this.collectorOnlySale.mint(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID,
+                    TWO,
+                    {from: buyer4, value: ether('0.2')}), 'caller does not own token')
+            })
+
+            it('reverts if the given token is not created by the artist', async () => {
+                await expectRevert(this.collectorOnlySale.mint(
+                    ONE,
+                    THIRD_MINTED_TOKEN_ID,
+                    ONE,
+                    {from: buyer1, value: ether('0.1')}), 'token creator does not match sale creator')
+            })
+
+            it('reverts when the sale is sold out', async () => {
+                await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
+
+                const b1SalesReceipt = await this.collectorOnlySale.mint(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID,
+                    new BN('10'),
+                    {from: buyer1, value: ether('1')})
+
+                expectEvent(b1SalesReceipt, 'MintFromSale', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    account: buyer1,
+                    mintCount: new BN('10')
+                });
+
+                const b2SalesReceipt = await this.collectorOnlySale.mint(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID.add(new BN('1')),
+                    new BN('5'),
+                    {from: buyer2, value: ether('0.5')})
+
+                expectEvent(b2SalesReceipt, 'MintFromSale', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    account: buyer2,
+                    mintCount: new BN('5')
+                });
+
+                await expectRevert(this.collectorOnlySale.mint(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID.add(new BN('2')),
+                    ONE,
+                    {from: buyer3, value: ether('0.1')}), 'the sale is sold out')
+            })
+
+            it('reverts when the sale is not in progress', async () => {
+                await expectRevert(this.collectorOnlySale.mint(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID,
+                    ONE,
+                    {from: buyer1, value: ether('0.1')}),
+                    'sale not in progress')
+
+                await time.increaseTo(this.saleEnd.add(time.duration.minutes(10)))
+
+                await expectRevert(this.collectorOnlySale.mint(
+                        ONE,
+                        SECOND_MINTED_TOKEN_ID,
+                        ONE,
+                        {from: buyer1, value: ether('0.1')}),
+                    'sale not in progress')
+            })
+
+            it('reverts if the buyer has exceeded their mint limit', async () => {
+                await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
+
+                const b1SalesReceipt = await this.collectorOnlySale.mint(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID,
+                    new BN('10'),
+                    {from: buyer1, value: ether('1')})
+
+                expectEvent(b1SalesReceipt, 'MintFromSale', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    account: buyer1,
+                    mintCount: new BN('10')
+                });
+
+                await expectRevert(this.collectorOnlySale.mint(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID,
+                    ONE,
+                    {from: buyer1, value: ether('0.1')}), 'cannot exceed total mints for sale')
+
+            })
+
+            it('reverts if not enough eth is sent', async () => {
+                await expectRevert(this.collectorOnlySale.mint(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID,
+                    TWO,
+                    {from: buyer1, value: ether('0.1')}), 'not enough wei sent to complete mint')
+
             })
         })
     });
