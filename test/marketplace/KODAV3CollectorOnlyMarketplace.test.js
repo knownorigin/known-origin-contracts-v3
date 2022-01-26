@@ -95,15 +95,15 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
 
     })
 
-    describe('CollectorOnlySale', async () => {
+    describe.only('CollectorOnlySale', async () => {
 
         describe('createSale', async () => {
 
             it('can create a new sale with the correct arguments', async () => {
-                const {id, owner, editionId, startTime, endTime, mintLimit, priceInWei} = await this.collectorOnlySale.sales(1)
+                const {id, creator, editionId, startTime, endTime, mintLimit, priceInWei} = await this.collectorOnlySale.sales(1)
 
                 expect(id.toString()).to.be.equal('1')
-                expect(owner).to.be.equal(artist1)
+                expect(creator).to.be.equal(artist1)
                 expect(editionId.toString()).to.be.equal(FIRST_MINTED_TOKEN_ID.toString())
                 expect(startTime.toString()).to.not.equal('0')
                 expect(endTime.toString()).to.not.equal('0')
@@ -176,7 +176,7 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
             })
         })
 
-        describe.only('mint', async () => {
+        describe('mint', async () => {
 
             it('can mint one item from a sale', async () => {
                 await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
@@ -312,6 +312,8 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
             })
 
             it('reverts if not enough eth is sent', async () => {
+                await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
+
                 await expectRevert(this.collectorOnlySale.mint(
                     ONE,
                     SECOND_MINTED_TOKEN_ID,

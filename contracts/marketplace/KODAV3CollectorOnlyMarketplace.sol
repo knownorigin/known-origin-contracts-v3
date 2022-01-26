@@ -21,7 +21,7 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
 
     struct Sale {
         uint256 id; // The ID of the sale
-        address owner; // The creator of the sale  // FIXME use creator as var name?
+        address creator; // The creator of the sale
         uint256 editionId; // The ID of the edition the sale will mint
         uint128 startTime; // The start time of the sale
         uint128 endTime; // The end time of the sale
@@ -66,7 +66,7 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
         // Assign the sale to the sales and editionToSale mappings
         sales[saleId] = Sale({
         id : saleId,
-        owner : _msgSender(),
+        creator : _msgSender(),
         editionId : _editionId,
         startTime : _startTime,
         endTime : _endTime,
@@ -88,7 +88,7 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
 
         Sale memory sale = sales[_saleId];
 
-        require(koda.getCreatorOfToken(_tokenId) == sale.owner, 'token creator does not match sale creator');
+        require(koda.getCreatorOfToken(_tokenId) == sale.creator, 'token creator does not match sale creator');
         require(!koda.isEditionSoldOut(sale.editionId), 'the sale is sold out');
         require(block.timestamp >= sale.startTime && block.timestamp < sale.endTime, 'sale not in progress');
         require(totalMints[_saleId][_msgSender()] + _mintCount <= sale.mintLimit, 'cannot exceed total mints for sale');
