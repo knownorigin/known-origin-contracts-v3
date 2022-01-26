@@ -101,7 +101,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
 
         uint256 nextAvailableToken = koda.getNextAvailablePrimarySaleToken(sale.editionId);
         uint256 maxTokenAvailable = koda.maxTokenIdOfEdition(sale.editionId);
-        require((maxTokenAvailable - nextAvailableToken) >= _mintCount, 'not enough supply remaining to fulfil mint');
+        require((maxTokenAvailable - nextAvailableToken) >= _mintCount, 'not enough supply remaining to fulfil mint'); // FIXME not sure this will work as tokens can be gifted in the middle...but prob worth having in as generally would work...
 
         require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist');
 
