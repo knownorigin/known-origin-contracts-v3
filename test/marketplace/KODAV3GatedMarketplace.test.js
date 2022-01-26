@@ -57,7 +57,7 @@ contract('BasicGatedSale tests...', function (accounts) {
 
         await this.accessControls.grantRole(this.CONTRACT_ROLE, this.basicGatedSale.address, {from: owner});
 
-        // create 100 tokens to the minter
+        // create a batch of 15 tokens from the minter
         await this.token.mintBatchEdition(15, artist1, TOKEN_URI, {from: contract});
 
         // Ensure basic gated sale has approval to sell tokens
@@ -91,7 +91,7 @@ contract('BasicGatedSale tests...', function (accounts) {
         });
     });
 
-    describe.only('BasicGatedSale', async () => {
+    describe('BasicGatedSale', async () => {
 
         describe('createSaleWithPhase', async () => {
 

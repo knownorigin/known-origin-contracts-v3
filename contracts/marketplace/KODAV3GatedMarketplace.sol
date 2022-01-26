@@ -115,12 +115,12 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         // Up the mint count for the user
         totalMints[_saleId][_phaseId][_msgSender()] += _mintCount;
 
-        handleMint(_saleId, sale.editionId, _mintCount, msg.value);
+        _handleMint(_saleId, sale.editionId, _mintCount, msg.value);
 
         emit MintFromSale(_saleId, sale.editionId, _phaseId, _msgSender(), _mintCount);
     }
 
-    function handleMint(uint256 _saleId, uint256 _editionId, uint16 _mintCount, uint value) internal {
+    function _handleMint(uint256 _saleId, uint256 _editionId, uint16 _mintCount, uint value) internal {
         address receiver;
         address creator;
 
