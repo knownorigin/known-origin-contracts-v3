@@ -421,7 +421,7 @@ contract('BasicGatedSale complex tests...', function (accounts) {
                 {
                     from: buyer1,
                     value: ether('1.4')
-                }), 'Primary market exhausted')
+                }), 'not enough supply remaining to fulfil mint')
         })
     });
 })

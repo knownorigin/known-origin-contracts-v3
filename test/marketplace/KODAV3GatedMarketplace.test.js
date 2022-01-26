@@ -58,13 +58,13 @@ contract('BasicGatedSale tests...', function (accounts) {
         await this.accessControls.grantRole(this.CONTRACT_ROLE, this.basicGatedSale.address, {from: owner});
 
         // create 100 tokens to the minter
-        await this.token.mintBatchEdition(100, artist1, TOKEN_URI, {from: contract});
+        await this.token.mintBatchEdition(15, artist1, TOKEN_URI, {from: contract});
 
         // Ensure basic gated sale has approval to sell tokens
         await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist1});
 
         // create  a second edition and approve it minter
-        await this.token.mintBatchEdition(100, artist2, TOKEN_URI, {from: contract});
+        await this.token.mintBatchEdition(15, artist2, TOKEN_URI, {from: contract});
         await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist2});
 
         // just for stuck tests
@@ -689,9 +689,94 @@ contract('BasicGatedSale tests...', function (accounts) {
                 expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(TWO))).to.be.equal(artist1);
             })
 
+            it('reverts if the sale is already sold out', async () => {
+                await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
+
+                const a1SalesReceipt = await this.basicGatedSale.mint(
+                    ONE,
+                    0,
+                    new BN('10'),
+                    this.merkleProof.claims[artist1].index,
+                    this.merkleProof.claims[artist1].proof,
+                    {
+                        from: artist1,
+                        value: ether('1')
+                    })
+
+                expectEvent(a1SalesReceipt, 'MintFromSale', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    phaseId: ZERO,
+                    account: artist1,
+                    mintCount: new BN('10')
+                });
+
+                const a2SalesReceipt = await this.basicGatedSale.mint(
+                    ONE,
+                    0,
+                    new BN('5'),
+                    this.merkleProof.claims[artist2].index,
+                    this.merkleProof.claims[artist2].proof,
+                    {
+                        from: artist2,
+                        value: ether('0.5')
+                    })
+
+                expectEvent(a2SalesReceipt, 'MintFromSale', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    phaseId: ZERO,
+                    account: artist2,
+                    mintCount: new BN('5')
+                });
+
+                await expectRevert(this.basicGatedSale.mint(
+                    ONE,
+                    0,
+                    ONE,
+                    this.merkleProof.claims[artist3].index,
+                    this.merkleProof.claims[artist3].proof,
+                    {
+                        from: artist3,
+                        value: ether('0.1')
+                    }), 'sale is sold out')
+            })
+
+            it('reverts if there is not enough supply to fulfil the mint request', async () => {
+                await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
+
+                const a1SalesReceipt = await this.basicGatedSale.mint(
+                    ONE,
+                    0,
+                    new BN('10'),
+                    this.merkleProof.claims[artist1].index,
+                    this.merkleProof.claims[artist1].proof,
+                    {
+                        from: artist1,
+                        value: ether('1')
+                    })
+
+                expectEvent(a1SalesReceipt, 'MintFromSale', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    phaseId: ZERO,
+                    account: artist1,
+                    mintCount: new BN('10')
+                });
+
+                await expectRevert(this.basicGatedSale.mint(
+                    ONE,
+                    0,
+                    new BN('6'),
+                    this.merkleProof.claims[artist3].index,
+                    this.merkleProof.claims[artist3].proof,
+                    {
+                        from: artist3,
+                        value: ether('0.6')
+                    }), 'not enough supply remaining to fulfil mint')
+            })
 
             it('reverts if the sale is not in progress yet', async () => {
-                // await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
 
                 await expectRevert(
                     this.basicGatedSale.mint(

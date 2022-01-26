@@ -96,7 +96,12 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
     function mint(uint256 _saleId, uint256 _phaseId, uint16 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant whenNotPaused {
         Sale memory sale = sales[_saleId];
 
+        // TODO do we need both checks, will the sold out check save gas of fetching token ids?
         require(!koda.isEditionSoldOut(sale.editionId), 'the sale is sold out');
+
+        uint256 nextAvailableToken = koda.getNextAvailablePrimarySaleToken(sale.editionId);
+        uint256 maxTokenAvailable = koda.maxTokenIdOfEdition(sale.editionId);
+        require((maxTokenAvailable - nextAvailableToken) >= _mintCount, 'not enough supply remaining to fulfil mint');
 
         require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist');
 
@@ -116,15 +121,17 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
     }
 
     function handleMint(uint256 _saleId, uint256 _editionId, uint16 _mintCount, uint value) internal {
-        // TODO check that there are enough items in the edition left to actually mint
+        address receiver;
+        address creator;
+
         for(uint i = 0; i < _mintCount; i++) {
             (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
-
-            _handleEditionSaleFunds(_saleId, _editionId, creator, receiver, value / _mintCount);
 
             // send token to buyer (assumes approval has been made, if not then this will fail)
             koda.safeTransferFrom(creator, _msgSender(), tokenId);
         }
+
+        _handleEditionSaleFunds(_saleId, _editionId, creator, receiver, value);
     }
 
     function createPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _mintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei)
@@ -134,7 +141,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         uint256 editionSize = koda.getSizeOfEdition(_editionId);
         require(editionSize > 0, 'edition does not exist');
         require(_endTime > _startTime, 'phase end time must be after start time');
-        require(_mintLimit > 0 && _mintLimit < editionSize, 'phase mint limit must be greater than 0');
+        require(_mintLimit > 0 && _mintLimit <= editionSize, 'phase mint limit must be greater than 0');
 
         uint256 saleId = editionToSale[_editionId];
         require(saleId > 0, 'no sale associated with edition id');
