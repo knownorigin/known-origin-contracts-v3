@@ -41,7 +41,9 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
     /// @dev totalMints is a mapping of sale id => address => total minted by that address
     mapping(uint256 => mapping(address => uint)) private totalMints;
     /// @dev saleCommission is a mapping of sale id => commission %, if 0 its default 15_00000 (15%)
-    mapping(uint256 => uint256) private saleCommission;
+    mapping(uint256 => uint256) public saleCommission;
+    // TODO do we want a mapping of tokenID => bool to avoid transfer and duplicate minting
+
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
     BaseMarketplace(_accessControls, _koda, _platformAccount) {}

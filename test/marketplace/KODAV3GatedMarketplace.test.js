@@ -3,7 +3,6 @@ const {ZERO_ADDRESS} = constants;
 
 const {parseBalanceMap} = require('../utils/parse-balance-map');
 const {buildArtistMerkleInput} = require('../utils/merkle-tools');
-const {min} = require("lodash/math");
 
 const KODAV3GatedMarketplace = artifacts.require('KODAV3GatedMarketplace');
 
@@ -11,6 +10,10 @@ const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3')
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 const MockERC20 = artifacts.require('MockERC20');
+
+// TODO add tests for the two canMint funcs
+// TODO edit tests to include mintCap and check you can't mint after that
+// TODO add tests for pausing sale
 
 contract('BasicGatedSale tests...', function (accounts) {
     const [owner, admin, koCommission, contract, artist1, artist2, artist3, artistDodgy, newAccessControls] = accounts;
@@ -84,6 +87,7 @@ contract('BasicGatedSale tests...', function (accounts) {
             this.merkleProof.merkleRoot,
             MOCK_MERKLE_HASH,
             ether('0.1'),
+            0,
             {from: artist1});
 
         expectEvent(receipt, 'SaleWithPhaseCreated', {
@@ -92,11 +96,11 @@ contract('BasicGatedSale tests...', function (accounts) {
         });
     });
 
-    describe('BasicGatedSale', async () => {
+    describe.only('BasicGatedSale', async () => {
 
-        describe('createSaleWithPhase', async () => {
+        describe.only('createSaleWithPhase', async () => {
 
-            it('can create a new sale and phase with correct arguments', async () => {
+            it.only('can create a new sale and phase with correct arguments', async () => {
                 const {id, editionId} = await this.basicGatedSale.sales(1)
 
                 expect(id.toString()).to.be.equal('1')
@@ -105,18 +109,20 @@ contract('BasicGatedSale tests...', function (accounts) {
                 const {
                     startTime,
                     endTime,
-                    mintLimit,
+                    walletMintLimit,
                     merkleRoot,
                     merkleIPFSHash,
-                    priceInWei
+                    priceInWei,
+                    mintCap
                 } = await this.basicGatedSale.phases(1, 0)
 
                 expect(startTime.toString()).to.not.equal('0')
                 expect(endTime.toString()).to.not.equal('0')
-                expect(mintLimit.toString()).to.be.equal('10')
+                expect(walletMintLimit.toString()).to.be.equal('10')
                 expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot)
                 expect(merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH)
                 expect(priceInWei.toString()).to.be.equal(ether('0.1').toString())
+                expect(mintCap.toString()).to.be.equal('0')
 
                 const mappingId = await this.basicGatedSale.editionToSale(editionId)
                 expect(mappingId.toString()).to.be.equal(id.toString())
@@ -223,7 +229,7 @@ contract('BasicGatedSale tests...', function (accounts) {
                 const {
                     startTime,
                     endTime,
-                    mintLimit,
+                    walletMintLimit,
                     merkleRoot,
                     merkleIPFSHash,
                     priceInWei
@@ -231,7 +237,7 @@ contract('BasicGatedSale tests...', function (accounts) {
 
                 expect(startTime.toString()).to.not.equal('0')
                 expect(endTime.toString()).to.not.equal('0')
-                expect(mintLimit.toString()).to.be.equal('5')
+                expect(walletMintLimit.toString()).to.be.equal('5')
                 expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot)
                 expect(merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH)
                 expect(priceInWei.toString()).to.be.equal(ether('0.3').toString())
@@ -419,219 +425,6 @@ contract('BasicGatedSale tests...', function (accounts) {
                         ONE,
                         {from: artist2}),
                     'no sale associated with edition id')
-            })
-        })
-
-        describe('changePhaseTimes', async () => {
-
-            it('can change both the start and end time of a phase', async () => {
-                let newStart = this.saleStart.add(time.duration.days(1));
-                let newEnd = this.saleEnd.add(time.duration.days(1));
-
-                const receipt = await this.basicGatedSale.changePhaseTimes(
-                    FIRST_MINTED_TOKEN_ID,
-                    ZERO,
-                    newStart,
-                    newEnd,
-                    {from: artist1}
-                )
-
-                const {
-                    startTime,
-                    endTime,
-                    mintLimit,
-                    merkleRoot,
-                    merkleIPFSHash,
-                    priceInWei
-                } = await this.basicGatedSale.phases(1, 0)
-
-                expect(startTime.toString()).to.be.equal(newStart.toString())
-                expect(endTime.toString()).to.be.equal(newEnd.toString())
-
-                expect(mintLimit.toString()).to.be.equal('10')
-                expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot)
-                expect(merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH)
-                expect(priceInWei.toString()).to.be.equal(ether('0.1').toString())
-
-                expectEvent(receipt, 'PhaseTimeChanged', {
-                    saleId: ONE,
-                    editionId: FIRST_MINTED_TOKEN_ID,
-                    phaseId: ZERO
-                });
-            })
-
-            it('can change just the start time', async () => {
-                let newStart = this.saleStart.add(time.duration.minutes(5));
-
-                const receipt = await this.basicGatedSale.changePhaseTimes(
-                    FIRST_MINTED_TOKEN_ID,
-                    ZERO,
-                    newStart,
-                    ZERO,
-                    {from: artist1}
-                )
-
-                const {
-                    startTime,
-                    endTime,
-                    mintLimit,
-                    merkleRoot,
-                    merkleIPFSHash,
-                    priceInWei
-                } = await this.basicGatedSale.phases(1, 0)
-
-                expect(startTime.toString()).to.be.equal(newStart.toString())
-                expect(endTime.toString()).to.be.equal(this.saleEnd.toString())
-
-                expect(mintLimit.toString()).to.be.equal('10')
-                expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot)
-                expect(merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH)
-                expect(priceInWei.toString()).to.be.equal(ether('0.1').toString())
-
-                expectEvent(receipt, 'PhaseTimeChanged', {
-                    saleId: ONE,
-                    editionId: FIRST_MINTED_TOKEN_ID,
-                    phaseId: ZERO
-                });
-            })
-
-            it('can change just the end time', async () => {
-                let newEnd = this.saleEnd.add(time.duration.minutes(5));
-
-               const receipt = await this.basicGatedSale.changePhaseTimes(
-                    FIRST_MINTED_TOKEN_ID,
-                    ZERO,
-                    ZERO,
-                    newEnd,
-                    {from: artist1}
-                )
-
-                const {
-                    startTime,
-                    endTime,
-                    mintLimit,
-                    merkleRoot,
-                    merkleIPFSHash,
-                    priceInWei
-                } = await this.basicGatedSale.phases(1, 0)
-
-                expect(startTime.toString()).to.be.equal(this.saleStart.toString())
-                expect(endTime.toString()).to.be.equal(newEnd.toString())
-
-                expect(mintLimit.toString()).to.be.equal('10')
-                expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot)
-                expect(merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH)
-                expect(priceInWei.toString()).to.be.equal(ether('0.1').toString())
-
-                expectEvent(receipt, 'PhaseTimeChanged', {
-                    saleId: ONE,
-                    editionId: FIRST_MINTED_TOKEN_ID,
-                    phaseId: ZERO
-                });
-            })
-
-            it('reverts if not called by an admin or creator', async () => {
-                await expectRevert(this.basicGatedSale.changePhaseTimes(
-                        FIRST_MINTED_TOKEN_ID,
-                        ZERO,
-                        this.saleStart,
-                        this.saleEnd,
-                        {from: artist2}),
-                    'Caller not creator or admin')
-            })
-
-            it('reverts if called when the contract is paused', async () => {
-                let receipt = await this.basicGatedSale.pause({from: admin});
-                expectEvent(receipt, 'Paused', {
-                    account: admin
-                });
-
-                await expectRevert(this.basicGatedSale.changePhaseTimes(
-                        FIRST_MINTED_TOKEN_ID,
-                        ZERO,
-                        this.saleStart,
-                        this.saleEnd,
-                        {from: artist1}),
-                    'Pausable: paused')
-            })
-
-            it('reverts if given an invalid edition id', async () => {
-                await expectRevert(this.basicGatedSale.changePhaseTimes(
-                        FIRST_MINTED_TOKEN_ID.add(new BN('5000')),
-                        ZERO,
-                        this.saleStart,
-                        this.saleEnd,
-                        {from: admin}),
-                    'edition does not exist')
-            })
-
-            it('reverts if given edition id with no associated sale', async () => {
-                await expectRevert(this.basicGatedSale.changePhaseTimes(
-                        FIRST_MINTED_TOKEN_ID.add(new BN('1000')),
-                        ZERO,
-                        this.saleStart,
-                        this.saleEnd,
-                        {from: artist2}),
-                    'no sale associated with edition id')
-            })
-
-            it('reverts if given an invalid phase id', async () => {
-                await expectRevert(this.basicGatedSale.changePhaseTimes(
-                        FIRST_MINTED_TOKEN_ID,
-                        TWO,
-                        this.saleStart,
-                        this.saleEnd,
-                        {from: artist1}),
-                    'phase does not exist')
-            })
-
-            it('reverts if given a phase id for a deleted phase', async () => {
-                const createReceipt = await this.basicGatedSale.createPhase(
-                    FIRST_MINTED_TOKEN_ID,
-                    this.saleStart.add(time.duration.days(6)),
-                    this.saleStart.add(time.duration.days(8)),
-                    new BN('5'),
-                    this.merkleProof.merkleRoot,
-                    MOCK_MERKLE_HASH,
-                    ether('0.3'),
-                    {from: artist1})
-
-                expectEvent(createReceipt, 'PhaseCreated', {
-                    saleId: ONE,
-                    phaseId: ONE,
-                    editionId: FIRST_MINTED_TOKEN_ID
-                });
-
-                const deleteReceipt = await this.basicGatedSale.removePhase(
-                    FIRST_MINTED_TOKEN_ID,
-                    ONE,
-                    {from: artist1})
-
-                expectEvent(deleteReceipt, 'PhaseRemoved', {
-                    saleId: ONE,
-                    editionId: FIRST_MINTED_TOKEN_ID,
-                    phaseId: ONE
-                });
-
-                await expectRevert(this.basicGatedSale.changePhaseTimes(
-                        FIRST_MINTED_TOKEN_ID,
-                        ONE,
-                        this.saleStart,
-                        this.saleEnd,
-                        {from: artist1}),
-                    'phase does not exist')
-            })
-
-            it('reverts if provided with both a start and end time, but end time is not after start time', async () => {
-                let newEnd = this.saleStart.sub(time.duration.days(5));
-
-                await expectRevert(this.basicGatedSale.changePhaseTimes(
-                        FIRST_MINTED_TOKEN_ID,
-                        ZERO,
-                        this.saleStart,
-                        newEnd,
-                        {from: artist1}),
-                    'phase end time must be after start time')
             })
         })
 

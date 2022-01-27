@@ -81,9 +81,9 @@ contract('BasicGatedSale complex tests...', function (accounts) {
         this.phase3End = this.phase3Start.add(time.duration.days(7))
     })
 
-    describe.only('BasicGatedSale - Complex', async () => {
+    describe('BasicGatedSale - Complex', async () => {
 
-        it.only('can create a sale with multiple phases and manage mints from each', async () => {
+        it('can create a sale with multiple phases and manage mints from each', async () => {
             // Make the sale
             const creationReceipt = await this.basicGatedSale.createSaleWithPhase(
                 FIRST_MINTED_TOKEN_ID,
