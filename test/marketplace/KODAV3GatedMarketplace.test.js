@@ -1,9 +1,9 @@
-const {expect} = require("chai");
-const {BN, expectEvent, expectRevert, time, constants, ether} = require('@openzeppelin/test-helpers');
+const {BN, expectEvent, expectRevert, time, constants, ether, balance} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
 const {parseBalanceMap} = require('../utils/parse-balance-map');
 const {buildArtistMerkleInput} = require('../utils/merkle-tools');
+const {min} = require("lodash/math");
 
 const KODAV3GatedMarketplace = artifacts.require('KODAV3GatedMarketplace');
 
@@ -12,20 +12,21 @@ const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 const MockERC20 = artifacts.require('MockERC20');
 
-this.erc20Token = undefined;
-
 contract('BasicGatedSale tests...', function (accounts) {
     const [owner, admin, koCommission, contract, artist1, artist2, artist3, artistDodgy, newAccessControls] = accounts;
 
     const STARTING_EDITION = '10000';
     const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
     const MOCK_MERKLE_HASH = '0x7B502C3A1F48C8609AE212CDFB639DEE39673F5E'
-    const ONE_HUNDRED = new BN('100');
     const ZERO = new BN('0');
     const ONE = new BN('1');
     const TWO = new BN('2');
 
     const FIRST_MINTED_TOKEN_ID = new BN('11000'); // this is implied
+
+    const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString());
+    const modulo = 10000000;
+    const platformCommission = 1500000;
 
     beforeEach(async () => {
         this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
@@ -637,56 +638,91 @@ contract('BasicGatedSale tests...', function (accounts) {
         describe('mint', async () => {
 
             it('can mint one item from a valid sale', async () => {
+                const mintPrice = ether('0.1')
+
+                const platformBalanceTracker = await balance.tracker(await this.basicGatedSale.platformAccount())
+                const artistBalanceTracker = await balance.tracker(artist1)
+                const minterBalanceTracker = await balance.tracker(artist2)
+
                 await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
 
                 const salesReceipt = await this.basicGatedSale.mint(
                     ONE,
                     0,
                     ONE,
-                    this.merkleProof.claims[artist1].index,
-                    this.merkleProof.claims[artist1].proof,
+                    this.merkleProof.claims[artist2].index,
+                    this.merkleProof.claims[artist2].proof,
                     {
-                        from: artist1,
-                        value: ether('0.1')
+                        from: artist2,
+                        value: mintPrice,
+                        gasPrice
                     })
 
                 expectEvent(salesReceipt, 'MintFromSale', {
                     saleId: ONE,
                     editionId: FIRST_MINTED_TOKEN_ID,
                     phaseId: ZERO,
-                    account: artist1,
+                    account: artist2,
                     mintCount: ONE
                 });
 
-                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist1);
+                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2);
 
+                const platformFunds = mintPrice.divn(modulo).muln(platformCommission)
+                const artistFunds = mintPrice.sub(platformFunds);
+
+                expect(await artistBalanceTracker.delta()).to.be.bignumber.equal(artistFunds)
+                expect(await platformBalanceTracker.delta()).to.be.bignumber.equal(platformFunds)
+
+                const txCost = new BN(salesReceipt.receipt.cumulativeGasUsed).mul(gasPrice)
+                const totalCost = mintPrice.add(txCost)
+
+                expect(await minterBalanceTracker.delta()).to.be.bignumber.equal(totalCost.neg())
             });
 
             it('can mint multiple items from a valid sale', async () => {
+                const mintPrice = ether('0.3')
+                const platformBalanceTracker = await balance.tracker(await this.basicGatedSale.platformAccount())
+                const artistBalanceTracker = await balance.tracker(artist1)
+                const minterBalanceTracker = await balance.tracker(artist2)
+
                 await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
 
                 const salesReceipt = await this.basicGatedSale.mint(
                     ONE,
                     0,
                     new BN('3'),
-                    this.merkleProof.claims[artist1].index,
-                    this.merkleProof.claims[artist1].proof,
+                    this.merkleProof.claims[artist2].index,
+                    this.merkleProof.claims[artist2].proof,
                     {
-                        from: artist1,
-                        value: ether('0.3')
+                        from: artist2,
+                        value: mintPrice,
+                        gasPrice
                     })
 
                 expectEvent(salesReceipt, 'MintFromSale', {
                     saleId: ONE,
                     editionId: FIRST_MINTED_TOKEN_ID,
                     phaseId: ZERO,
-                    account: artist1,
+                    account: artist2,
                     mintCount: new BN('3')
                 });
 
-                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist1);
-                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(ONE))).to.be.equal(artist1);
-                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(TWO))).to.be.equal(artist1);
+                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2);
+                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(ONE))).to.be.equal(artist2);
+                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(TWO))).to.be.equal(artist2);
+
+
+                const platformFunds = mintPrice.divn(modulo).muln(platformCommission)
+                const artistFunds = mintPrice.sub(platformFunds);
+
+                expect(await artistBalanceTracker.delta()).to.be.bignumber.equal(artistFunds)
+                expect(await platformBalanceTracker.delta()).to.be.bignumber.equal(platformFunds)
+
+                const txCost = new BN(salesReceipt.receipt.cumulativeGasUsed).mul(gasPrice)
+                const totalCost = mintPrice.add(txCost)
+
+                expect(await minterBalanceTracker.delta()).to.be.bignumber.equal(totalCost.neg())
             })
 
             it('reverts if the sale is already sold out', async () => {

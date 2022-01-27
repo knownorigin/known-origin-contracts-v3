@@ -7,8 +7,6 @@ import {BaseMarketplace} from "../marketplace/BaseMarketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
-import "hardhat/console.sol";
-
 contract KODAV3GatedMarketplace is BaseMarketplace {
     /// @notice emitted when a sale, with a single phase, is created
     event SaleWithPhaseCreated(uint256 indexed saleId, uint256 indexed editionId);
@@ -92,7 +90,6 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         emit SaleWithPhaseCreated(saleId, _editionId);
     }
 
-
     function mint(uint256 _saleId, uint256 _phaseId, uint16 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant whenNotPaused {
         Sale memory sale = sales[_saleId];
 
@@ -109,23 +106,23 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         // Up the mint count for the user
         totalMints[_saleId][_phaseId][_msgSender()] += _mintCount;
 
-        _handleMint(_saleId, sale.editionId, _mintCount, msg.value);
+        _handleMint(_saleId, sale.editionId, _mintCount);
 
         emit MintFromSale(_saleId, sale.editionId, _phaseId, _msgSender(), _mintCount);
     }
 
-    function _handleMint(uint256 _saleId, uint256 _editionId, uint16 _mintCount, uint value) internal {
-        address receiver;
-        address creator;
+    function _handleMint(uint256 _saleId, uint256 _editionId, uint16 _mintCount) internal {
+        address _receiver;
 
         for(uint i = 0; i < _mintCount; i++) {
             (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
+            _receiver = receiver;
 
             // send token to buyer (assumes approval has been made, if not then this will fail)
             koda.safeTransferFrom(creator, _msgSender(), tokenId);
         }
 
-        _handleEditionSaleFunds(_saleId, _editionId, creator, receiver, value);
+        _handleEditionSaleFunds(_saleId, _editionId, _receiver);
     }
 
     function createPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _mintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei)
@@ -185,7 +182,6 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         Phase memory phase = phases[saleId][_phaseId];
         require(phase.startTime > 0, 'phase does not exist');
 
-        // TODO could make the creator / admin repass both back in and always set? Suppose this is OK though as admin/creator
         if (_startTime > 0 && _endTime > 0) {
             require(_endTime > _startTime, 'phase end time must be after start time');
 
@@ -203,7 +199,6 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         emit PhaseTimeChanged(saleId, _editionId, _phaseId);
     }
 
-    // FIXME need internal and public, profile first and make decision?
     function canMint(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (bool) {
         Phase memory phase = phases[_saleId][_phaseId];
 
@@ -223,19 +218,18 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
 
     // not used
     function _isListingPermitted(uint256 _editionId) internal view override returns (bool) {
-        // TODO use this to check sales type etc, guard before create
         return false;
     }
 
-    function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _creator, address _receiver, uint256 _paymentAmount) internal {
+    function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _receiver) internal {
         uint256 platformPrimarySaleCommission = saleCommission[_saleId] > 0 ? saleCommission[_saleId] : 15_00000;
-        uint256 koCommission = (_paymentAmount / modulo) * platformPrimarySaleCommission;
+        uint256 koCommission = (msg.value / modulo) * platformPrimarySaleCommission;
         if (koCommission > 0) {
             (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
             require(koCommissionSuccess, "commission payment failed");
         }
 
-        (bool success,) = _receiver.call{value : _paymentAmount - koCommission}("");
+        (bool success,) = _receiver.call{value : msg.value - koCommission}("");
         require(success, "payment failed");
     }
 

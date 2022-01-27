@@ -5,9 +5,6 @@ import {BaseMarketplace} from "../marketplace/BaseMarketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
-import "hardhat/console.sol";
-
-
 contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
     /// @notice emitted when a sale is created
     event SaleCreated(uint256 indexed saleId, uint256 indexed editionId);
@@ -39,8 +36,6 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
 
     /// @dev sales is a mapping of sale id => Sale
     mapping(uint256 => Sale) public sales;
-
-    // FIXME we can have an abstract class to hold some of this...
     /// @dev editionToSale is a mapping of edition id => sale id
     mapping(uint256 => uint256) public editionToSale;
     /// @dev totalMints is a mapping of sale id => address => total minted by that address
@@ -97,25 +92,23 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
         // Up the mint count for the user
         totalMints[_saleId][_msgSender()] += _mintCount;
 
-        _handleMint(_saleId, sale.editionId, _mintCount, msg.value);
+        _handleMint(_saleId, sale.editionId, _mintCount);
 
         emit MintFromSale(_saleId, sale.editionId, _msgSender(), _mintCount);
     }
 
-    function _handleMint(uint256 _saleId, uint256 _editionId, uint16 _mintCount, uint value) internal {
-        address receiver;
-        address creator;
+    function _handleMint(uint256 _saleId, uint256 _editionId, uint16 _mintCount) internal {
+        address _receiver;
 
         for (uint i = 0; i < _mintCount; i++) {
             (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
+            _receiver = receiver;
 
             // send token to buyer (assumes approval has been made, if not then this will fail)
             koda.safeTransferFrom(creator, _msgSender(), tokenId);
         }
 
-        // FIXME presume the creator / receiver is correct
-
-        _handleEditionSaleFunds(_saleId, _editionId, creator, receiver, value);
+        _handleEditionSaleFunds(_saleId, _editionId, _receiver);
     }
 
     function _processSale(
@@ -129,19 +122,18 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
 
     // not used
     function _isListingPermitted(uint256 _editionId) internal view override returns (bool) {
-        // TODO use this to check sales type etc, guard before create
         return false;
     }
 
-    function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _creator, address _receiver, uint256 _paymentAmount) internal {
+    function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _receiver) internal {
         uint256 platformPrimarySaleCommission = saleCommission[_saleId] > 0 ? saleCommission[_saleId] : 15_00000;
-        uint256 koCommission = (_paymentAmount / modulo) * platformPrimarySaleCommission;
+        uint256 koCommission = (msg.value / modulo) * platformPrimarySaleCommission;
         if (koCommission > 0) {
             (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
             require(koCommissionSuccess, "commission payment failed");
         }
 
-        (bool success,) = _receiver.call{value : _paymentAmount - koCommission}("");
+        (bool success,) = _receiver.call{value : msg.value - koCommission}("");
         require(success, "payment failed");
     }
 

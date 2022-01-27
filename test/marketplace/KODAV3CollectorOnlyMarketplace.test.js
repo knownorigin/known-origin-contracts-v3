@@ -1,18 +1,12 @@
 const {expect} = require("chai");
-const {BN, expectEvent, expectRevert, time, constants, ether} = require('@openzeppelin/test-helpers');
+const {BN, expectEvent, expectRevert, time, constants, ether, balance} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
-const {parseBalanceMap} = require('../utils/parse-balance-map');
-const {buildArtistMerkleInput} = require('../utils/merkle-tools');
-
 const KODAV3CollectorOnlyMarketplace = artifacts.require('KODAV3CollectorOnlyMarketplace');
-
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
 const MockERC20 = artifacts.require('MockERC20');
-
-let erc20Token;
 
 contract('CollectorOnlyMarketplace tests...', function (accounts) {
     const [owner, admin, koCommission, contract, newAccessControls, artist1, artist2, buyer1, buyer2, buyer3, buyer4] = accounts;
@@ -28,6 +22,10 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
     const FIRST_MINTED_TOKEN_ID = new BN('11000');
     const SECOND_MINTED_TOKEN_ID = new BN('12000');
     const THIRD_MINTED_TOKEN_ID = new BN('13000');
+
+    const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString());
+    const modulo = 10000000;
+    const platformCommission = 1500000;
 
     beforeEach(async () => {
         this.legacyAccessControls = await SelfServiceAccessControls.new();
@@ -95,12 +93,20 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
 
     })
 
-    describe.only('CollectorOnlySale', async () => {
+    describe('CollectorOnlySale', async () => {
 
         describe('createSale', async () => {
 
             it('can create a new sale with the correct arguments', async () => {
-                const {id, creator, editionId, startTime, endTime, mintLimit, priceInWei} = await this.collectorOnlySale.sales(1)
+                const {
+                    id,
+                    creator,
+                    editionId,
+                    startTime,
+                    endTime,
+                    mintLimit,
+                    priceInWei
+                } = await this.collectorOnlySale.sales(1)
 
                 expect(id.toString()).to.be.equal('1')
                 expect(creator).to.be.equal(artist1)
@@ -125,6 +131,21 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
                     saleId: new BN('2'),
                     editionId: FIRST_MINTED_TOKEN_ID
                 });
+            })
+
+            it('reverts if the contract is paused', async () => {
+                let receipt = await this.collectorOnlySale.pause({from: admin});
+                expectEvent(receipt, 'Paused', {
+                    account: admin
+                });
+
+                await expectRevert(this.collectorOnlySale.createSale(
+                    FIRST_MINTED_TOKEN_ID,
+                    this.saleStart,
+                    this.saleEnd,
+                    new BN('10'),
+                    ether('0.1'),
+                    {from: admin}), 'Pausable: paused')
             })
 
             it('cannot create a sale without the right role', async () => {
@@ -158,7 +179,7 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
             })
 
             it('should revert if given an invalid mint limit', async () => {
-               await expectRevert(this.collectorOnlySale.createSale(
+                await expectRevert(this.collectorOnlySale.createSale(
                     FIRST_MINTED_TOKEN_ID,
                     this.saleStart,
                     this.saleEnd,
@@ -179,13 +200,22 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
         describe('mint', async () => {
 
             it('can mint one item from a sale', async () => {
+                const mintPrice = ether('0.1')
+                const platformBalanceTracker = await balance.tracker(await this.collectorOnlySale.platformAccount())
+                const artistBalanceTracker = await balance.tracker(artist1)
+                const minterBalanceTracker = await balance.tracker(buyer1)
+
                 await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
 
                 const salesReceipt = await this.collectorOnlySale.mint(
                     ONE,
                     SECOND_MINTED_TOKEN_ID,
                     ONE,
-                    {from: buyer1, value: ether('0.1')})
+                    {
+                        from: buyer1,
+                        value: mintPrice,
+                        gasPrice
+                    })
 
                 expectEvent(salesReceipt, 'MintFromSale', {
                     saleId: ONE,
@@ -195,16 +225,36 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
                 });
 
                 expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(buyer1);
+
+                const platformFunds = mintPrice.divn(modulo).muln(platformCommission)
+                const artistFunds = mintPrice.sub(platformFunds);
+
+                expect(await artistBalanceTracker.delta()).to.be.bignumber.equal(artistFunds)
+                expect(await platformBalanceTracker.delta()).to.be.bignumber.equal(platformFunds)
+
+                const txCost = new BN(salesReceipt.receipt.cumulativeGasUsed).mul(gasPrice)
+                const totalCost = mintPrice.add(txCost)
+
+                expect(await minterBalanceTracker.delta()).to.be.bignumber.equal(totalCost.neg())
             })
 
             it('can mint multiple items from a sale', async () => {
+                const mintPrice = ether('0.2')
+                const platformBalanceTracker = await balance.tracker(await this.collectorOnlySale.platformAccount())
+                const artistBalanceTracker = await balance.tracker(artist1)
+                const minterBalanceTracker = await balance.tracker(buyer1)
+
                 await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
 
                 const salesReceipt = await this.collectorOnlySale.mint(
                     ONE,
                     SECOND_MINTED_TOKEN_ID,
                     TWO,
-                    {from: buyer1, value: ether('0.2')})
+                    {
+                        from: buyer1,
+                        value: mintPrice,
+                        gasPrice
+                    })
 
                 expectEvent(salesReceipt, 'MintFromSale', {
                     saleId: ONE,
@@ -215,6 +265,30 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
 
                 expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(buyer1);
                 expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(new BN('1')))).to.be.equal(buyer1);
+
+                const platformFunds = mintPrice.divn(modulo).muln(platformCommission)
+                const artistFunds = mintPrice.sub(platformFunds);
+
+                expect(await artistBalanceTracker.delta()).to.be.bignumber.equal(artistFunds)
+                expect(await platformBalanceTracker.delta()).to.be.bignumber.equal(platformFunds)
+
+                const txCost = new BN(salesReceipt.receipt.cumulativeGasUsed).mul(gasPrice)
+                const totalCost = mintPrice.add(txCost)
+
+                expect(await minterBalanceTracker.delta()).to.be.bignumber.equal(totalCost.neg())
+            })
+
+            it('reverts if the contract is paused', async () => {
+                let receipt = await this.collectorOnlySale.pause({from: admin});
+                expectEvent(receipt, 'Paused', {
+                    account: admin
+                });
+
+                await expectRevert(this.collectorOnlySale.mint(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID,
+                    ONE,
+                    {from: buyer1, value: ether('0.1')}), 'Pausable: paused')
             })
 
             it('reverts if the caller does not own the token', async () => {
@@ -271,10 +345,10 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
 
             it('reverts when the sale is not in progress', async () => {
                 await expectRevert(this.collectorOnlySale.mint(
-                    ONE,
-                    SECOND_MINTED_TOKEN_ID,
-                    ONE,
-                    {from: buyer1, value: ether('0.1')}),
+                        ONE,
+                        SECOND_MINTED_TOKEN_ID,
+                        ONE,
+                        {from: buyer1, value: ether('0.1')}),
                     'sale not in progress')
 
                 await time.increaseTo(this.saleEnd.add(time.duration.minutes(10)))
@@ -319,8 +393,254 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
                     SECOND_MINTED_TOKEN_ID,
                     TWO,
                     {from: buyer1, value: ether('0.1')}), 'not enough wei sent to complete mint')
-
             })
         })
+
+        describe('core base tests', () => {
+
+            describe('recoverERC20', () => {
+                const _0_1_Tokens = ether('0.1');
+
+                it('Can recover an amount of ERC20 as admin', async () => {
+                    //send tokens 'accidentally' to the marketplace
+                    await this.erc20Token.transfer(this.collectorOnlySale.address, _0_1_Tokens, {from: owner});
+
+                    expect(await this.erc20Token.balanceOf(this.collectorOnlySale.address)).to.be.bignumber.equal(_0_1_Tokens);
+
+                    // recover the tokens to an admin controlled address
+                    const {receipt} = await this.collectorOnlySale.recoverERC20(
+                        this.erc20Token.address,
+                        admin,
+                        _0_1_Tokens,
+                        {
+                            from: owner
+                        }
+                    );
+
+                    await expectEvent(receipt, 'AdminRecoverERC20', {
+                        _recipient: admin,
+                        _amount: _0_1_Tokens
+                    });
+
+                    expect(await this.erc20Token.balanceOf(admin)).to.be.bignumber.equal(_0_1_Tokens);
+                });
+
+                it('Reverts if not admin', async () => {
+                    await expectRevert(
+                        this.collectorOnlySale.recoverERC20(
+                            this.erc20Token.address,
+                            admin,
+                            _0_1_Tokens,
+                            {
+                                from: contract
+                            }
+                        ),
+                        'Caller not admin'
+                    );
+                });
+            });
+
+            describe('recoverStuckETH', () => {
+                const _0_5_ETH = ether('0.5');
+
+                it.skip('Can recover eth if problem with contract', async () => {
+
+                    // send money to pre-determined address
+                    const [ownerSigner] = await ethers.getSigners();
+                    await ownerSigner.sendTransaction({
+                        to: this.collectorOnlySale.address,
+                        value: ethers.utils.parseEther('1')
+                    });
+                    expect(
+                        await balance.current(expectedDeploymentAddress)
+                    ).to.bignumber.equal(ethers.utils.parseEther('1').toString());
+
+                    // something wrong, recover the eth
+                    const adminBalTracker = await balance.tracker(admin);
+
+                    const {receipt} = await this.collectorOnlySale.recoverStuckETH(admin, _0_5_ETH, {from: owner});
+                    await expectEvent(receipt, 'AdminRecoverETH', {
+                        _recipient: admin,
+                        _amount: _0_5_ETH
+                    });
+
+                    expect(await adminBalTracker.delta()).to.be.bignumber.equal(_0_5_ETH);
+                });
+
+                it('Reverts if not admin', async () => {
+                    await expectRevert(
+                        this.collectorOnlySale.recoverStuckETH(admin, ether('1'), {from: artist1}),
+                        'Caller not admin'
+                    );
+                });
+            });
+
+            describe('updateModulo', () => {
+                const new_modulo = new BN('10000');
+
+                it('updates the reserve auction length as admin', async () => {
+                    const {receipt} = await this.collectorOnlySale.updateModulo(new_modulo, {from: owner});
+
+                    await expectEvent(receipt, 'AdminUpdateModulo', {
+                        _modulo: new_modulo
+                    });
+                });
+
+                it('Reverts when not admin', async () => {
+                    await expectRevert(
+                        this.collectorOnlySale.updateModulo(new_modulo, {from: artist1}),
+                        'Caller not admin'
+                    );
+                });
+            });
+
+            describe('updateMinBidAmount', () => {
+                const new_min_bid = ether('0.3');
+
+                it('updates the reserve auction length as admin', async () => {
+                    const {receipt} = await this.collectorOnlySale.updateMinBidAmount(new_min_bid, {from: owner});
+
+                    await expectEvent(receipt, 'AdminUpdateMinBidAmount', {
+                        _minBidAmount: new_min_bid
+                    });
+                });
+
+                it('Reverts when not admin', async () => {
+                    await expectRevert(
+                        this.collectorOnlySale.updateMinBidAmount(new_min_bid, {from: artist1}),
+                        'Caller not admin'
+                    );
+                });
+            });
+
+            describe('updateAccessControls', () => {
+                it('updates the reserve auction length as admin', async () => {
+                    const oldAccessControlAddress = this.accessControls.address;
+                    this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner});
+                    const {receipt} = await this.collectorOnlySale.updateAccessControls(this.accessControls.address, {from: owner});
+
+                    await expectEvent(receipt, 'AdminUpdateAccessControls', {
+                        _oldAddress: oldAccessControlAddress,
+                        _newAddress: this.accessControls.address
+                    });
+                });
+
+                it('Reverts when not admin', async () => {
+                    await expectRevert(
+                        this.collectorOnlySale.updateAccessControls(newAccessControls, {from: artist1}),
+                        'Caller not admin'
+                    );
+                });
+
+                it('Reverts when updating to an EOA', async () => {
+                    await expectRevert(
+                        this.collectorOnlySale.updateAccessControls(newAccessControls, {from: owner}),
+                        'function call to a non-contract account'
+                    );
+                });
+
+                it('Reverts when to a contract where sender is not admin', async () => {
+                    this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: artist1});
+                    await expectRevert(
+                        this.collectorOnlySale.updateAccessControls(this.accessControls.address, {from: owner}),
+                        'Sender must have admin role in new contract'
+                    );
+                });
+            });
+
+            describe('updateBidLockupPeriod', () => {
+                const new_lock_up = ether((6 * 60).toString());
+
+                it('updates the reserve auction length as admin', async () => {
+                    const {receipt} = await this.collectorOnlySale.updateBidLockupPeriod(new_lock_up, {from: owner});
+
+                    await expectEvent(receipt, 'AdminUpdateBidLockupPeriod', {
+                        _bidLockupPeriod: new_lock_up
+                    });
+                });
+
+                it('Reverts when not admin', async () => {
+                    await expectRevert(
+                        this.collectorOnlySale.updateBidLockupPeriod(new_lock_up, {from: artist1}),
+                        'Caller not admin'
+                    );
+                });
+            });
+
+            describe('updatePlatformAccount', () => {
+                it('updates the reserve auction length as admin', async () => {
+                    const {receipt} = await this.collectorOnlySale.updatePlatformAccount(owner, {from: owner});
+
+                    await expectEvent(receipt, 'AdminUpdatePlatformAccount', {
+                        _oldAddress: koCommission,
+                        _newAddress: owner
+                    });
+                });
+
+                it('Reverts when not admin', async () => {
+                    await expectRevert(
+                        this.collectorOnlySale.updatePlatformAccount(owner, {from: artist1}),
+                        'Caller not admin'
+                    );
+                });
+            });
+
+
+            describe('pause & unpause', async () => {
+
+                it('can be paused and unpaused by admin', async () => {
+                    let receipt = await this.collectorOnlySale.pause({from: admin});
+                    expectEvent(receipt, 'Paused', {
+                        account: admin
+                    });
+
+                    let isPaused = await this.collectorOnlySale.paused();
+                    expect(isPaused).to.be.equal(true);
+
+
+                    receipt = await this.collectorOnlySale.unpause({from: admin});
+                    expectEvent(receipt, 'Unpaused', {
+                        account: admin
+                    });
+
+                    isPaused = await this.collectorOnlySale.paused();
+                    expect(isPaused).to.be.equal(false);
+                });
+
+                it('pause - reverts when not admin', async () => {
+                    await expectRevert(
+                        this.collectorOnlySale.pause({from: buyer1}),
+                        "Caller not admin"
+                    )
+                });
+
+                it('unpause - reverts when not admin', async () => {
+                    await expectRevert(
+                        this.collectorOnlySale.unpause({from: buyer1}),
+                        "Caller not admin"
+                    )
+                });
+            });
+        });
+
+        describe('updatePlatformPrimarySaleCommission', () => {
+            const new_commission = new BN('1550000');
+
+            it('updates the platform primary sale commission as admin', async () => {
+                const {receipt} = await this.collectorOnlySale.updatePlatformPrimarySaleCommission(ONE, new_commission, {from: admin});
+
+                await expectEvent(receipt, 'AdminUpdatePlatformPrimarySaleCommissionGatedSale', {
+                    saleId: ONE,
+                    platformPrimarySaleCommission: new_commission
+                });
+            });
+
+            it('Reverts when not admin', async () => {
+                await expectRevert(
+                    this.collectorOnlySale.updatePlatformPrimarySaleCommission(ONE, new_commission, {from: buyer1}),
+                    'Caller not admin'
+                );
+            });
+        });
     });
 })
