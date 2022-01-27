@@ -1,5 +1,5 @@
 const {expect} = require("chai");
-const {BN, expectEvent, expectRevert, time, constants, ether} = require('@openzeppelin/test-helpers');
+const {BN, expectEvent, expectRevert, time, constants, ether, balance} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
 const {parseBalanceMap} = require('../utils/parse-balance-map');
@@ -19,7 +19,6 @@ contract('BasicGatedSale complex tests...', function (accounts) {
     const STARTING_EDITION = '10000';
     const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
     const MOCK_MERKLE_HASH = '0x7B502C3A1F48C8609AE212CDFB639DEE39673F5E'
-    const ONE_HUNDRED = new BN('100');
     const ZERO = new BN('0');
     const ONE = new BN('1');
     const TWO = new BN('2');
@@ -60,8 +59,8 @@ contract('BasicGatedSale complex tests...', function (accounts) {
 
         await this.accessControls.grantRole(this.CONTRACT_ROLE, this.basicGatedSale.address, {from: owner});
 
-        // create 100 tokens to the minter
-        await this.token.mintBatchEdition(21, artist, TOKEN_URI, {from: contract});
+        // create 22 tokens to the minter
+        await this.token.mintBatchEdition(29, artist, TOKEN_URI, {from: contract});
 
         // Ensure basic gated sale has approval to sell tokens
         await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist});
@@ -82,15 +81,15 @@ contract('BasicGatedSale complex tests...', function (accounts) {
         this.phase3End = this.phase3Start.add(time.duration.days(7))
     })
 
-    describe('BasicGatedSale - Complex', async () => {
+    describe.only('BasicGatedSale - Complex', async () => {
 
-        it('can create a sale with multiple phases and manage mints from each', async () => {
+        it.only('can create a sale with multiple phases and manage mints from each', async () => {
             // Make the sale
             const creationReceipt = await this.basicGatedSale.createSaleWithPhase(
                 FIRST_MINTED_TOKEN_ID,
                 this.phase1Start,
                 this.phase1End,
-                new BN('3'),
+                THREE,
                 this.merkleProof1.merkleRoot,
                 MOCK_MERKLE_HASH,
                 ether('0.1'),
@@ -415,7 +414,7 @@ contract('BasicGatedSale complex tests...', function (accounts) {
             await expectRevert(this.basicGatedSale.mint(
                 ONE,
                 THREE,
-                new BN('1'),
+                ONE,
                 this.merkleProof3.claims[buyer1].index,
                 this.merkleProof3.claims[buyer1].proof,
                 {
