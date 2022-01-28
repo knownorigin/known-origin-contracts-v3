@@ -18,8 +18,10 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
     event MintFromSale(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId, address account, uint256 mintCount);
     /// @notice emitted when primary sales commission is updated for a sale
     event AdminUpdatePlatformPrimarySaleCommissionGatedSale(uint256 indexed saleId, uint256 platformPrimarySaleCommission);
-    /// @notice emitted when a phase time is changed
-    event PhaseTimeChanged(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId);
+    /// @notice emitted when a sale is paused
+    event SalePaused(uint256 indexed saleId, uint256 indexed editionId);
+    /// @notice emitted when a sale is resumed
+    event SaleResumed(uint256 indexed saleId, uint256 indexed editionId);
 
     /// @dev incremental counter for the ID of a sale
     uint256 private saleIdCounter;
@@ -40,7 +42,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
     struct Sale {
         uint256 id; // The ID of the sale
         uint256 editionId; // The ID of the edition the sale will mint
-        bool paused; // Whether the sale is currently paused // TODO add logic for no minting when sale is paused
+        bool paused; // Whether the sale is currently paused
     }
 
     /// @dev sales is a mapping of sale id => Sale
@@ -77,7 +79,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         uint256 saleId = saleIdCounter += 1;
 
         // Assign the sale to the sales and editionToSale mappings
-        sales[saleId] = Sale({id : saleId, editionId : _editionId, paused: false});
+        sales[saleId] = Sale({id : saleId, editionId : _editionId, paused : false});
         editionToSale[_editionId] = saleId;
 
         // Add the phase to the phases mapping
@@ -88,8 +90,8 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         merkleRoot : _merkleRoot,
         merkleIPFSHash : _merkleIPFSHash,
         priceInWei : _priceInWei,
-        mintCap: _mintCap,
-        mintCounter: 0
+        mintCap : _mintCap,
+        mintCounter : 0
         }));
 
         emit SaleWithPhaseCreated(saleId, _editionId);
@@ -98,13 +100,14 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
     function mint(uint256 _saleId, uint256 _phaseId, uint16 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant whenNotPaused {
         Sale memory sale = sales[_saleId];
 
+        require(!sale.paused, 'sale is paused');
         require(!koda.isEditionSoldOut(sale.editionId), 'the sale is sold out');
         require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist');
 
         Phase storage phase = phases[_saleId][_phaseId];
 
-        if(phase.mintCap > 0) {
-            require(phase.mintCounter + _mintCount > phase.mintCap, 'phase mint cap reached');
+        if (phase.mintCap > 0) {
+            require(phase.mintCounter + _mintCount <= phase.mintCap, 'phase mint cap reached');
         }
 
         require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale phase not in progress');
@@ -157,8 +160,8 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         merkleRoot : _merkleRoot,
         merkleIPFSHash : _merkleIPFSHash,
         priceInWei : _priceInWei,
-        mintCap: _mintCap,
-        mintCounter: 0
+        mintCap : _mintCap,
+        mintCounter : 0
         }));
 
         emit PhaseCreated(sale.id, _editionId, phases[saleId].length - 1);
@@ -188,8 +191,20 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         return MerkleProof.verify(_merkleProof, phase.merkleRoot, node);
     }
 
-    function remainingPhaseMintAllowance(uint256 _saleId, uint _phaseId, address _account) public view returns (uint256) {
+    function remainingPhaseMintAllowance(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (uint256) {
+        require(onPhaseMintList(_saleId, _phaseId, _index, _account, _merkleProof), 'address not able to mint from sale');
+
         return phases[_saleId][_phaseId].walletMintLimit - totalMints[_saleId][_phaseId][_account];
+    }
+
+    function toggleSalePause(uint256 _saleId, uint256 _editionId) public onlyCreatorOrAdmin(_editionId) {
+        if(sales[_saleId].paused) {
+            sales[_saleId].paused = false;
+            emit SaleResumed(_saleId, _editionId);
+        } else {
+            sales[_saleId].paused = true;
+            emit SalePaused(_saleId, _editionId);
+        }
     }
 
     function _processSale(
