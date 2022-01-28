@@ -42,7 +42,7 @@ BuyNowMarketplace {
 
     // Stepped auction definition
     struct Stepped {
-        uint128 basePrice;
+          basePrice;
         uint128 stepPrice;
         uint128 startDate;
         address seller;
