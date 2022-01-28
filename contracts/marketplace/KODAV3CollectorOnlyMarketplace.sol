@@ -120,11 +120,11 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
     function canMint(uint256 _saleId, uint256 _tokenId, address _account, address _creator) public view returns (bool) {
         require(sales[_saleId].creator == _creator, 'sale id does not match creator address');
 
-        if(koda.ownerOf(_tokenId) != _account) {
+        if (koda.ownerOf(_tokenId) != _account) {
             return false;
         }
 
-        if(koda.getCreatorOfToken(_tokenId) != _creator) {
+        if (koda.getCreatorOfToken(_tokenId) != _creator) {
             return false;
         }
 
@@ -138,7 +138,7 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
     }
 
     function toggleSalePause(uint256 _saleId, uint256 _editionId) public onlyCreatorOrAdmin(_editionId) {
-        if(sales[_saleId].paused) {
+        if (sales[_saleId].paused) {
             sales[_saleId].paused = false;
             emit SaleResumed(_saleId, _editionId);
         } else {
