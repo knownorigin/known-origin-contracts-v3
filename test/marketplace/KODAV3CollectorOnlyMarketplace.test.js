@@ -13,9 +13,6 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
 
     const STARTING_EDITION = '10000';
     const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
-    const MOCK_MERKLE_HASH = '0x7B502C3A1F48C8609AE212CDFB639DEE39673F5E'
-    const ONE_HUNDRED = new BN('100');
-    const ZERO = new BN('0');
     const ONE = new BN('1');
     const TWO = new BN('2');
 
@@ -291,12 +288,33 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
                     {from: buyer1, value: ether('0.1')}), 'Pausable: paused')
             })
 
+            it('reverts if the sale is paused', async () => {
+                const pauseReceipt = await this.collectorOnlySale.toggleSalePause(
+                    ONE,
+                    FIRST_MINTED_TOKEN_ID
+                )
+
+                expectEvent(pauseReceipt, 'SalePaused', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID
+                });
+
+                await expectRevert(this.collectorOnlySale.mint(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID,
+                    TWO,
+                    {
+                        from: buyer1,
+                        value: ether('0.2'),
+                    }), 'sale is paused')
+            })
+
             it('reverts if the caller does not own the token', async () => {
                 await expectRevert(this.collectorOnlySale.mint(
                     ONE,
                     SECOND_MINTED_TOKEN_ID,
                     TWO,
-                    {from: buyer4, value: ether('0.2')}), 'caller does not own token')
+                    {from: buyer4, value: ether('0.2')}), 'address unable to mint from sale')
             })
 
             it('reverts if the given token is not created by the artist', async () => {
@@ -304,7 +322,7 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
                     ONE,
                     THIRD_MINTED_TOKEN_ID,
                     ONE,
-                    {from: buyer1, value: ether('0.1')}), 'token creator does not match sale creator')
+                    {from: buyer1, value: ether('0.1')}), 'address unable to mint from sale')
             })
 
             it('reverts when the sale is sold out', async () => {
@@ -393,6 +411,182 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
                     SECOND_MINTED_TOKEN_ID,
                     TWO,
                     {from: buyer1, value: ether('0.1')}), 'not enough wei sent to complete mint')
+            })
+        })
+
+        describe('toggleSalePause', async () => {
+            it('an admin should be able to pause and resume a sale', async () => {
+                const pauseReceipt = await this.collectorOnlySale.toggleSalePause(
+                    ONE,
+                    FIRST_MINTED_TOKEN_ID,
+                    {from: admin}
+                )
+
+                expectEvent(pauseReceipt, 'SalePaused', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID
+                });
+
+                let pausedSale = await this.collectorOnlySale.sales(1)
+
+                expect(pausedSale.paused).to.be.equal(true)
+
+                const resumeReceipt = await this.collectorOnlySale.toggleSalePause(
+                    ONE,
+                    FIRST_MINTED_TOKEN_ID,
+                    {from: admin}
+                )
+
+                expectEvent(resumeReceipt, 'SaleResumed', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID
+                });
+
+                let resumedSale = await this.collectorOnlySale.sales(1)
+
+                expect(resumedSale.paused).to.be.equal(false)
+            })
+
+            it('an owner should be able to pause and resume a sale', async () => {
+                const pauseReceipt = await this.collectorOnlySale.toggleSalePause(
+                    ONE,
+                    FIRST_MINTED_TOKEN_ID,
+                    {from: artist1}
+                )
+
+                expectEvent(pauseReceipt, 'SalePaused', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID
+                });
+
+                let pausedSale = await this.collectorOnlySale.sales(1)
+
+                expect(pausedSale.paused).to.be.equal(true)
+
+                const resumeReceipt = await this.collectorOnlySale.toggleSalePause(
+                    ONE,
+                    FIRST_MINTED_TOKEN_ID,
+                    {from: artist1}
+                )
+
+                expectEvent(resumeReceipt, 'SaleResumed', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID
+                });
+
+                let resumedSale = await this.collectorOnlySale.sales(1)
+
+                expect(resumedSale.paused).to.be.equal(false)
+            })
+
+            it('should revert if called by someone who isnt an admin or creator', async () => {
+                await expectRevert(this.collectorOnlySale.toggleSalePause(
+                    ONE,
+                    FIRST_MINTED_TOKEN_ID,
+                    {from: buyer3}
+                ), 'Caller not creator or admin')
+            })
+        })
+
+        describe('canMint', async () => {
+            it('should return true if given a valid account', async () => {
+                let check = await this.collectorOnlySale.canMint(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID,
+                    buyer1,
+                    artist1)
+
+                expect(check).to.be.true
+            })
+
+            it('should return false if the account doesnt own the token', async () => {
+                let check = await this.collectorOnlySale.canMint(
+                    ONE,
+                    THIRD_MINTED_TOKEN_ID,
+                    buyer4,
+                    artist1)
+
+                expect(check).to.be.false
+            })
+
+            it('should return false if the token was not made by the creator', async () => {
+                let check = await this.collectorOnlySale.canMint(
+                    ONE,
+                    THIRD_MINTED_TOKEN_ID,
+                    buyer1,
+                    artist1)
+
+                expect(check).to.be.false
+            })
+
+            it('should revert if given a sale id that doesnt match the creator', async () => {
+                const salesReceipt = await this.collectorOnlySale.createSale(
+                    THIRD_MINTED_TOKEN_ID,
+                    this.saleStart,
+                    this.saleEnd,
+                    ONE,
+                    ether('0.1'),
+                    {from: artist2});
+
+                expectEvent(salesReceipt, 'SaleCreated', {
+                    saleId: new BN('2'),
+                    editionId: THIRD_MINTED_TOKEN_ID
+                });
+
+                await expectRevert(this.collectorOnlySale.canMint(
+                    TWO,
+                    THIRD_MINTED_TOKEN_ID,
+                    buyer1,
+                    artist1), 'sale id does not match creator address')
+            })
+        })
+
+        describe('remaining mint allowance', async () => {
+            it('returns a full allowance for a valid account that hasnt minted', async () => {
+                let allowance = await this.collectorOnlySale.remainingMintAllowance(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID,
+                    buyer1,
+                    artist1
+                )
+
+                expect(allowance.toString()).to.be.equal('10')
+            })
+
+            it('returns an updated allowance for a valid account that has minted', async () => {
+                await time.increaseTo(this.saleStart.add(time.duration.minutes(10)))
+
+                const b1SalesReceipt = await this.collectorOnlySale.mint(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID,
+                    new BN('5'),
+                    {from: buyer1, value: ether('0.5')})
+
+                expectEvent(b1SalesReceipt, 'MintFromSale', {
+                    saleId: ONE,
+                    editionId: FIRST_MINTED_TOKEN_ID,
+                    account: buyer1,
+                    mintCount: new BN('5')
+                });
+
+
+                let allowance = await this.collectorOnlySale.remainingMintAllowance(
+                    ONE,
+                    SECOND_MINTED_TOKEN_ID,
+                    buyer1,
+                    artist1
+                )
+
+                expect(allowance.toString()).to.be.equal('5')
+            })
+
+            it('reverts if given a user not able to mint', async () => {
+                await expectRevert(this.collectorOnlySale.remainingMintAllowance(
+                        ONE,
+                        SECOND_MINTED_TOKEN_ID,
+                        buyer4,
+                        artist1
+                ),'address not able to mint from sale')
             })
         })
 

@@ -93,6 +93,7 @@ contract('BasicGatedSale complex tests...', function (accounts) {
                 this.merkleProof1.merkleRoot,
                 MOCK_MERKLE_HASH,
                 ether('0.1'),
+                0,
                 {from: artist});
 
             expectEvent(creationReceipt, 'SaleWithPhaseCreated', {
@@ -109,6 +110,7 @@ contract('BasicGatedSale complex tests...', function (accounts) {
                 this.merkleProof2.merkleRoot,
                 MOCK_MERKLE_HASH,
                 ether('0.3'),
+                0,
                 {from: artist})
 
             expectEvent(phase2Receipt, 'PhaseCreated', {
@@ -126,6 +128,7 @@ contract('BasicGatedSale complex tests...', function (accounts) {
                 this.merkleProof3.merkleRoot,
                 MOCK_MERKLE_HASH,
                 ether('0.5'),
+                0,
                 {from: artist})
 
             expectEvent(phase3Receipt, 'PhaseCreated', {
@@ -156,6 +159,7 @@ contract('BasicGatedSale complex tests...', function (accounts) {
                     this.merkleProof3.merkleRoot,
                     MOCK_MERKLE_HASH,
                     ether('0.7'),
+                    0,
                     {from: buyer4}),
                 'Caller not creator or admin')
 
@@ -168,6 +172,7 @@ contract('BasicGatedSale complex tests...', function (accounts) {
                 this.merkleProof3.merkleRoot,
                 MOCK_MERKLE_HASH,
                 ether('0.7'),
+                0,
                 {from: artist})
 
             expectEvent(phase3NewReceipt, 'PhaseCreated', {
@@ -188,13 +193,6 @@ contract('BasicGatedSale complex tests...', function (accounts) {
                     value: ether('0.1')
                 }), 'sale phase not in progress')
 
-            // Try and change the sales phase to suit a dodgy actor
-            await expectRevert(this.basicGatedSale.changePhaseTimes(
-                FIRST_MINTED_TOKEN_ID,
-                ZERO,
-                this.rootTime,
-                this.rootTime.add(time.duration.days(1)),
-                {from: buyer1}), 'Caller not creator or admin')
 
             // Advance time to the first phase
             await time.increaseTo(this.phase1Start.add(time.duration.minutes(1)))

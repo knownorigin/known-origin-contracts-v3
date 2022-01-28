@@ -12,6 +12,10 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
     event MintFromSale(uint256 indexed saleId, uint256 indexed editionId, address account, uint256 mintCount);
     /// @notice emitted when primary sales commission is updated for a sale
     event AdminUpdatePlatformPrimarySaleCommissionGatedSale(uint256 indexed saleId, uint256 platformPrimarySaleCommission);
+    /// @notice emitted when a sale is paused
+    event SalePaused(uint256 indexed saleId, uint256 indexed editionId);
+    /// @notice emitted when a sale is resumed
+    event SaleResumed(uint256 indexed saleId, uint256 indexed editionId);
 
     /// @dev incremental counter for the ID of a sale
     uint256 private saleIdCounter;
@@ -24,6 +28,7 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
         uint128 endTime; // The end time of the sale
         uint16 mintLimit; // The mint limit per wallet for the sale
         uint128 priceInWei; // Price in wei for one mint
+        bool paused; // Whether the sale is currently paused
     }
 
     modifier onlyCreatorOrAdmin(uint256 _editionId) {
@@ -38,11 +43,10 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
     mapping(uint256 => Sale) public sales;
     /// @dev editionToSale is a mapping of edition id => sale id
     mapping(uint256 => uint256) public editionToSale;
-    /// @dev totalMints is a mapping of sale id => address => total minted by that address
-    mapping(uint256 => mapping(address => uint)) private totalMints;
+    /// @dev totalMints is a mapping of sale id => tokenId => total minted by that address
+    mapping(uint256 => mapping(uint256 => uint)) public totalMints;
     /// @dev saleCommission is a mapping of sale id => commission %, if 0 its default 15_00000 (15%)
     mapping(uint256 => uint256) public saleCommission;
-    // TODO do we want a mapping of tokenID => bool to avoid transfer and duplicate minting
 
 
     constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
@@ -68,7 +72,8 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
         startTime : _startTime,
         endTime : _endTime,
         mintLimit : _mintLimit,
-        priceInWei : _priceInWei
+        priceInWei : _priceInWei,
+        paused: false
         });
         editionToSale[_editionId] = saleId;
 
@@ -81,18 +86,17 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
     nonReentrant
     whenNotPaused
     {
-        require(koda.ownerOf(_tokenId) == _msgSender(), 'caller does not own token');
-
         Sale memory sale = sales[_saleId];
 
-        require(koda.getCreatorOfToken(_tokenId) == sale.creator, 'token creator does not match sale creator');
+        require(!sale.paused, 'sale is paused');
+        require(canMint(_saleId, _tokenId, _msgSender(), sale.creator), 'address unable to mint from sale');
         require(!koda.isEditionSoldOut(sale.editionId), 'the sale is sold out');
         require(block.timestamp >= sale.startTime && block.timestamp < sale.endTime, 'sale not in progress');
-        require(totalMints[_saleId][_msgSender()] + _mintCount <= sale.mintLimit, 'cannot exceed total mints for sale');
+        require(totalMints[_saleId][_tokenId] + _mintCount <= sale.mintLimit, 'cannot exceed total mints for sale');
         require(msg.value >= sale.priceInWei * _mintCount, 'not enough wei sent to complete mint');
 
         // Up the mint count for the user
-        totalMints[_saleId][_msgSender()] += _mintCount;
+        totalMints[_saleId][_tokenId] += _mintCount;
 
         _handleMint(_saleId, sale.editionId, _mintCount);
 
@@ -111,6 +115,36 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
         }
 
         _handleEditionSaleFunds(_saleId, _editionId, _receiver);
+    }
+
+    function canMint(uint256 _saleId, uint256 _tokenId, address _account, address _creator) public view returns (bool) {
+        require(sales[_saleId].creator == _creator, 'sale id does not match creator address');
+
+        if(koda.ownerOf(_tokenId) != _account) {
+            return false;
+        }
+
+        if(koda.getCreatorOfToken(_tokenId) != _creator) {
+            return false;
+        }
+
+        return true;
+    }
+
+    function remainingMintAllowance(uint256 _saleId, uint256 _tokenId, address _account, address _creator) public view returns (uint256) {
+        require(canMint(_saleId, _tokenId, _account, _creator), 'address not able to mint from sale');
+
+        return sales[_saleId].mintLimit - totalMints[_saleId][_tokenId];
+    }
+
+    function toggleSalePause(uint256 _saleId, uint256 _editionId) public onlyCreatorOrAdmin(_editionId) {
+        if(sales[_saleId].paused) {
+            sales[_saleId].paused = false;
+            emit SaleResumed(_saleId, _editionId);
+        } else {
+            sales[_saleId].paused = true;
+            emit SalePaused(_saleId, _editionId);
+        }
     }
 
     function _processSale(
