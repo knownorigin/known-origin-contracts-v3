@@ -97,6 +97,38 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         emit SaleWithPhaseCreated(saleId, _editionId);
     }
 
+    function createSaleWithPhases(uint256 _editionId, uint128[] memory _startTimes, uint128[] memory _endTimes, uint16[] memory _walletMintLimits, bytes32[] memory _merkleRoots, string[] memory _merkleIPFSHashes, uint128[] memory _pricesInWei, uint128[] memory _mintCaps)
+    public
+    whenNotPaused
+    onlyCreatorOrAdmin(_editionId) {
+        uint256 editionSize = koda.getSizeOfEdition(_editionId);
+        require(editionSize > 0, 'edition does not exist');
+
+        uint256 saleId = saleIdCounter += 1;
+
+        // Assign the sale to the sales and editionToSale mappings
+        sales[saleId] = Sale({id : saleId, editionId : _editionId, paused : false});
+        editionToSale[_editionId] = saleId;
+
+        for (uint i = 0; i < _startTimes.length; i++) {
+            require(_endTimes[i] > _startTimes[i], 'phase end time must be after start time');
+            require(_walletMintLimits[i] > 0 && _walletMintLimits[i] < editionSize, 'phase mint limit must be greater than 0');
+
+            phases[saleId].push(Phase({
+            startTime : _startTimes[i],
+            endTime : _endTimes[i],
+            walletMintLimit : _walletMintLimits[i],
+            merkleRoot : _merkleRoots[i],
+            merkleIPFSHash : _merkleIPFSHashes[i],
+            priceInWei : _pricesInWei[i],
+            mintCap : _mintCaps[i],
+            mintCounter : 0
+            }));
+        }
+
+        emit SaleWithPhaseCreated(saleId, _editionId);
+    }
+
     function mint(uint256 _saleId, uint256 _phaseId, uint16 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant whenNotPaused {
         Sale memory sale = sales[_saleId];
 

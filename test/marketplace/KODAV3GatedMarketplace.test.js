@@ -209,6 +209,59 @@ contract('BasicGatedSale tests...', function (accounts) {
             });
         });
 
+        describe('createSaleWithPhases', async () => {
+            it('can create a new sale with one phase', async () => {
+                const receipt = await this.basicGatedSale.createSaleWithPhases(
+                    FIRST_MINTED_TOKEN_ID,
+                    [this.saleStart],
+                    [this.saleEnd],
+                    [new BN('10')],
+                    [this.merkleProof.merkleRoot],
+                    [MOCK_MERKLE_HASH],
+                    [ether('0.1')],
+                    [10],
+                    {from: admin})
+
+                expectEvent(receipt, 'SaleWithPhaseCreated', {
+                    saleId: new BN('2'),
+                    editionId: FIRST_MINTED_TOKEN_ID
+                });
+
+                let {priceInWei, mintCap} = await this.basicGatedSale.phases(2, 0)
+
+                expect(priceInWei.toString()).to.be.equal(ether('0.1').toString())
+                expect(mintCap.toString()).to.be.equal('10')
+            })
+
+            it('can create a new sale with multiple phases', async () => {
+                const receipt = await this.basicGatedSale.createSaleWithPhases(
+                    FIRST_MINTED_TOKEN_ID,
+                    [this.saleStart, this.saleStart.add(time.duration.days(1))],
+                    [this.saleEnd, this.saleEnd.add(time.duration.days(1))],
+                    [new BN('10'), new BN('10')],
+                    [this.merkleProof.merkleRoot, this.merkleProof.merkleRoot],
+                    [MOCK_MERKLE_HASH, MOCK_MERKLE_HASH],
+                    [ether('0.1'), ether('0.2')],
+                    [10, 20],
+                    {from: admin})
+
+                expectEvent(receipt, 'SaleWithPhaseCreated', {
+                    saleId: new BN('2'),
+                    editionId: FIRST_MINTED_TOKEN_ID
+                });
+
+                let phase1 = await this.basicGatedSale.phases(2, 0)
+
+                expect(phase1.priceInWei.toString()).to.be.equal(ether('0.1').toString())
+                expect(phase1.mintCap.toString()).to.be.equal('10')
+
+                let phase2 = await this.basicGatedSale.phases(2, 1)
+
+                expect(phase2.priceInWei.toString()).to.be.equal(ether('0.2').toString())
+                expect(phase2.mintCap.toString()).to.be.equal('20')
+            })
+        })
+
         describe('createPhase', async () => {
 
             it('can create a new phase and mint from it', async () => {
