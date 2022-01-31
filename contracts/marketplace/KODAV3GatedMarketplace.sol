@@ -31,7 +31,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         uint128 startTime; // The start time of the sale as a whole
         uint128 endTime; // The end time of the sale phase, also the beginning of the next phase if applicable
         uint16 walletMintLimit; // The mint limit per wallet for the phase
-        uint128 priceInWei; // Price in wei for one mint // FIXME I would keep this as 256 for safety and other reason I can not think of right now
+        uint128 priceInWei; // Price in wei for one mint
         bytes32 merkleRoot; // The merkle tree root for the phase
         string merkleIPFSHash; // The IPFS hash referencing the merkle tree
         uint128 mintCap; // The maximum amount of mints for the phase
@@ -220,7 +220,6 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         return MerkleProof.verify(_merkleProof, phase.merkleRoot, node);
     }
 
-    // FIXME why check merkle tree?
     function remainingPhaseMintAllowance(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (uint256) {
         require(onPhaseMintList(_saleId, _phaseId, _index, _account, _merkleProof), 'address not able to mint from sale');
 

@@ -128,6 +128,13 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
                     saleId: new BN('2'),
                     editionId: FIRST_MINTED_TOKEN_ID
                 });
+
+                // Make sure that the sale creator is not set to admin, it should be creator of edition
+                const {
+                    creator,
+                } = await this.collectorOnlySale.sales(1)
+
+                expect(creator).to.be.equal(artist1)
             })
 
             it('reverts if the contract is paused', async () => {

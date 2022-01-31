@@ -67,7 +67,7 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
         // Assign the sale to the sales and editionToSale mappings
         sales[saleId] = Sale({
         id : saleId,
-        creator : _msgSender(), // FIXME BUG!!! koda.getCreatorOfEdition(_editionId)
+        creator : koda.getCreatorOfEdition(_editionId),
         editionId : _editionId,
         startTime : _startTime,
         endTime : _endTime,
