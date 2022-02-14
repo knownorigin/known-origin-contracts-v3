@@ -7,8 +7,12 @@ import {BaseUpgradableMarketplace} from "../marketplace/BaseUpgradableMarketplac
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
-// TODO consider off-chain path for this as well
+// TODO bring in off-chain signature based solution as well
+// TODO do we need an initialize/upgrade event so we can pick up on the current instance pointers?
 // TODO add interfaces to IKODAV3Marketplace
+// TODO token ID needs to be emitted when being purchased so we know which token has sold
+// TODO (test) Confirm we can convert from a gated sale to a buy now flow?
+// TODO (test) Impact of starting in a reserve auction, setting up a gated sale and selling it during the final auction close?
 
 contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
 
@@ -151,6 +155,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
         totalMints[_saleId][_phaseId][_msgSender()] += _mintCount;
         phase.mintCounter += _mintCount;
 
+        // TODO Ditch this if not needed and is handle by a per token event?
         emit MintFromSale(_saleId, sale.editionId, _phaseId, _msgSender(), _mintCount);
     }
 
@@ -160,6 +165,8 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
         for (uint i = 0; i < _mintCount; i++) {
             (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
             _receiver = receiver;
+
+            // TODO this needs to include token ID events so we know which one has just sold
 
             // send token to buyer (assumes approval has been made, if not then this will fail)
             koda.safeTransferFrom(creator, _msgSender(), tokenId);
