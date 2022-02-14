@@ -2,7 +2,7 @@ const {expect} = require("chai");
 const {BN, expectEvent, expectRevert, time, constants, ether, balance} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
-const KODAV3CollectorOnlyMarketplace = artifacts.require('KODAV3CollectorOnlyMarketplace');
+const KODAV3UpgradableCollectorOnlyMarketplace = artifacts.require('KODAV3UpgradableCollectorOnlyMarketplace');
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
 const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls');
@@ -48,7 +48,7 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
         // Note: this is a test hack so we can mint tokens direct
         await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
 
-        this.collectorOnlySale = await KODAV3CollectorOnlyMarketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner})
+        this.collectorOnlySale = await KODAV3UpgradableCollectorOnlyMarketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner})
 
         await this.accessControls.grantRole(this.CONTRACT_ROLE, this.collectorOnlySale.address, {from: owner});
 

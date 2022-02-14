@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import {BaseMarketplace} from "../marketplace/BaseMarketplace.sol";
+import {BaseUpgradableMarketplace} from "../marketplace/BaseUpgradableMarketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
-contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
+// TODO consider off-chain path for this as well
+// TODO add interfaces to IKODAV3Marketplace
+
+contract KODAV3UpgradableCollectorOnlyMarketplace is BaseUpgradableMarketplace {
+
     /// @notice emitted when a sale is created
     event SaleCreated(uint256 indexed saleId, uint256 indexed editionId);
     /// @notice emitted when someone mints from a sale
@@ -31,14 +35,6 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
         bool paused; // Whether the sale is currently paused
     }
 
-    modifier onlyCreatorOrAdmin(uint256 _editionId) {
-        require(
-            accessControls.hasAdminRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
-            "Caller not creator or admin"
-        );
-        _;
-    }
-
     /// @dev sales is a mapping of sale id => Sale
     mapping(uint256 => Sale) public sales;
     /// @dev editionToSale is a mapping of edition id => sale id
@@ -48,9 +44,13 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
     /// @dev saleCommission is a mapping of sale id => commission %, if 0 its default 15_00000 (15%)
     mapping(uint256 => uint256) public saleCommission;
 
-
-    constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
-    BaseMarketplace(_accessControls, _koda, _platformAccount) {}
+    modifier onlyCreatorOrAdmin(uint256 _editionId) {
+        require(
+            accessControls.hasAdminRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
+            "Caller not creator or admin"
+        );
+        _;
+    }
 
     function createSale(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _mintLimit, uint128 _priceInWei)
     public
@@ -73,7 +73,7 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
         endTime : _endTime,
         mintLimit : _mintLimit,
         priceInWei : _priceInWei,
-        paused: false
+        paused : false
         });
         editionToSale[_editionId] = saleId;
 
@@ -145,20 +145,6 @@ contract KODAV3CollectorOnlyMarketplace is BaseMarketplace {
             sales[_saleId].paused = true;
             emit SalePaused(_saleId, _editionId);
         }
-    }
-
-    function _processSale(
-        uint256 _editionId,
-        uint256 _paymentAmount,
-        address _buyer,
-        address _seller
-    ) internal override returns (uint256) {
-        return 0;
-    }
-
-    // not used
-    function _isListingPermitted(uint256 _editionId) internal view override returns (bool) {
-        return false;
     }
 
     function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _receiver) internal {

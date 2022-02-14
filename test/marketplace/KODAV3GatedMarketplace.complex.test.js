@@ -5,7 +5,7 @@ const {ZERO_ADDRESS} = constants;
 const {parseBalanceMap} = require('../utils/parse-balance-map');
 const {buildArtistMerkleInput} = require('../utils/merkle-tools');
 
-const KODAV3GatedMarketplace = artifacts.require('KODAV3GatedMarketplace');
+const KODAV3UpgradableGatedMarketplace = artifacts.require('KODAV3UpgradableGatedMarketplace');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
@@ -55,7 +55,7 @@ contract('BasicGatedSale complex tests...', function (accounts) {
         // Note: this is a test hack so we can mint tokens direct
         await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
 
-        this.basicGatedSale = await KODAV3GatedMarketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner});
+        this.basicGatedSale = await KODAV3UpgradableGatedMarketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner});
 
         await this.accessControls.grantRole(this.CONTRACT_ROLE, this.basicGatedSale.address, {from: owner});
 
