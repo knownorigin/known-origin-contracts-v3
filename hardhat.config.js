@@ -66,6 +66,8 @@ module.exports = {
       'KOAccessControls',
       'KODAV3PrimaryMarketplace',
       'KODAV3SecondaryMarketplace',
+      'KODAV3SecondaryMarketplace',
+      'KODAV3GatedMarketplace',
       'MintingFactory',
     ],
     spacing: 2
