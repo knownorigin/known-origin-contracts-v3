@@ -11,6 +11,7 @@ import {IKODAV3} from "../core/IKODAV3.sol";
 // TODO do we need an initialize/upgrade event so we can pick up on the current instance pointers?
 // TODO add interfaces to IKODAV3Marketplace
 // TODO token ID needs to be emitted when being purchased so we know which token has sold
+// TODO remove hard coded to 15_00000 - add to base contract with update path + event
 // TODO (test) Confirm we can convert from a gated sale to a buy now flow?
 // TODO (test) Impact of starting in a reserve auction, setting up a gated sale and selling it during the final auction close?
 
@@ -223,7 +224,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
     function onPhaseMintList(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (bool) {
         Phase memory phase = phases[_saleId][_phaseId];
 
-        // assume balance of 1 for enabled artists
+        // assume balance of 1 for enabled minting access
         bytes32 node = keccak256(abi.encodePacked(_index, _account, uint256(1)));
         return MerkleProof.verify(_merkleProof, phase.merkleRoot, node);
     }
@@ -245,6 +246,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
     }
 
     function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _receiver) internal {
+        // TODO this should be a configurable property and not hard coded to 15_00000 - add to base contract with update path
         uint256 platformPrimarySaleCommission = saleCommission[_saleId] > 0 ? saleCommission[_saleId] : 15_00000;
         uint256 koCommission = (msg.value / modulo) * platformPrimarySaleCommission;
         if (koCommission > 0) {
