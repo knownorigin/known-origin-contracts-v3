@@ -4,10 +4,11 @@ pragma solidity 0.8.4;
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 import {BaseMarketplace} from "../marketplace/BaseMarketplace.sol";
+import {KODAV3GatedMerkleMarketplace} from "./KODAV3GatedMerkleMarketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
-contract KODAV3GatedMarketplace is BaseMarketplace {
+contract KODAV3GatedMarketplace is BaseMarketplace, KODAV3GatedMerkleMarketplace {
     /// @notice emitted when a sale, with a single phase, is created
     event SaleWithPhaseCreated(uint256 indexed saleId, uint256 indexed editionId);
     /// @notice emitted when a new phase is added to a sale
@@ -153,7 +154,7 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         emit MintFromSale(_saleId, sale.editionId, _phaseId, _msgSender(), _mintCount);
     }
 
-    function _handleMint(uint256 _saleId, uint256 _editionId, uint16 _mintCount) internal {
+    function _handleMint(uint256 _saleId, uint256 _editionId, uint16 _mintCount) internal override {
         address _receiver;
 
         for (uint i = 0; i < _mintCount; i++) {
@@ -241,16 +242,16 @@ contract KODAV3GatedMarketplace is BaseMarketplace {
         uint256 _paymentAmount,
         address _buyer,
         address _seller
-    ) internal override returns (uint256) {
+    ) internal pure override returns (uint256) {
         return 0;
     }
 
     // not used
-    function _isListingPermitted(uint256 _editionId) internal view override returns (bool) {
+    function _isListingPermitted(uint256 _editionId) internal pure override returns (bool) {
         return false;
     }
 
-    function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _receiver) internal {
+    function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _receiver) internal override {
         uint256 platformPrimarySaleCommission = saleCommission[_saleId] > 0 ? saleCommission[_saleId] : 15_00000;
         uint256 koCommission = (msg.value / modulo) * platformPrimarySaleCommission;
         if (koCommission > 0) {
