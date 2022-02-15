@@ -8,6 +8,7 @@ import {KODAV3GatedMerkleMarketplace} from "./KODAV3GatedMerkleMarketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
+// TODO are there any issues by inheriting from contracts with state in the upgrade flow?
 // TODO remove hard coded to 15_00000 - add to base contract with update path + event
 // TODO (test) Confirm we can convert from a gated sale to a buy now flow?
 // TODO (test) Impact of starting in a reserve auction, setting up a gated sale and selling it during the final auction close?
@@ -16,16 +17,24 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
 
     /// @notice emitted when a sale, with a single phase, is created
     event SaleWithPhaseCreated(uint256 indexed saleId, uint256 indexed editionId);
+
     /// @notice emitted when a new phase is added to a sale
     event PhaseCreated(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId);
+
     /// @notice emitted when a phase is removed from a sale
     event PhaseRemoved(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId);
+
+    // TODO indexed params cost more - is it worth reducing the indexed options?
+    // TODO now we have token ID I am wondering if mint count is needed as that can be pushed to indexer if needed
     /// @notice emitted when someone mints from a sale
     event MintFromSale(uint256 indexed saleId, uint256 indexed tokenId, uint256 indexed phaseId, address account, uint256 mintCount);
+
     /// @notice emitted when primary sales commission is updated for a sale
     event AdminUpdatePlatformPrimarySaleCommissionGatedSale(uint256 indexed saleId, uint256 platformPrimarySaleCommission);
+
     /// @notice emitted when a sale is paused
     event SalePaused(uint256 indexed saleId, uint256 indexed editionId);
+
     /// @notice emitted when a sale is resumed
     event SaleResumed(uint256 indexed saleId, uint256 indexed editionId);
 
@@ -53,12 +62,16 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
 
     /// @dev sales is a mapping of sale id => Sale
     mapping(uint256 => Sale) public sales;
+
     /// @dev phases is a mapping of sale id => array of associated phases
     mapping(uint256 => Phase[]) public phases;
+
     /// @dev totalMints is a mapping of sale id => phase id => address => total minted by that address
-    mapping(uint256 => mapping(uint256 => mapping(address => uint))) public totalMints;
+    mapping(uint256 => mapping(uint256 => mapping(address => uint256))) public totalMints;
+
     /// @dev editionToSale is a mapping of edition id => sale id
     mapping(uint256 => uint256) public editionToSale;
+
     /// @dev saleCommission is a mapping of sale id => commission %, if 0 its default 15_00000 (15%)
     mapping(uint256 => uint256) public saleCommission;
 
@@ -133,11 +146,19 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     }
 
     // todo - might be nice to add recipient even if user mints to self adding the extra param allows wert and other patterns to be possible
-    function mint(uint256 _saleId, uint256 _phaseId, uint16 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant whenNotPaused {
+    function mint(uint256 _saleId, uint256 _phaseId, uint16 _mintCount, uint256 _index, bytes32[] calldata _merkleProof)
+    payable
+    public
+    nonReentrant
+    whenNotPaused {
         Sale memory sale = sales[_saleId];
 
         require(!sale.paused, 'sale is paused');
+
+        // TODO do we need to check if the sale it sold out at this point as in theory the purchase would revert?
+        // TODO apply same changes to merkle version if we remove this
         require(!koda.isEditionSoldOut(sale.editionId), 'the sale is sold out');
+
         require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist');
 
         Phase storage phase = phases[_saleId][_phaseId];
@@ -216,7 +237,10 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     }
 
     /// @dev checks whether a given user is on the list to mint from a phase
-    function onPhaseMintList(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (bool) {
+    function onPhaseMintList(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof)
+    public
+    view
+    returns (bool) {
         Phase memory phase = phases[_saleId][_phaseId];
 
         // assume balance of 1 for enabled minting access
@@ -224,7 +248,10 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         return MerkleProof.verify(_merkleProof, phase.merkleRoot, node);
     }
 
-    function remainingPhaseMintAllowance(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof) public view returns (uint256) {
+    function remainingPhaseMintAllowance(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof)
+    public
+    view
+    returns (uint256) {
         require(onPhaseMintList(_saleId, _phaseId, _index, _account, _merkleProof), 'address not able to mint from sale');
 
         return phases[_saleId][_phaseId].walletMintLimit - totalMints[_saleId][_phaseId][_account];
