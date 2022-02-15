@@ -3,12 +3,13 @@ pragma solidity 0.8.4;
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-import {BaseMarketplace} from "../marketplace/BaseMarketplace.sol";
+import {BaseUpgradableMarketplace} from "../../../marketplace/BaseUpgradableMarketplace.sol";
 import {KODAV3GatedMerkleMarketplace} from "./KODAV3GatedMerkleMarketplace.sol";
-import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
-import {IKODAV3} from "../core/IKODAV3.sol";
+import {IKOAccessControlsLookup} from "../../../access/IKOAccessControlsLookup.sol";
+import {IKODAV3} from "../../../core/IKODAV3.sol";
 
-contract KODAV3GatedMarketplace is BaseMarketplace, KODAV3GatedMerkleMarketplace {
+contract MockKODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3GatedMerkleMarketplace {
+
     /// @notice emitted when a sale, with a single phase, is created
     event SaleWithPhaseCreated(uint256 indexed saleId, uint256 indexed editionId);
     /// @notice emitted when a new phase is added to a sale
@@ -64,9 +65,6 @@ contract KODAV3GatedMarketplace is BaseMarketplace, KODAV3GatedMerkleMarketplace
         );
         _;
     }
-
-    constructor(IKOAccessControlsLookup _accessControls, IKODAV3 _koda, address _platformAccount)
-    BaseMarketplace(_accessControls, _koda, _platformAccount) {}
 
     function createSaleWithPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _walletMintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei, uint128 _mintCap)
     public
@@ -267,5 +265,9 @@ contract KODAV3GatedMarketplace is BaseMarketplace, KODAV3GatedMerkleMarketplace
         saleCommission[_saleId] = _platformPrimarySaleCommission;
 
         emit AdminUpdatePlatformPrimarySaleCommissionGatedSale(_saleId, _platformPrimarySaleCommission);
+    }
+
+    function getGreatestFootballTeam() external pure returns (string memory) {
+        return "Hull City";
     }
 }

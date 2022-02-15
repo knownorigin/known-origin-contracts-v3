@@ -79,6 +79,7 @@ Collab royalties registry  - 0x3005BB70CF6099e919Fb2E846abC8Fa1C710f613 = (verif
 Omni deployer              - 0x90764bB20aC05A53eBE03dF17fc61abAbC1Ee059 = (verified)
 V1 funds splitter          - 0x119f6fb742b9ace412f177875a169b23487fa664 = (verified) 
 V1 funds receiver          - 0xb4bb0960b5095e5a0abd07d18803f45c4c4eadf6 = (verified) 
+KODAV3GatedMarketplace     - 0x39ccD73f393C311E26C36127f047b2CAfAA07409 =
 ```
 
 ### Mainnet

@@ -7,6 +7,7 @@ require('@nomiclabs/hardhat-solhint');
 require('hardhat-contract-sizer')
 require("@nomiclabs/hardhat-etherscan");
 require('hardhat-abi-exporter');
+require('@openzeppelin/hardhat-upgrades')
 
 const INFURA_PROJECT_ID = process.env.INFURA_PROJECT_ID;
 const KO_DEPLOYER_PRIVATE_KEY = process.env.KO_DEPLOYER_PRIVATE_KEY;
@@ -66,6 +67,9 @@ module.exports = {
       'KOAccessControls',
       'KODAV3PrimaryMarketplace',
       'KODAV3SecondaryMarketplace',
+      'KODAV3SecondaryMarketplace',
+      'KODAV3UpgradableGatedMarketplace',
+      'KODAV3UpgradableCollectorOnlyMarketplace',
       'MintingFactory',
     ],
     spacing: 2
