@@ -3,6 +3,25 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "address",
+        "name": "previousAdmin",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newAdmin",
+        "type": "address"
+      }
+    ],
+    "name": "AdminChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "contract IERC20",
         "name": "_token",
@@ -157,6 +176,19 @@
     "inputs": [
       {
         "indexed": true,
+        "internalType": "address",
+        "name": "beacon",
+        "type": "address"
+      }
+    ],
+    "name": "BeaconUpgraded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "uint256",
         "name": "_id",
         "type": "uint256"
@@ -224,6 +256,126 @@
       }
     ],
     "name": "BidderRefundedFailed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "saleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "platformPrimarySaleCommission",
+        "type": "uint256"
+      }
+    ],
+    "name": "MerkleAdminUpdatePlatformPrimarySaleCommissionGatedSale",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "saleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "phaseId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "mintCount",
+        "type": "uint256"
+      }
+    ],
+    "name": "MerkleMintFromSale",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "saleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "phaseId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "MerklePhaseCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "saleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "phaseId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "MerklePhaseRemoved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "saleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "isPaused",
+        "type": "bool"
+      }
+    ],
+    "name": "MerkleSalePauseUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "saleId",
+        "type": "uint256"
+      }
+    ],
+    "name": "MerkleSaleWithPhaseCreated",
     "type": "event"
   },
   {
@@ -397,6 +549,19 @@
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "implementation",
+        "type": "address"
+      }
+    ],
+    "name": "Upgraded",
+    "type": "event"
+  },
+  {
     "inputs": [],
     "name": "accessControls",
     "outputs": [
@@ -410,6 +575,24 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_phaseIds",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "addPhasesToMerkleSale",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "bidLockupPeriod",
     "outputs": [
@@ -420,6 +603,24 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_editionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_phaseIds",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "createMerkleSaleWithPhases",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -622,6 +823,49 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "isPhaseWhitelisted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "isSalePaused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "koda",
     "outputs": [
@@ -632,6 +876,66 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_phaseId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint16",
+        "name": "_mintCount",
+        "type": "uint16"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "startTime",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "endTime",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint16",
+            "name": "walletMintLimit",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint128",
+            "name": "priceInWei",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "mintCap",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IKODAV3GatedMerkleMarketplace.MerklePhaseMetadata",
+        "name": "_phase",
+        "type": "tuple"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_merkleProof",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "merkleMint",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -701,6 +1005,72 @@
         "type": "uint256"
       },
       {
+        "internalType": "bytes32",
+        "name": "_phaseId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "_account",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "startTime",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "endTime",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint16",
+            "name": "walletMintLimit",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint128",
+            "name": "priceInWei",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "mintCap",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IKODAV3GatedMerkleMarketplace.MerklePhaseMetadata",
+        "name": "_phase",
+        "type": "tuple"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_merkleProof",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "onPhaseMerkleList",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
+      },
+      {
         "internalType": "uint256",
         "name": "_phaseId",
         "type": "uint256"
@@ -747,6 +1117,25 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "phaseMintCount",
+    "outputs": [
+      {
+        "internalType": "uint128",
+        "name": "",
+        "type": "uint128"
       }
     ],
     "stateMutability": "view",
@@ -873,6 +1262,72 @@
         "type": "uint256"
       },
       {
+        "internalType": "bytes32",
+        "name": "_phaseId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "_account",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "startTime",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "endTime",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint16",
+            "name": "walletMintLimit",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint128",
+            "name": "priceInWei",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "mintCap",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IKODAV3GatedMerkleMarketplace.MerklePhaseMetadata",
+        "name": "_phase",
+        "type": "tuple"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_merkleProof",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "remainingMerklePhaseMintAllowance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
+      },
+      {
         "internalType": "uint256",
         "name": "_phaseId",
         "type": "uint256"
@@ -926,11 +1381,48 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_phaseIds",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "removePhasesFromMerkleSale",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "",
         "type": "uint256"
       }
     ],
     "name": "saleCommission",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "saleToEditionId",
     "outputs": [
       {
         "internalType": "uint256",
@@ -976,6 +1468,19 @@
         "internalType": "uint256",
         "name": "_saleId",
         "type": "uint256"
+      }
+    ],
+    "name": "toggleMerkleSalePause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
       },
       {
         "internalType": "uint256",
@@ -986,6 +1491,35 @@
     "name": "toggleSalePause",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "totalMerkleMints",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -1105,6 +1639,37 @@
     "name": "updatePlatformPrimarySaleCommission",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newImplementation",
+        "type": "address"
+      }
+    ],
+    "name": "upgradeTo",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newImplementation",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "upgradeToAndCall",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   }
 ]

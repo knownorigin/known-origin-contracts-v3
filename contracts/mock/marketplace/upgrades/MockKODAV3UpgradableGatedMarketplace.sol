@@ -4,7 +4,7 @@ pragma solidity 0.8.4;
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 import {BaseUpgradableMarketplace} from "../../../marketplace/BaseUpgradableMarketplace.sol";
-import {KODAV3GatedMerkleMarketplace} from "./KODAV3GatedMerkleMarketplace.sol";
+import {KODAV3GatedMerkleMarketplace} from "../../../marketplace/KODAV3GatedMerkleMarketplace.sol";
 import {IKOAccessControlsLookup} from "../../../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../../../core/IKODAV3.sol";
 
@@ -143,7 +143,7 @@ contract MockKODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODA
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
         require(onPhaseMintList(_saleId, _phaseId, _index, _msgSender(), _merkleProof), 'address not able to mint from sale');
 
-        _handleMint(_saleId, sale.editionId, _mintCount);
+        _handleMint(_saleId, _phaseId, sale.editionId, _mintCount);
 
         // Up the mint count for the user and the phase mint counter
         totalMints[_saleId][_phaseId][_msgSender()] += _mintCount;
@@ -152,7 +152,7 @@ contract MockKODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODA
         emit MintFromSale(_saleId, sale.editionId, _phaseId, _msgSender(), _mintCount);
     }
 
-    function _handleMint(uint256 _saleId, uint256 _editionId, uint16 _mintCount) internal override {
+    function _handleMint(uint256 _saleId, uint256 _phaseId, uint256 _editionId, uint16 _mintCount) internal override {
         address _receiver;
 
         for (uint i = 0; i < _mintCount; i++) {
@@ -233,20 +233,6 @@ contract MockKODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODA
             sales[_saleId].paused = true;
             emit SalePaused(_saleId, _editionId);
         }
-    }
-
-    function _processSale(
-        uint256 _editionId,
-        uint256 _paymentAmount,
-        address _buyer,
-        address _seller
-    ) internal pure override returns (uint256) {
-        return 0;
-    }
-
-    // not used
-    function _isListingPermitted(uint256 _editionId) internal pure override returns (bool) {
-        return false;
     }
 
     function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _receiver) internal override {

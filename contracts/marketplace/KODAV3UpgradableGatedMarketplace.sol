@@ -3,19 +3,16 @@ pragma solidity 0.8.4;
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-import {BaseUpgradableMarketplace} from "../marketplace/BaseUpgradableMarketplace.sol";
+import {BaseUpgradableMarketplace} from "./BaseUpgradableMarketplace.sol";
+import {KODAV3GatedMerkleMarketplace} from "./KODAV3GatedMerkleMarketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
-// TODO bring in off-chain signature based solution as well
-// TODO do we need an initialize/upgrade event so we can pick up on the current instance pointers?
-// TODO add interfaces to IKODAV3Marketplace
-// TODO token ID needs to be emitted when being purchased so we know which token has sold
 // TODO remove hard coded to 15_00000 - add to base contract with update path + event
 // TODO (test) Confirm we can convert from a gated sale to a buy now flow?
 // TODO (test) Impact of starting in a reserve auction, setting up a gated sale and selling it during the final auction close?
 
-contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
+contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3GatedMerkleMarketplace {
 
     /// @notice emitted when a sale, with a single phase, is created
     event SaleWithPhaseCreated(uint256 indexed saleId, uint256 indexed editionId);
@@ -24,7 +21,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
     /// @notice emitted when a phase is removed from a sale
     event PhaseRemoved(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId);
     /// @notice emitted when someone mints from a sale
-    event MintFromSale(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId, address account, uint256 mintCount);
+    event MintFromSale(uint256 indexed saleId, uint256 indexed tokenId, uint256 indexed phaseId, address account, uint256 mintCount);
     /// @notice emitted when primary sales commission is updated for a sale
     event AdminUpdatePlatformPrimarySaleCommissionGatedSale(uint256 indexed saleId, uint256 platformPrimarySaleCommission);
     /// @notice emitted when a sale is paused
@@ -135,6 +132,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
         emit SaleWithPhaseCreated(saleId, _editionId);
     }
 
+    // todo - might be nice to add recipient even if user mints to self adding the extra param allows wert and other patterns to be possible
     function mint(uint256 _saleId, uint256 _phaseId, uint16 _mintCount, uint256 _index, bytes32[] calldata _merkleProof) payable public nonReentrant whenNotPaused {
         Sale memory sale = sales[_saleId];
 
@@ -150,27 +148,24 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
         require(onPhaseMintList(_saleId, _phaseId, _index, _msgSender(), _merkleProof), 'address not able to mint from sale');
 
-        _handleMint(_saleId, sale.editionId, _mintCount);
+        _handleMint(_saleId, _phaseId, sale.editionId, _mintCount);
 
         // Up the mint count for the user and the phase mint counter
         totalMints[_saleId][_phaseId][_msgSender()] += _mintCount;
         phase.mintCounter += _mintCount;
-
-        // TODO Ditch this if not needed and is handle by a per token event?
-        emit MintFromSale(_saleId, sale.editionId, _phaseId, _msgSender(), _mintCount);
     }
 
-    function _handleMint(uint256 _saleId, uint256 _editionId, uint16 _mintCount) internal {
+    function _handleMint(uint256 _saleId, uint256 _phaseId, uint256 _editionId, uint16 _mintCount) internal override {
+        require(_mintCount > 0, "Nothing being minted");
         address _receiver;
 
         for (uint i = 0; i < _mintCount; i++) {
             (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
             _receiver = receiver;
 
-            // TODO this needs to include token ID events so we know which one has just sold
-
             // send token to buyer (assumes approval has been made, if not then this will fail)
             koda.safeTransferFrom(creator, _msgSender(), tokenId);
+            emit MintFromSale(_saleId, tokenId, _phaseId, _msgSender(), _mintCount);
         }
 
         _handleEditionSaleFunds(_saleId, _editionId, _receiver);
@@ -245,8 +240,9 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
         }
     }
 
-    function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _receiver) internal {
+    function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _receiver) internal override {
         // TODO this should be a configurable property and not hard coded to 15_00000 - add to base contract with update path
+        // TODO - I also cannot see the if block ever being skipped. The logic will always return a non zero value for platform commission
         uint256 platformPrimarySaleCommission = saleCommission[_saleId] > 0 ? saleCommission[_saleId] : 15_00000;
         uint256 koCommission = (msg.value / modulo) * platformPrimarySaleCommission;
         if (koCommission > 0) {

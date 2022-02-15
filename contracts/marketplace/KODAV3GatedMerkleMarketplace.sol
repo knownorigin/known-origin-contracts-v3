@@ -3,13 +3,13 @@ pragma solidity 0.8.4;
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-import {BaseMarketplace} from "../marketplace/BaseMarketplace.sol";
+import {BaseUpgradableMarketplace} from "../marketplace/BaseUpgradableMarketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 import {IKODAV3GatedMerkleMarketplace} from "./IKODAV3GatedMerkleMarketplace.sol";
 
 /// @title Merkle based gated pre-list marketplace
-abstract contract KODAV3GatedMerkleMarketplace is BaseMarketplace, IKODAV3GatedMerkleMarketplace {
+abstract contract KODAV3GatedMerkleMarketplace is BaseUpgradableMarketplace, IKODAV3GatedMerkleMarketplace {
     /// @notice emitted when a sale, with a single phase, is created
     event MerkleSaleWithPhaseCreated(uint256 indexed saleId);
 
@@ -98,7 +98,7 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseMarketplace, IKODAV3GatedM
         require(msg.value == _phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
         require(onPhaseMerkleList(_saleId, _phaseId, _msgSender(), _phase, _merkleProof), 'address not able to mint from sale');
 
-        _handleMint(_saleId, editionId, _mintCount);
+        _handleMint(_saleId, uint256(_phaseId), editionId, _mintCount);
 
         // Up the mint count for the user and the phase mint counter
         totalMerkleMints[_saleId][_phaseId][_msgSender()] += _mintCount;
@@ -173,7 +173,7 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseMarketplace, IKODAV3GatedM
     }
 
     /// @notice Enable or disable all phases within a sale for an edition
-    function toggleMerkleSalePause(uint256 _saleId) external onlyCreatorOrAdminForSale(_saleId) {
+    function toggleMerkleSalePause(uint256 _saleId) external override onlyCreatorOrAdminForSale(_saleId) {
         isSalePaused[_saleId] = !isSalePaused[_saleId];
         emit MerkleSalePauseUpdated(_saleId, isSalePaused[_saleId]);
     }
@@ -208,5 +208,5 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseMarketplace, IKODAV3GatedM
     }
 
     function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _receiver) internal virtual;
-    function _handleMint(uint256 _saleId, uint256 _editionId, uint16 _mintCount) internal virtual;
+    function _handleMint(uint256 _saleId, uint256 _phaseId, uint256 _editionId, uint16 _mintCount) internal virtual;
 }

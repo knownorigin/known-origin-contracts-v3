@@ -4,13 +4,14 @@ pragma solidity 0.8.4;
 
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
 /// @notice Core logic and state shared between both marketplaces
-abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, PausableUpgradeable {
+abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, PausableUpgradeable, UUPSUpgradeable {
 
     event AdminUpdateModulo(uint256 _modulo);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
@@ -77,6 +78,10 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
         modulo = 100_00000;
         minBidAmount = 0.01 ether;
         bidLockupPeriod = 6 hours;
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal view override {
+        require(accessControls.hasAdminRole(msg.sender), "Only admin can upgrade");
     }
 
     function recoverERC20(IERC20 _token, address _recipient, uint256 _amount) public onlyAdmin {
