@@ -131,14 +131,14 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
             require(_walletMintLimits[i] > 0 && _walletMintLimits[i] < editionSize, 'phase mint limit must be greater than 0');
 
             phases[saleId].push(Phase({
-            startTime : _startTimes[i],
-            endTime : _endTimes[i],
-            walletMintLimit : _walletMintLimits[i],
-            merkleRoot : _merkleRoots[i],
-            merkleIPFSHash : _merkleIPFSHashes[i],
-            priceInWei : _pricesInWei[i],
-            mintCap : _mintCaps[i],
-            mintCounter : 0
+                startTime : _startTimes[i],
+                endTime : _endTimes[i],
+                walletMintLimit : _walletMintLimits[i],
+                merkleRoot : _merkleRoots[i],
+                merkleIPFSHash : _merkleIPFSHashes[i],
+                priceInWei : _pricesInWei[i],
+                mintCap : _mintCaps[i],
+                mintCounter : 0
             }));
         }
 
