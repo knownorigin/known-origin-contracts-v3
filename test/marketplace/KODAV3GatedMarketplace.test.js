@@ -3,8 +3,9 @@ const {ZERO_ADDRESS} = constants;
 
 const {parseBalanceMap} = require('../utils/parse-balance-map');
 const {buildArtistMerkleInput} = require('../utils/merkle-tools');
+const { ethers, upgrades } = require("hardhat");
 
-const KODAV3UpgradableGatedMarketplace = artifacts.require('KODAV3UpgradableGatedMarketplace');
+// const KODAV3UpgradableGatedMarketplace = artifacts.require('KODAV3UpgradableGatedMarketplace');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
@@ -12,14 +13,14 @@ const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls')
 const MockERC20 = artifacts.require('MockERC20');
 
 contract('BasicGatedSale tests...', function (accounts) {
-    const [owner, admin, koCommission, contract, artist1, artist2, artist3, artistDodgy, newAccessControls] = accounts;
-
+    // const [owner, admin, koCommission, contract, artist1, artist2, artist3, artistDodgy, newAccessControls] = accounts;
     const STARTING_EDITION = '10000';
     const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
     const MOCK_MERKLE_HASH = '0x7B502C3A1F48C8609AE212CDFB639DEE39673F5E'
     const ZERO = new BN('0');
     const ONE = new BN('1');
     const TWO = new BN('2');
+    const TEN = new BN('10')
 
     const FIRST_MINTED_TOKEN_ID = new BN('11000'); // this is implied
 
@@ -28,12 +29,14 @@ contract('BasicGatedSale tests...', function (accounts) {
     const platformCommission = 1500000;
 
     beforeEach(async () => {
-        this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
+        const [owner, admin, koCommission, contract, artist1, artist2, artist3] = await ethers.getSigners();
+
+        this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1.address, artist2.address, artist3.address));
 
         this.legacyAccessControls = await SelfServiceAccessControls.new();
 
         // setup access controls
-        this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner});
+        this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner.address});
 
         // grab the roles
         this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
@@ -44,47 +47,58 @@ contract('BasicGatedSale tests...', function (accounts) {
             this.accessControls.address,
             ZERO_ADDRESS, // no royalties address
             STARTING_EDITION,
-            {from: owner}
+            {from: owner.address}
         );
 
-        await this.accessControls.grantRole(this.DEFAULT_ADMIN_ROLE, admin, {from: owner});
-        await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: owner});
+        await this.accessControls.grantRole(this.DEFAULT_ADMIN_ROLE, admin.address, {from: owner.address});
+        await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: owner.address});
 
         // Note: this is a test hack so we can mint tokens direct
-        await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
+        await this.accessControls.grantRole(this.CONTRACT_ROLE, contract.address, {from: owner.address});
 
-        this.basicGatedSale = await KODAV3UpgradableGatedMarketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner});
+        const KODAV3UpgradableGatedMarketplace = await ethers.getContractFactory('KODAV3UpgradableGatedMarketplace');
 
-        await this.accessControls.grantRole(this.CONTRACT_ROLE, this.basicGatedSale.address, {from: owner});
+        this.basicGatedSale = await upgrades.deployProxy(
+            KODAV3UpgradableGatedMarketplace,
+            [this.accessControls.address, this.token.address, koCommission.address],
+            {initializer: 'initialize' }
+        );
+
+        await this.basicGatedSale.deployed();
+        console.log('KODAV3UpgradableGatedMarketplace deployed to:', this.basicGatedSale.address);
+
+        await this.accessControls.grantRole(this.CONTRACT_ROLE, this.basicGatedSale.address, {from: owner.address});
 
         // create a batch of 15 tokens from the minter
-        await this.token.mintBatchEdition(15, artist1, TOKEN_URI, {from: contract});
+        await this.token.mintBatchEdition(15, artist1.address, TOKEN_URI, {from: contract.address});
 
         // Ensure basic gated sale has approval to sell tokens
-        await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist1});
+        await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist1.address});
 
         // create  a second edition and approve it minter
-        await this.token.mintBatchEdition(15, artist2, TOKEN_URI, {from: contract});
-        await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist2});
+        await this.token.mintBatchEdition(15, artist2.address, TOKEN_URI, {from: contract.address});
+        await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist2.address});
 
         // just for stuck tests
-        this.erc20Token = await MockERC20.new({from: owner});
+        this.erc20Token = await MockERC20.new({from: owner.address});
 
         // Set a root time, then a start and end time, simulating sale running for a day
         this.rootTime = await time.latest()
         this.saleStart = this.rootTime.add(time.duration.hours(1))
         this.saleEnd = this.rootTime.add(time.duration.hours(25))
 
-        const receipt = await this.basicGatedSale.createSaleWithPhase(
-            FIRST_MINTED_TOKEN_ID,
-            this.saleStart,
-            this.saleEnd,
-            new BN('10'),
+        const receipt = await this.basicGatedSale.connect(artist1).createSaleWithPhase(
+            '11000',
+            this.saleStart.toString(),
+            this.saleEnd.toString(),
+            '10',
             this.merkleProof.merkleRoot,
             MOCK_MERKLE_HASH,
-            ether('0.1'),
-            0,
-            {from: artist1});
+            ether('0.1').toString(),
+            '0',
+            {from: artist1.address});
+
+        console.log('RECEIPT : ', receipt)
 
         expectEvent(receipt, 'SaleWithPhaseCreated', {
             saleId: ONE,
@@ -92,11 +106,11 @@ contract('BasicGatedSale tests...', function (accounts) {
         });
     });
 
-    describe('BasicGatedSale', async () => {
+    describe.only('BasicGatedSale', async () => {
 
-        describe('createSaleWithPhase', async () => {
+        describe.only('createSaleWithPhase', async () => {
 
-            it('can create a new sale and phase with correct arguments', async () => {
+            it.only('can create a new sale and phase with correct arguments', async () => {
                 const {id, editionId, paused} = await this.basicGatedSale.sales(1)
 
                 expect(id.toString()).to.be.equal('1')
