@@ -3,7 +3,7 @@ pragma solidity 0.8.4;
 
 import {BaseUpgradableMarketplace} from "../../marketplace/BaseUpgradableMarketplace.sol";
 import {IKOAccessControlsLookup} from "../../access/IKOAccessControlsLookup.sol";
-import {IKODAV3} from "../core/IKODAV3.sol";
+import {IKODAV3} from "../../core/IKODAV3.sol";
 
 // TODO consider off-chain path for this as well
 // TODO add interfaces to IKODAV3Marketplace
