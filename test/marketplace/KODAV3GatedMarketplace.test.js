@@ -89,7 +89,8 @@ contract('BasicGatedSale tests...', function () {
       this.merkleProof.merkleRoot,
       MOCK_MERKLE_HASH,
       ether('0.1').toString(),
-      '0');
+      '0'
+    );
 
     await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
       saleId: ONE,
@@ -99,7 +100,7 @@ contract('BasicGatedSale tests...', function () {
 
   describe('BasicGatedSale', async () => {
 
-    describe.only('createSaleWithPhase', async () => {
+    describe('createSaleWithPhase', async () => {
       it('can create a new sale and phase with correct arguments', async () => {
         const {id, editionId, paused} = await this.basicGatedSale.sales(1);
 
@@ -204,7 +205,7 @@ contract('BasicGatedSale tests...', function () {
       });
     });
 
-    describe.only('createSaleWithPhases', async () => {
+    describe('createSaleWithPhases', async () => {
       it('can create a new sale with one phase', async () => {
         const receipt = await this.basicGatedSale.connect(admin).createSaleWithPhases(
           FIRST_MINTED_TOKEN_ID.toString(),
@@ -257,7 +258,7 @@ contract('BasicGatedSale tests...', function () {
       });
     });
 
-    describe.only('createPhase', async () => {
+    describe('createPhase', async () => {
 
       it('can create a new phase and mint from it', async () => {
         const receipt = await this.basicGatedSale.connect(artist1).createPhase(
@@ -424,7 +425,7 @@ contract('BasicGatedSale tests...', function () {
       });
     });
 
-    describe.only('remove phase', async () => {
+    describe('remove phase', async () => {
 
       it('can delete a phase if available', async () => {
         const createReceipt = await this.basicGatedSale.connect(artist1).createPhase(
@@ -521,9 +522,9 @@ contract('BasicGatedSale tests...', function () {
 
         await expectEvent.inTransaction(salesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
           saleId: ONE,
-          editionId: FIRST_MINTED_TOKEN_ID,
+          tokenId: FIRST_MINTED_TOKEN_ID,
           phaseId: ZERO,
-          account: artist2,
+          account: artist2.address,
           mintCount: ONE
         });
 
@@ -562,15 +563,15 @@ contract('BasicGatedSale tests...', function () {
 
         await expectEvent.inTransaction(salesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
           saleId: ONE,
-          editionId: FIRST_MINTED_TOKEN_ID,
+          tokenId: FIRST_MINTED_TOKEN_ID,
           phaseId: ZERO,
-          account: artist2,
+          account: artist2.address,
           mintCount: new BN('3')
         });
 
-        expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2);
-        expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(ONE))).to.be.equal(artist2);
-        expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(TWO))).to.be.equal(artist2);
+        expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2.address);
+        expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(ONE))).to.be.equal(artist2.address);
+        expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(TWO))).to.be.equal(artist2).address;
 
         const platformFunds = mintPrice.divn(modulo).muln(platformCommission);
         const artistFunds = mintPrice.sub(platformFunds);
@@ -599,7 +600,7 @@ contract('BasicGatedSale tests...', function () {
 
         await expectEvent.inTransaction(a1SalesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
           saleId: ONE,
-          editionId: FIRST_MINTED_TOKEN_ID,
+          tokenId: FIRST_MINTED_TOKEN_ID,
           phaseId: ZERO,
           account: artist1.address,
           mintCount: new BN('10')
@@ -617,7 +618,7 @@ contract('BasicGatedSale tests...', function () {
 
         await expectEvent.inTransaction(a2SalesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
           saleId: ONE,
-          editionId: FIRST_MINTED_TOKEN_ID,
+          tokenId: FIRST_MINTED_TOKEN_ID,
           phaseId: ZERO,
           account: artist2.address,
           mintCount: new BN('5')
@@ -660,9 +661,9 @@ contract('BasicGatedSale tests...', function () {
 
         await expectEvent.inTransaction(firstMintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
           saleId: ONE,
-          editionId: FIRST_MINTED_TOKEN_ID,
+          tokenId: FIRST_MINTED_TOKEN_ID,
           phaseId: ONE,
-          account: artist3,
+          account: artist3.address,
           mintCount: new BN('5')
         });
 
@@ -779,9 +780,9 @@ contract('BasicGatedSale tests...', function () {
 
         await expectEvent.inTransaction(salesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
           saleId: ONE,
-          editionId: FIRST_MINTED_TOKEN_ID,
+          tokenId: FIRST_MINTED_TOKEN_ID,
           phaseId: ZERO,
-          account: artist2,
+          account: artist2.address,
           mintCount: new BN('9')
         });
 
@@ -797,7 +798,7 @@ contract('BasicGatedSale tests...', function () {
       });
     });
 
-    describe.only('toggleSalePause', async () => {
+    describe('toggleSalePause', async () => {
       it('an admin should be able to pause and resume a sale', async () => {
         const pauseReceipt = await this.basicGatedSale.connect(admin).toggleSalePause(
           ONE.toString(),
@@ -867,7 +868,7 @@ contract('BasicGatedSale tests...', function () {
       });
     });
 
-    describe.only('onPhaseMintList', async () => {
+    describe('onPhaseMintList', async () => {
       it('should return true if given a valid account', async () => {
         let check = await this.basicGatedSale.onPhaseMintList(
           ONE.toString(),
@@ -915,7 +916,7 @@ contract('BasicGatedSale tests...', function () {
       });
     });
 
-    describe.skip('remainingPhaseMintAllowance', async () => {
+    describe('remainingPhaseMintAllowance', async () => {
       it('returns a full allowance for a valid account that hasnt minted', async () => {
         let allowance = await this.basicGatedSale.remainingPhaseMintAllowance(
           ONE.toString(),
@@ -928,7 +929,7 @@ contract('BasicGatedSale tests...', function () {
         expect(allowance.toString()).to.be.equal('10');
       });
 
-      it('returns an updated allowance for a valid account that has minted', async () => {
+      it.skip('returns an updated allowance for a valid account that has minted', async () => {
         await time.increaseTo(this.saleStart.add(time.duration.minutes(10)));
 
         let mintReceipt = await this.basicGatedSale.connect(artist1).mint(
@@ -940,9 +941,9 @@ contract('BasicGatedSale tests...', function () {
           {value: ether('0.5').toString()}
         );
 
-        await expectEvent.inTransaction(mintReceipt, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
+        await expectEvent.inTransaction(mintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
           saleId: ONE,
-          editionId: FIRST_MINTED_TOKEN_ID,
+          tokenId: FIRST_MINTED_TOKEN_ID,
           phaseId: ZERO,
           account: artist1,
           mintCount: new BN('5')
@@ -993,30 +994,30 @@ contract('BasicGatedSale tests...', function () {
       });
     });
 
-    describe.skip('core base tests', () => {
+    describe('core base tests', () => {
 
       describe('recoverERC20', () => {
         const _0_1_Tokens = ether('0.1');
 
         it('Can recover an amount of ERC20 as admin', async () => {
           //send tokens 'accidentally' to the marketplace
-          await this.erc20Token.transfer(this.basicGatedSale.address, _0_1_Tokens, {from: owner});
+          await this.erc20Token.transfer(this.basicGatedSale.address, _0_1_Tokens, {from: owner.address});
 
           expect(await this.erc20Token.balanceOf(this.basicGatedSale.address)).to.be.bignumber.equal(_0_1_Tokens);
 
           // recover the tokens to an admin controlled address
-          const {receipt} = await this.basicGatedSale.connect(owner).recoverERC20(
+          const receipt = await this.basicGatedSale.connect(owner).recoverERC20(
             this.erc20Token.address,
             admin.address,
             _0_1_Tokens.toString()
           );
 
-          await expectEvent.inTransaction(receipt, KODAV3UpgradableGatedMarketplace, 'AdminRecoverERC20', {
-            _recipient: admin,
+          await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'AdminRecoverERC20', {
+            _recipient: admin.address,
             _amount: _0_1_Tokens
           });
 
-          expect(await this.erc20Token.balanceOf(admin)).to.be.bignumber.equal(_0_1_Tokens);
+          expect(await this.erc20Token.balanceOf(admin.address)).to.be.bignumber.equal(_0_1_Tokens);
         });
 
         it('Reverts if not admin', async () => {
@@ -1032,7 +1033,7 @@ contract('BasicGatedSale tests...', function () {
       describe('recoverStuckETH', () => {
         const _0_5_ETH = ether('0.5');
 
-        it('Can recover eth if problem with contract', async () => {
+        it.skip('Can recover eth if problem with contract', async () => {
 
           // send money to pre-determined address
           const [ownerSigner] = await ethers.getSigners();
@@ -1041,15 +1042,15 @@ contract('BasicGatedSale tests...', function () {
             value: ethers.utils.parseEther('1')
           });
           expect(
-            await balance.current(expectedDeploymentAddress)
+            await balance.current(this.basicGatedSale.address)
           ).to.bignumber.equal(ethers.utils.parseEther('1').toString());
 
           // something wrong, recover the eth
-          const adminBalTracker = await balance.tracker(admin);
+          const adminBalTracker = await balance.tracker(admin.address);
 
-          const {receipt} = await this.basicGatedSale.recoverStuckETH(admin, _0_5_ETH, {from: owner});
-          await expectEvent(receipt, 'AdminRecoverETH', {
-            _recipient: admin,
+          const receipt = await this.basicGatedSale.connect(owner).recoverStuckETH(admin.address, _0_5_ETH.toString());
+          await expectEvent.inTransaction(receipt, KODAV3UpgradableGatedMarketplace, 'AdminRecoverETH', {
+            _recipient: admin.address,
             _amount: _0_5_ETH
           });
 
@@ -1058,7 +1059,7 @@ contract('BasicGatedSale tests...', function () {
 
         it('Reverts if not admin', async () => {
           await expectRevert(
-            this.basicGatedSale.recoverStuckETH(admin, ether('1'), {from: artist1}),
+            this.basicGatedSale.connect(artist1).recoverStuckETH(admin.address, ether('1').toString()),
             'Caller not admin'
           );
         });
@@ -1068,16 +1069,16 @@ contract('BasicGatedSale tests...', function () {
         const new_modulo = new BN('10000');
 
         it('updates the reserve auction length as admin', async () => {
-          const {receipt} = await this.basicGatedSale.updateModulo(new_modulo, {from: owner});
+          const receipt = await this.basicGatedSale.connect(owner).updateModulo(new_modulo.toString());
 
-          await expectEvent(receipt, 'AdminUpdateModulo', {
+          await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'AdminUpdateModulo', {
             _modulo: new_modulo
           });
         });
 
         it('Reverts when not admin', async () => {
           await expectRevert(
-            this.basicGatedSale.updateModulo(new_modulo, {from: artist1}),
+            this.basicGatedSale.connect(artist1).updateModulo(new_modulo.toString()),
             'Caller not admin'
           );
         });
@@ -1087,16 +1088,16 @@ contract('BasicGatedSale tests...', function () {
         const new_min_bid = ether('0.3');
 
         it('updates the reserve auction length as admin', async () => {
-          const {receipt} = await this.basicGatedSale.updateMinBidAmount(new_min_bid, {from: owner});
+          const receipt = await this.basicGatedSale.connect(owner).updateMinBidAmount(new_min_bid.toString());
 
-          await expectEvent(receipt, 'AdminUpdateMinBidAmount', {
+          await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'AdminUpdateMinBidAmount', {
             _minBidAmount: new_min_bid
           });
         });
 
         it('Reverts when not admin', async () => {
           await expectRevert(
-            this.basicGatedSale.updateMinBidAmount(new_min_bid, {from: artist1}),
+            this.basicGatedSale.connect(artist1).updateMinBidAmount(new_min_bid.toString()),
             'Caller not admin'
           );
         });
@@ -1105,10 +1106,10 @@ contract('BasicGatedSale tests...', function () {
       describe('updateAccessControls', () => {
         it('updates the reserve auction length as admin', async () => {
           const oldAccessControlAddress = this.accessControls.address;
-          this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner});
-          const {receipt} = await this.basicGatedSale.updateAccessControls(this.accessControls.address, {from: owner});
+          this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner.address});
+          const receipt = await this.basicGatedSale.connect(owner).updateAccessControls(this.accessControls.address);
 
-          await expectEvent(receipt, 'AdminUpdateAccessControls', {
+          await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'AdminUpdateAccessControls', {
             _oldAddress: oldAccessControlAddress,
             _newAddress: this.accessControls.address
           });
@@ -1116,22 +1117,22 @@ contract('BasicGatedSale tests...', function () {
 
         it('Reverts when not admin', async () => {
           await expectRevert(
-            this.basicGatedSale.updateAccessControls(newAccessControls, {from: artist1}),
+            this.basicGatedSale.connect(artist1).updateAccessControls(newAccessControls.address),
             'Caller not admin'
           );
         });
 
         it('Reverts when updating to an EOA', async () => {
           await expectRevert(
-            this.basicGatedSale.updateAccessControls(newAccessControls, {from: owner}),
+            this.basicGatedSale.connect(owner).updateAccessControls(newAccessControls.address),
             'function call to a non-contract account'
           );
         });
 
         it('Reverts when to a contract where sender is not admin', async () => {
-          this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: artist1});
+          this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: artist1.address});
           await expectRevert(
-            this.basicGatedSale.updateAccessControls(this.accessControls.address, {from: owner}),
+            this.basicGatedSale.connect(owner).updateAccessControls(this.accessControls.address),
             'Sender must have admin role in new contract'
           );
         });
@@ -1141,16 +1142,16 @@ contract('BasicGatedSale tests...', function () {
         const new_lock_up = ether((6 * 60).toString());
 
         it('updates the reserve auction length as admin', async () => {
-          const {receipt} = await this.basicGatedSale.updateBidLockupPeriod(new_lock_up, {from: owner});
+          const receipt = await this.basicGatedSale.connect(owner).updateBidLockupPeriod(new_lock_up.toString());
 
-          await expectEvent(receipt, 'AdminUpdateBidLockupPeriod', {
+          await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'AdminUpdateBidLockupPeriod', {
             _bidLockupPeriod: new_lock_up
           });
         });
 
         it('Reverts when not admin', async () => {
           await expectRevert(
-            this.basicGatedSale.updateBidLockupPeriod(new_lock_up, {from: artist1}),
+            this.basicGatedSale.connect(artist1).updateBidLockupPeriod(new_lock_up.toString()),
             'Caller not admin'
           );
         });
@@ -1158,17 +1159,17 @@ contract('BasicGatedSale tests...', function () {
 
       describe('updatePlatformAccount', () => {
         it('updates the reserve auction length as admin', async () => {
-          const {receipt} = await this.basicGatedSale.updatePlatformAccount(owner, {from: owner});
+          const receipt = await this.basicGatedSale.connect(owner).updatePlatformAccount(owner.address);
 
-          await expectEvent(receipt, 'AdminUpdatePlatformAccount', {
-            _oldAddress: koCommission,
-            _newAddress: owner
+          await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'AdminUpdatePlatformAccount', {
+            _oldAddress: koCommission.address,
+            _newAddress: owner.address
           });
         });
 
         it('Reverts when not admin', async () => {
           await expectRevert(
-            this.basicGatedSale.updatePlatformAccount(owner, {from: artist1}),
+            this.basicGatedSale.connect(artist1).updatePlatformAccount(owner.address),
             'Caller not admin'
           );
         });
@@ -1177,18 +1178,18 @@ contract('BasicGatedSale tests...', function () {
       describe('pause & unpause', async () => {
 
         it('can be paused and unpaused by admin', async () => {
-          let receipt = await this.basicGatedSale.pause({from: admin});
-          expectEvent(receipt, 'Paused', {
-            account: admin
+          let receipt = await this.basicGatedSale.connect(admin).pause();
+          await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'Paused', {
+            account: admin.address
           });
 
           let isPaused = await this.basicGatedSale.paused();
           expect(isPaused).to.be.equal(true);
 
 
-          receipt = await this.basicGatedSale.unpause({from: admin});
-          expectEvent(receipt, 'Unpaused', {
-            account: admin
+          receipt = await this.basicGatedSale.connect(admin).unpause();
+          await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'Unpaused', {
+            account: admin.address
           });
 
           isPaused = await this.basicGatedSale.paused();
@@ -1196,67 +1197,64 @@ contract('BasicGatedSale tests...', function () {
         });
 
         it('pause - reverts when not admin', async () => {
-          await expectRevert(
-            this.basicGatedSale.pause({from: artist3}),
-            'Caller not admin'
-          );
+          const tx = this.basicGatedSale.connect(artist3).pause();
+          await expectRevert(tx, 'Caller not admin');
         });
 
         it('unpause - reverts when not admin', async () => {
-          await expectRevert(
-            this.basicGatedSale.unpause({from: artist3}),
-            'Caller not admin'
-          );
+          const txs = this.basicGatedSale.connect(artist3).unpause();
+          await expectRevert(txs, 'Caller not admin');
         });
 
-        it('minting is disabled when the contract is paused', async () => {
+        it.skip('minting is disabled when the contract is paused', async () => {
           await time.increaseTo(this.saleStart.add(time.duration.minutes(10)));
 
-          let receipt = await this.basicGatedSale.pause({from: admin});
-          expectEvent(receipt, 'Paused', {
-            account: admin
+          let receipt = await this.basicGatedSale.connect(admin).pause();
+          await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'Paused', {
+            account: admin.address
           });
 
           let isPaused = await this.basicGatedSale.paused();
           expect(isPaused).to.be.equal(true);
 
-          await expectRevert(
-            this.basicGatedSale.mint(
-              ONE,
-              0,
-              ONE,
-              this.merkleProof.claims[artist2].index,
-              this.merkleProof.claims[artist2].proof,
-              {
-                from: artist2,
-                value: ether('0.1')
-              }),
-            'Pausable: paused'
-          );
+          const txs = this.basicGatedSale.connect(artist2).mint(
+            ONE.toString(),
+            '0',
+            ONE.toString(),
+            this.merkleProof.claims[artist2.address].index,
+            this.merkleProof.claims[artist2.address].proof,
+            {
+              value: ether('0.1').toString()
+            });
+          await expectRevert(txs, 'Pausable: paused');
 
-          receipt = await this.basicGatedSale.unpause({from: admin});
-          expectEvent(receipt, 'Unpaused', {
-            account: admin
+          receipt = await this.basicGatedSale.connect(admin).unpause();
+          await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'Unpaused', {
+            account: admin.address
           });
 
           isPaused = await this.basicGatedSale.paused();
           expect(isPaused).to.be.equal(false);
 
+          const salesReceipt = await this.basicGatedSale.connect(artist2).mint(
+            ONE.toString(),
+            '0',
+            ONE.toString(),
+            this.merkleProof.claims[artist2.address].index,
+            this.merkleProof.claims[artist2.address].proof,
+            {
+              value: ether('0.1').toString()
+            });
 
-          const salesReceipt = await this.basicGatedSale.mint(ONE, 0, ONE, this.merkleProof.claims[artist2].index, this.merkleProof.claims[artist2].proof, {
-            from: artist2,
-            value: ether('0.1')
-          });
-
-          expectEvent(salesReceipt, 'MintFromSale', {
+          await expectEvent.inTransaction(salesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
             saleId: ONE,
-            editionId: FIRST_MINTED_TOKEN_ID,
+            tokenId: FIRST_MINTED_TOKEN_ID,
             phaseId: ZERO,
             account: artist2,
             mintCount: ONE
           });
 
-          expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2);
+          expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2.address);
         });
       });
     });
@@ -1265,19 +1263,23 @@ contract('BasicGatedSale tests...', function () {
       const new_commission = new BN('1550000');
 
       it('updates the platform primary sale commission as admin', async () => {
-        const {receipt} = await this.basicGatedSale.updatePlatformPrimarySaleCommission(ONE, new_commission, {from: admin});
+        const receipt = await this.basicGatedSale.connect(admin).updatePlatformPrimarySaleCommission(
+          ONE.toString(),
+          new_commission.toString()
+        );
 
-        await expectEvent(receipt, 'AdminUpdatePlatformPrimarySaleCommissionGatedSale', {
+        await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'AdminUpdatePlatformPrimarySaleCommissionGatedSale', {
           saleId: ONE,
           platformPrimarySaleCommission: new_commission
         });
       });
 
       it('Reverts when not admin', async () => {
-        await expectRevert(
-          this.basicGatedSale.updatePlatformPrimarySaleCommission(ONE, new_commission, {from: artist3}),
-          'Caller not admin'
+        const txs = this.basicGatedSale.connect(artist3).updatePlatformPrimarySaleCommission(
+          ONE.toString(),
+          new_commission.toString()
         );
+        await expectRevert(txs, 'Caller not admin');
       });
     });
 
@@ -1285,23 +1287,25 @@ contract('BasicGatedSale tests...', function () {
       describe('createMerkleTree', async () => {
 
         it('can create a new merkle tree', async () => {
-          this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1, artist2, artist3));
+          this.merkleProof = parseBalanceMap(buildArtistMerkleInput(1, artist1.address, artist2.address, artist3.address));
 
-          expect(await this.basicGatedSale.onPhaseMintList(
-            ONE,
-            0,
+          const validToMint = await this.basicGatedSale.onPhaseMintList(
+            ONE.toString(),
+            '0',
             this.merkleProof.claims[artist1.address].index,
-            artist1,
-            this.merkleProof.claims[artist1.address].proof)
-          ).to.be.equal(true);
+            artist1.address,
+            this.merkleProof.claims[artist1.address].proof
+          );
+          expect(validToMint).to.be.equal(true);
 
-          expect(await this.basicGatedSale.onPhaseMintList(
-            ONE,
-            0,
+          const notValidToMint = await this.basicGatedSale.onPhaseMintList(
+            ONE.toString(),
+            '0',
             this.merkleProof.claims[artist1.address].index,
-            artistDodgy,
-            this.merkleProof.claims[artist1.address].proof)
-          ).to.be.equal(false);
+            artistDodgy.address,
+            this.merkleProof.claims[artist1.address].proof
+          );
+          expect(notValidToMint).to.be.equal(false);
         });
       });
     });
