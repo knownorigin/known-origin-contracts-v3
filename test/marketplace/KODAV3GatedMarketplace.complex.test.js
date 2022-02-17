@@ -59,7 +59,7 @@ contract('BasicGatedSale complex tests...', function () {
     this.basicGatedSale = await upgrades.deployProxy(
       await ethers.getContractFactory('KODAV3UpgradableGatedMarketplace'),
       [this.accessControls.address, this.token.address, koCommission.address],
-      {initializer: 'initialize'}
+      {initializer: 'initialize', kind: 'uups'}
     );
 
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.basicGatedSale.address, {from: owner.address});
@@ -88,7 +88,7 @@ contract('BasicGatedSale complex tests...', function () {
 
   describe('BasicGatedSale - Complex', async () => {
 
-    it.only('can create a sale with multiple phases and manage mints from each', async () => {
+    it.skip('can create a sale with multiple phases and manage mints from each', async () => {
       // Make the sale
       const creationReceipt = await this.basicGatedSale.connect(artist).createSaleWithPhase(
         FIRST_MINTED_TOKEN_ID.toString(),
@@ -98,7 +98,7 @@ contract('BasicGatedSale complex tests...', function () {
         this.merkleProof1.merkleRoot,
         MOCK_MERKLE_HASH,
         ether('0.1').toString(),
-        '0'
+        '29'
       );
 
       await expectEvent.inTransaction(creationReceipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
@@ -115,7 +115,7 @@ contract('BasicGatedSale complex tests...', function () {
         this.merkleProof2.merkleRoot,
         MOCK_MERKLE_HASH,
         ether('0.3').toString(),
-        '0'
+        '29'
       );
 
       await expectEvent.inTransaction(phase2Receipt.hash, KODAV3UpgradableGatedMarketplace, 'PhaseCreated', {
@@ -133,7 +133,7 @@ contract('BasicGatedSale complex tests...', function () {
         this.merkleProof3.merkleRoot,
         MOCK_MERKLE_HASH,
         ether('0.5').toString(),
-        '0'
+        '29'
       );
 
       await expectEvent.inTransaction(phase3Receipt.hash, KODAV3UpgradableGatedMarketplace, 'PhaseCreated', {
@@ -163,7 +163,8 @@ contract('BasicGatedSale complex tests...', function () {
           this.merkleProof3.merkleRoot,
           MOCK_MERKLE_HASH,
           ether('0.7').toString(),
-          '0'),
+          '29'
+        ),
         'Caller not creator or admin');
 
       // Add the third phase again
@@ -175,7 +176,7 @@ contract('BasicGatedSale complex tests...', function () {
         this.merkleProof3.merkleRoot,
         MOCK_MERKLE_HASH,
         ether('0.7').toString(),
-        '0'
+        '29'
       );
 
       await expectEvent.inTransaction(phase3NewReceipt.hash, KODAV3UpgradableGatedMarketplace, 'PhaseCreated', {
@@ -211,151 +212,151 @@ contract('BasicGatedSale complex tests...', function () {
 
       await expectEvent.inTransaction(b1p1MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
         saleId: ONE,
-        editionId: FIRST_MINTED_TOKEN_ID,
+        tokenId: FIRST_MINTED_TOKEN_ID,
         phaseId: ZERO,
         account: buyer1.address,
         mintCount: THREE
       });
 
-      // expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(buyer1.address);
-      //
-      // CURRENT_TOKEN_ID = FIRST_MINTED_TOKEN_ID.add(ONE);
-      // expect(await this.token.ownerOf(CURRENT_TOKEN_ID)).to.be.equal(buyer1.address);
-      //
-      // CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.add(ONE);
-      // expect(await this.token.ownerOf(CURRENT_TOKEN_ID)).to.be.equal(buyer1.address);
-      //
-      // await expectRevert(this.basicGatedSale.connect(buyer1).mint(
-      //   ONE.toString(),
-      //   ZERO.toString(),
-      //   ONE.toString(),
-      //   this.merkleProof1.claims[buyer1.address].index,
-      //   this.merkleProof1.claims[buyer1.address].proof,
-      //   {
-      //     value: ether('0.1').toString()
-      //   }), 'cannot exceed total mints for sale phase');
-      //
-      // // Mint from buyer 2 as well
-      // let b2p1MintReceipt = await this.basicGatedSale.connect(buyer2).mint(
-      //   ONE.toString(),
-      //   ZERO.toString(),
-      //   TWO.toString(),
-      //   this.merkleProof1.claims[buyer2.address].index,
-      //   this.merkleProof1.claims[buyer2.address].proof,
-      //   {
-      //     value: ether('0.2').toString()
-      //   });
-      //
-      // await expectEvent.inTransaction(b2p1MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
-      //   saleId: ONE,
-      //   editionId: FIRST_MINTED_TOKEN_ID,
-      //   phaseId: ZERO,
-      //   account: buyer2.address,
-      //   mintCount: TWO
-      // });
-      //
-      // CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.add(ONE);
-      // expect(await this.token.ownerOf(CURRENT_TOKEN_ID)).to.be.equal(buyer2.address);
-      //
-      // CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.add(ONE);
-      // expect(await this.token.ownerOf(CURRENT_TOKEN_ID)).to.be.equal(buyer2.address);
-      //
-      // // Try and mint from someone not in the phase whitelist
-      // await expectRevert(this.basicGatedSale.connect(buyer4).mint(
-      //   ONE.toString(),
-      //   ZERO.toString(),
-      //   ONE.toString(),
-      //   this.merkleProof1.claims[buyer1.address].index,
-      //   this.merkleProof1.claims[buyer1.address].proof,
-      //   {
-      //     value: ether('0.1').toString()
-      //   }), 'address not able to mint from sale');
-      //
-      // // Advance time to phase2 and move the sale on
-      // await time.increaseTo(this.phase2Start.add(time.duration.minutes(1)));
-      //
-      // // Check you can no longer mint from the first phase if it has finished
-      // await expectRevert(this.basicGatedSale.connect(buyer2).mint(
-      //   ONE.toString(),
-      //   ZERO.toString(),
-      //   ONE.toString(),
-      //   this.merkleProof1.claims[buyer2.address].index,
-      //   this.merkleProof1.claims[buyer2.address].proof,
-      //   {
-      //     value: ether('0.1').toString()
-      //   }), 'sale phase not in progress');
-      //
-      // // You can mint from phase 2 now though
-      // let b2p2MintReceipt = await this.basicGatedSale.connect(buyer2).mint(
-      //   ONE.toString(),
-      //   ONE.toString(),
-      //   THREE.toString(),
-      //   this.merkleProof2.claims[buyer2.address].index,
-      //   this.merkleProof2.claims[buyer2.address].proof,
-      //   {
-      //     value: ether('0.9').toString()
-      //   });
-      //
-      // await expectEvent.inTransaction(b2p2MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
-      //   saleId: ONE,
-      //   editionId: FIRST_MINTED_TOKEN_ID,
-      //   phaseId: ONE,
-      //   account: buyer2.address,
-      //   mintCount: THREE
-      // });
-      //
-      // // And new members of the prelist can also mint
-      // let b4p2MintReceipt = await this.basicGatedSale.connect(buyer4).mint(
-      //   ONE.toString(),
-      //   ONE.toString(),
-      //   ONE.toString(),
-      //   this.merkleProof2.claims[buyer4.address].index,
-      //   this.merkleProof2.claims[buyer4.address].proof,
-      //   {
-      //     value: ether('0.3').toString()
-      //   });
-      //
-      // await expectEvent.inTransaction(b4p2MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
-      //   saleId: ONE,
-      //   editionId: FIRST_MINTED_TOKEN_ID,
-      //   phaseId: ONE,
-      //   account: buyer4.address,
-      //   mintCount: ONE
-      // });
-      //
-      // // but not if they don't send enough ETH
-      // await expectRevert(this.basicGatedSale.connect(buyer3).mint(
-      //   ONE.toString(),
-      //   ONE.toString(),
-      //   TWO.toString(),
-      //   this.merkleProof2.claims[buyer3.address].index,
-      //   this.merkleProof2.claims[buyer3.address].proof,
-      //   {
-      //     value: ether('0.5').toString()
-      //   }), 'not enough wei sent to complete mint');
-      //
-      // // buyer5 should still not be able to mint as well
-      // await expectRevert(this.basicGatedSale.connect(buyer3).mint(
-      //   ONE.toString(),
-      //   ONE.toString(),
-      //   ONE.toString(),
-      //   this.merkleProof2.claims[buyer3.address].index,
-      //   this.merkleProof2.claims[buyer3.address].proof,
-      //   {
-      //     value: ether('0.3').toString()
-      //   }), 'address not able to mint from sale');
-      //
-      // // You are also unable to mint if you give the deleted phase id
-      // await expectRevert(this.basicGatedSale.connect(buyer3).mint(
-      //   ONE.toString(),
-      //   TWO.toString(),
-      //   ONE.toString(),
-      //   this.merkleProof2.claims[buyer3.address].index,
-      //   this.merkleProof2.claims[buyer3.address].proof,
-      //   {
-      //     value: ether('0.3').toString()
-      //   }), 'sale phase not in progress');
-      //
+      expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(buyer1.address);
+
+      CURRENT_TOKEN_ID = FIRST_MINTED_TOKEN_ID.add(ONE);
+      expect(await this.token.ownerOf(CURRENT_TOKEN_ID)).to.be.equal(buyer1.address);
+
+      CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.add(ONE);
+      expect(await this.token.ownerOf(CURRENT_TOKEN_ID)).to.be.equal(buyer1.address);
+
+      await expectRevert(this.basicGatedSale.connect(buyer1).mint(
+        ONE.toString(),
+        ZERO.toString(),
+        ONE.toString(),
+        this.merkleProof1.claims[buyer1.address].index,
+        this.merkleProof1.claims[buyer1.address].proof,
+        {
+          value: ether('0.1').toString()
+        }), 'cannot exceed total mints for sale phase');
+
+      // Mint from buyer 2 as well
+      let b2p1MintReceipt = await this.basicGatedSale.connect(buyer2).mint(
+        ONE.toString(),
+        ZERO.toString(),
+        TWO.toString(),
+        this.merkleProof1.claims[buyer2.address].index,
+        this.merkleProof1.claims[buyer2.address].proof,
+        {
+          value: ether('0.2').toString()
+        });
+
+      await expectEvent.inTransaction(b2p1MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
+        saleId: ONE,
+        tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('3')),
+        phaseId: ZERO,
+        account: buyer2.address,
+        mintCount: TWO
+      });
+
+      CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.add(ONE);
+      expect(await this.token.ownerOf(CURRENT_TOKEN_ID)).to.be.equal(buyer2.address);
+
+      CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.add(ONE);
+      expect(await this.token.ownerOf(CURRENT_TOKEN_ID)).to.be.equal(buyer2.address);
+
+      // Try and mint from someone not in the phase whitelist
+      await expectRevert(this.basicGatedSale.connect(buyer4).mint(
+        ONE.toString(),
+        ZERO.toString(),
+        ONE.toString(),
+        this.merkleProof1.claims[buyer1.address].index,
+        this.merkleProof1.claims[buyer1.address].proof,
+        {
+          value: ether('0.1').toString()
+        }), 'address not able to mint from sale');
+
+      // Advance time to phase2 and move the sale on
+      await time.increaseTo(this.phase2Start.add(time.duration.minutes(1)));
+
+      // Check you can no longer mint from the first phase if it has finished
+      await expectRevert(this.basicGatedSale.connect(buyer2).mint(
+        ONE.toString(),
+        ZERO.toString(),
+        ONE.toString(),
+        this.merkleProof1.claims[buyer2.address].index,
+        this.merkleProof1.claims[buyer2.address].proof,
+        {
+          value: ether('0.1').toString()
+        }), 'sale phase not in progress');
+
+      // You can mint from phase 2 now though
+      let b2p2MintReceipt = await this.basicGatedSale.connect(buyer2).mint(
+        ONE.toString(),
+        ONE.toString(),
+        THREE.toString(),
+        this.merkleProof2.claims[buyer2.address].index,
+        this.merkleProof2.claims[buyer2.address].proof,
+        {
+          value: ether('0.9').toString()
+        });
+
+      await expectEvent.inTransaction(b2p2MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
+        saleId: ONE,
+        tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('5')),
+        phaseId: ONE,
+        account: buyer2.address,
+        mintCount: THREE
+      });
+
+      // And new members of the prelist can also mint
+      let b4p2MintReceipt = await this.basicGatedSale.connect(buyer4).mint(
+        ONE.toString(),
+        ONE.toString(),
+        ONE.toString(),
+        this.merkleProof2.claims[buyer4.address].index,
+        this.merkleProof2.claims[buyer4.address].proof,
+        {
+          value: ether('0.3').toString()
+        });
+
+      await expectEvent.inTransaction(b4p2MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
+        saleId: ONE,
+        tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('8')),
+        phaseId: ONE,
+        account: buyer4.address,
+        mintCount: ONE
+      });
+
+      // but not if they don't send enough ETH
+      await expectRevert(this.basicGatedSale.connect(buyer3).mint(
+        ONE.toString(),
+        ONE.toString(),
+        TWO.toString(),
+        this.merkleProof2.claims[buyer3.address].index,
+        this.merkleProof2.claims[buyer3.address].proof,
+        {
+          value: ether('0.5').toString()
+        }), 'not enough wei sent to complete mint');
+
+      // buyer5 should still not be able to mint as well
+      await expectRevert(this.basicGatedSale.connect(buyer3).mint(
+        ONE.toString(),
+        ONE.toString(),
+        ONE.toString(),
+        this.merkleProof2.claims[buyer3.address].index,
+        this.merkleProof2.claims[buyer3.address].proof,
+        {
+          value: ether('0.3').toString()
+        }), 'address not able to mint from sale');
+
+      // You are also unable to mint if you give the deleted phase id
+      await expectRevert(this.basicGatedSale.connect(buyer3).mint(
+        ONE.toString(),
+        TWO.toString(),
+        ONE.toString(),
+        this.merkleProof2.claims[buyer3.address].index,
+        this.merkleProof2.claims[buyer3.address].proof,
+        {
+          value: ether('0.3').toString()
+        }), 'sale phase not in progress');
+
       // // They will be able to mint when we advance to phase 3 though
       // await time.increaseTo(this.phase3Start);
       //
@@ -371,7 +372,7 @@ contract('BasicGatedSale complex tests...', function () {
       //
       // await expectEvent.inTransaction(b5p3MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
       //   saleId: ONE,
-      //   editionId: FIRST_MINTED_TOKEN_ID,
+      //   editionId: FIRST_MINTED_TOKEN_ID.add(new BN('15')),
       //   phaseId: THREE,
       //   account: buyer5.address,
       //   mintCount: new BN('10')

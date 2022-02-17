@@ -356,11 +356,6 @@
       "kind": "uups"
     },
     {
-      "address": "0xF8e31cb472bc70500f08Cd84917E5A1912Ec8397",
-      "txHash": "0xc834f07f227047b2fb451d35c097ea078c5789e4984cde68bab5bcc335f35228",
-      "kind": "uups"
-    },
-    {
       "address": "0x276C216D241856199A83bf27b2286659e5b877D3",
       "txHash": "0x5eff5602d2a2d1bda181178b179a978ed94416593727a2fe5799525524da106b",
       "kind": "uups"
@@ -561,11 +556,6 @@
       "kind": "uups"
     },
     {
-      "address": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
-      "txHash": "0x8b55d7af43c703554fc8e8417ed3747f9dbf09b1d431a1a9b6eef386de305a47",
-      "kind": "uups"
-    },
-    {
       "address": "0x4A679253410272dd5232B3Ff7cF5dbB88f295319",
       "txHash": "0x9e48ff5efbcc0902cf0540e56356795932dc2f97dbe422803a5ab25b39f5106b",
       "kind": "uups"
@@ -611,8 +601,18 @@
       "kind": "uups"
     },
     {
+      "address": "0xF8e31cb472bc70500f08Cd84917E5A1912Ec8397",
+      "txHash": "0xc834f07f227047b2fb451d35c097ea078c5789e4984cde68bab5bcc335f35228",
+      "kind": "uups"
+    },
+    {
       "address": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
       "txHash": "0x5cf71632b302e46336a2eaca2c8a72ae13ed585477b06425a48d93ecfc91edcd",
+      "kind": "uups"
+    },
+    {
+      "address": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
+      "txHash": "0x8b55d7af43c703554fc8e8417ed3747f9dbf09b1d431a1a9b6eef386de305a47",
       "kind": "uups"
     }
   ],
@@ -849,9 +849,9 @@
         }
       }
     },
-    "09135b1ce6964b9da04306087e7784cb6202d9379953199e7e6fabf955253212": {
+    "6be2037d463b712df698e749c49bd0ff7282a94712e7e3455a3062cf4be0e824": {
       "address": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
-      "txHash": "0x02657976296567fa3b97c90165e1bb343c1775ab875cf6212314de23cf5bdfce",
+      "txHash": "0xe99932b40d2014ff455c371ca5a210441a0ede1f7867366db4074564a0d53b4a",
       "layout": {
         "storage": [
           {
@@ -984,37 +984,37 @@
             "contract": "KODAV3UpgradableGatedMarketplace",
             "label": "saleIdCounter",
             "type": "t_uint256",
-            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:43"
+            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:41"
           },
           {
             "contract": "KODAV3UpgradableGatedMarketplace",
             "label": "sales",
             "type": "t_mapping(t_uint256,t_struct(Sale)16937_storage)",
-            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:65"
+            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:63"
           },
           {
             "contract": "KODAV3UpgradableGatedMarketplace",
             "label": "phases",
             "type": "t_mapping(t_uint256,t_array(t_struct(Phase)16930_storage)dyn_storage)",
-            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:68"
+            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:66"
           },
           {
             "contract": "KODAV3UpgradableGatedMarketplace",
             "label": "totalMints",
             "type": "t_mapping(t_uint256,t_mapping(t_uint256,t_mapping(t_address,t_uint256)))",
-            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:71"
+            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:69"
           },
           {
             "contract": "KODAV3UpgradableGatedMarketplace",
             "label": "editionToSale",
             "type": "t_mapping(t_uint256,t_uint256)",
-            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:74"
+            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:72"
           },
           {
             "contract": "KODAV3UpgradableGatedMarketplace",
             "label": "saleCommission",
             "type": "t_mapping(t_uint256,t_uint256)",
-            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:77"
+            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:75"
           }
         ],
         "types": {

@@ -89,7 +89,7 @@ contract('BasicGatedSale tests...', function () {
       this.merkleProof.merkleRoot,
       MOCK_MERKLE_HASH,
       ether('0.1').toString(),
-      '0'
+      '15'
     );
 
     await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
@@ -498,7 +498,7 @@ contract('BasicGatedSale tests...', function () {
       });
     });
 
-    describe.skip('mint', async () => {
+    describe('mint', async () => {
 
       it('can mint one item from a valid sale', async () => {
         const mintPrice = ether('0.1');
@@ -528,7 +528,7 @@ contract('BasicGatedSale tests...', function () {
           mintCount: ONE
         });
 
-        expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2);
+        expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2.address);
 
         const platformFunds = mintPrice.divn(modulo).muln(platformCommission);
         const artistFunds = mintPrice.sub(platformFunds);
@@ -536,7 +536,8 @@ contract('BasicGatedSale tests...', function () {
         expect(await artistBalanceTracker.delta()).to.be.bignumber.equal(artistFunds);
         expect(await platformBalanceTracker.delta()).to.be.bignumber.equal(platformFunds);
 
-        const txCost = new BN(salesReceipt.receipt.cumulativeGasUsed).mul(gasPrice);
+        const txReceipt = await salesReceipt.wait();
+        const txCost = new BN(txReceipt.cumulativeGasUsed.toString()).mul(gasPrice);
         const totalCost = mintPrice.add(txCost);
 
         expect(await minterBalanceTracker.delta()).to.be.bignumber.equal(totalCost.neg());
@@ -571,7 +572,7 @@ contract('BasicGatedSale tests...', function () {
 
         expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2.address);
         expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(ONE))).to.be.equal(artist2.address);
-        expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(TWO))).to.be.equal(artist2).address;
+        expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(TWO))).to.be.equal(artist2.address);
 
         const platformFunds = mintPrice.divn(modulo).muln(platformCommission);
         const artistFunds = mintPrice.sub(platformFunds);
@@ -579,7 +580,8 @@ contract('BasicGatedSale tests...', function () {
         expect(await artistBalanceTracker.delta()).to.be.bignumber.equal(artistFunds);
         expect(await platformBalanceTracker.delta()).to.be.bignumber.equal(platformFunds);
 
-        const txCost = new BN(salesReceipt.receipt.cumulativeGasUsed).mul(gasPrice);
+        const txReceipt = await salesReceipt.wait();
+        const txCost = new BN(txReceipt.cumulativeGasUsed.toString()).mul(gasPrice);
         const totalCost = mintPrice.add(txCost);
 
         expect(await minterBalanceTracker.delta()).to.be.bignumber.equal(totalCost.neg());
@@ -618,7 +620,7 @@ contract('BasicGatedSale tests...', function () {
 
         await expectEvent.inTransaction(a2SalesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
           saleId: ONE,
-          tokenId: FIRST_MINTED_TOKEN_ID,
+          tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('10')),
           phaseId: ZERO,
           account: artist2.address,
           mintCount: new BN('5')
@@ -680,7 +682,7 @@ contract('BasicGatedSale tests...', function () {
       });
 
       it('reverts if the sale is paused', async () => {
-        const pauseReceipt = await this.basicGatedSale.connect(artist3).toggleSalePause(
+        const pauseReceipt = await this.basicGatedSale.connect(artist1).toggleSalePause(
           ONE.toString(),
           FIRST_MINTED_TOKEN_ID.toString()
         );
@@ -690,12 +692,12 @@ contract('BasicGatedSale tests...', function () {
           editionId: FIRST_MINTED_TOKEN_ID
         });
 
-        const txs = this.basicGatedSale.connect(artist3).mint(
+        const txs = this.basicGatedSale.connect(artist1).mint(
           ONE.toString(),
           '0',
           ONE.toString(),
-          this.merkleProof.claims[artist3.address].index,
-          this.merkleProof.claims[artist3.address].proof,
+          this.merkleProof.claims[artist1.address].index,
+          this.merkleProof.claims[artist1.address].proof,
           {value: ether('0.1').toString()});
         await expectRevert(txs, 'sale is paused');
       });
@@ -1033,31 +1035,6 @@ contract('BasicGatedSale tests...', function () {
       describe('recoverStuckETH', () => {
         const _0_5_ETH = ether('0.5');
 
-        // TODO decide on if we want to handle this
-        it.skip('Can recover eth if problem with contract', async () => {
-
-          // send money to pre-determined address
-          const [ownerSigner] = await ethers.getSigners();
-          await ownerSigner.sendTransaction({
-            to: this.basicGatedSale.address,
-            value: ethers.utils.parseEther('1')
-          });
-          expect(
-            await balance.current(this.basicGatedSale.address)
-          ).to.bignumber.equal(ethers.utils.parseEther('1').toString());
-
-          // something wrong, recover the eth
-          const adminBalTracker = await balance.tracker(admin.address);
-
-          const receipt = await this.basicGatedSale.connect(owner).recoverStuckETH(admin.address, _0_5_ETH.toString());
-          await expectEvent.inTransaction(receipt, KODAV3UpgradableGatedMarketplace, 'AdminRecoverETH', {
-            _recipient: admin.address,
-            _amount: _0_5_ETH
-          });
-
-          expect(await adminBalTracker.delta()).to.be.bignumber.equal(_0_5_ETH);
-        });
-
         it('Reverts if not admin', async () => {
           await expectRevert(
             this.basicGatedSale.connect(artist1).recoverStuckETH(admin.address, ether('1').toString()),
@@ -1207,7 +1184,7 @@ contract('BasicGatedSale tests...', function () {
           await expectRevert(txs, 'Caller not admin');
         });
 
-        it.skip('minting is disabled when the contract is paused', async () => {
+        it('minting is disabled when the contract is paused', async () => {
           await time.increaseTo(this.saleStart.add(time.duration.minutes(10)));
 
           let receipt = await this.basicGatedSale.connect(admin).pause();
@@ -1251,7 +1228,7 @@ contract('BasicGatedSale tests...', function () {
             saleId: ONE,
             tokenId: FIRST_MINTED_TOKEN_ID,
             phaseId: ZERO,
-            account: artist2,
+            account: artist2.address,
             mintCount: ONE
           });
 
