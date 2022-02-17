@@ -8,8 +8,6 @@ import {KODAV3GatedMerkleMarketplace} from "./KODAV3GatedMerkleMarketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
-// TODO are there any issues by inheriting from contracts with state in the upgrade flow?
-// TODO remove hard coded to 15_00000 - add to base contract with update path + event
 // TODO (test) ensure only admin can upgrade e.g. https://docs.openzeppelin.com/contracts/4.x/api/proxy#UUPSUpgradeable-_authorizeUpgrade-address-
 // TODO (test) Confirm we can convert from a gated sale to a buy now flow?
 // TODO (test) Impact of starting in a reserve auction, setting up a gated sale and selling it during the final auction close?
@@ -71,7 +69,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     /// @dev editionToSale is a mapping of edition id => sale id
     mapping(uint256 => uint256) public editionToSale;
 
-    /// @dev saleCommission is a mapping of sale id => commission %, if 0 its default 15_00000 (15%)
+    /// @dev saleCommission is a mapping of sale id => commission %, if 0 its default 15_00000 (15%) unless commission for platform disabled
     mapping(uint256 => uint256) public saleCommission;
 
     modifier onlyCreatorOrAdmin(uint256 _editionId) {
@@ -82,75 +80,47 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         _;
     }
 
-    function createSaleWithPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _walletMintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei, uint128 _mintCap)
-    public
-    whenNotPaused
-    onlyCreatorOrAdmin(_editionId) {
-        uint256 editionSize = koda.getSizeOfEdition(_editionId);
-        require(editionSize > 0, 'edition does not exist');
-        require(_endTime > _startTime, 'phase end time must be after start time');
-        require(_walletMintLimit > 0 && _walletMintLimit < editionSize, 'phase mint limit must be greater than 0');
-
-        uint256 saleId = saleIdCounter += 1;
-
-        // Assign the sale to the sales and editionToSale mappings
-        sales[saleId] = Sale({id : saleId, editionId : _editionId, paused : false});
-        editionToSale[_editionId] = saleId;
-
-        // Add the phase to the phases mapping
-        phases[saleId].push(Phase({
-        startTime : _startTime,
-        endTime : _endTime,
-        walletMintLimit : _walletMintLimit,
-        merkleRoot : _merkleRoot,
-        merkleIPFSHash : _merkleIPFSHash,
-        priceInWei : _priceInWei,
-        mintCap : _mintCap,
-        mintCounter : 0
-        }));
-
-        emit SaleWithPhaseCreated(saleId, _editionId);
-    }
-
-    // TODO merge method
-    function createSaleWithPhases(uint256 _editionId, uint128[] memory _startTimes, uint128[] memory _endTimes, uint16[] memory _walletMintLimits, bytes32[] memory _merkleRoots, string[] memory _merkleIPFSHashes, uint128[] memory _pricesInWei, uint128[] memory _mintCaps)
-    public
-    whenNotPaused
-    onlyCreatorOrAdmin(_editionId) {
-        uint256 editionSize = koda.getSizeOfEdition(_editionId);
-        require(editionSize > 0, 'edition does not exist');
-
-        uint256 saleId = saleIdCounter += 1;
+    /// @notice Allow an artist or admin to create a sale with 1 or more phases
+    function createSaleWithPhases(
+        uint256 _editionId,
+        uint128[] memory _startTimes,
+        uint128[] memory _endTimes,
+        uint16[] memory _walletMintLimits,
+        bytes32[] memory _merkleRoots,
+        string[] memory _merkleIPFSHashes,
+        uint128[] memory _pricesInWei,
+        uint128[] memory _mintCaps
+    ) external whenNotPaused onlyCreatorOrAdmin(_editionId) {
+        uint256 saleId = ++saleIdCounter;
 
         // Assign the sale to the sales and editionToSale mappings
         sales[saleId] = Sale({id : saleId, editionId : _editionId, paused : false});
         editionToSale[_editionId] = saleId;
 
-        for (uint i = 0; i < _startTimes.length; i++) {
-            require(_endTimes[i] > _startTimes[i], 'phase end time must be after start time');
-            require(_walletMintLimits[i] > 0 && _walletMintLimits[i] < editionSize, 'phase mint limit must be greater than 0');
-
-            phases[saleId].push(Phase({
-                startTime : _startTimes[i],
-                endTime : _endTimes[i],
-                walletMintLimit : _walletMintLimits[i],
-                merkleRoot : _merkleRoots[i],
-                merkleIPFSHash : _merkleIPFSHashes[i],
-                priceInWei : _pricesInWei[i],
-                mintCap : _mintCaps[i],
-                mintCounter : 0
-            }));
-        }
+        _addPhasesToSale(
+            _startTimes,
+            _endTimes,
+            _walletMintLimits,
+            _merkleRoots,
+            _merkleIPFSHashes,
+            _pricesInWei,
+            _mintCaps
+        );
 
         emit SaleWithPhaseCreated(saleId, _editionId);
     }
 
-    // todo - might be nice to add recipient even if user mints to self adding the extra param allows wert and other patterns to be possible
-    function mint(uint256 _saleId, uint256 _phaseId, uint16 _mintCount, uint256 _index, bytes32[] calldata _merkleProof)
-    payable
-    public
-    nonReentrant
-    whenNotPaused {
+    /// @notice Mint an NFT from the gated list
+    function mint(
+        uint256 _saleId,
+        uint256 _phaseId,
+        uint16 _mintCount,
+        uint256 _index,
+        address _recipient,
+        bytes32[] calldata _merkleProof
+    ) payable external nonReentrant whenNotPaused {
+        require(_recipient != address(0), "Zero recipient");
+
         Sale storage sale = sales[_saleId];
 
         require(!sale.paused, 'sale is paused');
@@ -165,60 +135,45 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
         require(onPhaseMintList(_saleId, _phaseId, _index, _msgSender(), _merkleProof), 'address not able to mint from sale');
 
-        _handleMint(_saleId, _phaseId, sale.editionId, _mintCount);
+        _handleMint(_saleId, _phaseId, sale.editionId, _mintCount, _recipient);
 
         // Up the mint count for the user and the phase mint counter
         totalMints[_saleId][_phaseId][_msgSender()] += _mintCount;
         phase.mintCounter += _mintCount;
     }
 
-    function _handleMint(uint256 _saleId, uint256 _phaseId, uint256 _editionId, uint16 _mintCount) internal override {
-        require(_mintCount > 0, "Nothing being minted");
-        address _receiver;
-
-        for (uint i = 0; i < _mintCount; i++) {
-            (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
-            _receiver = receiver;
-
-            // send token to buyer (assumes approval has been made, if not then this will fail)
-            koda.safeTransferFrom(creator, _msgSender(), tokenId);
-            emit MintFromSale(_saleId, tokenId, _phaseId, _msgSender(), _mintCount);
-        }
-
-        _handleEditionSaleFunds(_saleId, _editionId, _receiver);
-    }
-
-    function createPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _walletMintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei, uint128 _mintCap)
-    public
+    function createPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _walletMintLimit, bytes32 _merkleRoot, string calldata _merkleIPFSHash, uint128 _priceInWei, uint128 _mintCap)
+    external
     whenNotPaused
     onlyCreatorOrAdmin(_editionId) {
         uint256 editionSize = koda.getSizeOfEdition(_editionId);
         require(editionSize > 0, 'edition does not exist');
         require(_endTime > _startTime, 'phase end time must be after start time');
         require(_walletMintLimit > 0 && _walletMintLimit <= editionSize, 'phase mint limit must be greater than 0');
+        require(_mintCap > 0, "Zero mint cap");
+        require(_merkleRoot != bytes32(0), "Zero merkle root");
+        require(bytes(_merkleIPFSHash).length == 46, "Invalid IPFS hash");
 
         uint256 saleId = editionToSale[_editionId];
         require(saleId > 0, 'no sale associated with edition id');
 
-        Sale memory sale = sales[saleId];
-
         // Add the phase to the phases mapping
-        phases[sale.id].push(Phase({
-        startTime : _startTime,
-        endTime : _endTime,
-        walletMintLimit : _walletMintLimit,
-        merkleRoot : _merkleRoot,
-        merkleIPFSHash : _merkleIPFSHash,
-        priceInWei : _priceInWei,
-        mintCap : _mintCap,
-        mintCounter : 0
+        phases[saleId].push(Phase({
+            startTime : _startTime,
+            endTime : _endTime,
+            walletMintLimit : _walletMintLimit,
+            merkleRoot : _merkleRoot,
+            merkleIPFSHash : _merkleIPFSHash,
+            priceInWei : _priceInWei,
+            mintCap : _mintCap,
+            mintCounter : 0
         }));
 
-        emit PhaseCreated(sale.id, _editionId, phases[saleId].length - 1);
+        emit PhaseCreated(saleId, _editionId, phases[saleId].length - 1);
     }
 
     function removePhase(uint256 _editionId, uint256 _phaseId)
-    public
+    external
     whenNotPaused
     onlyCreatorOrAdmin(_editionId)
     {
@@ -237,7 +192,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     public
     view
     returns (bool) {
-        Phase memory phase = phases[_saleId][_phaseId];
+        Phase storage phase = phases[_saleId][_phaseId];
 
         // assume balance of 1 for enabled minting access
         bytes32 node = keccak256(abi.encodePacked(_index, _account, uint256(1)));
@@ -245,7 +200,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     }
 
     function remainingPhaseMintAllowance(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof)
-    public
+    external
     view
     returns (uint256) {
         require(onPhaseMintList(_saleId, _phaseId, _index, _account, _merkleProof), 'address not able to mint from sale');
@@ -253,7 +208,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         return phases[_saleId][_phaseId].walletMintLimit - totalMints[_saleId][_phaseId][_account];
     }
 
-    function toggleSalePause(uint256 _saleId, uint256 _editionId) public onlyCreatorOrAdmin(_editionId) {
+    function toggleSalePause(uint256 _saleId, uint256 _editionId) external onlyCreatorOrAdmin(_editionId) {
         if (sales[_saleId].paused) {
             sales[_saleId].paused = false;
             emit SaleResumed(_saleId, _editionId);
@@ -263,10 +218,44 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         }
     }
 
+    function updatePlatformPrimarySaleCommission(uint256 _saleId, uint256 _platformPrimarySaleCommission) external onlyAdmin {
+        require(_platformPrimarySaleCommission > 0, "Zero commission must use other admin method");
+        require(!isSaleCommissionForPlatformDisabled[_saleId], "Sale commission for platform disabled");
+        saleCommission[_saleId] = _platformPrimarySaleCommission;
+
+        emit AdminUpdatePlatformPrimarySaleCommissionGatedSale(
+            _saleId,
+            _getPlatformSaleCommissionForSale(_saleId)
+        );
+    }
+
+    function togglePlatformCommissionDisabledForSale(uint256 _saleId) external onlyAdmin {
+        isSaleCommissionForPlatformDisabled[_saleId] = !isSaleCommissionForPlatformDisabled[_saleId];
+
+        emit AdminUpdatePlatformPrimarySaleCommissionGatedSale(
+            _saleId,
+            _getPlatformSaleCommissionForSale(_saleId)
+        );
+    }
+
+    function _handleMint(uint256 _saleId, uint256 _phaseId, uint256 _editionId, uint16 _mintCount, address _recipient) internal override {
+        require(_mintCount > 0, "Nothing being minted");
+        address _receiver;
+
+        for (uint i = 0; i < _mintCount; i++) {
+            (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
+            _receiver = receiver;
+
+            // send token to buyer (assumes approval has been made, if not then this will fail)
+            koda.safeTransferFrom(creator, _recipient, tokenId);
+            emit MintFromSale(_saleId, tokenId, _phaseId, _recipient, _mintCount);
+        }
+
+        _handleEditionSaleFunds(_saleId, _editionId, _receiver);
+    }
+
     function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _receiver) internal override {
-        // TODO this should be a configurable property and not hard coded to 15_00000 - add to base contract with update path
-        // TODO - I also cannot see the if block ever being skipped. The logic will always return a non zero value for platform commission
-        uint256 platformPrimarySaleCommission = saleCommission[_saleId] > 0 ? saleCommission[_saleId] : 15_00000;
+        uint256 platformPrimarySaleCommission = _getPlatformSaleCommissionForSale(_saleId);
         uint256 koCommission = (msg.value / modulo) * platformPrimarySaleCommission;
         if (koCommission > 0) {
             (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
@@ -277,9 +266,47 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         require(success, "payment failed");
     }
 
-    function updatePlatformPrimarySaleCommission(uint256 _saleId, uint256 _platformPrimarySaleCommission) public onlyAdmin {
-        saleCommission[_saleId] = _platformPrimarySaleCommission;
+    function _getPlatformSaleCommissionForSale(uint256 _saleId) internal returns (uint256) {
+        uint256 commission;
 
-        emit AdminUpdatePlatformPrimarySaleCommissionGatedSale(_saleId, _platformPrimarySaleCommission);
+        if (!isSaleCommissionForPlatformDisabled[_saleId]) {
+            commission = saleCommission[_saleId] > 0 ? saleCommission[_saleId] : platformPrimaryCommission;
+        }
+
+        return commission;
+    }
+
+    function _addPhasesToSale(
+        uint128[] memory _startTimes,
+        uint128[] memory _endTimes,
+        uint16[] memory _walletMintLimits,
+        bytes32[] memory _merkleRoots,
+        string[] memory _merkleIPFSHashes,
+        uint128[] memory _pricesInWei,
+        uint128[] memory _mintCaps
+    ) internal {
+        uint256 saleId = saleIdCounter;
+        uint256 editionSize = koda.getSizeOfEdition(sales[saleId].editionId);
+        require(editionSize > 0, 'edition does not exist');
+
+        uint256 numOfPhases = _startTimes.length;
+        for (uint256 i; i < numOfPhases; ++i) {
+            require(_endTimes[i] > _startTimes[i], 'phase end time must be after start time');
+            require(_walletMintLimits[i] > 0 && _walletMintLimits[i] < editionSize, 'phase mint limit must be greater than 0');
+            require(_mintCaps[i] > 0, "Zero mint cap");
+            require(_merkleRoots[i] != bytes32(0), "Zero merkle root");
+            require(bytes(_merkleIPFSHashes[i]).length == 46, "Invalid IPFS hash");
+
+            phases[saleId].push(Phase({
+            startTime : _startTimes[i],
+            endTime : _endTimes[i],
+            walletMintLimit : _walletMintLimits[i],
+            merkleRoot : _merkleRoots[i],
+            merkleIPFSHash : _merkleIPFSHashes[i],
+            priceInWei : _pricesInWei[i],
+            mintCap : _mintCaps[i],
+            mintCounter : 0
+            }));
+        }
     }
 }

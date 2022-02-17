@@ -84,15 +84,15 @@ contract('KODAV3UpgradableGatedMarketplace tests...', function (accounts) {
         this.saleStart = this.rootTime.add(time.duration.hours(1))
         this.saleEnd = this.rootTime.add(time.duration.hours(25))
 
-        const receipt = await this.basicGatedSale.createSaleWithPhase(
+        const receipt = await this.basicGatedSale.createSaleWithPhases(
           '11000',
-          this.saleStart.toString(),
-          this.saleEnd.toString(),
-          '10',
-          this.merkleProof.merkleRoot,
-          MOCK_MERKLE_HASH,
-          '100000000000000000',
-          '0'
+          [this.saleStart.toString()],
+          [this.saleEnd.toString()],
+          ['10'],
+          [this.merkleProof.merkleRoot],
+          [MOCK_MERKLE_HASH],
+          ['100000000000000000'],
+          ['15']
         );
 
         // FIXME broken
@@ -104,7 +104,7 @@ contract('KODAV3UpgradableGatedMarketplace tests...', function (accounts) {
 
     describe('KODAV3UpgradableGatedMarketplace v1', async () => {
 
-        describe('createSaleWithPhase', async () => {
+        describe('createSaleWithPhases', async () => {
 
             it('can create a new sale and phase with correct arguments', async () => {
                 const {id, editionId} = await this.basicGatedSale.sales('1')
@@ -129,7 +129,7 @@ contract('KODAV3UpgradableGatedMarketplace tests...', function (accounts) {
                 expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot)
                 expect(merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH)
                 expect(priceInWei.toString()).to.be.equal(ether('0.1').toString())
-                expect(mintCap.toString()).to.be.equal("0")
+                expect(mintCap.toString()).to.be.equal("15")
                 expect(mintCounter.toString()).to.be.equal("0")
 
                 const mappingId = await this.basicGatedSale.editionToSale(editionId)
@@ -180,7 +180,7 @@ contract('KODAV3UpgradableGatedMarketplace tests...', function (accounts) {
                 expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot)
                 expect(merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH)
                 expect(priceInWei.toString()).to.be.equal(ether('0.1').toString())
-                expect(mintCap.toString()).to.be.equal("0")
+                expect(mintCap.toString()).to.be.equal("15")
                 expect(mintCounter.toString()).to.be.equal("0")
 
                 const mappingId = await this.basicGatedSale.editionToSale(editionId)

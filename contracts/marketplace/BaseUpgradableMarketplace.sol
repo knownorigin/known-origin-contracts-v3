@@ -14,6 +14,7 @@ import {IKODAV3} from "../core/IKODAV3.sol";
 abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, PausableUpgradeable, UUPSUpgradeable {
 
     event AdminUpdateModulo(uint256 _modulo);
+    event AdminUpdatePlatformPrimaryCommission(uint256 newAmount);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
     event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
     event AdminUpdatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission);
@@ -63,6 +64,12 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
     /// @notice Bid lockup period
     uint256 public bidLockupPeriod;
 
+    /// @notice Primary commission percentage
+    uint256 public platformPrimaryCommission;
+
+    /// @notice When platform wants to take no cut from sale enable this
+    mapping(uint256 => bool) public isSaleCommissionForPlatformDisabled;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
@@ -76,6 +83,7 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
 
         // initial values for adjustable vars
         modulo = 100_00000;
+        platformPrimaryCommission = 15_00000;
         minBidAmount = 0.01 ether;
         bidLockupPeriod = 6 hours;
     }
@@ -89,10 +97,9 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
         emit AdminRecoverERC20(_token, _recipient, _amount);
     }
 
-    function recoverStuckETH(address payable _recipient, uint256 _amount) public onlyAdmin {
-        (bool success,) = _recipient.call{value : _amount}("");
-        require(success, "Unable to send recipient ETH");
-        emit AdminRecoverETH(_recipient, _amount);
+    function updatePlatformPrimaryCommission(uint256 _newAmount) external onlyAdmin {
+        platformPrimaryCommission = _newAmount;
+        emit AdminUpdatePlatformPrimaryCommission(_newAmount);
     }
 
     function updateAccessControls(IKOAccessControlsLookup _accessControls) public onlyAdmin {

@@ -20,12 +20,6 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseUpgradableMarketplace, IKO
     /// @notice emitted when a phase is removed from a sale
     event MerklePhaseRemoved(uint256 indexed saleId, bytes32 indexed phaseId);
 
-    // TODO drop
-    // TODO needs to include token ID
-    // TODO now we have token ID I am wondering if mint count is needed as that can be pushed to indexer if needed
-    /// @notice emitted when someone mints from a sale
-    event MerkleMintFromSale(uint256 saleId, bytes32 phaseId, address account, uint256 mintCount);
-
     /// @notice emitted when primary sales commission is updated for a sale
     event MerkleAdminUpdatePlatformPrimarySaleCommissionGatedSale(uint256 indexed saleId, uint256 platformPrimarySaleCommission);
 
@@ -88,6 +82,7 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseUpgradableMarketplace, IKO
         uint256 _saleId,
         bytes32 _phaseId,
         uint16 _mintCount,
+        address _recipient,
         MerklePhaseMetadata calldata _phase,
         bytes32[] calldata _merkleProof
     ) payable external override nonReentrant whenNotPaused {
@@ -102,13 +97,11 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseUpgradableMarketplace, IKO
         require(msg.value == _phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
         require(onPhaseMerkleList(_saleId, _phaseId, _msgSender(), _phase, _merkleProof), 'address not able to mint from sale');
 
-        _handleMint(_saleId, uint256(_phaseId), editionId, _mintCount);
+        _handleMint(_saleId, uint256(_phaseId), editionId, _mintCount, _recipient);
 
         // Up the mint count for the user and the phase mint counter
         totalMerkleMints[_saleId][_phaseId][_msgSender()] += _mintCount;
         phaseMintCount[_phaseId] += _mintCount;
-
-        emit MerkleMintFromSale(_saleId, _phaseId, _msgSender(), _mintCount);
     }
 
     /// @inheritdoc IKODAV3GatedMerkleMarketplace
@@ -212,5 +205,5 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseUpgradableMarketplace, IKO
     }
 
     function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _receiver) internal virtual;
-    function _handleMint(uint256 _saleId, uint256 _phaseId, uint256 _editionId, uint16 _mintCount) internal virtual;
+    function _handleMint(uint256 _saleId, uint256 _phaseId, uint256 _editionId, uint16 _mintCount, address _recipient) internal virtual;
 }

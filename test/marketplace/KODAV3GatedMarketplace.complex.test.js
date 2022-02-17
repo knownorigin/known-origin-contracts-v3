@@ -90,15 +90,15 @@ contract('BasicGatedSale complex tests...', function () {
 
     it.skip('can create a sale with multiple phases and manage mints from each', async () => {
       // Make the sale
-      const creationReceipt = await this.basicGatedSale.connect(artist).createSaleWithPhase(
+      const creationReceipt = await this.basicGatedSale.connect(artist).createSaleWithPhases(
         FIRST_MINTED_TOKEN_ID.toString(),
-        this.phase1Start.toString(),
-        this.phase1End.toString(),
-        THREE.toString(),
-        this.merkleProof1.merkleRoot,
-        MOCK_MERKLE_HASH,
-        ether('0.1').toString(),
-        '29'
+        [this.phase1Start.toString()],
+        [this.phase1End.toString()],
+        [THREE.toString()],
+        [this.merkleProof1.merkleRoot],
+        [MOCK_MERKLE_HASH],
+        [ether('0.1').toString()],
+        ['29']
       );
 
       await expectEvent.inTransaction(creationReceipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {

@@ -24,11 +24,13 @@ interface IKODAV3GatedMerkleMarketplace {
     /// @param _phaseId Merkle root of the phase
     /// @param _mintCount How many tokens user wishes to purchase
     /// @param _phase Params for the phase verified with the root
+    /// @param _recipient Address receiving the dropped token
     /// @param _merkleProof Proof user is part of the phase
     function merkleMint(
         uint256 _saleId,
         bytes32 _phaseId,
         uint16 _mintCount,
+        address _recipient,
         MerklePhaseMetadata calldata _phase,
         bytes32[] calldata _merkleProof
     ) payable external;

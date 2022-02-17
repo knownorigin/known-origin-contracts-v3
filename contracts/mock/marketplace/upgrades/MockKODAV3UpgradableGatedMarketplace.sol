@@ -143,7 +143,7 @@ contract MockKODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODA
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
         require(onPhaseMintList(_saleId, _phaseId, _index, _msgSender(), _merkleProof), 'address not able to mint from sale');
 
-        _handleMint(_saleId, _phaseId, sale.editionId, _mintCount);
+        _handleMint(_saleId, _phaseId, sale.editionId, _mintCount, _msgSender());
 
         // Up the mint count for the user and the phase mint counter
         totalMints[_saleId][_phaseId][_msgSender()] += _mintCount;
@@ -152,7 +152,7 @@ contract MockKODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODA
         emit MintFromSale(_saleId, sale.editionId, _phaseId, _msgSender(), _mintCount);
     }
 
-    function _handleMint(uint256 _saleId, uint256 _phaseId, uint256 _editionId, uint16 _mintCount) internal override {
+    function _handleMint(uint256 _saleId, uint256 _phaseId, uint256 _editionId, uint16 _mintCount, address _recipient) internal override {
         address _receiver;
 
         for (uint i = 0; i < _mintCount; i++) {
@@ -160,7 +160,7 @@ contract MockKODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODA
             _receiver = receiver;
 
             // send token to buyer (assumes approval has been made, if not then this will fail)
-            koda.safeTransferFrom(creator, _msgSender(), tokenId);
+            koda.safeTransferFrom(creator, _recipient, tokenId);
         }
 
         _handleEditionSaleFunds(_saleId, _editionId, _receiver);
