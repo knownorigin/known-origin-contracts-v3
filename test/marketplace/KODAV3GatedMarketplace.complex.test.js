@@ -15,7 +15,7 @@ contract('BasicGatedSale complex tests...', function () {
 
   const STARTING_EDITION = '10000';
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
-  const MOCK_MERKLE_HASH = '0x7B502C3A1F48C8609AE212CDFB639DEE39673F5E';
+  const MOCK_MERKLE_HASH = 'Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
   const ZERO = new BN('0');
   const ONE = new BN('1');
   const TWO = new BN('2');
@@ -88,7 +88,7 @@ contract('BasicGatedSale complex tests...', function () {
 
   describe('BasicGatedSale - Complex', async () => {
 
-    it.skip('can create a sale with multiple phases and manage mints from each', async () => {
+    it('can create a sale with multiple phases and manage mints from each', async () => {
       // Make the sale
       const creationReceipt = await this.basicGatedSale.connect(artist).createSaleWithPhases(
         FIRST_MINTED_TOKEN_ID.toString(),
@@ -191,6 +191,7 @@ contract('BasicGatedSale complex tests...', function () {
         ZERO.toString(),
         ONE.toString(),
         this.merkleProof1.claims[buyer1.address].index,
+        buyer1.address,
         this.merkleProof1.claims[buyer1.address].proof,
         {
           value: ether('0.1').toString()
@@ -205,6 +206,7 @@ contract('BasicGatedSale complex tests...', function () {
         ZERO.toString(),
         THREE.toString(),
         this.merkleProof1.claims[buyer1.address].index,
+        buyer1.address,
         this.merkleProof1.claims[buyer1.address].proof,
         {
           value: ether('0.3').toString()
@@ -231,6 +233,7 @@ contract('BasicGatedSale complex tests...', function () {
         ZERO.toString(),
         ONE.toString(),
         this.merkleProof1.claims[buyer1.address].index,
+        buyer1.address,
         this.merkleProof1.claims[buyer1.address].proof,
         {
           value: ether('0.1').toString()
@@ -242,6 +245,7 @@ contract('BasicGatedSale complex tests...', function () {
         ZERO.toString(),
         TWO.toString(),
         this.merkleProof1.claims[buyer2.address].index,
+        buyer2.address,
         this.merkleProof1.claims[buyer2.address].proof,
         {
           value: ether('0.2').toString()
@@ -266,8 +270,9 @@ contract('BasicGatedSale complex tests...', function () {
         ONE.toString(),
         ZERO.toString(),
         ONE.toString(),
-        this.merkleProof1.claims[buyer1.address].index,
-        this.merkleProof1.claims[buyer1.address].proof,
+        this.merkleProof3.claims[buyer1.address].index,
+        buyer1.address,
+        this.merkleProof3.claims[buyer1.address].proof,
         {
           value: ether('0.1').toString()
         }), 'address not able to mint from sale');
@@ -280,8 +285,9 @@ contract('BasicGatedSale complex tests...', function () {
         ONE.toString(),
         ZERO.toString(),
         ONE.toString(),
-        this.merkleProof1.claims[buyer2.address].index,
-        this.merkleProof1.claims[buyer2.address].proof,
+        this.merkleProof2.claims[buyer2.address].index,
+        buyer2.address,
+        this.merkleProof2.claims[buyer2.address].proof,
         {
           value: ether('0.1').toString()
         }), 'sale phase not in progress');
@@ -292,6 +298,7 @@ contract('BasicGatedSale complex tests...', function () {
         ONE.toString(),
         THREE.toString(),
         this.merkleProof2.claims[buyer2.address].index,
+        buyer2.address,
         this.merkleProof2.claims[buyer2.address].proof,
         {
           value: ether('0.9').toString()
@@ -311,6 +318,7 @@ contract('BasicGatedSale complex tests...', function () {
         ONE.toString(),
         ONE.toString(),
         this.merkleProof2.claims[buyer4.address].index,
+        buyer4.address,
         this.merkleProof2.claims[buyer4.address].proof,
         {
           value: ether('0.3').toString()
@@ -329,8 +337,9 @@ contract('BasicGatedSale complex tests...', function () {
         ONE.toString(),
         ONE.toString(),
         TWO.toString(),
-        this.merkleProof2.claims[buyer3.address].index,
-        this.merkleProof2.claims[buyer3.address].proof,
+        this.merkleProof3.claims[buyer3.address].index,
+        buyer3.address,
+        this.merkleProof3.claims[buyer3.address].proof,
         {
           value: ether('0.5').toString()
         }), 'not enough wei sent to complete mint');
@@ -340,8 +349,9 @@ contract('BasicGatedSale complex tests...', function () {
         ONE.toString(),
         ONE.toString(),
         ONE.toString(),
-        this.merkleProof2.claims[buyer3.address].index,
-        this.merkleProof2.claims[buyer3.address].proof,
+        this.merkleProof3.claims[buyer3.address].index,
+        buyer3.address,
+        this.merkleProof3.claims[buyer3.address].proof,
         {
           value: ether('0.3').toString()
         }), 'address not able to mint from sale');
@@ -352,61 +362,65 @@ contract('BasicGatedSale complex tests...', function () {
         TWO.toString(),
         ONE.toString(),
         this.merkleProof2.claims[buyer3.address].index,
+        buyer3.address,
         this.merkleProof2.claims[buyer3.address].proof,
         {
           value: ether('0.3').toString()
         }), 'sale phase not in progress');
 
-      // // They will be able to mint when we advance to phase 3 though
-      // await time.increaseTo(this.phase3Start);
-      //
-      // let b5p3MintReceipt = await this.basicGatedSale.connect(buyer5).mint(
-      //   ONE.toString(),
-      //   THREE.toString(),
-      //   new BN('10').toString(),
-      //   this.merkleProof3.claims[buyer5.address].index,
-      //   this.merkleProof3.claims[buyer5.address].proof,
-      //   {
-      //     value: ether('7').toString()
-      //   });
-      //
-      // await expectEvent.inTransaction(b5p3MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
-      //   saleId: ONE,
-      //   editionId: FIRST_MINTED_TOKEN_ID.add(new BN('15')),
-      //   phaseId: THREE,
-      //   account: buyer5.address,
-      //   mintCount: new BN('10')
-      // });
-      //
-      // // Lets get someone else to buy a load as well
-      // let b2p3MintReceipt = await this.basicGatedSale.connect(buyer2).mint(
-      //   ONE.toString(),
-      //   THREE.toString(),
-      //   new BN('10').toString(),
-      //   this.merkleProof3.claims[buyer2.address].index,
-      //   this.merkleProof3.claims[buyer2.address].proof,
-      //   {
-      //     value: ether('7').toString()
-      //   });
-      //
-      // await expectEvent.inTransaction(b2p3MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
-      //   saleId: ONE,
-      //   editionId: FIRST_MINTED_TOKEN_ID,
-      //   phaseId: THREE,
-      //   account: buyer2.address,
-      //   mintCount: new BN('10')
-      // });
-      //
-      // // The sale should now be sold out so should revert
-      // await expectRevert(this.basicGatedSale.connect(buyer1).mint(
-      //   ONE.toString(),
-      //   THREE.toString(),
-      //   ONE.toString(),
-      //   this.merkleProof3.claims[buyer1.address].index,
-      //   this.merkleProof3.claims[buyer1.address].proof,
-      //   {
-      //     value: ether('0.7').toString()
-      //   }), 'the sale is sold out');
+      // They will be able to mint when we advance to phase 3 though
+      await time.increaseTo(this.phase3Start);
+
+      let b5p3MintReceipt = await this.basicGatedSale.connect(buyer5).mint(
+        ONE.toString(),
+        THREE.toString(),
+        new BN('10').toString(),
+        this.merkleProof3.claims[buyer5.address].index,
+        buyer5.address,
+        this.merkleProof3.claims[buyer5.address].proof,
+        {
+          value: ether('7').toString()
+        });
+
+      await expectEvent.inTransaction(b5p3MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
+        saleId: ONE,
+        tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('15')),
+        phaseId: THREE,
+        account: buyer5.address,
+        mintCount: new BN('10')
+      });
+
+      // Lets get someone else to buy a load as well
+      let b2p3MintReceipt = await this.basicGatedSale.connect(buyer2).mint(
+        ONE.toString(),
+        THREE.toString(),
+        new BN('10').toString(),
+        this.merkleProof3.claims[buyer2.address].index,
+        buyer2.address,
+        this.merkleProof3.claims[buyer2.address].proof,
+        {
+          value: ether('7').toString()
+        });
+
+      await expectEvent.inTransaction(b2p3MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
+        saleId: ONE,
+        tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('19')),
+        phaseId: THREE,
+        account: buyer2.address,
+        mintCount: new BN('10')
+      });
+
+      // The sale should now be sold out so should revert
+      await expectRevert(this.basicGatedSale.connect(buyer1).mint(
+        ONE.toString(),
+        THREE.toString(),
+        ONE.toString(),
+        this.merkleProof3.claims[buyer1.address].index,
+        buyer1.address,
+        this.merkleProof3.claims[buyer1.address].proof,
+        {
+          value: ether('0.7').toString()
+        }), 'the sale is sold out');
     });
   });
 });
