@@ -1,13 +1,13 @@
 const prompt = require('prompt-sync')();
 const hre = require('hardhat');
 
-const KOAccessControls = require('../artifacts/contracts/access/KOAccessControls.sol/KOAccessControls.json');
-const KnownOriginDigitalAssetV3 = require('../artifacts/contracts/core/KnownOriginDigitalAssetV3.sol/KnownOriginDigitalAssetV3.json');
-const KODAV3Marketplace = require('../artifacts/contracts/marketplace/KODAV3PrimaryMarketplace.sol/KODAV3PrimaryMarketplace.json');
-const CollabRoyaltiesRegistry = require('../artifacts/contracts/collab/CollabRoyaltiesRegistry.sol/CollabRoyaltiesRegistry.json');
+const KOAccessControls = require('../../artifacts/contracts/access/KOAccessControls.sol/KOAccessControls.json');
+const KnownOriginDigitalAssetV3 = require('../../artifacts/contracts/core/KnownOriginDigitalAssetV3.sol/KnownOriginDigitalAssetV3.json');
+const KODAV3Marketplace = require('../../artifacts/contracts/marketplace/KODAV3PrimaryMarketplace.sol/KODAV3PrimaryMarketplace.json');
+const CollabRoyaltiesRegistry = require('../../artifacts/contracts/collab/CollabRoyaltiesRegistry.sol/CollabRoyaltiesRegistry.json');
 
-const legacy_data = require('./data/legacy_data');
-const v3_data = require('./data/v3_data');
+const legacy_data = require('../data/legacy_data');
+const v3_data = require('../data/v3_data');
 
 async function main() {
   const [deployer] = await ethers.getSigners();

@@ -1,8 +1,8 @@
 const prompt = require('prompt-sync')();
 const hre = require('hardhat');
 
-const legacy_data = require('./data/legacy_data');
-const v3_data = require('./data/v3_data');
+const legacy_data = require('../data/legacy_data');
+const v3_data = require('../data/v3_data');
 
 async function main() {
   const [deployer] = await ethers.getSigners();

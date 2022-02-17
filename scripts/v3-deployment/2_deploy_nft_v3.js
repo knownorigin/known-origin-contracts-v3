@@ -1,9 +1,9 @@
 const prompt = require('prompt-sync')();
 const hre = require('hardhat');
 
-const KOAccessControls = require('../artifacts/contracts/access/KOAccessControls.sol/KOAccessControls.json');
+const KOAccessControls = require('../../artifacts/contracts/access/KOAccessControls.sol/KOAccessControls.json');
 
-const legacy_data = require('./data/legacy_data');
+const legacy_data = require('../data/legacy_data');
 
 async function main() {
   const [deployer] = await ethers.getSigners();

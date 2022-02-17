@@ -1,7 +1,8 @@
 const prompt = require('prompt-sync')();
 const hre = require('hardhat');
+const {ethers, upgrades} = hre;
 
-const KODAV3GatedMarketplace = require('../artifacts/contracts/marketplace/KODAV3GatedMarketplace.sol/KODAV3GatedMarketplace.json');
+const KODAV3UpgradableGatedMarketplace = require('../../artifacts/contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol/KODAV3UpgradableGatedMarketplace.json');
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -13,7 +14,7 @@ async function main() {
   const kodaV3GatedMarketplaceAddress = prompt('KodaV3GatedMarketplaceAddress address? ');
   const kodaV3GatedMarketplaceDeployment = new ethers.Contract(
     kodaV3GatedMarketplaceAddress,
-    KODAV3GatedMarketplace.abi,
+    KODAV3UpgradableGatedMarketplace.abi,
     deployer
   );
   prompt(`Found KODA V3 NFT [${kodaV3GatedMarketplaceDeployment.address}] for network [${network}] - click enter to continue ... ?`);
@@ -21,20 +22,39 @@ async function main() {
   await kodaV3GatedMarketplaceDeployment.deployed();
   console.log('Gated Marketplace deployed at', kodaV3GatedMarketplaceDeployment.address);
 
+  /////////////
+  // PHASE 1 //
+  /////////////
 
-  // function createSaleWithPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _walletMintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei, uint128 _mintCap)
-  const receipt = await kodaV3GatedMarketplaceDeployment.createSaleWithPhase(
-    317000,
-    0,
-    1802010307,
-    5,
-    '0x523f38e5af5151d061caa9c6a70309ddcb76468362ecc4625a1f5a29e322fce1',
-    'andy',
-    '20000000000000000',
-    50,
-  );
+  // Tuesday 1st March
 
-  console.log('Set up phase', receipt);
+  const PHASE_1 = {
+    editionId: '',
+    startTime: '',
+    endTime: '',
+    walletMintLimits: '',
+    merkleRoots: '',
+    pricesInWei: '',
+    mintCaps: '',
+  };
+
+  /////////////
+  // PHASE 2 //
+  /////////////
+
+  // Wednesday 2nd March
+
+  /////////////
+  // PHASE 3 //
+  /////////////
+
+  // Thursday 3rd March
+
+  /////////////
+  // PHASE 4 //
+  /////////////
+
+  // Friday 4th March
 
   console.log('Finished!');
 }

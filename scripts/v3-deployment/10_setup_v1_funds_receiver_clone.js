@@ -1,7 +1,7 @@
 const prompt = require('prompt-sync')();
 const hre = require('hardhat');
 
-const CollabRoyaltiesRegistry = require('../artifacts/contracts/collab/CollabRoyaltiesRegistry.sol/CollabRoyaltiesRegistry');
+const CollabRoyaltiesRegistry = require('../../artifacts/contracts/collab/CollabRoyaltiesRegistry.sol/CollabRoyaltiesRegistry.json');
 
 async function main() {
   const [deployer] = await ethers.getSigners();

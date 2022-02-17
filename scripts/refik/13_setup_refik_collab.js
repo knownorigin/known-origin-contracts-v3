@@ -1,7 +1,8 @@
 const prompt = require('prompt-sync')();
 const hre = require('hardhat');
+const {ethers, upgrades} = hre;
 
-const KODAV3GatedMarketplace = require('../artifacts/contracts/marketplace/KODAV3GatedMarketplace.sol/KODAV3GatedMarketplace.json');
+const KODAV3UpgradableGatedMarketplace = require('../../artifacts/contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol/KODAV3UpgradableGatedMarketplace.json');
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -13,7 +14,7 @@ async function main() {
   const kodaV3GatedMarketplaceAddress = prompt('KodaV3GatedMarketplaceAddress address? ');
   const kodaV3GatedMarketplaceDeployment = new ethers.Contract(
     kodaV3GatedMarketplaceAddress,
-    KODAV3GatedMarketplace.abi,
+    KODAV3UpgradableGatedMarketplace.abi,
     deployer
   );
   prompt(`Found KODA V3 NFT [${kodaV3GatedMarketplaceDeployment.address}] for network [${network}] - click enter to continue ... ?`);
@@ -21,20 +22,16 @@ async function main() {
   await kodaV3GatedMarketplaceDeployment.deployed();
   console.log('Gated Marketplace deployed at', kodaV3GatedMarketplaceDeployment.address);
 
+  const collabConfig = {
+    '0x1': 30, // st jude's
+    '0x2': 25, // Refik
+    '0x3': 25, // CWS
+    '0x4': 15, // Baylor college of medicine
+    '0x5': 5, // Ben Fury foundation
+  };
 
-  // function createSaleWithPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _walletMintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei, uint128 _mintCap)
-  const receipt = await kodaV3GatedMarketplaceDeployment.createSaleWithPhase(
-    317000,
-    0,
-    1802010307,
-    5,
-    '0x523f38e5af5151d061caa9c6a70309ddcb76468362ecc4625a1f5a29e322fce1',
-    'andy',
-    '20000000000000000',
-    50,
-  );
+  // TODO KO / SEQUENCE included as part of the collab?
 
-  console.log('Set up phase', receipt);
 
   console.log('Finished!');
 }

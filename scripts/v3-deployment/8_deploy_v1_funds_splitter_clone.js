@@ -1,8 +1,8 @@
 const prompt = require('prompt-sync')();
 const hre = require('hardhat');
 
-const ClaimableFundsSplitterV1 = require('../artifacts/contracts/collab/handlers/ClaimableFundsSplitterV1.sol/ClaimableFundsSplitterV1.json')
-const KOCreate2OmniDeployer = require('../artifacts/contracts/deployer/KOCreate2OmniDeployer.sol/KOCreate2OmniDeployer.json');
+const ClaimableFundsSplitterV1 = require('../../artifacts/contracts/collab/handlers/ClaimableFundsSplitterV1.sol/ClaimableFundsSplitterV1.json')
+const KOCreate2OmniDeployer = require('../../artifacts/contracts/deployer/KOCreate2OmniDeployer.sol/KOCreate2OmniDeployer.json');
 
 async function main() {
   const [deployer] = await ethers.getSigners();

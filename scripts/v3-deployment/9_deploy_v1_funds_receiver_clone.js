@@ -1,8 +1,8 @@
 const prompt = require('prompt-sync')();
 const hre = require('hardhat');
 
-const ClaimableFundsReceiverV1 = require('../artifacts/contracts/collab/handlers/ClaimableFundsReceiverV1.sol/ClaimableFundsReceiverV1.json');
-const KOCreate2OmniDeployer = require('../artifacts/contracts/deployer/KOCreate2OmniDeployer.sol/KOCreate2OmniDeployer.json');
+const ClaimableFundsReceiverV1 = require('../../artifacts/contracts/collab/handlers/ClaimableFundsReceiverV1.sol/ClaimableFundsReceiverV1.json');
+const KOCreate2OmniDeployer = require('../../artifacts/contracts/deployer/KOCreate2OmniDeployer.sol/KOCreate2OmniDeployer.json');
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -19,7 +19,7 @@ async function main() {
   );
 
   const salt = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('ClaimableFundsReceiverV1'));
-  
+
   prompt(`Using keccak256("ClaimableFundsReceiverV1") to generate [${salt}] - click enter to continue ... ?`);
 
   // Deployed on MAINNET - don't override

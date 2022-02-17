@@ -1,5 +1,6 @@
 const prompt = require('prompt-sync')();
 const hre = require('hardhat');
+const {ethers, upgrades} = hre;
 
 const KOAccessControls = require('../artifacts/contracts/access/KOAccessControls.sol/KOAccessControls.json');
 const KnownOriginDigitalAssetV3 = require('../artifacts/contracts/core/KnownOriginDigitalAssetV3.sol/KnownOriginDigitalAssetV3.json');
@@ -36,15 +37,16 @@ async function main() {
   }
   prompt(`Found commission account [${commissionAccount}] for [${network}] - hit enter to continue`);
 
-  // Deploying the marketplace
+  ///////////////////////////////
+  // Deploying the marketplace //
+  ///////////////////////////////
 
-  const KODAV3GatedMarketplace = await ethers.getContractFactory('KODAV3GatedMarketplace');
-  const gatedMarketplace = await KODAV3GatedMarketplace.deploy(
+  const KODAV3UpgradableGatedMarketplace = await ethers.getContractFactory('KODAV3UpgradableGatedMarketplace');
+  const gatedMarketplace = await upgrades.deployProxy(KODAV3UpgradableGatedMarketplace, [
     accessControlsDeployment.address,
     kodaV3Deployment.address,
     commissionAccount
-  );
-
+  ]);
   await gatedMarketplace.deployed();
   console.log('Gated Marketplace deployed at', gatedMarketplace.address);
 
