@@ -9,8 +9,8 @@ import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
 // TODO are there any issues by inheriting from contracts with state in the upgrade flow?
-// TODO do we need to consider the owner upgrade path e.g. https://docs.openzeppelin.com/contracts/4.x/api/proxy#UUPSUpgradeable-_authorizeUpgrade-address-
 // TODO remove hard coded to 15_00000 - add to base contract with update path + event
+// TODO (test) ensure only admin can upgrade e.g. https://docs.openzeppelin.com/contracts/4.x/api/proxy#UUPSUpgradeable-_authorizeUpgrade-address-
 // TODO (test) Confirm we can convert from a gated sale to a buy now flow?
 // TODO (test) Impact of starting in a reserve auction, setting up a gated sale and selling it during the final auction close?
 
@@ -25,10 +25,8 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     /// @notice emitted when a phase is removed from a sale
     event PhaseRemoved(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId);
 
-    // TODO indexed params cost more - is it worth reducing the indexed options?
-    // TODO now we have token ID I am wondering if mint count is needed as that can be pushed to indexer if needed
     /// @notice emitted when someone mints from a sale
-    event MintFromSale(uint256 indexed saleId, uint256 indexed tokenId, uint256 indexed phaseId, address account, uint256 mintCount);
+    event MintFromSale(uint256 saleId, uint256 tokenId, uint256 phaseId, address account, uint256 mintCount);
 
     /// @notice emitted when primary sales commission is updated for a sale
     event AdminUpdatePlatformPrimarySaleCommissionGatedSale(uint256 indexed saleId, uint256 platformPrimarySaleCommission);
@@ -114,6 +112,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         emit SaleWithPhaseCreated(saleId, _editionId);
     }
 
+    // TODO merge method
     function createSaleWithPhases(uint256 _editionId, uint128[] memory _startTimes, uint128[] memory _endTimes, uint16[] memory _walletMintLimits, bytes32[] memory _merkleRoots, string[] memory _merkleIPFSHashes, uint128[] memory _pricesInWei, uint128[] memory _mintCaps)
     public
     whenNotPaused
@@ -152,14 +151,10 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     public
     nonReentrant
     whenNotPaused {
-        Sale memory sale = sales[_saleId];
+        Sale storage sale = sales[_saleId];
 
         require(!sale.paused, 'sale is paused');
-
-        // TODO do we need to check if the sale it sold out at this point as in theory the purchase would revert?
-        // TODO apply same changes to merkle version if we remove this
         require(!koda.isEditionSoldOut(sale.editionId), 'the sale is sold out');
-
         require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist');
 
         Phase storage phase = phases[_saleId][_phaseId];

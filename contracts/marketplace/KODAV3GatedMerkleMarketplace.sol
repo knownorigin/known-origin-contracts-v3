@@ -20,11 +20,11 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseUpgradableMarketplace, IKO
     /// @notice emitted when a phase is removed from a sale
     event MerklePhaseRemoved(uint256 indexed saleId, bytes32 indexed phaseId);
 
+    // TODO drop
     // TODO needs to include token ID
-    // TODO indexed params cost more - is it worth reducing the indexed options?
     // TODO now we have token ID I am wondering if mint count is needed as that can be pushed to indexer if needed
     /// @notice emitted when someone mints from a sale
-    event MerkleMintFromSale(uint256 indexed saleId, bytes32 indexed phaseId, address indexed account, uint256 mintCount);
+    event MerkleMintFromSale(uint256 saleId, bytes32 phaseId, address account, uint256 mintCount);
 
     /// @notice emitted when primary sales commission is updated for a sale
     event MerkleAdminUpdatePlatformPrimarySaleCommissionGatedSale(uint256 indexed saleId, uint256 platformPrimarySaleCommission);

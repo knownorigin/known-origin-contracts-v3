@@ -58,7 +58,7 @@ contract('BasicGatedSale tests...', function () {
     this.basicGatedSale = await upgrades.deployProxy(
       await ethers.getContractFactory('KODAV3UpgradableGatedMarketplace'),
       [this.accessControls.address, this.token.address, koCommission.address],
-      {initializer: 'initialize'}
+      {initializer: 'initialize', kind: 'uups'}
     );
 
     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.basicGatedSale.address, {from: owner.address});
@@ -1033,6 +1033,7 @@ contract('BasicGatedSale tests...', function () {
       describe('recoverStuckETH', () => {
         const _0_5_ETH = ether('0.5');
 
+        // TODO decide on if we want to handle this
         it.skip('Can recover eth if problem with contract', async () => {
 
           // send money to pre-determined address
