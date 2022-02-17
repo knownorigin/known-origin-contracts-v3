@@ -9,6 +9,7 @@ import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
 // TODO are there any issues by inheriting from contracts with state in the upgrade flow?
+// TODO do we need to consider the owner upgrade path e.g. https://docs.openzeppelin.com/contracts/4.x/api/proxy#UUPSUpgradeable-_authorizeUpgrade-address-
 // TODO remove hard coded to 15_00000 - add to base contract with update path + event
 // TODO (test) Confirm we can convert from a gated sale to a buy now flow?
 // TODO (test) Impact of starting in a reserve auction, setting up a gated sale and selling it during the final auction close?

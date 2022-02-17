@@ -24,73 +24,74 @@ contract('CollectorOnlyMarketplace tests...', function (accounts) {
     const modulo = 10000000;
     const platformCommission = 1500000;
 
-    beforeEach(async () => {
-        this.legacyAccessControls = await SelfServiceAccessControls.new();
+    // beforeEach(async () => {
+    //     this.legacyAccessControls = await SelfServiceAccessControls.new();
+    //
+    //     // setup access controls
+    //     this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner});
+    //
+    //     // grab the roles
+    //     this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
+    //     this.DEFAULT_ADMIN_ROLE = await this.accessControls.DEFAULT_ADMIN_ROLE();
+    //
+    //     // Create token V3
+    //     this.token = await KnownOriginDigitalAssetV3.new(
+    //         this.accessControls.address,
+    //         ZERO_ADDRESS, // no royalties address
+    //         STARTING_EDITION,
+    //         {from: owner}
+    //     );
+    //
+    //     await this.accessControls.grantRole(this.DEFAULT_ADMIN_ROLE, admin, {from: owner});
+    //     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: owner});
+    //
+    //     // Note: this is a test hack so we can mint tokens direct
+    //     await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
+    //
+    //     this.collectorOnlySale = await KODAV3UpgradableCollectorOnlyMarketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner})
+    //
+    //     await this.accessControls.grantRole(this.CONTRACT_ROLE, this.collectorOnlySale.address, {from: owner});
+    //
+    //     // create a batch of 15 tokens from the minter
+    //     await this.token.mintBatchEdition(15, artist1, TOKEN_URI, {from: contract});
+    //
+    //     // Ensure basic gated sale has approval to sell tokens
+    //     await this.token.setApprovalForAll(this.collectorOnlySale.address, true, {from: artist1});
+    //
+    //
+    //     await this.token.mintBatchEdition(5, artist1, TOKEN_URI, {from: contract});
+    //     await this.token.transferFrom(artist1, buyer1, SECOND_MINTED_TOKEN_ID, {from: artist1})
+    //     await this.token.transferFrom(artist1, buyer2, SECOND_MINTED_TOKEN_ID.add(new BN('1')), {from: artist1})
+    //     await this.token.transferFrom(artist1, buyer3, SECOND_MINTED_TOKEN_ID.add(new BN('2')), {from: artist1})
+    //
+    //     await this.token.mintBatchEdition(5, artist2, TOKEN_URI, {from: contract});
+    //     await this.token.transferFrom(artist2, buyer1, THIRD_MINTED_TOKEN_ID, {from: artist2})
+    //
+    //     // just for stuck tests
+    //     this.erc20Token = await MockERC20.new({from: owner});
+    //
+    //     // Set a root time, then a start and end time, simulating sale running for a day
+    //     this.rootTime = await time.latest()
+    //     this.saleStart = this.rootTime.add(time.duration.hours(1))
+    //     this.saleEnd = this.rootTime.add(time.duration.hours(25))
+    //
+    //     const salesReceipt = await this.collectorOnlySale.createSale(
+    //         FIRST_MINTED_TOKEN_ID,
+    //         this.saleStart,
+    //         this.saleEnd,
+    //         new BN('10'),
+    //         ether('0.1'),
+    //         {from: artist1});
+    //
+    //     expectEvent(salesReceipt, 'SaleCreated', {
+    //         saleId: ONE,
+    //         editionId: FIRST_MINTED_TOKEN_ID
+    //     });
+    //
+    // })
 
-        // setup access controls
-        this.accessControls = await KOAccessControls.new(this.legacyAccessControls.address, {from: owner});
-
-        // grab the roles
-        this.CONTRACT_ROLE = await this.accessControls.CONTRACT_ROLE();
-        this.DEFAULT_ADMIN_ROLE = await this.accessControls.DEFAULT_ADMIN_ROLE();
-
-        // Create token V3
-        this.token = await KnownOriginDigitalAssetV3.new(
-            this.accessControls.address,
-            ZERO_ADDRESS, // no royalties address
-            STARTING_EDITION,
-            {from: owner}
-        );
-
-        await this.accessControls.grantRole(this.DEFAULT_ADMIN_ROLE, admin, {from: owner});
-        await this.accessControls.grantRole(this.CONTRACT_ROLE, this.token.address, {from: owner});
-
-        // Note: this is a test hack so we can mint tokens direct
-        await this.accessControls.grantRole(this.CONTRACT_ROLE, contract, {from: owner});
-
-        this.collectorOnlySale = await KODAV3UpgradableCollectorOnlyMarketplace.new(this.accessControls.address, this.token.address, koCommission, {from: owner})
-
-        await this.accessControls.grantRole(this.CONTRACT_ROLE, this.collectorOnlySale.address, {from: owner});
-
-        // create a batch of 15 tokens from the minter
-        await this.token.mintBatchEdition(15, artist1, TOKEN_URI, {from: contract});
-
-        // Ensure basic gated sale has approval to sell tokens
-        await this.token.setApprovalForAll(this.collectorOnlySale.address, true, {from: artist1});
-
-
-        await this.token.mintBatchEdition(5, artist1, TOKEN_URI, {from: contract});
-        await this.token.transferFrom(artist1, buyer1, SECOND_MINTED_TOKEN_ID, {from: artist1})
-        await this.token.transferFrom(artist1, buyer2, SECOND_MINTED_TOKEN_ID.add(new BN('1')), {from: artist1})
-        await this.token.transferFrom(artist1, buyer3, SECOND_MINTED_TOKEN_ID.add(new BN('2')), {from: artist1})
-
-        await this.token.mintBatchEdition(5, artist2, TOKEN_URI, {from: contract});
-        await this.token.transferFrom(artist2, buyer1, THIRD_MINTED_TOKEN_ID, {from: artist2})
-
-        // just for stuck tests
-        this.erc20Token = await MockERC20.new({from: owner});
-
-        // Set a root time, then a start and end time, simulating sale running for a day
-        this.rootTime = await time.latest()
-        this.saleStart = this.rootTime.add(time.duration.hours(1))
-        this.saleEnd = this.rootTime.add(time.duration.hours(25))
-
-        const salesReceipt = await this.collectorOnlySale.createSale(
-            FIRST_MINTED_TOKEN_ID,
-            this.saleStart,
-            this.saleEnd,
-            new BN('10'),
-            ether('0.1'),
-            {from: artist1});
-
-        expectEvent(salesReceipt, 'SaleCreated', {
-            saleId: ONE,
-            editionId: FIRST_MINTED_TOKEN_ID
-        });
-
-    })
-
-    describe('CollectorOnlySale', async () => {
+    // note: disabled for now until w
+    describe.skip('CollectorOnlySale', async () => {
 
         describe('createSale', async () => {
 

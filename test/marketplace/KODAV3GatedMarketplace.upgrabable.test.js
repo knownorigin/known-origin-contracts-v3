@@ -20,7 +20,6 @@ contract('KODAV3UpgradableGatedMarketplace tests...', function (accounts) {
     const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
     const MOCK_MERKLE_HASH = 'Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
 
-    // FIXME this toString() is wrong but something on the upgrade has fucked BN and BigNumber in someway...
     const ONE_HUNDRED = new BN('100').toString();
     const ZERO = new BN('0').toString();
     const ONE = new BN('1').toString();
