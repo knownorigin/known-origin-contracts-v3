@@ -22,6 +22,8 @@ async function main() {
   await kodaV3GatedMarketplaceDeployment.deployed();
   console.log('Gated Marketplace deployed at', kodaV3GatedMarketplaceDeployment.address);
 
+  const _6_MONTHS = 15780000;
+
   /////////////
   // PHASE 1 //
   /////////////
@@ -40,27 +42,54 @@ async function main() {
 
   const PHASE_1_1 = {
     editionId: '330000',
-    startTime: '1645542000',
-    endTime: 0,
+    startTime: 1645542000,
+    endTime: 1645542000 + _6_MONTHS, // TODO confirm end time
     walletMintLimits: '1',
     merkleRoots: '',
+    merkleIPFSHashes: '',
     pricesInWei: '100000000000000000',
     mintCaps: '25',
   };
 
+  const phase1Txs = await kodaV3GatedMarketplaceDeployment.createSaleWithPhases(
+    PHASE_1_1.editionId,
+    [PHASE_1_1.startTime],
+    [PHASE_1_1.endTime],
+    [PHASE_1_1.walletMintLimits],
+    [PHASE_1_1.merkleRoots],
+    [PHASE_1_1.merkleIPFSHashes],
+    [PHASE_1_1.pricesInWei],
+    [PHASE_1_1.mintCaps]
+  );
+  console.log('Phase 1 TXS', phase1Txs);
+
   // TELEMETRY DATA PAINTINGS	1 x 100
   // (rinkeby) 331000
+
   const PHASE_1_2 = {
-    editionId: '331000',
-    startTime: '1645542000',
-    endTime: 0,
+    editionId: 331000,
+    startTime: 1645542000,
+    endTime: 1645542000 + _6_MONTHS, // TODO confirm end time
     walletMintLimits: '1',
     merkleRoots: '',
+    merkleIPFSHashes: '',
     pricesInWei: '100000000000000000',
     mintCaps: '100',
   };
 
-  // 327000
+  const phase2Txs = await kodaV3GatedMarketplaceDeployment.createSaleWithPhases(
+    PHASE_1_2.editionId,
+    [PHASE_1_2.startTime],
+    [PHASE_1_2.endTime],
+    [PHASE_1_2.walletMintLimits],
+    [PHASE_1_2.merkleRoots],
+    [PHASE_1_2.merkleIPFSHashes],
+    [PHASE_1_2.pricesInWei],
+    [PHASE_1_2.mintCaps]
+  );
+
+  console.log('Phase 2 TXS', phase2Txs);
+
   console.log('Finished!');
 }
 
