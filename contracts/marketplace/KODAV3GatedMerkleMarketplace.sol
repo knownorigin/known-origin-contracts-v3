@@ -36,7 +36,7 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseUpgradableMarketplace, IKO
     mapping(uint256 => bool) public isSalePaused;
 
     /// @notice Whether a phase is whitelisted within a sale
-    mapping(uint256 => mapping(bytes32 => bool)) public isPhaseWhitelisted;//sale id => phase id => is whitelisted
+    mapping(uint256 => mapping(bytes32 => bool)) public isPhaseWhitelisted; //sale id => phase id => is whitelisted
 
     /// @notice Track the current amount of items minted to make sure it doesn't exceed a cap
     mapping(bytes32 => uint128) public phaseMintCount;// uint128 as mint cap for phase is same type

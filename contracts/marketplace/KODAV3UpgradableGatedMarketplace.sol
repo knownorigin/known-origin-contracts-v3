@@ -125,7 +125,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
 
         require(!sale.paused, 'sale is paused');
         require(!koda.isEditionSoldOut(sale.editionId), 'the sale is sold out');
-        require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist');
+        require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist'); // FIXME DROP THIS POINTLESS I THINK
 
         Phase storage phase = phases[_saleId][_phaseId];
 
