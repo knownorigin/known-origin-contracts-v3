@@ -13,7 +13,7 @@ const {parseBalanceMap} = require('../test/utils/parse-balance-map');
 
 (async function () {
 
-  const merkleConfig = JSON.parse(fs.readFileSync('./scripts/data/merkle/in/merkle-config.json'));
+  const merkleConfig = JSON.parse(fs.readFileSync('./scripts/data/merkle/in/prelist-phase-1.json'));
 
   const merkleTree = parseBalanceMap(merkleConfig);
 
