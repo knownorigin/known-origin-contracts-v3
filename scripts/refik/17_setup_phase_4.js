@@ -6,7 +6,7 @@ const KODAV3UpgradableGatedMarketplace = require('../../artifacts/contracts/mark
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  console.log('Deploying gated marketplace with the account:', await deployer.getAddress());
+  console.log('Signer account:', await deployer.getAddress());
 
   const {name: network} = hre.network;
   console.log(`Running on network [${network}]`);
@@ -17,10 +17,8 @@ async function main() {
     KODAV3UpgradableGatedMarketplace.abi,
     deployer
   );
-  prompt(`Found KODA V3 NFT [${kodaV3GatedMarketplaceDeployment.address}] for network [${network}] - click enter to continue ... ?`);
-
+  prompt(`Found Gated marketplace [${kodaV3GatedMarketplaceDeployment.address}] for network [${network}] - click enter to continue ... ?`);
   await kodaV3GatedMarketplaceDeployment.deployed();
-  console.log('Gated Marketplace deployed at', kodaV3GatedMarketplaceDeployment.address);
 
   /////////////
   // PHASE 4 //
