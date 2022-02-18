@@ -21,7 +21,7 @@ async function main() {
 
   await kodaV3GatedMarketplaceDeployment.deployed();
   console.log('Gated Marketplace deployed at', kodaV3GatedMarketplaceDeployment.address);
-  
+
   /////////////
   // PHASE 2 //
   /////////////
@@ -29,22 +29,6 @@ async function main() {
   // Wednesday 2nd March
   // ULTRASOUND SCULPTURES	1 x 100
 
-  /////////////
-  // PHASE 3 //
-  /////////////
-
-  // Thursday 3rd March
-  // ULTRASOUND SCULPTURES	1 x 100
-
-  /////////////
-  // PHASE 4 //
-  /////////////
-
-  // Friday 4th March
-  // ENVIROMENTAL DATA PAINTINGS	TBD
-  // UMAP SCULPTURES	5 x 1000
-
-  // 327000
   console.log('Finished!');
 }
 

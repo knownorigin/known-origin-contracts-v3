@@ -60,28 +60,6 @@ async function main() {
     mintCaps: '100',
   };
 
-  /////////////
-  // PHASE 2 //
-  /////////////
-
-  // Wednesday 2nd March
-  // ULTRASOUND SCULPTURES	1 x 100
-
-  /////////////
-  // PHASE 3 //
-  /////////////
-
-  // Thursday 3rd March
-  // ULTRASOUND SCULPTURES	1 x 100
-
-  /////////////
-  // PHASE 4 //
-  /////////////
-
-  // Friday 4th March
-  // ENVIROMENTAL DATA PAINTINGS	TBD
-  // UMAP SCULPTURES	5 x 1000
-
   // 327000
   console.log('Finished!');
 }
