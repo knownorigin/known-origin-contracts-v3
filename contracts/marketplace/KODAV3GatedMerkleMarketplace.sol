@@ -11,12 +11,15 @@ import {IKODAV3GatedMerkleMarketplace} from "./IKODAV3GatedMerkleMarketplace.sol
 /// @title Merkle based gated pre-list marketplace
 abstract contract KODAV3GatedMerkleMarketplace is BaseUpgradableMarketplace, IKODAV3GatedMerkleMarketplace {
 
+    // TODO missing edition ID
     /// @notice emitted when a sale, with a single phase, is created
     event MerkleSaleWithPhaseCreated(uint256 indexed saleId);
 
+    // TODO missing edition ID
     /// @notice emitted when a new phase is added to a sale
     event MerklePhaseCreated(uint256 indexed saleId, bytes32 indexed phaseId);
 
+    // TODO missing edition ID
     /// @notice emitted when a phase is removed from a sale
     event MerklePhaseRemoved(uint256 indexed saleId, bytes32 indexed phaseId);
 

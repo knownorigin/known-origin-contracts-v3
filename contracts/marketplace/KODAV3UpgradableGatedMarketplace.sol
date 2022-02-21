@@ -23,6 +23,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     /// @notice emitted when a phase is removed from a sale
     event PhaseRemoved(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId);
 
+    // TODO do we need mintCount?
     /// @notice emitted when someone mints from a sale
     event MintFromSale(uint256 saleId, uint256 tokenId, uint256 phaseId, address account, uint256 mintCount);
 
