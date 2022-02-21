@@ -919,11 +919,6 @@
         "type": "uint256"
       },
       {
-        "internalType": "address",
-        "name": "_recipient",
-        "type": "address"
-      },
-      {
         "internalType": "bytes32[]",
         "name": "_merkleProof",
         "type": "bytes32[]"

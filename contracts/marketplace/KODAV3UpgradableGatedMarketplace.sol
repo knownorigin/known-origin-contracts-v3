@@ -91,6 +91,8 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         uint128[] memory _pricesInWei,
         uint128[] memory _mintCaps
     ) external whenNotPaused onlyCreatorOrAdmin(_editionId) {
+        require(editionToSale[_editionId] == 0, "Sale exists for this edition"); // FIXME discuss with team - added by AMG
+
         uint256 saleId = ++saleIdCounter;
 
         // Assign the sale to the sales and editionToSale mappings
@@ -116,16 +118,13 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         uint256 _phaseId,
         uint16 _mintCount,
         uint256 _index,
-        address _recipient,
         bytes32[] calldata _merkleProof
     ) payable external nonReentrant whenNotPaused {
-        require(_recipient != address(0), "Zero recipient");
-
         Sale storage sale = sales[_saleId];
 
         require(!sale.paused, 'sale is paused');
-        require(!koda.isEditionSoldOut(sale.editionId), 'the sale is sold out');
-        require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist'); // FIXME DROP THIS POINTLESS I THINK
+//        require(!koda.isEditionSoldOut(sale.editionId), 'the sale is sold out'); // FIXME DROP? Discuss again
+//        require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist'); // FIXME DROP THIS POINTLESS I THINK
 
         Phase storage phase = phases[_saleId][_phaseId];
 
@@ -135,7 +134,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
         require(onPhaseMintList(_saleId, _phaseId, _index, _msgSender(), _merkleProof), 'address not able to mint from sale');
 
-        _handleMint(_saleId, _phaseId, sale.editionId, _mintCount, _recipient);
+        _handleMint(_saleId, _phaseId, sale.editionId, _mintCount, _msgSender());
 
         // Up the mint count for the user and the phase mint counter
         totalMints[_saleId][_phaseId][_msgSender()] += _mintCount;

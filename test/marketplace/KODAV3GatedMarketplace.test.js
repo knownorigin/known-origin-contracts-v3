@@ -20,6 +20,7 @@ contract('BasicGatedSale tests...', function () {
   const TEN = new BN('10');
 
   const FIRST_MINTED_TOKEN_ID = new BN('11000'); // this is implied
+  const SECOND_MINTED_TOKEN_ID = new BN('12000'); // this is implied
 
   const gasPrice = new BN(web3.utils.toWei('1', 'gwei').toString());
   const modulo = 10000000;
@@ -82,7 +83,7 @@ contract('BasicGatedSale tests...', function () {
     this.saleEnd = this.rootTime.add(time.duration.hours(25));
 
     const receipt = await this.basicGatedSale.connect(artist1).createSaleWithPhases(
-      '11000',
+      FIRST_MINTED_TOKEN_ID.toString(),
       [this.saleStart.toString()],
       [this.saleEnd.toString()],
       ['10'],
@@ -132,7 +133,7 @@ contract('BasicGatedSale tests...', function () {
 
       it('can create a new sale and phase if admin', async () => {
         const receipt = await this.basicGatedSale.connect(admin).createSaleWithPhases(
-          FIRST_MINTED_TOKEN_ID.toString(),
+          SECOND_MINTED_TOKEN_ID.toString(),
           [this.saleStart.toString()],
           [this.saleEnd.toString()],
           [new BN('10').toString()],
@@ -144,7 +145,7 @@ contract('BasicGatedSale tests...', function () {
 
         await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
           saleId: new BN('2').toString(),
-          editionId: FIRST_MINTED_TOKEN_ID
+          editionId: SECOND_MINTED_TOKEN_ID
         });
       });
 
@@ -180,7 +181,7 @@ contract('BasicGatedSale tests...', function () {
 
       it('should revert if given an invalid end time', async () => {
         const txs = this.basicGatedSale.connect(admin).createSaleWithPhases(
-          FIRST_MINTED_TOKEN_ID.toString(),
+          SECOND_MINTED_TOKEN_ID.toString(),
           [this.saleStart.toString()],
           [this.saleEnd.sub(time.duration.days(7)).toString()],
           [new BN('10').toString()],
@@ -195,7 +196,7 @@ contract('BasicGatedSale tests...', function () {
 
       it('should revert if given an invalid mint limit', async () => {
         const txs = this.basicGatedSale.connect(admin).createSaleWithPhases(
-          FIRST_MINTED_TOKEN_ID.toString(),
+          SECOND_MINTED_TOKEN_ID.toString(),
           [this.saleStart.toString()],
           [this.saleEnd.toString()],
           [new BN('0').toString()],
@@ -212,7 +213,7 @@ contract('BasicGatedSale tests...', function () {
     describe('createSaleWithPhases', async () => {
       it('can create a new sale with one phase', async () => {
         const receipt = await this.basicGatedSale.connect(admin).createSaleWithPhases(
-          FIRST_MINTED_TOKEN_ID.toString(),
+          SECOND_MINTED_TOKEN_ID.toString(),
           [this.saleStart.toString()],
           [this.saleEnd.toString()],
           [new BN('10').toString()],
@@ -224,7 +225,7 @@ contract('BasicGatedSale tests...', function () {
 
         await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
           saleId: new BN('2'),
-          editionId: FIRST_MINTED_TOKEN_ID
+          editionId: SECOND_MINTED_TOKEN_ID
         });
 
         let {priceInWei, mintCap} = await this.basicGatedSale.phases(2, 0);
@@ -235,7 +236,7 @@ contract('BasicGatedSale tests...', function () {
 
       it('can create a new sale with multiple phases', async () => {
         const receipt = await this.basicGatedSale.connect(admin).createSaleWithPhases(
-          FIRST_MINTED_TOKEN_ID.toString(),
+          SECOND_MINTED_TOKEN_ID.toString(),
           [this.saleStart.toString(), this.saleStart.add(time.duration.days(1)).toString()],
           [this.saleEnd.toString(), this.saleEnd.add(time.duration.days(1)).toString()],
           [new BN('10').toString(), new BN('10').toString()],
@@ -247,7 +248,7 @@ contract('BasicGatedSale tests...', function () {
 
         await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
           saleId: new BN('2'),
-          editionId: FIRST_MINTED_TOKEN_ID
+          editionId: SECOND_MINTED_TOKEN_ID
         });
 
         let phase1 = await this.basicGatedSale.phases(2, 0);
@@ -307,7 +308,6 @@ contract('BasicGatedSale tests...', function () {
           '1',
           ONE.toString(),
           this.merkleProof.claims[artist3.address].index,
-          artist3.address,
           this.merkleProof.claims[artist3.address].proof,
           {value: ether('0.3').toString()}
         );
@@ -519,7 +519,6 @@ contract('BasicGatedSale tests...', function () {
           '0',
           ONE.toString(),
           this.merkleProof.claims[artist2.address].index,
-          artist2.address,
           this.merkleProof.claims[artist2.address].proof,
           {
             value: mintPrice.toString(),
@@ -562,7 +561,6 @@ contract('BasicGatedSale tests...', function () {
           '0',
           new BN('3').toString(),
           this.merkleProof.claims[artist2.address].index,
-          artist2.address,
           this.merkleProof.claims[artist2.address].proof,
           {
             value: mintPrice.toString(),
@@ -602,7 +600,6 @@ contract('BasicGatedSale tests...', function () {
           '0',
           new BN('10').toString(),
           this.merkleProof.claims[artist1.address].index,
-          artist1.address,
           this.merkleProof.claims[artist1.address].proof,
           {
             value: ether('1').toString()
@@ -621,7 +618,6 @@ contract('BasicGatedSale tests...', function () {
           '0',
           new BN('5').toString(),
           this.merkleProof.claims[artist2.address].index,
-          artist2.address,
           this.merkleProof.claims[artist2.address].proof,
           {
             value: ether('0.5').toString()
@@ -640,12 +636,11 @@ contract('BasicGatedSale tests...', function () {
           '0',
           ONE.toString(),
           this.merkleProof.claims[artist3.address].index,
-          artist3.address,
           this.merkleProof.claims[artist3.address].proof,
           {
             value: ether('0.1').toString()
           });
-        await expectRevert(txs, 'sale is sold out');
+        await expectRevert(txs, 'phase mint cap reached');
       });
 
       it('reverts if the phase cap has been reached', async () => {
@@ -666,7 +661,6 @@ contract('BasicGatedSale tests...', function () {
           ONE.toString(),
           new BN('5').toString(),
           this.merkleProof.claims[artist3.address].index,
-          artist3.address,
           this.merkleProof.claims[artist3.address].proof,
           {
             value: ether('2.5').toString()
@@ -685,7 +679,6 @@ contract('BasicGatedSale tests...', function () {
           ONE.toString(),
           ONE.toString(),
           this.merkleProof.claims[artist2.address].index,
-          artist2.address,
           this.merkleProof.claims[artist2.address].proof,
           {
             value: ether('0.5').toString()
@@ -709,7 +702,6 @@ contract('BasicGatedSale tests...', function () {
           '0',
           ONE.toString(),
           this.merkleProof.claims[artist1.address].index,
-          artist1.address,
           this.merkleProof.claims[artist1.address].proof,
           {value: ether('0.1').toString()});
         await expectRevert(txs, 'sale is paused');
@@ -721,7 +713,6 @@ contract('BasicGatedSale tests...', function () {
           '0',
           ONE.toString(),
           this.merkleProof.claims[artist1.address].index,
-          artist1.address,
           this.merkleProof.claims[artist1.address].proof,
           {value: ether('0.1').toString()}
         );
@@ -735,11 +726,10 @@ contract('BasicGatedSale tests...', function () {
           '3',
           ONE.toString(),
           this.merkleProof.claims[artist1.address].index,
-          artist1.address,
           this.merkleProof.claims[artist1.address].proof,
           {value: ether('0.1').toString()}
         );
-        await expectRevert(txs, 'phase id does not exist');
+        await expectRevert.unspecified(txs);
       });
 
       it('reverts if the sale phase has ended', async () => {
@@ -749,7 +739,6 @@ contract('BasicGatedSale tests...', function () {
           '0',
           ONE.toString(),
           this.merkleProof.claims[artist1.address].index,
-          artist1.address,
           this.merkleProof.claims[artist1.address].proof,
           {value: ether('0.1').toString()}
         );
@@ -764,7 +753,6 @@ contract('BasicGatedSale tests...', function () {
           '0',
           new BN('3').toString(),
           this.merkleProof.claims[artist1.address].index,
-          artist1.address,
           this.merkleProof.claims[artist1.address].proof,
           {value: ether('0.2').toString()}
         );
@@ -779,7 +767,6 @@ contract('BasicGatedSale tests...', function () {
           '0',
           ONE.toString(),
           this.merkleProof.claims[artist1.address].index,
-          artistDodgy.address,
           this.merkleProof.claims[artist1.address].proof,
           {value: ether('0.1').toString()}
         );
@@ -794,7 +781,6 @@ contract('BasicGatedSale tests...', function () {
           '0',
           new BN('9').toString(),
           this.merkleProof.claims[artist2.address].index,
-          artist2.address,
           this.merkleProof.claims[artist2.address].proof,
           {value: ether('0.9').toString()}
         );
@@ -812,7 +798,6 @@ contract('BasicGatedSale tests...', function () {
           '0',
           new BN('2').toString(),
           this.merkleProof.claims[artist2.address].index,
-          artist2.address,
           this.merkleProof.claims[artist2.address].proof,
           {value: ether('0.2').toString()}
         );
@@ -951,7 +936,7 @@ contract('BasicGatedSale tests...', function () {
         expect(allowance.toString()).to.be.equal('10');
       });
 
-      it.skip('returns an updated allowance for a valid account that has minted', async () => {
+      it('returns an updated allowance for a valid account that has minted', async () => {
         await time.increaseTo(this.saleStart.add(time.duration.minutes(10)));
 
         let mintReceipt = await this.basicGatedSale.connect(artist1).mint(
@@ -959,7 +944,6 @@ contract('BasicGatedSale tests...', function () {
           ZERO.toString(),
           new BN('5').toString(),
           this.merkleProof.claims[artist1.address].index,
-          artist1.address,
           this.merkleProof.claims[artist1.address].proof,
           {value: ether('0.5').toString()}
         );
@@ -968,7 +952,7 @@ contract('BasicGatedSale tests...', function () {
           saleId: ONE,
           tokenId: FIRST_MINTED_TOKEN_ID,
           phaseId: ZERO,
-          account: artist1,
+          account: artist1.address,
           mintCount: new BN('5')
         });
 
@@ -1210,7 +1194,6 @@ contract('BasicGatedSale tests...', function () {
             '0',
             ONE.toString(),
             this.merkleProof.claims[artist2.address].index,
-            artist2.address,
             this.merkleProof.claims[artist2.address].proof,
             {
               value: ether('0.1').toString()
@@ -1230,7 +1213,6 @@ contract('BasicGatedSale tests...', function () {
             '0',
             ONE.toString(),
             this.merkleProof.claims[artist2.address].index,
-            artist2.address,
             this.merkleProof.claims[artist2.address].proof,
             {
               value: ether('0.1').toString()

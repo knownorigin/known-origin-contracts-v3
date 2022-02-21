@@ -191,7 +191,6 @@ contract('BasicGatedSale complex tests...', function () {
         ZERO.toString(),
         ONE.toString(),
         this.merkleProof1.claims[buyer1.address].index,
-        buyer1.address,
         this.merkleProof1.claims[buyer1.address].proof,
         {
           value: ether('0.1').toString()
@@ -206,7 +205,6 @@ contract('BasicGatedSale complex tests...', function () {
         ZERO.toString(),
         THREE.toString(),
         this.merkleProof1.claims[buyer1.address].index,
-        buyer1.address,
         this.merkleProof1.claims[buyer1.address].proof,
         {
           value: ether('0.3').toString()
@@ -233,7 +231,6 @@ contract('BasicGatedSale complex tests...', function () {
         ZERO.toString(),
         ONE.toString(),
         this.merkleProof1.claims[buyer1.address].index,
-        buyer1.address,
         this.merkleProof1.claims[buyer1.address].proof,
         {
           value: ether('0.1').toString()
@@ -245,7 +242,6 @@ contract('BasicGatedSale complex tests...', function () {
         ZERO.toString(),
         TWO.toString(),
         this.merkleProof1.claims[buyer2.address].index,
-        buyer2.address,
         this.merkleProof1.claims[buyer2.address].proof,
         {
           value: ether('0.2').toString()
@@ -271,7 +267,6 @@ contract('BasicGatedSale complex tests...', function () {
         ZERO.toString(),
         ONE.toString(),
         this.merkleProof3.claims[buyer1.address].index,
-        buyer1.address,
         this.merkleProof3.claims[buyer1.address].proof,
         {
           value: ether('0.1').toString()
@@ -286,7 +281,6 @@ contract('BasicGatedSale complex tests...', function () {
         ZERO.toString(),
         ONE.toString(),
         this.merkleProof2.claims[buyer2.address].index,
-        buyer2.address,
         this.merkleProof2.claims[buyer2.address].proof,
         {
           value: ether('0.1').toString()
@@ -298,7 +292,6 @@ contract('BasicGatedSale complex tests...', function () {
         ONE.toString(),
         THREE.toString(),
         this.merkleProof2.claims[buyer2.address].index,
-        buyer2.address,
         this.merkleProof2.claims[buyer2.address].proof,
         {
           value: ether('0.9').toString()
@@ -318,7 +311,6 @@ contract('BasicGatedSale complex tests...', function () {
         ONE.toString(),
         ONE.toString(),
         this.merkleProof2.claims[buyer4.address].index,
-        buyer4.address,
         this.merkleProof2.claims[buyer4.address].proof,
         {
           value: ether('0.3').toString()
@@ -338,7 +330,6 @@ contract('BasicGatedSale complex tests...', function () {
         ONE.toString(),
         TWO.toString(),
         this.merkleProof3.claims[buyer3.address].index,
-        buyer3.address,
         this.merkleProof3.claims[buyer3.address].proof,
         {
           value: ether('0.5').toString()
@@ -350,7 +341,6 @@ contract('BasicGatedSale complex tests...', function () {
         ONE.toString(),
         ONE.toString(),
         this.merkleProof3.claims[buyer3.address].index,
-        buyer3.address,
         this.merkleProof3.claims[buyer3.address].proof,
         {
           value: ether('0.3').toString()
@@ -362,7 +352,6 @@ contract('BasicGatedSale complex tests...', function () {
         TWO.toString(),
         ONE.toString(),
         this.merkleProof2.claims[buyer3.address].index,
-        buyer3.address,
         this.merkleProof2.claims[buyer3.address].proof,
         {
           value: ether('0.3').toString()
@@ -376,7 +365,6 @@ contract('BasicGatedSale complex tests...', function () {
         THREE.toString(),
         new BN('10').toString(),
         this.merkleProof3.claims[buyer5.address].index,
-        buyer5.address,
         this.merkleProof3.claims[buyer5.address].proof,
         {
           value: ether('7').toString()
@@ -396,7 +384,6 @@ contract('BasicGatedSale complex tests...', function () {
         THREE.toString(),
         new BN('10').toString(),
         this.merkleProof3.claims[buyer2.address].index,
-        buyer2.address,
         this.merkleProof3.claims[buyer2.address].proof,
         {
           value: ether('7').toString()
@@ -416,11 +403,10 @@ contract('BasicGatedSale complex tests...', function () {
         THREE.toString(),
         ONE.toString(),
         this.merkleProof3.claims[buyer1.address].index,
-        buyer1.address,
         this.merkleProof3.claims[buyer1.address].proof,
         {
           value: ether('0.7').toString()
-        }), 'the sale is sold out');
+        }), 'Primary market exhausted');
     });
   });
 });
