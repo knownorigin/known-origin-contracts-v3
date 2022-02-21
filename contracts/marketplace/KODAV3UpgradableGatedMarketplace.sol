@@ -315,11 +315,14 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
 
         uint256 numOfPhases = _startTimes.length;
         for (uint256 i; i < numOfPhases; ++i) {
-            require(_endTimes[i] > _startTimes[i], 'phase end time must be after start time');
+            // TODO assume we pass in the correct format?
+//            require(_endTimes[i] > _startTimes[i], 'phase end time must be after start time');
             require(_walletMintLimits[i] > 0 && _walletMintLimits[i] <= editionSize, 'phase mint limit must be greater than 0');
             require(_mintCaps[i] > 0, "Zero mint cap");
-            require(_merkleRoots[i] != bytes32(0), "Zero merkle root");
-            require(bytes(_merkleIPFSHashes[i]).length == 46, "Invalid IPFS hash");
+
+            // TODO combine requires
+            require(_merkleRoots[i] != bytes32(0) && bytes(_merkleIPFSHashes[i]).length == 46, "Invalid IPFS config");
+//            require(bytes(_merkleIPFSHashes[i]).length == 46, "Invalid IPFS hash");
 
             phases[saleIdCounter].push(Phase({
             startTime : _startTimes[i],
