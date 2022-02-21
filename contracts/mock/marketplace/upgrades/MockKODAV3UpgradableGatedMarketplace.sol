@@ -163,7 +163,7 @@ contract MockKODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODA
             koda.safeTransferFrom(creator, _recipient, tokenId);
         }
 
-        _handleEditionSaleFunds(_saleId, _editionId, _receiver);
+        _handleEditionSaleFunds(_saleId, _editionId);
     }
 
     function createPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _walletMintLimit, bytes32 _merkleRoot, string memory _merkleIPFSHash, uint128 _priceInWei, uint128 _mintCap)
@@ -235,7 +235,7 @@ contract MockKODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODA
         }
     }
 
-    function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _receiver) internal override {
+    function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId) internal override {
         uint256 platformPrimarySaleCommission = saleCommission[_saleId] > 0 ? saleCommission[_saleId] : 15_00000;
         uint256 koCommission = (msg.value / modulo) * platformPrimarySaleCommission;
         if (koCommission > 0) {
@@ -243,7 +243,7 @@ contract MockKODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODA
             require(koCommissionSuccess, "commission payment failed");
         }
 
-        (bool success,) = _receiver.call{value : msg.value - koCommission}("");
+        (bool success,) = koda.getRoyaltiesReceiver(_editionId).call{value : msg.value - koCommission}("");
         require(success, "payment failed");
     }
 

@@ -23,9 +23,11 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     /// @notice emitted when a phase is removed from a sale
     event PhaseRemoved(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId);
 
-    // TODO do we need mintCount?
     /// @notice emitted when someone mints from a sale
-    event MintFromSale(uint256 saleId, uint256 tokenId, uint256 phaseId, address account, uint256 mintCount);
+    event MintFromSale(uint256 saleId, uint256 tokenId, uint256 phaseId, address account);
+
+    /// @notice emitted when someone mints from a sale
+    //    event MintFromSale(uint256 saleId, uint256 phaseId, address account, uint256[] tokenIds);
 
     /// @notice emitted when primary sales commission is updated for a sale
     event AdminUpdatePlatformPrimarySaleCommissionGatedSale(uint256 indexed saleId, uint256 platformPrimarySaleCommission);
@@ -45,16 +47,18 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         uint128 endTime; // The end time of the sale phase, also the beginning of the next phase if applicable
         uint16 walletMintLimit; // The mint limit per wallet for the phase
         uint128 priceInWei; // Price in wei for one mint
-        bytes32 merkleRoot; // The merkle tree root for the phase
-        string merkleIPFSHash; // The IPFS hash referencing the merkle tree
         uint128 mintCap; // The maximum amount of mints for the phase
         uint128 mintCounter; // The current amount of items minted
+        bytes32 merkleRoot; // The merkle tree root for the phase
+        string merkleIPFSHash; // The IPFS hash referencing the merkle tree
     }
 
     /// @notice Sale represents a gated sale, with mapping links to different sale phases
     struct Sale {
         uint256 id; // The ID of the sale
         uint256 editionId; // The ID of the edition the sale will mint
+        address creator;
+        address fundsReceiver;
         bool paused; // Whether the sale is currently paused
     }
 
@@ -64,6 +68,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     /// @dev phases is a mapping of sale id => array of associated phases
     mapping(uint256 => Phase[]) public phases;
 
+    // TODO create composite key to save the mappings e.g. encode(saleId, phaseId, address) = mapping key - would this be cheaper?
     /// @dev totalMints is a mapping of sale id => phase id => address => total minted by that address
     mapping(uint256 => mapping(uint256 => mapping(address => uint256))) public totalMints;
 
@@ -75,7 +80,8 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
 
     modifier onlyCreatorOrAdmin(uint256 _editionId) {
         require(
-            accessControls.hasAdminRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
+        // TODO quick exit to save GAS
+            koda.getCreatorOfEdition(_editionId) == _msgSender() || accessControls.hasAdminRole(_msgSender()),
             "Caller not creator or admin"
         );
         _;
@@ -84,6 +90,8 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     /// @notice Allow an artist or admin to create a sale with 1 or more phases
     function createSaleWithPhases(
         uint256 _editionId,
+        address _creator,
+        address _fundsReceiver,
         uint128[] memory _startTimes,
         uint128[] memory _endTimes,
         uint16[] memory _walletMintLimits,
@@ -95,7 +103,13 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         uint256 saleId = ++saleIdCounter;
 
         // Assign the sale to the sales and editionToSale mappings
-        sales[saleId] = Sale({id : saleId, editionId : _editionId, paused : false});
+        sales[saleId] = Sale({
+            id : saleId,
+            editionId : _editionId,
+            creator : _creator,
+            fundsReceiver : _fundsReceiver,
+            paused : false
+        });
         editionToSale[_editionId] = saleId;
 
         _addPhasesToSale(
@@ -116,17 +130,18 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         uint256 _saleId,
         uint256 _phaseId,
         uint16 _mintCount,
-        uint256 _index,
         address _recipient,
+        uint256 _index,
         bytes32[] calldata _merkleProof
     ) payable external nonReentrant whenNotPaused {
         require(_recipient != address(0), "Zero recipient");
 
         Sale storage sale = sales[_saleId];
-
         require(!sale.paused, 'sale is paused');
-        require(!koda.isEditionSoldOut(sale.editionId), 'the sale is sold out');
-        require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist'); // FIXME DROP THIS POINTLESS I THINK
+
+        //        require(!koda.isEditionSoldOut(sale.editionId), 'the sale is sold out');
+        //        require(_phaseId <= phases[_saleId].length - 1, 'phase id does not exist');
+        // FIXME DROP THIS POINTLESS I THINK
 
         Phase storage phase = phases[_saleId][_phaseId];
 
@@ -189,12 +204,13 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     }
 
     /// @dev checks whether a given user is on the list to mint from a phase
-    function onPhaseMintList(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof)
+    function onPhaseMintList(uint256 _saleId, uint256 _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof)
     public
     view
     returns (bool) {
         Phase storage phase = phases[_saleId][_phaseId];
 
+        // TODO pass in mint limit and replace the hard coded 1 as part of the tree lookup, does not need to be stored on chain then
         // assume balance of 1 for enabled minting access
         bytes32 node = keccak256(abi.encodePacked(_index, _account, uint256(1)));
         return MerkleProof.verify(_merkleProof, phase.merkleRoot, node);
@@ -241,21 +257,43 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
 
     function _handleMint(uint256 _saleId, uint256 _phaseId, uint256 _editionId, uint16 _mintCount, address _recipient) internal override {
         require(_mintCount > 0, "Nothing being minted");
-        address _receiver;
+
+        //        address creator = koda.getCreatorOfEdition(_editionId);
+        address creator = sales[_saleId].creator;
+
+        //        address _receiver;
+        //                uint256 _size = koda.getSizeOfEdition(_editionId);
+        //                bool normal = false;
+        //        uint256[] memory tokenIds = new uint256[](_mintCount);
+
+        uint256 tokenId = _editionId + phases[_saleId][_phaseId].mintCounter;
 
         for (uint i = 0; i < _mintCount; i++) {
-            (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
-            _receiver = receiver;
+
+            //            (address receiver, address creator, uint256 tokenId) = normal
+            //            ? koda.facilitateNextPrimarySale(_editionId)
+            //            : koda.facilitateReversePrimarySale(_editionId);
+
+            //            (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
+            //            tokenIds[i] = tokenId;
+            //            _receiver = receiver;
+
+            emit MintFromSale(_saleId, tokenId, _phaseId, _recipient);
 
             // send token to buyer (assumes approval has been made, if not then this will fail)
             koda.safeTransferFrom(creator, _recipient, tokenId);
-            emit MintFromSale(_saleId, tokenId, _phaseId, _recipient, _mintCount);
+
+            tokenId++;
         }
 
-        _handleEditionSaleFunds(_saleId, _editionId, _receiver);
+        //        emit MintFromSale(_saleId, tokenId, _phaseId, _recipient);
+        //        emit MintFromSale(_saleId, _phaseId, _recipient, tokenIds);
+
+        _handleEditionSaleFunds(_saleId, _editionId);
     }
 
-    function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId, address _receiver) internal override {
+
+    function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId) internal override {
         uint256 platformPrimarySaleCommission = _getPlatformSaleCommissionForSale(_saleId);
         uint256 koCommission = (msg.value / modulo) * platformPrimarySaleCommission;
         if (koCommission > 0) {
@@ -263,7 +301,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
             require(koCommissionSuccess, "commission payment failed");
         }
 
-        (bool success,) = _receiver.call{value : msg.value - koCommission}("");
+        (bool success,) = sales[_saleId].fundsReceiver.call{value : msg.value - koCommission}("");
         require(success, "payment failed");
     }
 
@@ -286,19 +324,18 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         uint128[] memory _pricesInWei,
         uint128[] memory _mintCaps
     ) internal {
-        uint256 saleId = saleIdCounter;
-        uint256 editionSize = koda.getSizeOfEdition(sales[saleId].editionId);
+        uint256 editionSize = koda.getSizeOfEdition(sales[saleIdCounter].editionId);
         require(editionSize > 0, 'edition does not exist');
 
         uint256 numOfPhases = _startTimes.length;
         for (uint256 i; i < numOfPhases; ++i) {
             require(_endTimes[i] > _startTimes[i], 'phase end time must be after start time');
-            require(_walletMintLimits[i] > 0 && _walletMintLimits[i] < editionSize, 'phase mint limit must be greater than 0');
+            require(_walletMintLimits[i] > 0 && _walletMintLimits[i] <= editionSize, 'phase mint limit must be greater than 0');
             require(_mintCaps[i] > 0, "Zero mint cap");
             require(_merkleRoots[i] != bytes32(0), "Zero merkle root");
             require(bytes(_merkleIPFSHashes[i]).length == 46, "Invalid IPFS hash");
 
-            phases[saleId].push(Phase({
+            phases[saleIdCounter].push(Phase({
             startTime : _startTimes[i],
             endTime : _endTimes[i],
             walletMintLimit : _walletMintLimits[i],

@@ -386,12 +386,6 @@
         "internalType": "address",
         "name": "account",
         "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "mintCount",
-        "type": "uint256"
       }
     ],
     "name": "MintFromSale",
@@ -661,6 +655,16 @@
         "type": "uint256"
       },
       {
+        "internalType": "address",
+        "name": "_creator",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_fundsReceiver",
+        "type": "address"
+      },
+      {
         "internalType": "uint128[]",
         "name": "_startTimes",
         "type": "uint128[]"
@@ -914,14 +918,14 @@
         "type": "uint16"
       },
       {
-        "internalType": "uint256",
-        "name": "_index",
-        "type": "uint256"
-      },
-      {
         "internalType": "address",
         "name": "_recipient",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_index",
+        "type": "uint256"
       },
       {
         "internalType": "bytes32[]",
@@ -1127,16 +1131,6 @@
         "type": "uint128"
       },
       {
-        "internalType": "bytes32",
-        "name": "merkleRoot",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "string",
-        "name": "merkleIPFSHash",
-        "type": "string"
-      },
-      {
         "internalType": "uint128",
         "name": "mintCap",
         "type": "uint128"
@@ -1145,6 +1139,16 @@
         "internalType": "uint128",
         "name": "mintCounter",
         "type": "uint128"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "merkleRoot",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "merkleIPFSHash",
+        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -1397,6 +1401,16 @@
         "internalType": "uint256",
         "name": "editionId",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "creator",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "fundsReceiver",
+        "type": "address"
       },
       {
         "internalType": "bool",
