@@ -1137,7 +1137,7 @@
     },
     {
       "address": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
-      "txHash": "0x5d4d9b64de929d76e84e6dc4584c59388b0d3305fb6c93d1d35bd8f0ce8b0679",
+      "txHash": "0x603d865c5170f2e04e3cd18218e4362fa93156e5c9c1aab46ffe5bcb24bb11f1",
       "kind": "uups"
     }
   ],
@@ -2304,9 +2304,9 @@
         }
       }
     },
-    "605cd851481f58db8fa61ba4e84a6a65ac80c0be6f30eb746b6f34d4b1e97db3": {
+    "caa552027af3852db0d98132c66edc0c714683fe901c5af3e2dfaa99334583db": {
       "address": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
-      "txHash": "0xa32f712bae444678f3611d765b68d72d3b01403bbf937f512dd138ce32575199",
+      "txHash": "0xbc096cec06eac3d27fcf8f78a4c6da6dec3c4f1bc9fa5f45dd91996a9af4a9a1",
       "layout": {
         "storage": [
           {
@@ -2412,6 +2412,12 @@
             "src": "contracts/marketplace/BaseUpgradableMarketplace.sol:71"
           },
           {
+            "contract": "BaseUpgradableMarketplace",
+            "label": "ACCESS_LIST_ENTRY",
+            "type": "t_uint256",
+            "src": "contracts/marketplace/BaseUpgradableMarketplace.sol:73"
+          },
+          {
             "contract": "KODAV3GatedMerkleMarketplace",
             "label": "merkleSaleIdCounter",
             "type": "t_uint256",
@@ -2456,13 +2462,13 @@
           {
             "contract": "KODAV3UpgradableGatedMarketplace",
             "label": "sales",
-            "type": "t_mapping(t_uint256,t_struct(Sale)16919_storage)",
+            "type": "t_mapping(t_uint256,t_struct(Sale)16928_storage)",
             "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:66"
           },
           {
             "contract": "KODAV3UpgradableGatedMarketplace",
             "label": "phases",
-            "type": "t_mapping(t_uint256,t_array(t_struct(Phase)16908_storage)dyn_storage)",
+            "type": "t_mapping(t_uint256,t_array(t_struct(Phase)16917_storage)dyn_storage)",
             "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:69"
           },
           {
@@ -2488,10 +2494,10 @@
           "t_uint256": {
             "label": "uint256"
           },
-          "t_mapping(t_uint256,t_struct(Sale)16919_storage)": {
+          "t_mapping(t_uint256,t_struct(Sale)16928_storage)": {
             "label": "mapping(uint256 => struct KODAV3UpgradableGatedMarketplace.Sale)"
           },
-          "t_struct(Sale)16919_storage": {
+          "t_struct(Sale)16928_storage": {
             "label": "struct KODAV3UpgradableGatedMarketplace.Sale",
             "members": [
               {
@@ -2522,13 +2528,13 @@
           "t_bool": {
             "label": "bool"
           },
-          "t_mapping(t_uint256,t_array(t_struct(Phase)16908_storage)dyn_storage)": {
+          "t_mapping(t_uint256,t_array(t_struct(Phase)16917_storage)dyn_storage)": {
             "label": "mapping(uint256 => struct KODAV3UpgradableGatedMarketplace.Phase[])"
           },
-          "t_array(t_struct(Phase)16908_storage)dyn_storage": {
+          "t_array(t_struct(Phase)16917_storage)dyn_storage": {
             "label": "struct KODAV3UpgradableGatedMarketplace.Phase[]"
           },
-          "t_struct(Phase)16908_storage": {
+          "t_struct(Phase)16917_storage": {
             "label": "struct KODAV3UpgradableGatedMarketplace.Phase",
             "members": [
               {

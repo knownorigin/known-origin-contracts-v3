@@ -258,26 +258,18 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     function _handleMint(uint256 _saleId, uint256 _phaseId, uint256 _editionId, uint16 _mintCount, address _recipient) internal override {
         require(_mintCount > 0, "Nothing being minted");
 
-        //        address creator = koda.getCreatorOfEdition(_editionId);
         address creator = sales[_saleId].creator;
 
-        //        address _receiver;
-        //                uint256 _size = koda.getSizeOfEdition(_editionId);
-        //                bool normal = false;
-        //        uint256[] memory tokenIds = new uint256[](_mintCount);
-
+        // TODO what happens if a token is transferred i.e. this gets out of sync with available token IDs?
         uint256 tokenId = _editionId + phases[_saleId][_phaseId].mintCounter;
 
         for (uint i = 0; i < _mintCount; i++) {
 
-            //            (address receiver, address creator, uint256 tokenId) = normal
-            //            ? koda.facilitateNextPrimarySale(_editionId)
-            //            : koda.facilitateReversePrimarySale(_editionId);
+            // TODO reverse after half of sales when mint total is > 250 (at a rough guess)
+            // koda.facilitateReversePrimarySale(_editionId)
+            // (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
 
-            //            (address receiver, address creator, uint256 tokenId) = koda.facilitateNextPrimarySale(_editionId);
-            //            tokenIds[i] = tokenId;
-            //            _receiver = receiver;
-
+            // TODO emit single event - beneficial when mint limit more than 1, add MintFromSaleBatch event
             emit MintFromSale(_saleId, tokenId, _phaseId, _recipient);
 
             // send token to buyer (assumes approval has been made, if not then this will fail)
@@ -286,12 +278,8 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
             tokenId++;
         }
 
-        //        emit MintFromSale(_saleId, tokenId, _phaseId, _recipient);
-        //        emit MintFromSale(_saleId, _phaseId, _recipient, tokenIds);
-
         _handleEditionSaleFunds(_saleId, _editionId);
     }
-
 
     function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId) internal override {
         uint256 platformPrimarySaleCommission = _getPlatformSaleCommissionForSale(_saleId);
@@ -307,11 +295,9 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
 
     function _getPlatformSaleCommissionForSale(uint256 _saleId) internal returns (uint256) {
         uint256 commission;
-
         if (!isSaleCommissionForPlatformDisabled[_saleId]) {
             commission = saleCommission[_saleId] > 0 ? saleCommission[_saleId] : platformPrimaryCommission;
         }
-
         return commission;
     }
 
