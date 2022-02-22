@@ -118,8 +118,8 @@ contract('Gas golfing test ... ', function () {
     console.log('Increased time to start sale');
   });
 
-  describe('Buying all 1000', async () => {
-    it.only('1 per account', async () => {
+  describe.skip('Buying all 1000', async () => {
+    it('1 per account', async () => {
       for (let i = 0; i < 1000; i++) {
         console.log(`Minting ${i}`);
         await this.basicGatedSale.connect(buyer1).mint(
@@ -154,7 +154,7 @@ contract('Gas golfing test ... ', function () {
     }).timeout(5 * 60 * 1000);
   });
 
-  describe('Buying all 500 editions', async () => {
+  describe.skip('Buying all 500 editions', async () => {
     it('1 per account', async () => {
       for (let i = 0; i < 500; i++) {
         console.log(`Minting ${i}`);
