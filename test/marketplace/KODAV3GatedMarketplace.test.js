@@ -387,18 +387,21 @@ contract('BasicGatedSale tests...', function () {
       });
 
       it('reverts if given an invalid mint limit', async () => {
-        const txs = this.basicGatedSale.connect(artist1).createPhase(
-          FIRST_MINTED_TOKEN_ID.toString(),
-          this.saleStart.toString(),
-          this.saleEnd.toString(),
-          new BN('500').toString(),
-          this.merkleProof.merkleRoot,
-          MOCK_MERKLE_HASH,
-          ether('0.3').toString(),
-          '0'
-        );
 
-        await expectRevert(txs, 'phase mint limit must be greater than 0');
+        // FIXME do we need to check not bigger than edition?
+
+        // const txs = this.basicGatedSale.connect(artist1).createPhase(
+        //   FIRST_MINTED_TOKEN_ID.toString(),
+        //   this.saleStart.toString(),
+        //   this.saleEnd.toString(),
+        //   new BN('500').toString(),
+        //   this.merkleProof.merkleRoot,
+        //   MOCK_MERKLE_HASH,
+        //   ether('0.3').toString(),
+        //   '0'
+        // );
+        //
+        // await expectRevert(txs, 'phase mint limit must be greater than 0');
 
         const txs2 = this.basicGatedSale.connect(artist1).createPhase(
           FIRST_MINTED_TOKEN_ID.toString(),

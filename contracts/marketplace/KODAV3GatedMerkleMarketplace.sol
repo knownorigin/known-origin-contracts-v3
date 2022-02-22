@@ -202,7 +202,7 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseUpgradableMarketplace, IKO
 
     function _onlyCreatorOrAdmin(uint256 _saleId) internal view {
         require(
-            accessControls.hasAdminRole(_msgSender()) || koda.getCreatorOfEdition(saleToEditionId[_saleId]) == _msgSender(),
+            koda.getCreatorOfEdition(saleToEditionId[_saleId]) == _msgSender() || accessControls.hasAdminRole(_msgSender()),
             "Caller not creator or admin"
         );
     }

@@ -8,8 +8,6 @@ import {KODAV3GatedMerkleMarketplace} from "./KODAV3GatedMerkleMarketplace.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
-import "hardhat/console.sol";
-
 // TODO (test) ensure only admin can upgrade e.g. https://docs.openzeppelin.com/contracts/4.x/api/proxy#UUPSUpgradeable-_authorizeUpgrade-address-
 // TODO (test) Confirm we can convert from a gated sale to a buy now flow?
 // TODO (test) Impact of starting in a reserve auction, setting up a gated sale and selling it during the final auction close?
@@ -37,6 +35,14 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     /// @notice emitted when a sale is resumed
     event SaleResumed(uint256 indexed saleId, uint256 indexed editionId);
 
+    modifier onlyCreatorOrAdmin(uint256 _editionId) {
+        require(
+            accessControls.hasAdminRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
+            "Caller not creator or admin"
+        );
+        _;
+    }
+
     /// @dev incremental counter for the ID of a sale
     uint256 private saleIdCounter;
 
@@ -44,10 +50,10 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     struct Phase {
         uint128 startTime;      // The start time of the sale as a whole
         uint128 endTime;        // The end time of the sale phase, also the beginning of the next phase if applicable
-        uint16 walletMintLimit; // The mint limit per wallet for the phase
         uint128 priceInWei;     // Price in wei for one mint
-        uint128 mintCap;        // The maximum amount of mints for the phase
         uint128 mintCounter;    // The current amount of items minted
+        uint16 walletMintLimit; // The mint limit per wallet for the phase
+        uint16 mintCap;        // The maximum amount of mints for the phase
         bytes32 merkleRoot;     // The merkle tree root for the phase
         string merkleIPFSHash;  // The IPFS hash referencing the merkle tree
     }
@@ -80,21 +86,13 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     /// @dev saleCommission is a mapping of sale id => commission %, if 0 its default 15_00000 (15%) unless commission for platform disabled
     mapping(uint256 => uint256) public saleCommission;
 
-    modifier onlyCreatorOrAdmin(uint256 _editionId) {
-        require(
-            koda.getCreatorOfEdition(_editionId) == _msgSender() || accessControls.hasAdminRole(_msgSender()),
-            "Caller not creator or admin"
-        );
-        _;
-    }
-
     /// @notice Allow an artist or admin to create a sale with 1 or more phases
     function createSaleWithPhases(
         uint256 _editionId,
         uint128[] memory _startTimes,
         uint128[] memory _endTimes,
         uint128[] memory _pricesInWei,
-        uint128[] memory _mintCaps,
+        uint16[] memory _mintCaps,
         uint16[] memory _walletMintLimits,
         bytes32[] memory _merkleRoots,
         string[] memory _merkleIPFSHashes
@@ -104,7 +102,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         require(creator == _msgSender() || accessControls.hasAdminRole(_msgSender()), "Caller not creator or admin");
 
         // Check no existing sale in place
-        require(editionToSale[_editionId] == 0, "Sale exists for this edition");
+        require(editionToSale[_editionId] == 0, "Sale exists for this edition"); // FIXME discuss with team - added by AMG
 
         uint256 saleId = ++saleIdCounter;
 
@@ -120,7 +118,9 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         });
         editionToSale[_editionId] = saleId;
 
-        _addPhasesToSale(
+        _addMultiplePhasesToSale(
+            _editionId,
+            saleId,
             _startTimes,
             _endTimes,
             _pricesInWei,
@@ -164,34 +164,33 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         sale.mintCounter += _mintCount;
     }
 
-    function createPhase(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _walletMintLimit, bytes32 _merkleRoot, string calldata _merkleIPFSHash, uint128 _priceInWei, uint128 _mintCap)
+    function createPhase(
+        uint256 _editionId,
+        uint128 _startTime,
+        uint128 _endTime,
+        uint128 _priceInWei,
+        uint16 _walletMintLimit,
+        uint16 _mintCap,
+        bytes32 _merkleRoot,
+        string calldata _merkleIPFSHash
+    )
     external
     whenNotPaused
     onlyCreatorOrAdmin(_editionId) {
-        uint256 editionSize = koda.getSizeOfEdition(_editionId);
-        require(editionSize > 0, 'edition does not exist');
-        require(_endTime > _startTime, 'phase end time must be after start time');
-        require(_walletMintLimit > 0 && _walletMintLimit <= editionSize, 'phase mint limit must be greater than 0');
-        require(_mintCap > 0, "Zero mint cap");
-        require(_merkleRoot != bytes32(0), "Zero merkle root");
-        require(bytes(_merkleIPFSHash).length == 46, "Invalid IPFS hash");
-
         uint256 saleId = editionToSale[_editionId];
         require(saleId > 0, 'no sale associated with edition id');
 
-        // Add the phase to the phases mapping
-        phases[saleId].push(Phase({
-            startTime : _startTime,
-            endTime : _endTime,
-            walletMintLimit : _walletMintLimit,
-            merkleRoot : _merkleRoot,
-            merkleIPFSHash : _merkleIPFSHash,
-            priceInWei : _priceInWei,
-            mintCap : _mintCap,
-            mintCounter : 0
-        }));
-
-        emit PhaseCreated(saleId, _editionId, phases[saleId].length - 1);
+        _addPhaseToSale(
+            _editionId,
+            saleId,
+            _startTime,
+            _endTime,
+            _priceInWei,
+            _walletMintLimit,
+            _mintCap,
+            _merkleRoot,
+            _merkleIPFSHash
+        );
     }
 
     function removePhase(uint256 _editionId, uint256 _phaseId)
@@ -311,36 +310,62 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         return commission;
     }
 
-    function _addPhasesToSale(
+    function _addMultiplePhasesToSale(
+        uint256 _editionId,
+        uint256 _saleId,
         uint128[] memory _startTimes,
         uint128[] memory _endTimes,
         uint128[] memory _pricesInWei,
-        uint128[] memory _mintCaps,
         uint16[] memory _walletMintLimits,
+        uint16[] memory _mintCaps,
         bytes32[] memory _merkleRoots,
         string[] memory _merkleIPFSHashes
     ) internal {
-        uint256 saleId = saleIdCounter;
-        uint256 editionSize = koda.getSizeOfEdition(sales[saleId].editionId);
-        require(editionSize > 0, 'edition does not exist');
-
         uint256 numOfPhases = _startTimes.length;
         for (uint256 i; i < numOfPhases; ++i) {
-            require(_endTimes[i] > _startTimes[i], 'phase end time must be after start time');
-            require(_walletMintLimits[i] > 0 && _walletMintLimits[i] <= editionSize, 'phase mint limit must be greater than 0');
-            require(_mintCaps[i] > 0, "Zero mint cap");
-            require(_merkleRoots[i] != bytes32(0) && bytes(_merkleIPFSHashes[i]).length == 46, "IPFS merkle roots invalid");
-
-            phases[saleId].push(Phase({
-                startTime : _startTimes[i],
-                endTime : _endTimes[i],
-                walletMintLimit : _walletMintLimits[i],
-                merkleRoot : _merkleRoots[i],
-                merkleIPFSHash : _merkleIPFSHashes[i],
-                priceInWei : _pricesInWei[i],
-                mintCap : _mintCaps[i],
-                mintCounter : 0
-            }));
+            _addPhaseToSale(
+                _editionId,
+                _saleId,
+                _startTimes[i],
+                _endTimes[i],
+                _pricesInWei[i],
+                _mintCaps[i],
+                _walletMintLimits[i],
+                _merkleRoots[i],
+                _merkleIPFSHashes[i]
+            );
         }
+    }
+
+    function _addPhaseToSale(
+        uint256 _editionId,
+        uint256 _saleId,
+        uint128 _startTime,
+        uint128 _endTime,
+        uint128 _priceInWei,
+        uint16  _walletMintLimit,
+        uint16 _mintCap,
+        bytes32 _merkleRoot,
+        string memory _merkleIPFSHash
+    ) internal {
+        require(_endTime > _startTime, 'phase end time must be after start time');
+        require(_walletMintLimit > 0, 'phase mint limit must be greater than 0');
+        require(_mintCap > 0, "Zero mint cap");
+        require(_merkleRoot != bytes32(0), "Zero merkle root");
+        require(bytes(_merkleIPFSHash).length == 46, "Invalid IPFS hash");
+
+        // Add the phase to the phases mapping
+        phases[_saleId].push(Phase({
+            startTime : _startTime,
+            endTime : _endTime,
+            walletMintLimit : _walletMintLimit,
+            merkleRoot : _merkleRoot,
+            merkleIPFSHash : _merkleIPFSHash,
+            priceInWei : _priceInWei,
+            mintCap : _mintCap,
+            mintCounter : 0
+        }));
+
+        emit PhaseCreated(_saleId, _editionId, phases[_saleId].length - 1);
     }
 }

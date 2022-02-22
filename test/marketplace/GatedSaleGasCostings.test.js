@@ -119,7 +119,7 @@ contract('Gas golfing test ... ', function () {
   });
 
   describe('Buying all 1000', async () => {
-    it('1 per account', async () => {
+    it.only('1 per account', async () => {
       for (let i = 0; i < 1000; i++) {
         console.log(`Minting ${i}`);
         await this.basicGatedSale.connect(buyer1).mint(

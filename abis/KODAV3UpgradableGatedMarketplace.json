@@ -617,8 +617,18 @@
         "type": "uint128"
       },
       {
+        "internalType": "uint128",
+        "name": "_priceInWei",
+        "type": "uint128"
+      },
+      {
         "internalType": "uint16",
         "name": "_walletMintLimit",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "_mintCap",
         "type": "uint16"
       },
       {
@@ -630,16 +640,6 @@
         "internalType": "string",
         "name": "_merkleIPFSHash",
         "type": "string"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_priceInWei",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_mintCap",
-        "type": "uint128"
       }
     ],
     "name": "createPhase",
@@ -670,9 +670,9 @@
         "type": "uint128[]"
       },
       {
-        "internalType": "uint128[]",
+        "internalType": "uint16[]",
         "name": "_mintCaps",
-        "type": "uint128[]"
+        "type": "uint16[]"
       },
       {
         "internalType": "uint16[]",
@@ -1106,24 +1106,24 @@
         "type": "uint128"
       },
       {
-        "internalType": "uint16",
-        "name": "walletMintLimit",
-        "type": "uint16"
-      },
-      {
         "internalType": "uint128",
         "name": "priceInWei",
         "type": "uint128"
       },
       {
         "internalType": "uint128",
-        "name": "mintCap",
+        "name": "mintCounter",
         "type": "uint128"
       },
       {
-        "internalType": "uint128",
-        "name": "mintCounter",
-        "type": "uint128"
+        "internalType": "uint16",
+        "name": "walletMintLimit",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "mintCap",
+        "type": "uint16"
       },
       {
         "internalType": "bytes32",
