@@ -104,32 +104,30 @@ contract('BasicGatedSale tests...', function () {
         describe.only('createSaleWithPhases', async () => {
             it.only('can create a new sale and phase with correct arguments', async () => {
 
-                const {id, editionId, paused} = await this.basicGatedSale.sales(1);
+                let sale = await this.basicGatedSale.sales(1);
 
-                expect(id.toString()).to.be.equal('1');
-                expect(editionId.toString()).to.be.equal(FIRST_MINTED_TOKEN_ID.toString());
-                expect(paused).to.be.equal(false);
+                expect(sale.id.toString()).to.be.equal('1');
+                expect(sale.editionId.toString()).to.be.equal(FIRST_MINTED_TOKEN_ID.toString());
+                expect(sale.creator.toString()).to.be.equal(artist1.address);
+                expect(sale.fundsReceiver.toString()).to.be.equal(artist1.address);
+                expect(sale.maxEditionId.toString()).to.be.equal('11015');
+                expect(sale.mintCounter.toString()).to.be.equal('0');
+                expect(sale.paused.toString()).to.be.equal('0');
 
-                const {
-                    startTime,
-                    endTime,
-                    walletMintLimit,
-                    merkleRoot,
-                    merkleIPFSHash,
-                    priceInWei,
-                    mintCap
-                } = await this.basicGatedSale.phases(1, 0);
 
-                expect(startTime.toString()).to.not.equal('0');
-                expect(endTime.toString()).to.not.equal('0');
-                expect(walletMintLimit.toString()).to.be.equal('10');
-                expect(merkleRoot).to.be.equal(this.merkleProof.merkleRoot);
-                expect(merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH);
-                expect(priceInWei.toString()).to.be.equal(ether('0.1').toString());
-                expect(mintCap.toString()).to.be.equal('15');
+                let phase = await this.basicGatedSale.phases(1, 0);
 
-                const mappingId = await this.basicGatedSale.editionToSale(editionId);
-                expect(mappingId.toString()).to.be.equal(id.toString());
+                expect(phase.startTime.toString()).to.not.equal('0');
+                expect(phase.endTime.toString()).to.not.equal('0');
+                expect(phase.priceInWei.toString()).to.be.equal(ether('0.1').toString());
+                expect(phase.mintCounter.toString()).to.be.equal('0');
+                expect(phase.walletMintLimit.toString()).to.be.equal('10');
+                expect(phase.mintCap.toString()).to.be.equal('15');
+                expect(phase.merkleRoot).to.be.equal(this.merkleProof.merkleRoot);
+                expect(phase.merkleIPFSHash).to.be.equal(MOCK_MERKLE_HASH);
+
+                const mappingId = await this.basicGatedSale.editionToSale(sale.editionId);
+                expect(mappingId.toString()).to.be.equal(sale.id.toString());
             });
 
             it('can create a new sale and phase if admin', async () => {
