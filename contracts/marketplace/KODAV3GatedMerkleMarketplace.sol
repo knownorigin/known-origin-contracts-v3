@@ -92,7 +92,6 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseUpgradableMarketplace, IKO
         uint256 editionId = saleToEditionId[_saleId];
         require(editionId > 0, "no sale exists");
         require(!isSalePaused[_saleId], 'sale is paused');
-//        require(!koda.isEditionSoldOut(editionId), 'the sale is sold out');
 
         require(block.timestamp >= _phase.startTime && block.timestamp < _phase.endTime, 'sale phase not in progress');
         require(phaseMintCount[_phaseId] + _mintCount <= _phase.mintCap, 'phase mint cap reached');
