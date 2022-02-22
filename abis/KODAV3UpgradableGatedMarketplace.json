@@ -386,12 +386,6 @@
         "internalType": "address",
         "name": "account",
         "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "mintCount",
-        "type": "uint256"
       }
     ],
     "name": "MintFromSale",
@@ -623,8 +617,18 @@
         "type": "uint128"
       },
       {
+        "internalType": "uint128",
+        "name": "_priceInWei",
+        "type": "uint128"
+      },
+      {
         "internalType": "uint16",
         "name": "_walletMintLimit",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "_mintCap",
         "type": "uint16"
       },
       {
@@ -636,16 +640,6 @@
         "internalType": "string",
         "name": "_merkleIPFSHash",
         "type": "string"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_priceInWei",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_mintCap",
-        "type": "uint128"
       }
     ],
     "name": "createPhase",
@@ -671,6 +665,16 @@
         "type": "uint128[]"
       },
       {
+        "internalType": "uint128[]",
+        "name": "_pricesInWei",
+        "type": "uint128[]"
+      },
+      {
+        "internalType": "uint16[]",
+        "name": "_mintCaps",
+        "type": "uint16[]"
+      },
+      {
         "internalType": "uint16[]",
         "name": "_walletMintLimits",
         "type": "uint16[]"
@@ -684,16 +688,6 @@
         "internalType": "string[]",
         "name": "_merkleIPFSHashes",
         "type": "string[]"
-      },
-      {
-        "internalType": "uint128[]",
-        "name": "_pricesInWei",
-        "type": "uint128[]"
-      },
-      {
-        "internalType": "uint128[]",
-        "name": "_mintCaps",
-        "type": "uint128[]"
       }
     ],
     "name": "createSaleWithPhases",
@@ -1112,14 +1106,24 @@
         "type": "uint128"
       },
       {
+        "internalType": "uint128",
+        "name": "priceInWei",
+        "type": "uint128"
+      },
+      {
+        "internalType": "uint128",
+        "name": "mintCounter",
+        "type": "uint128"
+      },
+      {
         "internalType": "uint16",
         "name": "walletMintLimit",
         "type": "uint16"
       },
       {
-        "internalType": "uint128",
-        "name": "priceInWei",
-        "type": "uint128"
+        "internalType": "uint16",
+        "name": "mintCap",
+        "type": "uint16"
       },
       {
         "internalType": "bytes32",
@@ -1130,16 +1134,6 @@
         "internalType": "string",
         "name": "merkleIPFSHash",
         "type": "string"
-      },
-      {
-        "internalType": "uint128",
-        "name": "mintCap",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "mintCounter",
-        "type": "uint128"
       }
     ],
     "stateMutability": "view",
@@ -1394,9 +1388,29 @@
         "type": "uint256"
       },
       {
-        "internalType": "bool",
+        "internalType": "address",
+        "name": "creator",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "fundsReceiver",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxEditionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint16",
+        "name": "mintCounter",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint8",
         "name": "paused",
-        "type": "bool"
+        "type": "uint8"
       }
     ],
     "stateMutability": "view",
@@ -1478,19 +1492,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "bytes32",
         "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
+        "type": "bytes32"
       }
     ],
     "name": "totalMints",
