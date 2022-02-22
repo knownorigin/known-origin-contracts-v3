@@ -13,7 +13,7 @@ const MockERC20 = artifacts.require('MockERC20');
 
 this.erc20Token = undefined;
 
-contract('KODAV3UpgradableGatedMarketplace tests...', function (accounts) {
+contract.only('KODAV3UpgradableGatedMarketplace tests...', function (accounts) {
     const [owner, admin, koCommission, contract, artist1, artist2, artist3, artistDodgy, newAccessControls] = accounts;
 
     const STARTING_EDITION = '10000';

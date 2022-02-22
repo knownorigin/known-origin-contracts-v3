@@ -11,7 +11,7 @@ const SelfServiceAccessControls = artifacts.require('SelfServiceAccessControls')
 const MockERC20 = artifacts.require('MockERC20');
 const KODAV3UpgradableGatedMarketplace = artifacts.require('KODAV3UpgradableGatedMarketplace');
 
-contract('BasicGatedSale complex tests...', function () {
+contract.only('BasicGatedSale complex tests...', function () {
 
   const STARTING_EDITION = '10000';
   const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
