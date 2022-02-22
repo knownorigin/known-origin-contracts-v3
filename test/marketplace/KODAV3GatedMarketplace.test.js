@@ -102,7 +102,7 @@ contract('BasicGatedSale tests...', function () {
     describe.only('BasicGatedSale', async () => {
 
         describe.only('createSaleWithPhases', async () => {
-            it.only('can create a new sale and phase with correct arguments', async () => {
+            it('can create a new sale and phase with correct arguments', async () => {
 
                 let sale = await this.basicGatedSale.sales(1);
 
@@ -135,15 +135,15 @@ contract('BasicGatedSale tests...', function () {
                     SECOND_MINTED_TOKEN_ID.toString(),
                     [this.saleStart.toString()],
                     [this.saleEnd.toString()],
-                    [new BN('10').toString()],
+                    [ether('0.3').toString()],
+                    ['10'],
+                    ['10'],
                     [this.merkleProof.merkleRoot],
-                    [MOCK_MERKLE_HASH],
-                    [ether('0.1').toString()],
-                    [10]
-                );
+                    [MOCK_MERKLE_HASH]
+                )
 
                 await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
-                    saleId: new BN('2').toString(),
+                    saleId: TWO,
                     editionId: SECOND_MINTED_TOKEN_ID
                 });
             });
@@ -153,29 +153,44 @@ contract('BasicGatedSale tests...', function () {
                     FIRST_MINTED_TOKEN_ID.toString(),
                     [this.saleStart.toString()],
                     [this.saleEnd.toString()],
-                    [new BN('10').toString()],
-                    [this.merkleProof.merkleRoot],
-                    [MOCK_MERKLE_HASH],
                     [ether('0.1').toString()],
-                    [10]
+                    ['15'],
+                    ['10'],
+                    [this.merkleProof.merkleRoot],
+                    [MOCK_MERKLE_HASH]
                 );
 
                 await expectRevert(txs, 'Caller not creator or admin');
             });
 
             it('should revert if given a non existent edition ID', async () => {
-                const txs = this.basicGatedSale.connect(admin).createSaleWithPhases(
+                const txs = this.basicGatedSale.connect(artist1).createSaleWithPhases(
                     FIRST_MINTED_TOKEN_ID.add(new BN('5000')).toString(),
                     [this.saleStart.toString()],
                     [this.saleEnd.toString()],
-                    [new BN('10').toString()],
-                    [this.merkleProof.merkleRoot],
-                    [MOCK_MERKLE_HASH],
                     [ether('0.1').toString()],
-                    [10]
+                    ['15'],
+                    ['10'],
+                    [this.merkleProof.merkleRoot],
+                    [MOCK_MERKLE_HASH]
                 );
 
-                await expectRevert(txs, 'edition does not exist');
+                await expectRevert(txs, 'Caller not creator or admin');
+            });
+
+            it('should revert if given an edition id that already has an associated sale', async () => {
+                const txs = this.basicGatedSale.connect(artist1).createSaleWithPhases(
+                    FIRST_MINTED_TOKEN_ID.toString(),
+                    [this.saleStart.toString()],
+                    [this.saleEnd.toString()],
+                    [ether('0.1').toString()],
+                    ['15'],
+                    ['10'],
+                    [this.merkleProof.merkleRoot],
+                    [MOCK_MERKLE_HASH]
+                );
+
+                await expectRevert(txs, 'Sale exists for this edition');
             });
 
             it('should revert if given an invalid end time', async () => {
@@ -183,14 +198,14 @@ contract('BasicGatedSale tests...', function () {
                     SECOND_MINTED_TOKEN_ID.toString(),
                     [this.saleStart.toString()],
                     [this.saleEnd.sub(time.duration.days(7)).toString()],
-                    [new BN('10').toString()],
+                    [ether('0.3').toString()],
+                    ['10'],
+                    ['10'],
                     [this.merkleProof.merkleRoot],
-                    [MOCK_MERKLE_HASH],
-                    [ether('0.1').toString()],
-                    [10]
+                    [MOCK_MERKLE_HASH]
                 );
 
-                await expectRevert(txs, 'phase end time must be after start time');
+                await expectRevert(txs, 'Phase end time must be after start time');
             });
 
             it('should revert if given an invalid mint limit', async () => {
@@ -198,14 +213,60 @@ contract('BasicGatedSale tests...', function () {
                     SECOND_MINTED_TOKEN_ID.toString(),
                     [this.saleStart.toString()],
                     [this.saleEnd.toString()],
-                    [new BN('0').toString()],
+                    [ether('0.3').toString()],
+                    ['10'],
+                    ['0'],
                     [this.merkleProof.merkleRoot],
-                    [MOCK_MERKLE_HASH],
-                    [ether('0.1').toString()],
-                    [10]
+                    [MOCK_MERKLE_HASH]
                 );
 
-                await expectRevert(txs, 'phase mint limit must be greater than 0');
+                await expectRevert(txs, 'Zero mint limit');
+            });
+
+            it('should revert if given an invalid mint cap', async () => {
+                const txs = this.basicGatedSale.connect(admin).createSaleWithPhases(
+                    SECOND_MINTED_TOKEN_ID.toString(),
+                    [this.saleStart.toString()],
+                    [this.saleEnd.toString()],
+                    [ether('0.3').toString()],
+                    ['0'],
+                    ['10'],
+                    [this.merkleProof.merkleRoot],
+                    [MOCK_MERKLE_HASH]
+                );
+
+                await expectRevert(txs, 'Zero mint cap');
+            });
+
+            // it.only('should revert if given an invalid merkle root', async () => {
+            //     console.log('MERKLE : ', this.merkleProof.merkleRoot)
+            //     const txs = this.basicGatedSale.connect(admin).createSaleWithPhases(
+            //         SECOND_MINTED_TOKEN_ID.toString(),
+            //         [this.saleStart.toString()],
+            //         [this.saleEnd.toString()],
+            //         [ether('0.3').toString()],
+            //         ['10'],
+            //         ['10'],
+            //         [null],
+            //         [MOCK_MERKLE_HASH]
+            //     );
+            //
+            //     await expectRevert(txs, 'Zero merkle root');
+            // });
+
+            it('should revert if given an invalid merkle root', async () => {
+                const txs = this.basicGatedSale.connect(admin).createSaleWithPhases(
+                    SECOND_MINTED_TOKEN_ID.toString(),
+                    [this.saleStart.toString()],
+                    [this.saleEnd.toString()],
+                    [ether('0.3').toString()],
+                    ['10'],
+                    ['10'],
+                    [this.merkleProof.merkleRoot],
+                    ['null']
+                );
+
+                await expectRevert(txs, 'Invalid IPFS hash');
             });
         });
 

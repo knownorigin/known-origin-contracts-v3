@@ -348,8 +348,8 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         bytes32 _merkleRoot,
         string memory _merkleIPFSHash
     ) internal {
-        require(_endTime > _startTime, 'phase end time must be after start time');
-        require(_walletMintLimit > 0, 'phase mint limit must be greater than 0');
+        require(_endTime > _startTime, 'Phase end time must be after start time');
+        require(_walletMintLimit > 0, 'Zero mint limit');
         require(_mintCap > 0, "Zero mint cap");
         require(_merkleRoot != bytes32(0), "Zero merkle root");
         require(bytes(_merkleIPFSHash).length == 46, "Invalid IPFS hash");
