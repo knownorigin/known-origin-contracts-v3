@@ -142,19 +142,19 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         bytes32[] calldata _merkleProof
     ) payable external nonReentrant whenNotPaused {
         Sale storage sale = sales[_saleId];
-        require(sale.paused == 0, 'sale is paused');
+        require(sale.paused == 0, 'Sale is paused');
 
         Phase storage phase = phases[_saleId][_phaseId];
 
-        require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale phase not in progress');
-        require(phase.mintCounter + _mintCount <= phase.mintCap, 'phase mint cap reached');
+        require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'Sale phase not in progress');
+        require(phase.mintCounter + _mintCount <= phase.mintCap, 'Phase mint cap reached');
 
         // TODO check if we need to encode?
         bytes32 totalMintsKey = keccak256(abi.encode(_saleId, _phaseId, _msgSender()));
 
-        require(totalMints[totalMintsKey] + _mintCount <= phase.walletMintLimit, 'cannot exceed total mints for sale phase');
-        require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
-        require(onPhaseMintList(_saleId, _phaseId, _index, _msgSender(), _merkleProof), 'address not able to mint from sale');
+        require(totalMints[totalMintsKey] + _mintCount <= phase.walletMintLimit, 'Cannot exceed total mints for sale phase');
+        require(msg.value >= phase.priceInWei * _mintCount, 'Not enough wei sent to complete mint');
+        require(onPhaseMintList(_saleId, _phaseId, _index, _msgSender(), _merkleProof), 'Address not able to mint from sale');
 
         _handleMint(_saleId, _phaseId, sale.editionId, _mintCount, _msgSender());
 
@@ -178,7 +178,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     whenNotPaused
     onlyCreatorOrAdmin(_editionId) {
         uint256 saleId = editionToSale[_editionId];
-        require(saleId > 0, 'no sale associated with edition id');
+        require(saleId > 0, 'No sale associated with edition id');
 
         _addPhaseToSale(
             _editionId,
@@ -198,10 +198,10 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     whenNotPaused
     onlyCreatorOrAdmin(_editionId)
     {
-        require(koda.editionExists(_editionId), 'edition does not exist');
+        require(koda.editionExists(_editionId), 'Edition does not exist');
 
         uint256 saleId = editionToSale[_editionId];
-        require(saleId > 0, 'no sale associated with edition id');
+        require(saleId > 0, 'No sale associated with edition id');
 
         delete phases[saleId][_phaseId];
 
@@ -226,7 +226,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     external
     view
     returns (uint256) {
-        require(onPhaseMintList(_saleId, _phaseId, _index, _account, _merkleProof), 'address not able to mint from sale');
+        require(onPhaseMintList(_saleId, _phaseId, _index, _account, _merkleProof), 'Address not able to mint from sale');
 
         return phases[_saleId][_phaseId].walletMintLimit - totalMints[keccak256(abi.encode(_saleId, _phaseId, _account))];
     }
