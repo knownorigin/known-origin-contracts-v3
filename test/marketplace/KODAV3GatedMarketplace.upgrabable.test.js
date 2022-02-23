@@ -100,7 +100,7 @@ contract('KODAV3UpgradableGatedMarketplace tests...', function () {
     });
   });
 
-  describe.only('KODAV3UpgradableGatedMarketplace v1', async () => {
+  describe('KODAV3UpgradableGatedMarketplace v1', async () => {
     describe('createSaleWithPhases', async () => {
 
       it('can create a new sale and phase with correct arguments', async () => {
@@ -135,7 +135,7 @@ contract('KODAV3UpgradableGatedMarketplace tests...', function () {
     });
   });
 
-  describe.only('KODAV3UpgradableGatedMarketplace v2', async () => {
+  describe('KODAV3UpgradableGatedMarketplace v2', async () => {
 
     describe('upgrade', async () => {
 
