@@ -41,9 +41,9 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseGatedMarketplace, IKODAV3G
     /// @inheritdoc IKODAV3GatedMerkleMarketplace
     function createMerkleSaleWithPhases(uint256 _editionId, bytes32[] calldata _phaseIds)
     external
-    override 
+    override
     whenNotPaused
-    onlyCreatorOrAdmin {
+    onlyCreatorOrAdmin(_editionId) {
         uint256 editionSize = koda.getSizeOfEdition(_editionId);
         require(editionSize > 0, 'edition does not exist');
 

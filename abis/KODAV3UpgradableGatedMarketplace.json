@@ -299,107 +299,6 @@
         "type": "address"
       }
     ],
-    "name": "MerkleMintFromSale",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "saleId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "phaseId",
-        "type": "bytes32"
-      }
-    ],
-    "name": "MerklePhaseCreated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "saleId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "phaseId",
-        "type": "bytes32"
-      }
-    ],
-    "name": "MerklePhaseRemoved",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "saleId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "isPaused",
-        "type": "bool"
-      }
-    ],
-    "name": "MerkleSalePauseUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "saleId",
-        "type": "uint256"
-      }
-    ],
-    "name": "MerkleSaleWithPhaseCreated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "saleId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "phaseId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
     "name": "MintFromSale",
     "type": "event"
   },
@@ -533,24 +432,6 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_saleId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes32[]",
-        "name": "_phaseIds",
-        "type": "bytes32[]"
-      }
-    ],
-    "name": "addPhasesToMerkleSale",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [],
     "name": "bidLockupPeriod",
     "outputs": [
@@ -561,24 +442,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_editionId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes32[]",
-        "name": "_phaseIds",
-        "type": "bytes32[]"
-      }
-    ],
-    "name": "createMerkleSaleWithPhases",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -727,49 +590,6 @@
         "type": "uint256"
       }
     ],
-    "name": "isMerkleSalePaused",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "name": "isPhaseWhitelisted",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
     "name": "isSaleCommissionForPlatformDisabled",
     "outputs": [
       {
@@ -792,86 +612,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_saleId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "_phaseId",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint16",
-        "name": "_mintCount",
-        "type": "uint16"
-      },
-      {
-        "internalType": "address",
-        "name": "_recipient",
-        "type": "address"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint128",
-            "name": "startTime",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint128",
-            "name": "endTime",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint16",
-            "name": "walletMintLimit",
-            "type": "uint16"
-          },
-          {
-            "internalType": "uint16",
-            "name": "mintCap",
-            "type": "uint16"
-          },
-          {
-            "internalType": "uint128",
-            "name": "priceInWei",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint256",
-            "name": "maxEditionId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "creator",
-            "type": "address"
-          },
-          {
-            "internalType": "address",
-            "name": "fundsReceiver",
-            "type": "address"
-          }
-        ],
-        "internalType": "struct IKODAV3GatedMerkleMarketplace.MerklePhaseMetadata",
-        "name": "_phase",
-        "type": "tuple"
-      },
-      {
-        "internalType": "bytes32[]",
-        "name": "_merkleProof",
-        "type": "bytes32[]"
-      }
-    ],
-    "name": "merkleMint",
-    "outputs": [],
-    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -941,87 +681,6 @@
         "type": "uint256"
       },
       {
-        "internalType": "bytes32",
-        "name": "_phaseId",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "_account",
-        "type": "address"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint128",
-            "name": "startTime",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint128",
-            "name": "endTime",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint16",
-            "name": "walletMintLimit",
-            "type": "uint16"
-          },
-          {
-            "internalType": "uint16",
-            "name": "mintCap",
-            "type": "uint16"
-          },
-          {
-            "internalType": "uint128",
-            "name": "priceInWei",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint256",
-            "name": "maxEditionId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "creator",
-            "type": "address"
-          },
-          {
-            "internalType": "address",
-            "name": "fundsReceiver",
-            "type": "address"
-          }
-        ],
-        "internalType": "struct IKODAV3GatedMerkleMarketplace.MerklePhaseMetadata",
-        "name": "_phase",
-        "type": "tuple"
-      },
-      {
-        "internalType": "bytes32[]",
-        "name": "_merkleProof",
-        "type": "bytes32[]"
-      }
-    ],
-    "name": "onPhaseMerkleList",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_saleId",
-        "type": "uint256"
-      },
-      {
         "internalType": "uint256",
         "name": "_phaseId",
         "type": "uint256"
@@ -1068,25 +727,6 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "name": "phaseMintCount",
-    "outputs": [
-      {
-        "internalType": "uint16",
-        "name": "",
-        "type": "uint16"
       }
     ],
     "stateMutability": "view",
@@ -1208,87 +848,6 @@
         "type": "uint256"
       },
       {
-        "internalType": "bytes32",
-        "name": "_phaseId",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "_account",
-        "type": "address"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint128",
-            "name": "startTime",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint128",
-            "name": "endTime",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint16",
-            "name": "walletMintLimit",
-            "type": "uint16"
-          },
-          {
-            "internalType": "uint16",
-            "name": "mintCap",
-            "type": "uint16"
-          },
-          {
-            "internalType": "uint128",
-            "name": "priceInWei",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint256",
-            "name": "maxEditionId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "creator",
-            "type": "address"
-          },
-          {
-            "internalType": "address",
-            "name": "fundsReceiver",
-            "type": "address"
-          }
-        ],
-        "internalType": "struct IKODAV3GatedMerkleMarketplace.MerklePhaseMetadata",
-        "name": "_phase",
-        "type": "tuple"
-      },
-      {
-        "internalType": "bytes32[]",
-        "name": "_merkleProof",
-        "type": "bytes32[]"
-      }
-    ],
-    "name": "remainingMerklePhaseMintAllowance",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_saleId",
-        "type": "uint256"
-      },
-      {
         "internalType": "uint256",
         "name": "_phaseId",
         "type": "uint256"
@@ -1342,24 +901,6 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_saleId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes32[]",
-        "name": "_phaseIds",
-        "type": "bytes32[]"
-      }
-    ],
-    "name": "removePhasesFromMerkleSale",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
         "name": "",
         "type": "uint256"
       }
@@ -1383,25 +924,6 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "saleMintCount",
-    "outputs": [
-      {
-        "internalType": "uint16",
-        "name": "",
-        "type": "uint16"
       }
     ],
     "stateMutability": "view",
@@ -1454,19 +976,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_saleId",
-        "type": "uint256"
-      }
-    ],
-    "name": "toggleMerkleSalePause",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
