@@ -3,57 +3,39 @@ pragma solidity 0.8.4;
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-import {BaseUpgradableMarketplace} from "./BaseUpgradableMarketplace.sol";
+import {BaseGatedMarketplace} from "./BaseGatedMarketplace.sol";
 import {KODAV3GatedMerkleMarketplace} from "./KODAV3GatedMerkleMarketplace.sol";
-import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
-import {IKODAV3} from "../core/IKODAV3.sol";
+import {IKOAccessControlsLookup} from "../../access/IKOAccessControlsLookup.sol";
+import {IKODAV3} from "../../core/IKODAV3.sol";
 
-// TODO (test) ensure only admin can upgrade e.g. https://docs.openzeppelin.com/contracts/4.x/api/proxy#UUPSUpgradeable-_authorizeUpgrade-address-
-// TODO (test) Confirm we can convert from a gated sale to a buy now flow?
-// TODO (test) Impact of starting in a reserve auction, setting up a gated sale and selling it during the final auction close?
-
-contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3GatedMerkleMarketplace {
-
-    /// @notice emitted when a sale, with a single phase, is created
-    event SaleWithPhaseCreated(uint256 indexed saleId, uint256 indexed editionId);
-
-    /// @notice emitted when a new phase is added to a sale
-    event PhaseCreated(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId);
-
-    /// @notice emitted when a phase is removed from a sale
-    event PhaseRemoved(uint256 indexed saleId, uint256 indexed editionId, uint256 indexed phaseId);
-
-    /// @notice emitted when someone mints from a sale
-    event MintFromSale(uint256 saleId, uint256 tokenId, uint256 phaseId, address account);
-
-    /// @notice emitted when primary sales commission is updated for a sale
-    event AdminUpdatePlatformPrimarySaleCommissionGatedSale(uint256 indexed saleId, uint256 platformPrimarySaleCommission);
+contract KODAV3UpgradableGatedMarketplace is KODAV3GatedMerkleMarketplace {
 
     /// @notice emitted when a sale is paused
-    event SalePaused(uint256 indexed saleId, uint256 indexed editionId);
+    event SalePaused(uint256 indexed saleId);
 
     /// @notice emitted when a sale is resumed
-    event SaleResumed(uint256 indexed saleId, uint256 indexed editionId);
+    event SaleResumed(uint256 indexed saleId);
 
-    modifier onlyCreatorOrAdmin(uint256 _editionId) {
-        require(
-            accessControls.hasAdminRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
-            "Caller not creator or admin"
-        );
-        _;
-    }
+    /// @notice emitted when a sale, with a single phase, is created
+    event SaleWithPhaseCreated(uint256 indexed saleId);
 
-    /// @dev incremental counter for the ID of a sale
-    uint256 private saleIdCounter;
+    /// @notice emitted when a new phase is added to a sale
+    event PhaseCreated(uint256 indexed saleId, uint256 indexed phaseId);
+
+    /// @notice emitted when a phase is removed from a sale
+    event PhaseRemoved(uint256 indexed saleId, uint256 indexed phaseId);
+
+    /// @notice emitted when someone mints from a sale
+    event MintFromSale(uint256 indexed saleId, uint256 indexed phaseId, uint256 indexed tokenId, address account);
 
     /// @notice Phase represents a time structured part of a sale, i.e. VIP, pre sale or open sale
     struct Phase {
         uint128 startTime;      // The start time of the sale as a whole
         uint128 endTime;        // The end time of the sale phase, also the beginning of the next phase if applicable
         uint128 priceInWei;     // Price in wei for one mint
-        uint128 mintCounter;    // The current amount of items minted
+        uint16 mintCounter;     // The current amount of items minted
         uint16 walletMintLimit; // The mint limit per wallet for the phase
-        uint16 mintCap;        // The maximum amount of mints for the phase
+        uint16 mintCap;         // The maximum amount of mints for the phase
         bytes32 merkleRoot;     // The merkle tree root for the phase
         string merkleIPFSHash;  // The IPFS hash referencing the merkle tree
     }
@@ -77,15 +59,6 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
     /// @dev phases is a mapping of sale id => array of associated phases
     mapping(uint256 => Phase[]) public phases;
 
-    /// @dev totalMints is a mapping of hash(sale id, phase id, address) => total minted by that address
-    mapping(bytes32 => uint256) public totalMints;
-
-    /// @dev editionToSale is a mapping of edition id => sale id
-    mapping(uint256 => uint256) public editionToSale;
-
-    /// @dev saleCommission is a mapping of sale id => commission %, if 0 its default 15_00000 (15%) unless commission for platform disabled
-    mapping(uint256 => uint256) public saleCommission;
-
     /// @notice Allow an artist or admin to create a sale with 1 or more phases
     function createSaleWithPhases(
         uint256 _editionId,
@@ -102,7 +75,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         require(creator == _msgSender() || accessControls.hasAdminRole(_msgSender()), "Caller not creator or admin");
 
         // Check no existing sale in place
-        require(editionToSale[_editionId] == 0, "Sale exists for this edition"); // FIXME discuss with team - added by AMG
+        require(editionToSale[_editionId] == 0, "Sale exists for this edition");
 
         uint256 saleId = ++saleIdCounter;
 
@@ -130,7 +103,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
             _merkleIPFSHashes
         );
 
-        emit SaleWithPhaseCreated(saleId, _editionId);
+        emit SaleWithPhaseCreated(saleId);
     }
 
     /// @notice Mint an NFT from the gated list
@@ -149,14 +122,13 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         require(block.timestamp >= phase.startTime && block.timestamp < phase.endTime, 'sale phase not in progress');
         require(phase.mintCounter + _mintCount <= phase.mintCap, 'phase mint cap reached');
 
-        // TODO check if we need to encode?
         bytes32 totalMintsKey = keccak256(abi.encode(_saleId, _phaseId, _msgSender()));
 
         require(totalMints[totalMintsKey] + _mintCount <= phase.walletMintLimit, 'cannot exceed total mints for sale phase');
         require(msg.value >= phase.priceInWei * _mintCount, 'not enough wei sent to complete mint');
         require(onPhaseMintList(_saleId, _phaseId, _index, _msgSender(), _merkleProof), 'address not able to mint from sale');
 
-        _handleMint(_saleId, _phaseId, sale.editionId, _mintCount, _msgSender());
+        handleMint(_saleId, _phaseId, sale.editionId, _mintCount, _msgSender());
 
         // Up the mint count for the user and the phase mint counter
         totalMints[totalMintsKey] += _mintCount;
@@ -205,7 +177,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
 
         delete phases[saleId][_phaseId];
 
-        emit PhaseRemoved(saleId, _editionId, _phaseId);
+        emit PhaseRemoved(saleId, _phaseId);
     }
 
     /// @dev checks whether a given user is on the list to mint from a phase
@@ -231,43 +203,16 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         return phases[_saleId][_phaseId].walletMintLimit - totalMints[keccak256(abi.encode(_saleId, _phaseId, _account))];
     }
 
-    function toggleSalePause(uint256 _saleId, uint256 _editionId) external onlyCreatorOrAdmin(_editionId) {
-        if (sales[_saleId].paused != 0) {
-            sales[_saleId].paused = 0;
-            emit SaleResumed(_saleId, _editionId);
-        } else {
-            sales[_saleId].paused = 1;
-            emit SalePaused(_saleId, _editionId);
-        }
-    }
-
-    function updatePlatformPrimarySaleCommission(uint256 _saleId, uint256 _platformPrimarySaleCommission) external onlyAdmin {
-        require(_platformPrimarySaleCommission > 0, "Zero commission must use other admin method");
-        require(!isSaleCommissionForPlatformDisabled[_saleId], "Sale commission for platform disabled");
-        saleCommission[_saleId] = _platformPrimarySaleCommission;
-
-        emit AdminUpdatePlatformPrimarySaleCommissionGatedSale(
-            _saleId,
-            _getPlatformSaleCommissionForSale(_saleId)
-        );
-    }
-
-    function togglePlatformCommissionDisabledForSale(uint256 _saleId) external onlyAdmin {
-        isSaleCommissionForPlatformDisabled[_saleId] = !isSaleCommissionForPlatformDisabled[_saleId];
-
-        emit AdminUpdatePlatformPrimarySaleCommissionGatedSale(
-            _saleId,
-            _getPlatformSaleCommissionForSale(_saleId)
-        );
-    }
-
-    function _handleMint(uint256 _saleId, uint256 _phaseId, uint256 _editionId, uint16 _mintCount, address _recipient) internal override {
+    function handleMint(
+        uint256 _saleId,
+        uint256 _phaseId,
+        uint256 _editionId,
+        uint16 _mintCount,
+        address _recipient
+    ) internal {
         require(_mintCount > 0, "Nothing being minted");
-
         uint256 startId = _editionId + sales[_saleId].mintCounter;
-
         for (uint i = 0; i < _mintCount; i++) {
-
             uint256 tokenId = getNextAvailablePrimarySaleToken(startId, sales[_saleId].maxEditionId, sales[_saleId].creator);
 
             // send token to buyer (assumes approval has been made, if not then this will fail)
@@ -277,37 +222,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
 
             startId = tokenId++;
         }
-
-        _handleEditionSaleFunds(_saleId, _editionId);
-    }
-
-    function getNextAvailablePrimarySaleToken(uint256 _startId, uint256 _maxEditionId, address creator) internal view returns (uint256 _tokenId) {
-        for (uint256 tokenId = _startId; tokenId < _maxEditionId; tokenId++) {
-            if (koda.ownerOf(tokenId) == creator) {
-                return tokenId;
-            }
-        }
-        revert("Primary market exhausted");
-    }
-
-    function _handleEditionSaleFunds(uint256 _saleId, uint256 _editionId) internal override {
-        uint256 platformPrimarySaleCommission = _getPlatformSaleCommissionForSale(_saleId);
-        uint256 koCommission = (msg.value / modulo) * platformPrimarySaleCommission;
-        if (koCommission > 0) {
-            (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
-            require(koCommissionSuccess, "commission payment failed");
-        }
-
-        (bool success,) = sales[_saleId].fundsReceiver.call{value : msg.value - koCommission}("");
-        require(success, "payment failed");
-    }
-
-    function _getPlatformSaleCommissionForSale(uint256 _saleId) internal returns (uint256) {
-        uint256 commission;
-        if (!isSaleCommissionForPlatformDisabled[_saleId]) {
-            commission = saleCommission[_saleId] > 0 ? saleCommission[_saleId] : platformPrimaryCommission;
-        }
-        return commission;
+        handleEditionSaleFunds(_saleId, sales[_saleId].fundsReceiver);
     }
 
     function _addMultiplePhasesToSale(
@@ -316,8 +231,8 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         uint128[] memory _startTimes,
         uint128[] memory _endTimes,
         uint128[] memory _pricesInWei,
-        uint16[] memory _walletMintLimits,
         uint16[] memory _mintCaps,
+        uint16[] memory _walletMintLimits,
         bytes32[] memory _merkleRoots,
         string[] memory _merkleIPFSHashes
     ) internal {
@@ -343,8 +258,8 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         uint128 _startTime,
         uint128 _endTime,
         uint128 _priceInWei,
-        uint16  _walletMintLimit,
         uint16 _mintCap,
+        uint16  _walletMintLimit,
         bytes32 _merkleRoot,
         string memory _merkleIPFSHash
     ) internal {
@@ -358,14 +273,14 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace, KODAV3Ga
         phases[_saleId].push(Phase({
             startTime : _startTime,
             endTime : _endTime,
-            walletMintLimit : _walletMintLimit,
-            merkleRoot : _merkleRoot,
-            merkleIPFSHash : _merkleIPFSHash,
             priceInWei : _priceInWei,
+            mintCounter : 0,
+            walletMintLimit : _walletMintLimit,
             mintCap : _mintCap,
-            mintCounter : 0
+            merkleRoot : _merkleRoot,
+            merkleIPFSHash : _merkleIPFSHash
         }));
 
-        emit PhaseCreated(_saleId, _editionId, phases[_saleId].length - 1);
+        emit PhaseCreated(_saleId, phases[_saleId].length - 1);
     }
 }
