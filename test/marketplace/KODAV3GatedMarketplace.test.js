@@ -99,7 +99,7 @@ contract('BasicGatedSale tests...', function () {
         });
     });
 
-    describe.only('BasicGatedSale', async () => {
+    describe('BasicGatedSale', async () => {
 
         describe('createSaleWithPhases', async () => {
             it('can create a new sale and phase with correct arguments', async () => {
@@ -404,7 +404,7 @@ contract('BasicGatedSale tests...', function () {
                     MOCK_MERKLE_HASH
                 );
 
-                await expectRevert(txs, 'no sale associated with edition id');
+                await expectRevert(txs, 'No sale associated with edition id');
             });
 
             it('reverts if given an incorrect end time', async () => {
@@ -690,7 +690,7 @@ contract('BasicGatedSale tests...', function () {
                     {
                         value: ether('0.1').toString()
                     });
-                await expectRevert(txs, 'phase mint cap reached');
+                await expectRevert(txs, 'Phase mint cap reached');
             });
 
             it('reverts if the phase cap has been reached', async () => {
@@ -956,7 +956,7 @@ contract('BasicGatedSale tests...', function () {
                     artistDodgy.address,
                     this.merkleProof.claims[artist1.address].proof
                 );
-                await expectRevert(txs, 'reverted with panic code 0x32 (Array accessed at an out-of-bounds or negative index)');
+                await expectRevert.unspecified(txs);
             });
 
             it('should revert if given an invalid sale id', async () => {
@@ -967,7 +967,7 @@ contract('BasicGatedSale tests...', function () {
                     artistDodgy.address,
                     this.merkleProof.claims[artist1.address].proof
                 );
-                await expectRevert(txs, 'reverted with panic code 0x32 (Array accessed at an out-of-bounds or negative index)');
+                await expectRevert.unspecified(txs);
             });
         });
 
@@ -1000,8 +1000,7 @@ contract('BasicGatedSale tests...', function () {
                     saleId: ONE,
                     tokenId: FIRST_MINTED_TOKEN_ID,
                     phaseId: ZERO,
-                    account: artist1.address,
-                    mintCount: new BN('5')
+                    account: artist1.address
                 });
 
                 let allowance = await this.basicGatedSale.remainingPhaseMintAllowance(
@@ -1023,7 +1022,7 @@ contract('BasicGatedSale tests...', function () {
                     artistDodgy.address,
                     this.merkleProof.claims[artist1.address].proof
                 );
-                await expectRevert(txs, 'address not able to mint from sale');
+                await expectRevert(txs, 'Address not able to mint from sale');
             });
 
             it('should revert if given an invalid phase id', async () => {
@@ -1034,7 +1033,7 @@ contract('BasicGatedSale tests...', function () {
                     artistDodgy.address,
                     this.merkleProof.claims[artist1.address].proof
                 );
-                await expectRevert(txs, 'reverted with panic code 0x32 (Array accessed at an out-of-bounds or negative index)');
+                await expectRevert.unspecified(txs);
             });
 
             it('should revert if given an invalid sale id', async () => {
@@ -1045,7 +1044,7 @@ contract('BasicGatedSale tests...', function () {
                     artistDodgy.address,
                     this.merkleProof.claims[artist1.address].proof
                 );
-                await expectRevert(txs, 'reverted with panic code 0x32 (Array accessed at an out-of-bounds or negative index)');
+                await expectRevert.unspecified(txs);
             });
         });
 
@@ -1270,8 +1269,7 @@ contract('BasicGatedSale tests...', function () {
                         saleId: ONE,
                         tokenId: FIRST_MINTED_TOKEN_ID,
                         phaseId: ZERO,
-                        account: artist2.address,
-                        mintCount: ONE
+                        account: artist2.address
                     });
 
                     expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2.address);
