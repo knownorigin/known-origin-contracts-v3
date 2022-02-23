@@ -95,8 +95,7 @@ contract('BasicGatedSale tests...', function () {
         )
 
         await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
-            saleId: ONE,
-            editionId: FIRST_MINTED_TOKEN_ID
+            saleId: ONE
         });
     });
 
@@ -144,8 +143,7 @@ contract('BasicGatedSale tests...', function () {
                 )
 
                 await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
-                    saleId: TWO,
-                    editionId: SECOND_MINTED_TOKEN_ID
+                    saleId: TWO
                 });
             });
 
@@ -162,8 +160,7 @@ contract('BasicGatedSale tests...', function () {
                 );
 
                 await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
-                    saleId: TWO,
-                    editionId: SECOND_MINTED_TOKEN_ID
+                    saleId: TWO
                 });
 
                 let phase1 = await this.basicGatedSale.phases(2, 0);
@@ -307,15 +304,14 @@ contract('BasicGatedSale tests...', function () {
                     this.saleStart.add(time.duration.days(6)).toString(),
                     this.saleStart.add(time.duration.days(8)).toString(),
                     ether('0.3').toString(),
-                    '5',
                     '10',
+                    '5',
                     this.merkleProof.merkleRoot,
                     MOCK_MERKLE_HASH
                 );
 
                 await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'PhaseCreated', {
                     saleId: ONE,
-                    editionId: FIRST_MINTED_TOKEN_ID,
                     phaseId: ONE
                 });
 
@@ -352,8 +348,8 @@ contract('BasicGatedSale tests...', function () {
 
                 await expectEvent.inTransaction(salesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                     saleId: ONE,
-                    tokenId: FIRST_MINTED_TOKEN_ID,
                     phaseId: ONE,
+                    tokenId: FIRST_MINTED_TOKEN_ID,
                     account: artist3.address
                 });
             });
@@ -364,8 +360,8 @@ contract('BasicGatedSale tests...', function () {
                     this.saleStart.add(time.duration.days(6)).toString(),
                     this.saleStart.add(time.duration.days(8)).toString(),
                     ether('0.3').toString(),
-                    '5',
                     '10',
+                    '5',
                     this.merkleProof.merkleRoot,
                     MOCK_MERKLE_HASH
                 );
@@ -384,8 +380,8 @@ contract('BasicGatedSale tests...', function () {
                     this.saleStart.add(time.duration.days(6)).toString(),
                     this.saleStart.add(time.duration.days(8)).toString(),
                     ether('0.3').toString(),
-                    '5',
                     '10',
+                    '5',
                     this.merkleProof.merkleRoot,
                     MOCK_MERKLE_HASH
                 );
@@ -399,8 +395,8 @@ contract('BasicGatedSale tests...', function () {
                     this.saleStart.add(time.duration.days(6)).toString(),
                     this.saleStart.add(time.duration.days(8)).toString(),
                     ether('0.3').toString(),
-                    '5',
                     '10',
+                    '5',
                     this.merkleProof.merkleRoot,
                     MOCK_MERKLE_HASH
                 );
@@ -414,8 +410,8 @@ contract('BasicGatedSale tests...', function () {
                     this.saleStart.add(time.duration.days(6)).toString(),
                     this.saleEnd.sub(time.duration.days(8)).toString(),
                     ether('0.3').toString(),
-                    '5',
                     '10',
+                    '5',
                     this.merkleProof.merkleRoot,
                     MOCK_MERKLE_HASH
                 );
@@ -430,8 +426,8 @@ contract('BasicGatedSale tests...', function () {
                     this.saleStart.add(time.duration.days(6)).toString(),
                     this.saleStart.add(time.duration.days(8)).toString(),
                     ether('0.3').toString(),
-                    '0',
                     '10',
+                    '0',
                     this.merkleProof.merkleRoot,
                     MOCK_MERKLE_HASH
                 );
@@ -445,8 +441,8 @@ contract('BasicGatedSale tests...', function () {
                     this.saleStart.add(time.duration.days(6)).toString(),
                     this.saleStart.add(time.duration.days(8)).toString(),
                     ether('0.3').toString(),
-                    '10',
                     '0',
+                    '10',
                     this.merkleProof.merkleRoot,
                     MOCK_MERKLE_HASH
                 );
@@ -501,8 +497,7 @@ contract('BasicGatedSale tests...', function () {
 
                 await expectEvent.inTransaction(createReceipt.hash, KODAV3UpgradableGatedMarketplace, 'PhaseCreated', {
                     saleId: ONE,
-                    phaseId: ONE,
-                    editionId: FIRST_MINTED_TOKEN_ID
+                    phaseId: ONE
                 });
 
                 const deleteReceipt = await this.basicGatedSale.connect(artist1).removePhase(
@@ -512,7 +507,6 @@ contract('BasicGatedSale tests...', function () {
 
                 await expectEvent.inTransaction(deleteReceipt.hash, KODAV3UpgradableGatedMarketplace, 'PhaseRemoved', {
                     saleId: ONE,
-                    editionId: FIRST_MINTED_TOKEN_ID,
                     phaseId: ONE
                 });
             });
@@ -743,8 +737,7 @@ contract('BasicGatedSale tests...', function () {
                 );
 
                 await expectEvent.inTransaction(pauseReceipt.hash, KODAV3UpgradableGatedMarketplace, 'SalePaused', {
-                    saleId: ONE,
-                    editionId: FIRST_MINTED_TOKEN_ID
+                    saleId: ONE
                 });
 
                 const txs = this.basicGatedSale.connect(artist1).mint(
@@ -862,8 +855,7 @@ contract('BasicGatedSale tests...', function () {
                 );
 
                 await expectEvent.inTransaction(pauseReceipt.hash, KODAV3UpgradableGatedMarketplace, 'SalePaused', {
-                    saleId: ONE,
-                    editionId: FIRST_MINTED_TOKEN_ID
+                    saleId: ONE
                 });
 
                 let pausedSale = await this.basicGatedSale.sales(1);
@@ -876,8 +868,7 @@ contract('BasicGatedSale tests...', function () {
                 );
 
                 await expectEvent.inTransaction(resumeReceipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleResumed', {
-                    saleId: ONE,
-                    editionId: FIRST_MINTED_TOKEN_ID
+                    saleId: ONE
                 });
 
                 let resumedSale = await this.basicGatedSale.sales(1);
@@ -892,8 +883,7 @@ contract('BasicGatedSale tests...', function () {
                 );
 
                 await expectEvent.inTransaction(pauseReceipt.hash, KODAV3UpgradableGatedMarketplace, 'SalePaused', {
-                    saleId: ONE,
-                    editionId: FIRST_MINTED_TOKEN_ID
+                    saleId: ONE
                 });
 
                 let pausedSale = await this.basicGatedSale.sales(1);
@@ -906,8 +896,7 @@ contract('BasicGatedSale tests...', function () {
                 );
 
                 await expectEvent.inTransaction(resumeReceipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleResumed', {
-                    saleId: ONE,
-                    editionId: FIRST_MINTED_TOKEN_ID
+                    saleId: ONE
                 });
 
                 let resumedSale = await this.basicGatedSale.sales(1);
@@ -1287,7 +1276,7 @@ contract('BasicGatedSale tests...', function () {
                     new_commission.toString()
                 );
 
-                await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'AdminUpdatePlatformPrimarySaleCommissionGatedSale', {
+                await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'AdminUpdateGatedSaleCommission', {
                     saleId: ONE,
                     platformPrimarySaleCommission: new_commission
                 });

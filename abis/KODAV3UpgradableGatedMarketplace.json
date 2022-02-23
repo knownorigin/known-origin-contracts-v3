@@ -468,12 +468,12 @@
       },
       {
         "internalType": "uint16",
-        "name": "_walletMintLimit",
+        "name": "_mintCap",
         "type": "uint16"
       },
       {
         "internalType": "uint16",
-        "name": "_mintCap",
+        "name": "_walletMintLimit",
         "type": "uint16"
       },
       {
@@ -769,12 +769,12 @@
       },
       {
         "internalType": "uint16",
-        "name": "walletMintLimit",
+        "name": "mintCap",
         "type": "uint16"
       },
       {
         "internalType": "uint16",
-        "name": "mintCap",
+        "name": "walletMintLimit",
         "type": "uint16"
       },
       {
@@ -987,6 +987,24 @@
       }
     ],
     "name": "togglePlatformCommissionDisabledForSale",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_editionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "toggleSalePause",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

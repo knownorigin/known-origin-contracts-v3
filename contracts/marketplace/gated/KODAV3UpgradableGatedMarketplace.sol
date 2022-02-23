@@ -33,8 +33,8 @@ contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
         uint128 endTime;        // The end time of the sale phase, also the beginning of the next phase if applicable
         uint128 priceInWei;     // Price in wei for one mint
         uint16 mintCounter;     // The current amount of items minted
-        uint16 walletMintLimit; // The mint limit per wallet for the phase
         uint16 mintCap;         // The maximum amount of mints for the phase
+        uint16 walletMintLimit; // The mint limit per wallet for the phase
         bytes32 merkleRoot;     // The merkle tree root for the phase
         string merkleIPFSHash;  // The IPFS hash referencing the merkle tree
     }
@@ -83,13 +83,13 @@ contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
 
         // Assign the sale to the sales and editionToSale mappings
         sales[saleId] = Sale({
-            id : saleId,
-            creator : creator,
-            fundsReceiver : koda.getRoyaltiesReceiver(_editionId),
-            editionId : _editionId,
-            maxEditionId : koda.maxTokenIdOfEdition(_editionId),
-            paused : 0,
-            mintCounter : 0
+        id : saleId,
+        creator : creator,
+        fundsReceiver : koda.getRoyaltiesReceiver(_editionId),
+        editionId : _editionId,
+        maxEditionId : koda.maxTokenIdOfEdition(_editionId),
+        paused : 0,
+        mintCounter : 0
         });
         editionToSale[_editionId] = saleId;
 
@@ -143,8 +143,8 @@ contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
         uint128 _startTime,
         uint128 _endTime,
         uint128 _priceInWei,
-        uint16 _walletMintLimit,
         uint16 _mintCap,
+        uint16 _walletMintLimit,
         bytes32 _merkleRoot,
         string calldata _merkleIPFSHash
     )
@@ -160,8 +160,8 @@ contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
             _startTime,
             _endTime,
             _priceInWei,
-            _walletMintLimit,
             _mintCap,
+            _walletMintLimit,
             _merkleRoot,
             _merkleIPFSHash
         );
@@ -196,6 +196,16 @@ contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
         return MerkleProof.verify(_merkleProof, phase.merkleRoot, node);
     }
 
+    function toggleSalePause(uint256 _saleId, uint256 _editionId) external onlyCreatorOrAdmin(_editionId) {
+        if (sales[_saleId].paused != 0) {
+            sales[_saleId].paused = 0;
+            emit SaleResumed(_saleId);
+        } else {
+            sales[_saleId].paused = 1;
+            emit SalePaused(_saleId);
+        }
+    }
+
     function remainingPhaseMintAllowance(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof)
     external
     view
@@ -220,7 +230,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
             // send token to buyer (assumes approval has been made, if not then this will fail)
             koda.safeTransferFrom(sales[_saleId].creator, _recipient, tokenId);
 
-            emit MintFromSale(_saleId, tokenId, _phaseId, _recipient);
+            emit MintFromSale(_saleId, _phaseId, tokenId, _recipient);
 
             startId = tokenId++;
         }
@@ -261,7 +271,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
         uint128 _endTime,
         uint128 _priceInWei,
         uint16 _mintCap,
-        uint16  _walletMintLimit,
+        uint16 _walletMintLimit,
         bytes32 _merkleRoot,
         string memory _merkleIPFSHash
     ) internal {
@@ -273,14 +283,14 @@ contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
 
         // Add the phase to the phases mapping
         phases[_saleId].push(Phase({
-            startTime : _startTime,
-            endTime : _endTime,
-            priceInWei : _priceInWei,
-            mintCounter : 0,
-            walletMintLimit : _walletMintLimit,
-            mintCap : _mintCap,
-            merkleRoot : _merkleRoot,
-            merkleIPFSHash : _merkleIPFSHash
+        startTime : _startTime,
+        endTime : _endTime,
+        priceInWei : _priceInWei,
+        mintCounter : 0,
+        mintCap : _mintCap,
+        walletMintLimit : _walletMintLimit,
+        merkleRoot : _merkleRoot,
+        merkleIPFSHash : _merkleIPFSHash
         }));
 
         emit PhaseCreated(_saleId, phases[_saleId].length - 1);

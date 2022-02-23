@@ -20,6 +20,8 @@ contract('BasicGatedSale complex tests...', function () {
     const ONE = new BN('1');
     const TWO = new BN('2');
     const THREE = new BN('3');
+    const FIVE = new BN('5');
+    const TEN = new BN('10');
 
     const FIRST_MINTED_TOKEN_ID = new BN('11000'); // this is implied
     let CURRENT_TOKEN_ID = FIRST_MINTED_TOKEN_ID;
@@ -102,8 +104,7 @@ contract('BasicGatedSale complex tests...', function () {
             );
 
             await expectEvent.inTransaction(creationReceipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
-                saleId: ONE,
-                editionId: FIRST_MINTED_TOKEN_ID
+                saleId: ONE
             });
 
             // Add a second phase
@@ -112,15 +113,14 @@ contract('BasicGatedSale complex tests...', function () {
                 this.phase2Start.toString(),
                 this.phase2End.toString(),
                 ether('0.3').toString(),
-                new BN('5').toString(),
                 '29',
+                FIVE.toString(),
                 this.merkleProof2.merkleRoot,
                 MOCK_MERKLE_HASH
             );
 
             await expectEvent.inTransaction(phase2Receipt.hash, KODAV3UpgradableGatedMarketplace, 'PhaseCreated', {
                 saleId: ONE,
-                editionId: FIRST_MINTED_TOKEN_ID,
                 phaseId: ONE
             });
 
@@ -130,15 +130,14 @@ contract('BasicGatedSale complex tests...', function () {
                 this.phase3Start.toString(),
                 this.phase3End.toString(),
                 ether('0.5').toString(),
-                new BN('10').toString(),
                 '29',
+                TEN.toString(),
                 this.merkleProof3.merkleRoot,
                 MOCK_MERKLE_HASH
             );
 
             await expectEvent.inTransaction(phase3Receipt.hash, KODAV3UpgradableGatedMarketplace, 'PhaseCreated', {
                 saleId: ONE,
-                editionId: FIRST_MINTED_TOKEN_ID,
                 phaseId: TWO
             });
 
@@ -150,7 +149,6 @@ contract('BasicGatedSale complex tests...', function () {
 
             await expectEvent.inTransaction(phase3DeleteReceipt.hash, KODAV3UpgradableGatedMarketplace, 'PhaseRemoved', {
                 saleId: ONE,
-                editionId: FIRST_MINTED_TOKEN_ID,
                 phaseId: TWO
             });
 
@@ -160,8 +158,8 @@ contract('BasicGatedSale complex tests...', function () {
                     this.phase3Start.toString(),
                     this.phase3End.toString(),
                     ether('0.5').toString(),
-                    new BN('10').toString(),
                     '29',
+                    TEN.toString(),
                     this.merkleProof3.merkleRoot,
                     MOCK_MERKLE_HASH
                 ),
@@ -173,15 +171,14 @@ contract('BasicGatedSale complex tests...', function () {
                 this.phase3Start.toString(),
                 this.phase3End.toString(),
                 ether('0.7').toString(),
-                new BN('10').toString(),
                 '29',
+                TEN.toString(),
                 this.merkleProof3.merkleRoot,
                 MOCK_MERKLE_HASH
             );
 
             await expectEvent.inTransaction(phase3NewReceipt.hash, KODAV3UpgradableGatedMarketplace, 'PhaseCreated', {
                 saleId: ONE,
-                editionId: FIRST_MINTED_TOKEN_ID,
                 phaseId: THREE
             });
 
@@ -212,8 +209,8 @@ contract('BasicGatedSale complex tests...', function () {
 
             await expectEvent.inTransaction(b1p1MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                 saleId: ONE,
-                tokenId: FIRST_MINTED_TOKEN_ID,
                 phaseId: ZERO,
+                tokenId: FIRST_MINTED_TOKEN_ID,
                 account: buyer1.address
             });
 
@@ -248,8 +245,8 @@ contract('BasicGatedSale complex tests...', function () {
 
             await expectEvent.inTransaction(b2p1MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                 saleId: ONE,
-                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('3')),
                 phaseId: ZERO,
+                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('3')),
                 account: buyer2.address
             });
 
@@ -297,8 +294,8 @@ contract('BasicGatedSale complex tests...', function () {
 
             await expectEvent.inTransaction(b2p2MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                 saleId: ONE,
-                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('5')),
                 phaseId: ONE,
+                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('5')),
                 account: buyer2.address
             });
 
@@ -315,8 +312,8 @@ contract('BasicGatedSale complex tests...', function () {
 
             await expectEvent.inTransaction(b4p2MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                 saleId: ONE,
-                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('8')),
                 phaseId: ONE,
+                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('8')),
                 account: buyer4.address
             });
 
@@ -368,8 +365,8 @@ contract('BasicGatedSale complex tests...', function () {
 
             await expectEvent.inTransaction(b5p3MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                 saleId: ONE,
-                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('15')),
                 phaseId: THREE,
+                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('15')),
                 account: buyer5.address
             });
 
@@ -386,8 +383,8 @@ contract('BasicGatedSale complex tests...', function () {
 
             await expectEvent.inTransaction(b2p3MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                 saleId: ONE,
-                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('19')),
                 phaseId: THREE,
+                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('19')),
                 account: buyer2.address
             });
 
