@@ -11,13 +11,14 @@ const MockERC20 = artifacts.require('MockERC20');
 const KODAV3UpgradableGatedMarketplace = artifacts.require('KODAV3UpgradableGatedMarketplace');
 
 contract('BasicGatedSale tests...', function () {
+
     const STARTING_EDITION = '10000';
     const TOKEN_URI = 'ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
     const MOCK_MERKLE_HASH = 'Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv';
     const ZERO = new BN('0');
     const ONE = new BN('1');
     const TWO = new BN('2');
-    const TEN = new BN('10');
+    const THREE = new BN('3');
 
     const FIRST_MINTED_TOKEN_ID = new BN('11000'); // this is implied
     const SECOND_MINTED_TOKEN_ID = new BN('12000'); // this is implied
