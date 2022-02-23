@@ -136,7 +136,7 @@ contract('Gas golfing test ... ', function () {
       console.log(`Tests complete`);
     }).timeout(5 * 60 * 1000);
 
-    it.only('5 per account', async () => {
+    it('5 per account', async () => {
       for (let i = 0; i < 200; i++) {
         console.log(`Minting ${i}`);
         await this.basicGatedSale.connect(buyer1).mint(

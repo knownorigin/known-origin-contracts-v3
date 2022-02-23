@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import { IKODAV3GatedMerkleMarketplace } from "./IKODAV3GatedMerkleMarketplace.sol";
-
 interface IBuyNowMarketplace {
     event ListedForBuyNow(uint256 indexed _id, uint256 _price, address _currentOwner, uint256 _startDate);
     event BuyNowPriceChanged(uint256 indexed _id, uint256 _price);

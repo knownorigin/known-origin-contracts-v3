@@ -24,6 +24,7 @@ module.exports = {
     'spikes/registry/EditionRegistry.sol',
     'spikes/programmable/TokenUriResolverRegistry.sol',
     'spikes/marketplace/KODAV3SignatureMarketplace.sol',
+    'spikes/marketplace/KODAV3UpgradableCollectorOnlyMarketplace.sol',
     'spikes/deployer/ContractDeployer.sol',
   ]
 };

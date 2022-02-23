@@ -10,7 +10,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 
-/// @notice Core logic and state shared between both marketplaces
+/// @notice Core logic and state shared between upgradable marketplaces
 abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, PausableUpgradeable, UUPSUpgradeable {
 
     event AdminUpdateModulo(uint256 _modulo);
@@ -66,9 +66,6 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
 
     /// @notice Primary commission percentage
     uint256 public platformPrimaryCommission;
-
-    /// @notice When platform wants to take no cut from sale enable this
-    mapping(uint256 => bool) public isSaleCommissionForPlatformDisabled;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}

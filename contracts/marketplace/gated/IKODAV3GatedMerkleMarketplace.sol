@@ -7,8 +7,11 @@ interface IKODAV3GatedMerkleMarketplace {
         uint128 startTime; // The start time of the sale as a whole
         uint128 endTime; // The end time of the sale phase, also the beginning of the next phase if applicable
         uint16 walletMintLimit; // The mint limit per wallet for the phase
+        uint16 mintCap; // The maximum amount of mints for the phase
         uint128 priceInWei; // Price in wei for one mint
-        uint128 mintCap; // The maximum amount of mints for the phase
+        uint256 maxEditionId; // The maximum ID of an edition
+        address creator; // The original edition creator
+        address fundsReceiver; // The handler of funds
     }
 
     /// @notice For an edition, create a new pre-list sale and define merkle root for all phases
