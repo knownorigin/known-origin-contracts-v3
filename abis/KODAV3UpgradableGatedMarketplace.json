@@ -1123,9 +1123,9 @@
         "type": "uint128"
       },
       {
-        "internalType": "uint128",
+        "internalType": "uint16",
         "name": "mintCounter",
-        "type": "uint128"
+        "type": "uint16"
       },
       {
         "internalType": "uint16",

@@ -33,7 +33,7 @@ contract KODAV3UpgradableGatedMarketplace is KODAV3GatedMerkleMarketplace {
         uint128 startTime;      // The start time of the sale as a whole
         uint128 endTime;        // The end time of the sale phase, also the beginning of the next phase if applicable
         uint128 priceInWei;     // Price in wei for one mint
-        uint128 mintCounter;    // The current amount of items minted
+        uint16 mintCounter;     // The current amount of items minted
         uint16 walletMintLimit; // The mint limit per wallet for the phase
         uint16 mintCap;         // The maximum amount of mints for the phase
         bytes32 merkleRoot;     // The merkle tree root for the phase
@@ -231,8 +231,8 @@ contract KODAV3UpgradableGatedMarketplace is KODAV3GatedMerkleMarketplace {
         uint128[] memory _startTimes,
         uint128[] memory _endTimes,
         uint128[] memory _pricesInWei,
-        uint16[] memory _walletMintLimits,
         uint16[] memory _mintCaps,
+        uint16[] memory _walletMintLimits,
         bytes32[] memory _merkleRoots,
         string[] memory _merkleIPFSHashes
     ) internal {
@@ -258,8 +258,8 @@ contract KODAV3UpgradableGatedMarketplace is KODAV3GatedMerkleMarketplace {
         uint128 _startTime,
         uint128 _endTime,
         uint128 _priceInWei,
-        uint16  _walletMintLimit,
         uint16 _mintCap,
+        uint16  _walletMintLimit,
         bytes32 _merkleRoot,
         string memory _merkleIPFSHash
     ) internal {
@@ -273,12 +273,12 @@ contract KODAV3UpgradableGatedMarketplace is KODAV3GatedMerkleMarketplace {
         phases[_saleId].push(Phase({
             startTime : _startTime,
             endTime : _endTime,
-            walletMintLimit : _walletMintLimit,
-            merkleRoot : _merkleRoot,
-            merkleIPFSHash : _merkleIPFSHash,
             priceInWei : _priceInWei,
+            mintCounter : 0,
+            walletMintLimit : _walletMintLimit,
             mintCap : _mintCap,
-            mintCounter : 0
+            merkleRoot : _merkleRoot,
+            merkleIPFSHash : _merkleIPFSHash
         }));
 
         emit PhaseCreated(_saleId, phases[_saleId].length - 1);
