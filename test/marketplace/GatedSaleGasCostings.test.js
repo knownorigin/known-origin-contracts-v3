@@ -23,9 +23,14 @@ contract('Gas golfing test ... ', function () {
 
   const FIRST_MINTED_TOKEN_ID = new BN('11000'); // this is implied
   const SECOND_MINTED_TOKEN_ID = new BN('12000'); // this is implied
+  const THIRD_MINTED_TOKEN_ID = new BN('13000'); // this is implied
   let CURRENT_TOKEN_ID = FIRST_MINTED_TOKEN_ID;
 
   let owner, admin, koCommission, contract, artist, buyer1, buyer2, buyer3, buyer4, buyer5;
+
+  function randomIntFromInterval(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min)
+  }
 
   beforeEach(async () => {
     [owner, admin, koCommission, contract, artist, buyer1, buyer2, buyer3, buyer4, buyer5] = await ethers.getSigners();
@@ -71,6 +76,9 @@ contract('Gas golfing test ... ', function () {
     // create 500 tokens to the minter
     await this.token.mintBatchEdition(500, artist.address, TOKEN_URI, {from: contract.address});
 
+    // create 1000 tokens to the minter
+    await this.token.mintBatchEdition(1000, artist.address, TOKEN_URI, {from: contract.address});
+
     // Ensure basic gated sale has approval to sell tokens
     await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist.address});
 
@@ -112,6 +120,17 @@ contract('Gas golfing test ... ', function () {
       ['500'],
       [this.merkleProof1.merkleRoot],
       [MOCK_MERKLE_HASH]
+    );
+
+    await this.basicGatedSale.connect(artist).createSaleWithPhases(
+        THIRD_MINTED_TOKEN_ID.toString(),
+        [this.phase1Start.toString()],
+        [this.phase1End.toString()],
+        [ether('0.01').toString()],
+        ['1000'],
+        ['1000'],
+        [this.merkleProof1.merkleRoot],
+        [MOCK_MERKLE_HASH]
     );
 
     await time.increaseTo(this.phase1Start.add(time.duration.minutes(1)));
@@ -189,4 +208,146 @@ contract('Gas golfing test ... ', function () {
       console.log(`Tests complete`);
     }).timeout(5 * 60 * 1000);
   });
+
+  describe.skip('Buying all 500 and transferring some', async () => {
+    it('10 transfers are made from start of series', async () => {
+      for (let i = 0; i < 10; i++) {
+        console.log(`transferred ${i}`);
+        await this.token.transferFrom(artist.address, buyer1.address, SECOND_MINTED_TOKEN_ID.add(new BN(i.toString())), {from: artist.address})
+      }
+      for (let i = 10; i < 490; i++) {
+        console.log(`Minting ${i}`);
+        await this.basicGatedSale.connect(buyer1).mint(
+            TWO.toString(),
+            ZERO.toString(),
+            '1',
+            this.merkleProof1.claims[buyer1.address].index,
+            this.merkleProof1.claims[buyer1.address].proof,
+            {
+              value: ether('0.01').toString()
+            });
+      }
+      console.log(`Tests complete`);
+    }).timeout(5 * 60 * 1000);
+
+    it('10 transfers are made at end of series', async () => {
+      for (let i = 0; i < 490; i++) {
+        console.log(`Minting ${i}`);
+        await this.basicGatedSale.connect(buyer1).mint(
+            TWO.toString(),
+            ZERO.toString(),
+            '1',
+            this.merkleProof1.claims[buyer1.address].index,
+            this.merkleProof1.claims[buyer1.address].proof,
+            {
+              value: ether('0.01').toString()
+            });
+      }
+      for (let i = 490; i < 500; i++) {
+        console.log(`transferred ${i}`);
+        await this.token.transferFrom(artist.address, buyer1.address, SECOND_MINTED_TOKEN_ID.add(new BN(i.toString())), {from: artist.address})
+      }
+      console.log(`Tests complete`);
+    }).timeout(5 * 60 * 1000);
+
+    // transfers are made at intermittent intervals
+    it('transfers are made at intermittent intervals series', async () => {
+        for (let i = 0; i < 500; i++) {
+            // For ever 5th token transfer
+            const shouldTransfer = i % 5 === 0;
+            if (shouldTransfer) {
+                await this.token.transferFrom(artist.address, buyer1.address, SECOND_MINTED_TOKEN_ID.add(new BN(i.toString())), {from: artist.address})
+            }
+        }
+
+        for (let i = 0; i < 500; i++) {
+            const shouldSell = i % 5 !== 0;
+            if (shouldSell) {
+                console.log(`Minting ${i}`);
+                await this.basicGatedSale.connect(buyer1).mint(
+                TWO.toString(),
+                ZERO.toString(),
+                '1',
+                this.merkleProof1.claims[buyer1.address].index,
+                this.merkleProof1.claims[buyer1.address].proof,
+                {
+                    value: ether('0.01').toString()
+                });
+            }
+        }
+
+      console.log(`Tests complete`);
+    }).timeout(5 * 60 * 1000);
+  })
+
+  describe.skip('Buying all 1000 and transferring some', async () => {
+    it('10 transfers are made from start of series', async () => {
+      for (let i = 0; i < 10; i++) {
+        console.log(`transferred ${i}`);
+        await this.token.transferFrom(artist.address, buyer1.address, THIRD_MINTED_TOKEN_ID.add(new BN(i.toString())), {from: artist.address})
+      }
+      for (let i = 10; i < 990; i++) {
+        console.log(`Minting ${i}`);
+        await this.basicGatedSale.connect(buyer1).mint(
+            THREE.toString(),
+            ZERO.toString(),
+            '1',
+            this.merkleProof1.claims[buyer1.address].index,
+            this.merkleProof1.claims[buyer1.address].proof,
+            {
+              value: ether('0.01').toString()
+            });
+      }
+      console.log(`Tests complete`);
+    }).timeout(5 * 60 * 1000);
+
+    it('10 transfers are made at end of series', async () => {
+      for (let i = 0; i < 990; i++) {
+        console.log(`Minting ${i}`);
+        await this.basicGatedSale.connect(buyer1).mint(
+            THREE.toString(),
+            ZERO.toString(),
+            '1',
+            this.merkleProof1.claims[buyer1.address].index,
+            this.merkleProof1.claims[buyer1.address].proof,
+            {
+              value: ether('0.01').toString()
+            });
+      }
+      for (let i = 990; i < 1000; i++) {
+        console.log(`transferred ${i}`);
+        await this.token.transferFrom(artist.address, buyer1.address, THIRD_MINTED_TOKEN_ID.add(new BN(i.toString())), {from: artist.address})
+      }
+      console.log(`Tests complete`);
+    }).timeout(5 * 60 * 1000);
+
+    // transfers are made at intermittent intervals
+    it('transfers are made at intermittent intervals series', async () => {
+      for (let i = 0; i < 1000; i++) {
+        // For ever 5th token transfer
+        const shouldTransfer = i % 5 === 0;
+        if (shouldTransfer) {
+          await this.token.transferFrom(artist.address, buyer1.address, THIRD_MINTED_TOKEN_ID.add(new BN(i.toString())), {from: artist.address})
+        }
+      }
+
+      for (let i = 0; i < 1000; i++) {
+        const shouldSell = i % 5 !== 0;
+        if (shouldSell) {
+          console.log(`Minting ${i}`);
+          await this.basicGatedSale.connect(buyer1).mint(
+              THREE.toString(),
+              ZERO.toString(),
+              '1',
+              this.merkleProof1.claims[buyer1.address].index,
+              this.merkleProof1.claims[buyer1.address].proof,
+              {
+                value: ether('0.01').toString()
+              });
+        }
+      }
+
+      console.log(`Tests complete`);
+    }).timeout(5 * 60 * 1000);
+  })
 });
