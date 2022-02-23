@@ -27,6 +27,15 @@ contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
     /// @notice emitted when someone mints from a sale
     event MintFromSale(uint256 indexed saleId, uint256 indexed phaseId, uint256 indexed tokenId, address account);
 
+    /// @notice emitted when admin updates funds receiver
+    event AdminUpdateFundReceiver(uint256 indexed  _saleId, address _newFundsReceiver);
+
+    /// @notice emitted when admin updates max edition ID
+    event AdminUpdateMaxEditionId(uint256 indexed  _saleId, address _newMaxEditionId);
+
+    /// @notice emitted when admin updates creator
+    event AdminUpdateCreator(uint256 indexed  _saleId, address _newCreator);
+
     /// @notice Phase represents a time structured part of a sale, i.e. VIP, pre sale or open sale
     struct Phase {
         uint128 startTime;      // The start time of the sale as a whole
@@ -38,11 +47,6 @@ contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
         bytes32 merkleRoot;     // The merkle tree root for the phase
         string merkleIPFSHash;  // The IPFS hash referencing the merkle tree
     }
-
-    // TODO add admin methods to modify creator and funds receiver, maxEditionId - admin only onlyAdmin
-    //  1. method to update fundsReceiver - address != 0x0
-    //  2. method to update maxEditionId - > 0
-    //  3. method to update creator  - address != 0x0
 
     /// @notice Sale represents a gated sale, with mapping links to different sale phases
     struct Sale {
@@ -284,5 +288,23 @@ contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
         }));
 
         emit PhaseCreated(_saleId, phases[_saleId].length - 1);
+    }
+
+    function updateFundsReceiver(uint256 _saleId, address _newFundsReceiver) public onlyAdmin {
+        require(_newFundsReceiver != address(0), "Unable to send funds to invalid address");
+        emit AdminUpdateFundReceiver(_saleId, _newFundsReceiver);
+        sales[_saleId].fundsReceiver = _newFundsReceiver;
+    }
+
+    function updateMaxEditionId(uint256 _saleId, uint256 _newMaxEditionId) public onlyAdmin {
+        require(_newMaxEditionId >= 1, "Unable to set max edition ");
+        emit AdminUpdateMaxEditionId(maxEditionId, _newMaxEditionId);
+        sales[_saleId].maxEditionId = _newMaxEditionId;
+    }
+
+    function updateCreator(address _newCreator) public onlyAdmin {
+        require(_newFundsReceiver != address(0), "Unable to send funds to invalid address");
+        emit AdminUpdateCreator(creator, _newCreator);
+        sales[_saleId].creator = _newCreator;
     }
 }
