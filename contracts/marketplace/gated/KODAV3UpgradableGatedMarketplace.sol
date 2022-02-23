@@ -4,11 +4,10 @@ pragma solidity 0.8.4;
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 import {BaseGatedMarketplace} from "./BaseGatedMarketplace.sol";
-import {KODAV3GatedMerkleMarketplace} from "./KODAV3GatedMerkleMarketplace.sol";
 import {IKOAccessControlsLookup} from "../../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../../core/IKODAV3.sol";
 
-contract KODAV3UpgradableGatedMarketplace is KODAV3GatedMerkleMarketplace {
+contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
 
     /// @notice emitted when a sale is paused
     event SalePaused(uint256 indexed saleId);
@@ -40,7 +39,10 @@ contract KODAV3UpgradableGatedMarketplace is KODAV3GatedMerkleMarketplace {
         string merkleIPFSHash;  // The IPFS hash referencing the merkle tree
     }
 
-    // TODO add admin methods to modify creator and funds receiver, maxEditionId - admin only
+    // TODO add admin methods to modify creator and funds receiver, maxEditionId - admin only onlyAdmin
+    //  1. method to update fundsReceiver - address != 0x0
+    //  2. method to update maxEditionId - > 0
+    //  3. method to update creator  - address != 0x0
 
     /// @notice Sale represents a gated sale, with mapping links to different sale phases
     struct Sale {
