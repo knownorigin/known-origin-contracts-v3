@@ -39,13 +39,11 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseGatedMarketplace, IKODAV3G
     mapping(uint256 => uint16) public saleMintCount;
 
     /// @inheritdoc IKODAV3GatedMerkleMarketplace
-    function createMerkleSaleWithPhases(uint256 _editionId, bytes32[] calldata _phaseIds) external override whenNotPaused {
-        //onlyCreatorOrAdmin modifier not used due to being for sale ID only
-        require(
-            koda.getCreatorOfEdition(_editionId) == _msgSender() || accessControls.hasAdminRole(_msgSender()),
-            "Caller not creator or admin"
-        );
-
+    function createMerkleSaleWithPhases(uint256 _editionId, bytes32[] calldata _phaseIds)
+    external
+    override 
+    whenNotPaused
+    onlyCreatorOrAdmin {
         uint256 editionSize = koda.getSizeOfEdition(_editionId);
         require(editionSize > 0, 'edition does not exist');
 
