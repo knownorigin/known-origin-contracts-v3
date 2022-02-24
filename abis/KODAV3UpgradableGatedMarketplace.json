@@ -100,6 +100,44 @@
       {
         "indexed": true,
         "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "_newCreator",
+        "type": "address"
+      }
+    ],
+    "name": "AdminUpdateCreator",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "_newFundsReceiver",
+        "type": "address"
+      }
+    ],
+    "name": "AdminUpdateFundReceiver",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
         "name": "saleId",
         "type": "uint256"
       },
@@ -111,6 +149,25 @@
       }
     ],
     "name": "AdminUpdateGatedSaleCommission",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_newMaxEditionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "AdminUpdateMaxEditionId",
     "type": "event"
   },
   {
@@ -1057,6 +1114,60 @@
       }
     ],
     "name": "updateBidLockupPeriod",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_newCreator",
+        "type": "address"
+      }
+    ],
+    "name": "updateCreator",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_newFundsReceiver",
+        "type": "address"
+      }
+    ],
+    "name": "updateFundsReceiver",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_newMaxEditionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "updateMaxEditionId",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

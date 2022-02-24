@@ -307,13 +307,13 @@ contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
     }
 
     function updateMaxEditionId(uint256 _saleId, uint256 _newMaxEditionId) public onlyAdmin {
-        require(_newMaxEditionId >= 1, "Unable to set max edition ");
+        require(_newMaxEditionId >= 1, "Unable to set max edition");
         emit AdminUpdateMaxEditionId(_saleId, _newMaxEditionId);
         sales[_saleId].maxEditionId = _newMaxEditionId;
     }
 
     function updateCreator(uint256 _saleId, address _newCreator) public onlyAdmin {
-        require(_newCreator != address(0), "Unable to send funds to invalid address");
+        require(_newCreator != address(0), "Unable to make invalid address creator");
         emit AdminUpdateCreator(_saleId, _newCreator);
         sales[_saleId].creator = _newCreator;
     }

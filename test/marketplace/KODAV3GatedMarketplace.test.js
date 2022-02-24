@@ -1318,5 +1318,138 @@ contract('BasicGatedSale tests...', function () {
             });
         });
 
+        describe.only('admin function to update gated sales', async () => {
+            describe('updateFundsReceiver', async () => {
+
+                it('updates funds receiver when called with admin', async () => {
+                    const receipt = await this.basicGatedSale.connect(admin).updateFundsReceiver(
+                        ONE.toString(),
+                        artist3.address
+                    );
+                    await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'AdminUpdateFundReceiver', {
+                        _saleId: ONE,
+                        _newFundsReceiver: artist3.address
+                    });
+                })
+
+
+                it('reverts when not admin', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.connect(artist3).updateFundsReceiver(
+                            ONE.toString(),
+                            artist3.address
+                        ),
+                        'Caller not admin'
+                    );
+                });
+
+                it('reverts when given invalid address', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.connect(admin).updateFundsReceiver(
+                            ONE.toString(),
+                            '0x0000000000000000000000000000000000000000'
+                        ),
+                        'Unable to send funds to invalid address'
+                    )
+                });
+
+                it('updates values in sale correctly', async () => {
+                    await this.basicGatedSale.connect(admin).updateFundsReceiver(
+                        ONE.toString(),
+                        artist3.address
+                    );
+
+                    let sale = await this.basicGatedSale.sales(1);
+                    expect(sale.fundsReceiver.toString()).to.be.equal(artist3.address);
+                })
+            });
+            describe('updateMaxEditionId', async () => {
+
+                it('updates max edition ID when called with admin', async () => {
+                    const receipt = await this.basicGatedSale.connect(admin).updateMaxEditionId(
+                        ONE.toString(),
+                        17
+                    );
+                    await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'AdminUpdateMaxEditionId', {
+                        _saleId: ONE,
+                        _newMaxEditionId: '17'
+                    });
+                })
+
+                it('reverts when not admin', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.connect(artist3).updateMaxEditionId(
+                            ONE.toString(),
+                            17
+                        ),
+                        'Caller not admin'
+                    );
+                });
+
+                it('reverts when given invalid max edition ID', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.connect(admin).updateMaxEditionId(
+                            ONE.toString(),
+                            0
+                        ),
+                        'Unable to set max edition'
+                    );
+                });
+
+                it('updates values in sale correctly', async () => {
+                    await this.basicGatedSale.connect(admin).updateMaxEditionId(
+                        ONE.toString(),
+                        17
+                    );
+
+                    let sale = await this.basicGatedSale.sales(1);
+                    expect(sale.maxEditionId.toString()).to.be.equal('17');
+                })
+
+            });
+            describe('updateCreator', async () => {
+
+                it('updates creator when called with admin', async () => {
+                    const receipt = await this.basicGatedSale.connect(admin).updateCreator(
+                        ONE.toString(),
+                        artist3.address
+                    );
+                    await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'AdminUpdateCreator', {
+                        _saleId: ONE,
+                        _newCreator: artist3.address
+                    });
+                });
+
+                it('reverts when not admin', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.connect(artist3).updateCreator(
+                            ONE.toString(),
+                            artist3.address
+                        ),
+                        'Caller not admin'
+                    );
+                });
+
+                it('reverts when given invalid address', async () => {
+                    await expectRevert(
+                        this.basicGatedSale.connect(admin).updateCreator(
+                            ONE.toString(),
+                            '0x0000000000000000000000000000000000000000'
+                        ),
+                        'Unable to make invalid address creator'
+                    );
+                });
+
+                it('updates values in sale correctly', async () => {
+                    await this.basicGatedSale.connect(admin).updateCreator(
+                        ONE.toString(),
+                        artist3.address
+                    );
+
+                    let sale = await this.basicGatedSale.sales(1);
+                    expect(sale.creator.toString()).to.be.equal(artist3.address);
+                })
+            });
+        });
     });
 });
