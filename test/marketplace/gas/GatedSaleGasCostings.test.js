@@ -2,8 +2,8 @@ const {expect} = require('chai');
 const {BN, expectEvent, expectRevert, time, constants, ether, balance} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
-const {parseBalanceMap} = require('../utils/parse-balance-map');
-const {buildArtistMerkleInput} = require('../utils/merkle-tools');
+const {parseBalanceMap} = require('../../utils/parse-balance-map');
+const {buildArtistMerkleInput} = require('../../utils/merkle-tools');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
@@ -137,7 +137,7 @@ contract('Gas golfing test ... ', function () {
     console.log('Increased time to start sale');
   });
 
-  describe('Buying all 1000', async () => {
+  describe.skip('Buying all 1000', async () => {
     it('1 per account', async () => {
       for (let i = 0; i < 1000; i++) {
         console.log(`Minting ${i}`);
@@ -173,7 +173,7 @@ contract('Gas golfing test ... ', function () {
     }).timeout(5 * 60 * 1000);
   });
 
-  describe('Buying all 500 editions', async () => {
+  describe.skip('Buying all 500 editions', async () => {
     it('1 per account', async () => {
       for (let i = 0; i < 500; i++) {
         console.log(`Minting ${i}`);
