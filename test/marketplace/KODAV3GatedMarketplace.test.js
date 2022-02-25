@@ -1318,7 +1318,7 @@ contract('BasicGatedSale tests...', function () {
             });
         });
 
-        describe.only('admin function to update gated sales', async () => {
+        describe('admin function to update gated sales', async () => {
             describe('updateFundsReceiver', async () => {
 
                 it('updates funds receiver when called with admin', async () => {
