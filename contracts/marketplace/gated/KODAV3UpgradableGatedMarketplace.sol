@@ -31,7 +31,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
     event AdminUpdateFundReceiver(uint256 indexed  _saleId, address _newFundsReceiver);
 
     /// @notice emitted when admin updates max edition ID
-    event AdminUpdateMaxEditionId(uint256 indexed  _saleId, address _newMaxEditionId);
+    event AdminUpdateMaxEditionId(uint256 indexed  _saleId, uint256 _newMaxEditionId);
 
     /// @notice emitted when admin updates creator
     event AdminUpdateCreator(uint256 indexed  _saleId, address _newCreator);
@@ -307,14 +307,14 @@ contract KODAV3UpgradableGatedMarketplace is BaseGatedMarketplace {
     }
 
     function updateMaxEditionId(uint256 _saleId, uint256 _newMaxEditionId) public onlyAdmin {
-        require(_newMaxEditionId >= 1, "Unable to set max edition ");
-        emit AdminUpdateMaxEditionId(maxEditionId, _newMaxEditionId);
+        require(_newMaxEditionId >= 1, "Unable to set max edition");
+        emit AdminUpdateMaxEditionId(_saleId, _newMaxEditionId);
         sales[_saleId].maxEditionId = _newMaxEditionId;
     }
 
-    function updateCreator(address _newCreator) public onlyAdmin {
-        require(_newFundsReceiver != address(0), "Unable to send funds to invalid address");
-        emit AdminUpdateCreator(creator, _newCreator);
+    function updateCreator(uint256 _saleId, address _newCreator) public onlyAdmin {
+        require(_newCreator != address(0), "Unable to make invalid address creator");
+        emit AdminUpdateCreator(_saleId, _newCreator);
         sales[_saleId].creator = _newCreator;
     }
 }

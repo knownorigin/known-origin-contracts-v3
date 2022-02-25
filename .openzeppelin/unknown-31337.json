@@ -1196,61 +1196,6 @@
       "kind": "uups"
     },
     {
-      "address": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
-      "txHash": "0x0760850506637084beee7237fa2b64e364fdefb41f4ba48a3acf6b981d457018",
-      "kind": "uups"
-    },
-    {
-      "address": "0x4A679253410272dd5232B3Ff7cF5dbB88f295319",
-      "txHash": "0x6f740f8f81206fad2fdb509fe32ad842419d5e7847d7548ce77bbca87d38f65c",
-      "kind": "uups"
-    },
-    {
-      "address": "0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9",
-      "txHash": "0xf5d61460eb00470934f5425aa768d888f0c0e6496d67196cf9df8b2b0c7a4db2",
-      "kind": "uups"
-    },
-    {
-      "address": "0x0E801D84Fa97b50751Dbf25036d067dCf18858bF",
-      "txHash": "0x33985a99324f91f6c76aeeb7617d5e30360ab7e6a202b7c9bd94db4095a7c4d0",
-      "kind": "uups"
-    },
-    {
-      "address": "0xb7278A61aa25c888815aFC32Ad3cC52fF24fE575",
-      "txHash": "0x14a850a88f96945368f019fc56dd9518ae5db0a6e379bb554a4940b067069c8c",
-      "kind": "uups"
-    },
-    {
-      "address": "0x1429859428C0aBc9C2C47C8Ee9FBaf82cFA0F20f",
-      "txHash": "0x31a27132d234841282b7403b31ee436caa1c4c3e066a72db4d53e5c2b6532dbd",
-      "kind": "uups"
-    },
-    {
-      "address": "0x21dF544947ba3E8b3c32561399E88B52Dc8b2823",
-      "txHash": "0x8c210ebb9ce98687004ac0167acf63485106b2c9b260efaf0e58d7899a20a117",
-      "kind": "uups"
-    },
-    {
-      "address": "0xf4B146FbA71F41E0592668ffbF264F1D186b2Ca8",
-      "txHash": "0x7eb7375396b71b75c5df21842a8eb4dc009706c7dee8bbc9f717fe4d8f5f9de7",
-      "kind": "uups"
-    },
-    {
-      "address": "0x1c85638e118b37167e9298c2268758e058DdfDA0",
-      "txHash": "0x91b767c2da8d74eff61a3dd343fcef4657c251c5d62eb919fb59323056a05b51",
-      "kind": "uups"
-    },
-    {
-      "address": "0xAA292E8611aDF267e563f334Ee42320aC96D0463",
-      "txHash": "0x116b090e7ce4896f37c2328735a2310a304cef438a1780d1bdd414fa5097dd06",
-      "kind": "uups"
-    },
-    {
-      "address": "0xF8e31cb472bc70500f08Cd84917E5A1912Ec8397",
-      "txHash": "0x1e74dc15f1cb804c0e94229c3794433a0dd31fa8ede453ec2f024323317ec0ab",
-      "kind": "uups"
-    },
-    {
       "address": "0x276C216D241856199A83bf27b2286659e5b877D3",
       "txHash": "0xc3dc3946447c5cb53d5b27f2684acdd60c5f9983db70b917cef7611f19921e22",
       "kind": "uups"
@@ -1527,7 +1472,62 @@
     },
     {
       "address": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
-      "txHash": "0x288bf2cb1dd9655ee55d6534a64d0b314ee311ed5e1f52a4aeeb169650a26692",
+      "txHash": "0x85b97826db1fd4623c18f9848cea14a7b4e9508510d0fb16192c34552909c308",
+      "kind": "uups"
+    },
+    {
+      "address": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
+      "txHash": "0xa0b1e5de2508b1aabe4b200ee42340eb83f37178690565339bfeb31a92cc8f4c",
+      "kind": "uups"
+    },
+    {
+      "address": "0x4A679253410272dd5232B3Ff7cF5dbB88f295319",
+      "txHash": "0x79fb74429abe61b5d732414f57169acf669f8527a96d16df1ed19bfc79bf3917",
+      "kind": "uups"
+    },
+    {
+      "address": "0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9",
+      "txHash": "0x4c393706a931d4427541610c3fec0242447dbe79cc3d39954b3b32b0a1831f79",
+      "kind": "uups"
+    },
+    {
+      "address": "0x0E801D84Fa97b50751Dbf25036d067dCf18858bF",
+      "txHash": "0x3fc0601080e839379fa878f6c59d029a5bcafe7407caca65a66dfe96c863c2d3",
+      "kind": "uups"
+    },
+    {
+      "address": "0xb7278A61aa25c888815aFC32Ad3cC52fF24fE575",
+      "txHash": "0x3b7ab7d774c39d34d02d6686d2a0d934d9ea9feb8b106abcea1b7701cd67ad88",
+      "kind": "uups"
+    },
+    {
+      "address": "0x1429859428C0aBc9C2C47C8Ee9FBaf82cFA0F20f",
+      "txHash": "0x06b1eba1c74b9813a101da60d52d701e5ecc528bb7cd508277a177163ac86ce5",
+      "kind": "uups"
+    },
+    {
+      "address": "0x21dF544947ba3E8b3c32561399E88B52Dc8b2823",
+      "txHash": "0x125d5d26c9c04e1065c32a1f851f2cfc773ba41b7852cc99153b5c4b167810fc",
+      "kind": "uups"
+    },
+    {
+      "address": "0xf4B146FbA71F41E0592668ffbF264F1D186b2Ca8",
+      "txHash": "0xa9c3a4cfa47c0f2b31174b8998b973935cb0d8ade9768e660929f90980180673",
+      "kind": "uups"
+    },
+    {
+      "address": "0x1c85638e118b37167e9298c2268758e058DdfDA0",
+      "txHash": "0x6611e00152d411c93f5d331fa3a1a04702dff4fd3a64a351a09058e26615e682",
+      "kind": "uups"
+    },
+    {
+      "address": "0xAA292E8611aDF267e563f334Ee42320aC96D0463",
+      "txHash": "0xee8fb6a915208c0d2f841881702cd6235229bb4a7e33dfd272329f4a4a50362d",
+      "kind": "uups"
+    },
+    {
+      "address": "0xF8e31cb472bc70500f08Cd84917E5A1912Ec8397",
+      "txHash": "0xa52bea81f2c774d561cc1a8c3a6dff6ad45ae3e24b97c68e6a440283d0637424",
       "kind": "uups"
     }
   ],
@@ -2346,9 +2346,9 @@
         }
       }
     },
-    "22a9fbe6d243d21d50cccc8e5d2ad1b69f1d511977f34c92c06055a2aa62c292": {
+    "da45bc85d239dad5aae1d78e6d3cb399fe748fbb3ab3e97a6197f5d7b0524abb": {
       "address": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
-      "txHash": "0x2a681250554d58e31cad3e0fc96ebd3a60958be3f621b01c4561ae15e01f825a",
+      "txHash": "0xea1c98a3b496c4e48b30029a017d92df2b48057b2176d32f464da71e5229f306",
       "layout": {
         "storage": [
           {
@@ -2408,13 +2408,13 @@
           {
             "contract": "BaseUpgradableMarketplace",
             "label": "accessControls",
-            "type": "t_contract(IKOAccessControlsLookup)5428",
+            "type": "t_contract(IKOAccessControlsLookup)5291",
             "src": "contracts/marketplace/BaseUpgradableMarketplace.sol:50"
           },
           {
             "contract": "BaseUpgradableMarketplace",
             "label": "koda",
-            "type": "t_contract(IKODAV3)8264",
+            "type": "t_contract(IKODAV3)8127",
             "src": "contracts/marketplace/BaseUpgradableMarketplace.sol:53"
           },
           {
@@ -2480,24 +2480,24 @@
           {
             "contract": "KODAV3UpgradableGatedMarketplace",
             "label": "sales",
-            "type": "t_mapping(t_uint256,t_struct(Sale)17319_storage)",
-            "src": "contracts/marketplace/gated/KODAV3UpgradableGatedMarketplace.sol:59"
+            "type": "t_mapping(t_uint256,t_struct(Sale)17203_storage)",
+            "src": "contracts/marketplace/gated/KODAV3UpgradableGatedMarketplace.sol:63"
           },
           {
             "contract": "KODAV3UpgradableGatedMarketplace",
             "label": "phases",
-            "type": "t_mapping(t_uint256,t_array(t_struct(Phase)17304_storage)dyn_storage)",
-            "src": "contracts/marketplace/gated/KODAV3UpgradableGatedMarketplace.sol:62"
+            "type": "t_mapping(t_uint256,t_array(t_struct(Phase)17188_storage)dyn_storage)",
+            "src": "contracts/marketplace/gated/KODAV3UpgradableGatedMarketplace.sol:66"
           }
         ],
         "types": {
-          "t_mapping(t_uint256,t_struct(Sale)17319_storage)": {
+          "t_mapping(t_uint256,t_struct(Sale)17203_storage)": {
             "label": "mapping(uint256 => struct KODAV3UpgradableGatedMarketplace.Sale)"
           },
           "t_uint256": {
             "label": "uint256"
           },
-          "t_struct(Sale)17319_storage": {
+          "t_struct(Sale)17203_storage": {
             "label": "struct KODAV3UpgradableGatedMarketplace.Sale",
             "members": [
               {
@@ -2539,13 +2539,13 @@
           "t_uint8": {
             "label": "uint8"
           },
-          "t_mapping(t_uint256,t_array(t_struct(Phase)17304_storage)dyn_storage)": {
+          "t_mapping(t_uint256,t_array(t_struct(Phase)17188_storage)dyn_storage)": {
             "label": "mapping(uint256 => struct KODAV3UpgradableGatedMarketplace.Phase[])"
           },
-          "t_array(t_struct(Phase)17304_storage)dyn_storage": {
+          "t_array(t_struct(Phase)17188_storage)dyn_storage": {
             "label": "struct KODAV3UpgradableGatedMarketplace.Phase[]"
           },
-          "t_struct(Phase)17304_storage": {
+          "t_struct(Phase)17188_storage": {
             "label": "struct KODAV3UpgradableGatedMarketplace.Phase",
             "members": [
               {
@@ -2603,10 +2603,10 @@
           "t_bool": {
             "label": "bool"
           },
-          "t_contract(IKOAccessControlsLookup)5428": {
+          "t_contract(IKOAccessControlsLookup)5291": {
             "label": "contract IKOAccessControlsLookup"
           },
-          "t_contract(IKODAV3)8264": {
+          "t_contract(IKODAV3)8127": {
             "label": "contract IKODAV3"
           },
           "t_array(t_uint256)50_storage": {
