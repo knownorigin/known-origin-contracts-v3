@@ -1,12 +1,12 @@
 require('dotenv').config();
-require("@nomiclabs/hardhat-waffle");
-require("@nomiclabs/hardhat-truffle5");
 require('solidity-coverage');
 require('hardhat-gas-reporter');
-require('@nomiclabs/hardhat-solhint');
 require('hardhat-contract-sizer')
-require("@nomiclabs/hardhat-etherscan");
 require('hardhat-abi-exporter');
+require('@nomiclabs/hardhat-solhint');
+require("@nomiclabs/hardhat-etherscan");
+require('@openzeppelin/hardhat-upgrades')
+require("@nomiclabs/hardhat-truffle5");
 
 const INFURA_PROJECT_ID = process.env.INFURA_PROJECT_ID;
 const KO_DEPLOYER_PRIVATE_KEY = process.env.KO_DEPLOYER_PRIVATE_KEY;
@@ -66,6 +66,8 @@ module.exports = {
       'KOAccessControls',
       'KODAV3PrimaryMarketplace',
       'KODAV3SecondaryMarketplace',
+      'KODAV3SecondaryMarketplace',
+      'KODAV3UpgradableGatedMarketplace',
       'MintingFactory',
     ],
     spacing: 2
