@@ -96,7 +96,7 @@ contract('KODAV3UpgradableGatedMarketplace tests...', function () {
     );
 
     await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
-      saleId: ONE
+      _saleId: ONE
     });
   });
 

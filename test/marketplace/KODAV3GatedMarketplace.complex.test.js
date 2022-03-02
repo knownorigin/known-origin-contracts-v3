@@ -104,7 +104,7 @@ contract('BasicGatedSale complex tests...', function () {
             );
 
             await expectEvent.inTransaction(creationReceipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
-                saleId: ONE
+                _saleId: ONE
             });
 
             // Add a second phase
@@ -120,8 +120,8 @@ contract('BasicGatedSale complex tests...', function () {
             );
 
             await expectEvent.inTransaction(phase2Receipt.hash, KODAV3UpgradableGatedMarketplace, 'PhaseCreated', {
-                saleId: ONE,
-                phaseId: ONE
+                _saleId: ONE,
+                _phaseId: ONE
             });
 
             // Add a third phase
@@ -137,8 +137,8 @@ contract('BasicGatedSale complex tests...', function () {
             );
 
             await expectEvent.inTransaction(phase3Receipt.hash, KODAV3UpgradableGatedMarketplace, 'PhaseCreated', {
-                saleId: ONE,
-                phaseId: TWO
+                _saleId: ONE,
+                _phaseId: TWO
             });
 
             // Delete a phase
@@ -148,8 +148,8 @@ contract('BasicGatedSale complex tests...', function () {
             );
 
             await expectEvent.inTransaction(phase3DeleteReceipt.hash, KODAV3UpgradableGatedMarketplace, 'PhaseRemoved', {
-                saleId: ONE,
-                phaseId: TWO
+                _saleId: ONE,
+                _phaseId: TWO
             });
 
             // Simulate someone else trying to add a phase
@@ -178,8 +178,8 @@ contract('BasicGatedSale complex tests...', function () {
             );
 
             await expectEvent.inTransaction(phase3NewReceipt.hash, KODAV3UpgradableGatedMarketplace, 'PhaseCreated', {
-                saleId: ONE,
-                phaseId: THREE
+                _saleId: ONE,
+                _phaseId: THREE
             });
 
             // Try and mint before the test starts
@@ -208,10 +208,10 @@ contract('BasicGatedSale complex tests...', function () {
                 });
 
             await expectEvent.inTransaction(b1p1MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
-                saleId: ONE,
-                phaseId: ZERO,
-                tokenId: FIRST_MINTED_TOKEN_ID,
-                account: buyer1.address
+                _saleId: ONE,
+                _phaseId: ZERO,
+                _tokenId: FIRST_MINTED_TOKEN_ID,
+                _recipient: buyer1.address
             });
 
             expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(buyer1.address);
@@ -244,10 +244,10 @@ contract('BasicGatedSale complex tests...', function () {
                 });
 
             await expectEvent.inTransaction(b2p1MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
-                saleId: ONE,
-                phaseId: ZERO,
-                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('3')),
-                account: buyer2.address
+                _saleId: ONE,
+                _phaseId: ZERO,
+                _tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('3')),
+                _recipient: buyer2.address
             });
 
             CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.add(ONE);
@@ -293,10 +293,10 @@ contract('BasicGatedSale complex tests...', function () {
                 });
 
             await expectEvent.inTransaction(b2p2MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
-                saleId: ONE,
-                phaseId: ONE,
-                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('5')),
-                account: buyer2.address
+                _saleId: ONE,
+                _phaseId: ONE,
+                _tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('5')),
+                _recipient: buyer2.address
             });
 
             // And new members of the prelist can also mint
@@ -311,10 +311,10 @@ contract('BasicGatedSale complex tests...', function () {
                 });
 
             await expectEvent.inTransaction(b4p2MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
-                saleId: ONE,
-                phaseId: ONE,
-                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('8')),
-                account: buyer4.address
+                _saleId: ONE,
+                _phaseId: ONE,
+                _tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('8')),
+                _recipient: buyer4.address
             });
 
             // but not if they don't send enough ETH
@@ -364,10 +364,10 @@ contract('BasicGatedSale complex tests...', function () {
                 });
 
             await expectEvent.inTransaction(b5p3MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
-                saleId: ONE,
-                phaseId: THREE,
-                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('15')),
-                account: buyer5.address
+                _saleId: ONE,
+                _phaseId: THREE,
+                _tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('15')),
+                _recipient: buyer5.address
             });
 
             // Lets get someone else to buy a load as well
@@ -382,10 +382,10 @@ contract('BasicGatedSale complex tests...', function () {
                 });
 
             await expectEvent.inTransaction(b2p3MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
-                saleId: ONE,
-                phaseId: THREE,
-                tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('19')),
-                account: buyer2.address
+                _saleId: ONE,
+                _phaseId: THREE,
+                _tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('19')),
+                _recipient: buyer2.address
             });
 
             // The sale should now be sold out so should revert

@@ -17,7 +17,6 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
     event AdminUpdatePlatformPrimaryCommission(uint256 newAmount);
     event AdminUpdateMinBidAmount(uint256 _minBidAmount);
     event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
-    event AdminUpdatePlatformPrimarySaleCommission(uint256 _platformPrimarySaleCommission);
     event AdminUpdateBidLockupPeriod(uint256 _bidLockupPeriod);
     event AdminUpdatePlatformAccount(address indexed _oldAddress, address indexed _newAddress);
     event AdminRecoverERC20(IERC20 indexed _token, address indexed _recipient, uint256 _amount);
@@ -26,24 +25,24 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
     event BidderRefunded(uint256 indexed _id, address _bidder, uint256 _bid, address _newBidder, uint256 _newOffer);
     event BidderRefundedFailed(uint256 indexed _id, address _bidder, uint256 _bid, address _newBidder, uint256 _newOffer);
 
-    // Only a whitelisted smart contract in the access controls contract
-    modifier onlyContract() {
-        _onlyContract();
-        _;
-    }
-
-    function _onlyContract() private view {
-        require(accessControls.hasContractRole(_msgSender()), "Caller not contract");
+    // KO Commission override definition for a given item
+    struct KOCommissionOverride {
+        bool active;
+        uint256 koCommission;
     }
 
     // Only admin defined in the access controls contract
     modifier onlyAdmin() {
-        _onlyAdmin();
+        require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
         _;
     }
 
-    function _onlyAdmin() private view {
-        require(accessControls.hasAdminRole(_msgSender()), "Caller not admin");
+    modifier onlyCreatorOrAdmin(uint256 _editionId) {
+        require(
+            koda.getCreatorOfEdition(_editionId) == _msgSender() || accessControls.hasAdminRole(_msgSender()),
+            "Caller not creator or admin"
+        );
+        _;
     }
 
     /// @notice Address of the access control contract
@@ -94,6 +93,12 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
         emit AdminRecoverERC20(_token, _recipient, _amount);
     }
 
+    function recoverStuckETH(address payable _recipient, uint256 _amount) public onlyAdmin {
+        (bool success,) = _recipient.call{value : _amount}("");
+        require(success, "Unable to send recipient ETH");
+        emit AdminRecoverETH(_recipient, _amount);
+    }
+
     function updatePlatformPrimaryCommission(uint256 _newAmount) external onlyAdmin {
         platformPrimaryCommission = _newAmount;
         emit AdminUpdatePlatformPrimaryCommission(_newAmount);
@@ -136,6 +141,16 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
 
     function _getLockupTime() internal view returns (uint256 lockupUntil) {
         lockupUntil = block.timestamp + bidLockupPeriod;
+    }
+
+    function _handleSaleFunds(address _fundsReceiver, uint256 _platformCommission) internal {
+        uint256 koCommission = (msg.value / modulo) * _platformCommission;
+        if (koCommission > 0) {
+            (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
+            require(koCommissionSuccess, "commission payment failed");
+        }
+        (bool success,) = _fundsReceiver.call{value : msg.value - koCommission}("");
+        require(success, "payment failed");
     }
 
     function _refundBidder(uint256 _id, address _receiver, uint256 _paymentAmount, address _newBidder, uint256 _newOffer) internal {

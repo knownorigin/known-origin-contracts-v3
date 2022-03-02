@@ -67,6 +67,25 @@
     "inputs": [
       {
         "indexed": true,
+        "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_platformPrimarySaleCommission",
+        "type": "uint256"
+      }
+    ],
+    "name": "AdminSetKoCommissionOverrideForSale",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "contract IKOAccessControlsLookup",
         "name": "_oldAddress",
         "type": "address"
@@ -130,25 +149,6 @@
       }
     ],
     "name": "AdminUpdateFundReceiver",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "saleId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "platformPrimarySaleCommission",
-        "type": "uint256"
-      }
-    ],
-    "name": "AdminUpdateGatedSaleCommission",
     "type": "event"
   },
   {
@@ -226,19 +226,6 @@
       }
     ],
     "name": "AdminUpdatePlatformPrimaryCommission",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "_platformPrimarySaleCommission",
-        "type": "uint256"
-      }
-    ],
-    "name": "AdminUpdatePlatformPrimarySaleCommission",
     "type": "event"
   },
   {
@@ -334,25 +321,25 @@
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "saleId",
+        "name": "_saleId",
         "type": "uint256"
       },
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "phaseId",
+        "name": "_phaseId",
         "type": "uint256"
       },
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "tokenId",
+        "name": "_tokenId",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "address",
-        "name": "account",
+        "name": "_recipient",
         "type": "address"
       }
     ],
@@ -378,13 +365,13 @@
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "saleId",
+        "name": "_saleId",
         "type": "uint256"
       },
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "phaseId",
+        "name": "_phaseId",
         "type": "uint256"
       }
     ],
@@ -397,13 +384,13 @@
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "saleId",
+        "name": "_saleId",
         "type": "uint256"
       },
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "phaseId",
+        "name": "_phaseId",
         "type": "uint256"
       }
     ],
@@ -416,7 +403,7 @@
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "saleId",
+        "name": "_saleId",
         "type": "uint256"
       }
     ],
@@ -429,7 +416,7 @@
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "saleId",
+        "name": "_saleId",
         "type": "uint256"
       }
     ],
@@ -442,7 +429,7 @@
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "saleId",
+        "name": "_saleId",
         "type": "uint256"
       }
     ],
@@ -660,12 +647,17 @@
         "type": "uint256"
       }
     ],
-    "name": "isSaleCommissionForPlatformDisabled",
+    "name": "koCommissionOverrideForSale",
     "outputs": [
       {
         "internalType": "bool",
-        "name": "",
+        "name": "active",
         "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "koCommission",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -913,6 +905,24 @@
   {
     "inputs": [
       {
+        "internalType": "address payable",
+        "name": "_recipient",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "recoverStuckETH",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "_saleId",
         "type": "uint256"
@@ -965,25 +975,6 @@
     "name": "removePhase",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "saleCommission",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -1054,9 +1045,19 @@
         "internalType": "uint256",
         "name": "_saleId",
         "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "_active",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_koCommission",
+        "type": "uint256"
       }
     ],
-    "name": "togglePlatformCommissionDisabledForSale",
+    "name": "setKoCommissionOverrideForSale",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1233,24 +1234,6 @@
       }
     ],
     "name": "updatePlatformPrimaryCommission",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_saleId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_platformPrimarySaleCommission",
-        "type": "uint256"
-      }
-    ],
-    "name": "updatePlatformPrimarySaleCommission",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
