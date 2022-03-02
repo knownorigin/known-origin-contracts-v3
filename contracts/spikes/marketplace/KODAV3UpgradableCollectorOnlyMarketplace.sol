@@ -44,14 +44,6 @@ contract KODAV3UpgradableCollectorOnlyMarketplace is BaseUpgradableMarketplace {
     /// @dev saleCommission is a mapping of sale id => commission %, if 0 its default 15_00000 (15%)
     mapping(uint256 => uint256) public saleCommission;
 
-    modifier onlyCreatorOrAdmin(uint256 _editionId) {
-        require(
-            accessControls.hasAdminRole(_msgSender()) || koda.getCreatorOfEdition(_editionId) == _msgSender(),
-            "Caller not creator or admin"
-        );
-        _;
-    }
-
     function createSale(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _mintLimit, uint128 _priceInWei)
     public
     whenNotPaused

@@ -4,12 +4,12 @@ pragma solidity 0.8.4;
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 import {IKODAV3GatedMerkleMarketplace} from "./IKODAV3GatedMerkleMarketplace.sol";
-import {BaseGatedMarketplace} from "../../marketplace/gated/BaseGatedMarketplace.sol";
+import {BaseUpgradableMarketplace} from "../../marketplace/BaseUpgradableMarketplace.sol";
 import {IKOAccessControlsLookup} from "../../access/IKOAccessControlsLookup.sol";
 import {IKODAV3} from "../../core/IKODAV3.sol";
 
 /// @title Merkle based gated pre-list marketplace
-abstract contract KODAV3GatedMerkleMarketplace is BaseGatedMarketplace, IKODAV3GatedMerkleMarketplace {
+contract KODAV3GatedMerkleMarketplace is BaseUpgradableMarketplace, IKODAV3GatedMerkleMarketplace {
 
     /// @notice emitted when a sale, with a single phase, is created
     event MerkleSaleWithPhaseCreated(uint256 indexed saleId);
@@ -26,6 +26,17 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseGatedMarketplace, IKODAV3G
     /// @notice emitted when someone mints from a sale
     event MerkleMintFromSale(uint256 indexed saleId, uint256 indexed phaseId, uint256 indexed tokenId, address account);
 
+    modifier onlyCreatorOrAdminForSale(uint256 _saleId) {
+        require(
+            koda.getCreatorOfEdition(editionToSale[_saleId]) == _msgSender() || accessControls.hasAdminRole(_msgSender()),
+            "Caller not creator or admin of sale"
+        );
+        _;
+    }
+
+    /// @dev incremental counter for the ID of a sale
+    uint256 public saleIdCounter;
+
     /// @notice Whether a sale is paused
     mapping(uint256 => bool) public isMerkleSalePaused;
 
@@ -37,6 +48,15 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseGatedMarketplace, IKODAV3G
 
     /// @notice Keeps a pointer to the overall mint count for the full sale
     mapping(uint256 => uint16) public saleMintCount;
+
+    /// @dev edition to sale is a mapping of edition id => sale id
+    mapping(uint256 => uint256) public editionToSale;
+
+    /// @dev totalMints is a mapping of hash(sale id, phase id, address) => total minted by that address
+    mapping(bytes32 => uint256) public totalMints;
+
+    /// @notice sale Id -> KO commission override
+    mapping(uint256 => KOCommissionOverride) public koCommissionOverrideForSale;
 
     /// @inheritdoc IKODAV3GatedMerkleMarketplace
     function createMerkleSaleWithPhases(uint256 _editionId, bytes32[] calldata _phaseIds)
@@ -205,7 +225,22 @@ abstract contract KODAV3GatedMerkleMarketplace is BaseGatedMarketplace, IKODAV3G
 
             startId = tokenId++;
         }
-        handleEditionSaleFunds(_saleId, _fundsReceiver);
+        _handleSaleFunds(_fundsReceiver, getPlatformSaleCommissionForSale(_saleId));
     }
 
+    function getNextAvailablePrimarySaleToken(uint256 _startId, uint256 _maxEditionId, address creator) internal view returns (uint256 _tokenId) {
+        for (uint256 tokenId = _startId; tokenId < _maxEditionId; tokenId++) {
+            if (koda.ownerOf(tokenId) == creator) {
+                return tokenId;
+            }
+        }
+        revert("Primary market exhausted");
+    }
+
+    function getPlatformSaleCommissionForSale(uint256 _saleId) internal view returns (uint256) {
+        if (koCommissionOverrideForSale[_saleId].active) {
+            return koCommissionOverrideForSale[_saleId].koCommission;
+        }
+        return platformPrimaryCommission;
+    }
 }
