@@ -83,7 +83,7 @@ V1 funds receiver          - 0xb4bb0960b5095e5a0abd07d18803f45c4c4eadf6 = (verif
 
 #### Gated marketplace (upgradable)
 ```
-KODAV3GatedMarketplace v1 (commit - bf7f8301c4ec2da7ca26df177e72613370c2e82e) - 0x274077eca704885d3137e0b6072332097c341249 = (todo)
+KODAV3GatedMarketplace v1 (commit - ) -
 
 ```
 
