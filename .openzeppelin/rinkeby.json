@@ -1,0 +1,291 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0x60d119840cE1f19c1e1230AC79cfA1E780CE2Fb9",
+      "txHash": "0xa0f02ebd495f9acf8d2ecb773af15da3c59799ff1ad74a35d653d7959a75f8b8",
+      "kind": "uups"
+    }
+  ],
+  "impls": {
+    "8f084558c4cb9c4159a2b6687247e8e9c4275db5b4483c430c2e68833d7fcf97": {
+      "address": "0x9e09f9ffddA2EE11E6F08CbC89C572642b18d51d",
+      "txHash": "0x383e782b74bf5f27369a777c450823e3255b29ef5ebc9aa9892364b1967357c4",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:39"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:44"
+          },
+          {
+            "contract": "ReentrancyGuardUpgradeable",
+            "label": "_status",
+            "type": "t_uint256",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "contract": "ReentrancyGuardUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:68"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:31"
+          },
+          {
+            "contract": "PausableUpgradeable",
+            "label": "_paused",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:29"
+          },
+          {
+            "contract": "PausableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:97"
+          },
+          {
+            "contract": "ERC1967UpgradeUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:215"
+          },
+          {
+            "contract": "UUPSUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:81"
+          },
+          {
+            "contract": "BaseUpgradableMarketplace",
+            "label": "accessControls",
+            "type": "t_contract(IKOAccessControlsLookup)5291",
+            "src": "contracts/marketplace/BaseUpgradableMarketplace.sol:49"
+          },
+          {
+            "contract": "BaseUpgradableMarketplace",
+            "label": "koda",
+            "type": "t_contract(IKODAV3)8127",
+            "src": "contracts/marketplace/BaseUpgradableMarketplace.sol:52"
+          },
+          {
+            "contract": "BaseUpgradableMarketplace",
+            "label": "platformAccount",
+            "type": "t_address",
+            "src": "contracts/marketplace/BaseUpgradableMarketplace.sol:55"
+          },
+          {
+            "contract": "BaseUpgradableMarketplace",
+            "label": "modulo",
+            "type": "t_uint256",
+            "src": "contracts/marketplace/BaseUpgradableMarketplace.sol:58"
+          },
+          {
+            "contract": "BaseUpgradableMarketplace",
+            "label": "minBidAmount",
+            "type": "t_uint256",
+            "src": "contracts/marketplace/BaseUpgradableMarketplace.sol:61"
+          },
+          {
+            "contract": "BaseUpgradableMarketplace",
+            "label": "bidLockupPeriod",
+            "type": "t_uint256",
+            "src": "contracts/marketplace/BaseUpgradableMarketplace.sol:64"
+          },
+          {
+            "contract": "BaseUpgradableMarketplace",
+            "label": "platformPrimaryCommission",
+            "type": "t_uint256",
+            "src": "contracts/marketplace/BaseUpgradableMarketplace.sol:67"
+          },
+          {
+            "contract": "KODAV3UpgradableGatedMarketplace",
+            "label": "koCommissionOverrideForSale",
+            "type": "t_mapping(t_uint256,t_struct(KOCommissionOverride)12230_storage)",
+            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:66"
+          },
+          {
+            "contract": "KODAV3UpgradableGatedMarketplace",
+            "label": "saleIdCounter",
+            "type": "t_uint256",
+            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:69"
+          },
+          {
+            "contract": "KODAV3UpgradableGatedMarketplace",
+            "label": "totalMints",
+            "type": "t_mapping(t_bytes32,t_uint256)",
+            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:72"
+          },
+          {
+            "contract": "KODAV3UpgradableGatedMarketplace",
+            "label": "editionToSale",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:75"
+          },
+          {
+            "contract": "KODAV3UpgradableGatedMarketplace",
+            "label": "sales",
+            "type": "t_mapping(t_uint256,t_struct(Sale)16249_storage)",
+            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:78"
+          },
+          {
+            "contract": "KODAV3UpgradableGatedMarketplace",
+            "label": "phases",
+            "type": "t_mapping(t_uint256,t_array(t_struct(Phase)16234_storage)dyn_storage)",
+            "src": "contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol:81"
+          }
+        ],
+        "types": {
+          "t_mapping(t_uint256,t_struct(KOCommissionOverride)12230_storage)": {
+            "label": "mapping(uint256 => struct BaseUpgradableMarketplace.KOCommissionOverride)"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_struct(KOCommissionOverride)12230_storage": {
+            "label": "struct BaseUpgradableMarketplace.KOCommissionOverride",
+            "members": [
+              {
+                "label": "active",
+                "type": "t_bool"
+              },
+              {
+                "label": "koCommission",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)"
+          },
+          "t_mapping(t_uint256,t_struct(Sale)16249_storage)": {
+            "label": "mapping(uint256 => struct KODAV3UpgradableGatedMarketplace.Sale)"
+          },
+          "t_struct(Sale)16249_storage": {
+            "label": "struct KODAV3UpgradableGatedMarketplace.Sale",
+            "members": [
+              {
+                "label": "id",
+                "type": "t_uint256"
+              },
+              {
+                "label": "editionId",
+                "type": "t_uint256"
+              },
+              {
+                "label": "creator",
+                "type": "t_address"
+              },
+              {
+                "label": "fundsReceiver",
+                "type": "t_address"
+              },
+              {
+                "label": "maxEditionId",
+                "type": "t_uint256"
+              },
+              {
+                "label": "mintCounter",
+                "type": "t_uint16"
+              },
+              {
+                "label": "paused",
+                "type": "t_uint8"
+              }
+            ]
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_uint16": {
+            "label": "uint16"
+          },
+          "t_uint8": {
+            "label": "uint8"
+          },
+          "t_mapping(t_uint256,t_array(t_struct(Phase)16234_storage)dyn_storage)": {
+            "label": "mapping(uint256 => struct KODAV3UpgradableGatedMarketplace.Phase[])"
+          },
+          "t_array(t_struct(Phase)16234_storage)dyn_storage": {
+            "label": "struct KODAV3UpgradableGatedMarketplace.Phase[]"
+          },
+          "t_struct(Phase)16234_storage": {
+            "label": "struct KODAV3UpgradableGatedMarketplace.Phase",
+            "members": [
+              {
+                "label": "startTime",
+                "type": "t_uint128"
+              },
+              {
+                "label": "endTime",
+                "type": "t_uint128"
+              },
+              {
+                "label": "priceInWei",
+                "type": "t_uint128"
+              },
+              {
+                "label": "mintCounter",
+                "type": "t_uint16"
+              },
+              {
+                "label": "mintCap",
+                "type": "t_uint16"
+              },
+              {
+                "label": "walletMintLimit",
+                "type": "t_uint16"
+              },
+              {
+                "label": "merkleRoot",
+                "type": "t_bytes32"
+              },
+              {
+                "label": "merkleIPFSHash",
+                "type": "t_string_storage"
+              }
+            ]
+          },
+          "t_uint128": {
+            "label": "uint128"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_contract(IKOAccessControlsLookup)5291": {
+            "label": "contract IKOAccessControlsLookup"
+          },
+          "t_contract(IKODAV3)8127": {
+            "label": "contract IKODAV3"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          }
+        }
+      }
+    }
+  }
+}

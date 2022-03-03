@@ -83,8 +83,8 @@ V1 funds receiver          - 0xb4bb0960b5095e5a0abd07d18803f45c4c4eadf6 = (verif
 
 #### Gated marketplace (upgradable)
 ```
-KODAV3GatedMarketplace v1 (commit - ) -
-
+KODAV3GatedMarketplace Proxy - 0x60d119840cE1f19c1e1230AC79cfA1E780CE2Fb9
+  - v1 - Git Commit 699750fd36bba604e3bf44a4ed117ff62f6bb8e6
 ```
 
 ### Mainnet
