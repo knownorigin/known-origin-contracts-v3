@@ -6,8 +6,9 @@ import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProo
 import {BaseUpgradableMarketplace} from "./BaseUpgradableMarketplace.sol";
 import {IKODAV3} from "../core/IKODAV3.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
+import {IKODAV3GatedMarketplace} from "./IKODAV3Marketplace.sol";
 
-contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
+contract KODAV3UpgradableGatedMarketplace is IKODAV3GatedMarketplace, BaseUpgradableMarketplace {
 
     /// @notice emitted when admin updates funds receiver
     event AdminUpdateFundReceiver(uint256 indexed _saleId, address _newFundsReceiver);
@@ -27,8 +28,11 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
     /// @notice emitted when a sale is resumed
     event SaleResumed(uint256 indexed _saleId);
 
-    /// @notice emitted when a sale, with a single phase, is created
+    /// @notice emitted when a sale and its phases are created
     event SaleWithPhaseCreated(uint256 indexed _saleId);
+
+    /// @notice emitted when a sale without any phases created
+    event SaleCreated(uint256 indexed _saleId);
 
     /// @notice emitted when a new phase is added to a sale
     event PhaseCreated(uint256 indexed _saleId, uint256 indexed _phaseId);
@@ -90,27 +94,15 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
         uint16[] memory _walletMintLimits,
         bytes32[] memory _merkleRoots,
         string[] memory _merkleIPFSHashes
-    ) external whenNotPaused {
+    ) external override whenNotPaused {
         // Confirm access
         address creator = koda.getCreatorOfEdition(_editionId);
-        require(creator == _msgSender() || accessControls.hasAdminRole(_msgSender()), "Caller not creator or admin");
+        require(creator == _msgSender() || accessControls.hasContractOrAdminRole(_msgSender()), "Caller not creator or admin");
 
         // Check no existing sale in place
         require(editionToSale[_editionId] == 0, "Sale exists for this edition");
 
-        uint256 saleId = ++saleIdCounter;
-
-        // Assign the sale to the sales and editionToSale mappings
-        sales[saleId] = Sale({
-            id : saleId,
-            creator : creator,
-            fundsReceiver : koda.getRoyaltiesReceiver(_editionId),
-            editionId : _editionId,
-            maxEditionId : koda.maxTokenIdOfEdition(_editionId),
-            paused : 0,
-            mintCounter : 0
-        });
-        editionToSale[_editionId] = saleId;
+        uint256 saleId = _createSale(_editionId, creator);
 
         _addMultiplePhasesToSale(
             saleId,
@@ -124,6 +116,39 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
         );
 
         emit SaleWithPhaseCreated(saleId);
+    }
+
+    /// @notice Allow an artist or admin to create a sale with 1 or more phases
+    function createSale(uint256 _editionId) external override whenNotPaused {
+        // Confirm access
+        address creator = koda.getCreatorOfEdition(_editionId);
+        require(creator == _msgSender() || accessControls.hasContractOrAdminRole(_msgSender()), "Caller not creator or admin");
+
+        // Check no existing sale in place
+        require(editionToSale[_editionId] == 0, "Sale exists for this edition");
+
+        uint256 saleId = _createSale(_editionId, creator);
+
+        emit SaleCreated(saleId);
+    }
+
+    function _createSale(uint256 _editionId, address _creator) internal returns (uint256) {
+        uint256 saleId = ++saleIdCounter;
+
+        // Assign the sale to the sales and editionToSale mappings
+        sales[saleId] = Sale({
+        id : saleId,
+        creator : _creator,
+        fundsReceiver : koda.getRoyaltiesReceiver(_editionId),
+        editionId : _editionId,
+        maxEditionId : koda.maxTokenIdOfEdition(_editionId),
+        paused : 0,
+        mintCounter : 0
+        });
+
+        editionToSale[_editionId] = saleId;
+
+        return saleId;
     }
 
     /// @notice Mint an NFT from the gated list
@@ -166,9 +191,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
         bytes32 _merkleRoot,
         string calldata _merkleIPFSHash
     )
-    external
-    whenNotPaused
-    onlyCreatorOrAdmin(_editionId) {
+    external override whenNotPaused onlyCreatorOrAdmin(_editionId) {
         uint256 saleId = editionToSale[_editionId];
         require(saleId > 0, 'No sale associated with edition id');
 
@@ -184,11 +207,39 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
         );
     }
 
+    function createPhases(
+        uint256 _editionId,
+        uint128[] memory _startTimes,
+        uint128[] memory _endTimes,
+        uint128[] memory _pricesInWei,
+        uint16[] memory _mintCaps,
+        uint16[] memory _walletMintLimits,
+        bytes32[] memory _merkleRoots,
+        string[] memory _merkleIPFSHashes
+    )
+    external override whenNotPaused {
+        // Ensure edition creator
+        address creator = koda.getCreatorOfEdition(_editionId);
+        require(creator == _msgSender() || accessControls.hasContractOrAdminRole(_msgSender()), "Caller not creator or admin");
+
+        // Ensure sale is valid
+        uint256 saleId = editionToSale[_editionId];
+        require(saleId > 0, 'No sale associated with edition id');
+
+        _addMultiplePhasesToSale(
+            saleId,
+            _startTimes,
+            _endTimes,
+            _pricesInWei,
+            _mintCaps,
+            _walletMintLimits,
+            _merkleRoots,
+            _merkleIPFSHashes
+        );
+    }
+
     function removePhase(uint256 _editionId, uint256 _phaseId)
-    external
-    whenNotPaused
-    onlyCreatorOrAdmin(_editionId)
-    {
+    external override whenNotPaused onlyCreatorOrAdmin(_editionId) {
         require(koda.editionExists(_editionId), 'Edition does not exist');
 
         uint256 saleId = editionToSale[_editionId];
@@ -201,9 +252,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
 
     /// @dev checks whether a given user is on the list to mint from a phase
     function onPhaseMintList(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof)
-    public
-    view
-    returns (bool) {
+    public view returns (bool) {
         Phase storage phase = phases[_saleId][_phaseId];
         // assume balance of 1 for enabled with access to the sale
         bytes32 node = keccak256(abi.encodePacked(_index, _account, uint256(1)));
@@ -221,9 +270,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
     }
 
     function remainingPhaseMintAllowance(uint256 _saleId, uint _phaseId, uint256 _index, address _account, bytes32[] calldata _merkleProof)
-    external
-    view
-    returns (uint256) {
+    external view returns (uint256) {
         require(onPhaseMintList(_saleId, _phaseId, _index, _account, _merkleProof), 'Address not able to mint from sale');
 
         return phases[_saleId][_phaseId].walletMintLimit - totalMints[keccak256(abi.encode(_saleId, _phaseId, _account))];
@@ -246,7 +293,7 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
 
             emit MintFromSale(_saleId, _phaseId, tokenId, _recipient);
 
-            unchecked {startId = tokenId++;}
+        unchecked {startId = tokenId++;}
         }
         _handleSaleFunds(sales[_saleId].fundsReceiver, getPlatformSaleCommissionForSale(_saleId));
     }
@@ -310,14 +357,14 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
 
         // Add the phase to the phases mapping
         phases[_saleId].push(Phase({
-            startTime : _startTime,
-            endTime : _endTime,
-            priceInWei : _priceInWei,
-            mintCounter : 0,
-            mintCap : _mintCap,
-            walletMintLimit : _walletMintLimit,
-            merkleRoot : _merkleRoot,
-            merkleIPFSHash : _merkleIPFSHash
+        startTime : _startTime,
+        endTime : _endTime,
+        priceInWei : _priceInWei,
+        mintCounter : 0,
+        mintCap : _mintCap,
+        walletMintLimit : _walletMintLimit,
+        merkleRoot : _merkleRoot,
+        merkleIPFSHash : _merkleIPFSHash
         }));
 
         emit PhaseCreated(_saleId, phases[_saleId].length - 1);
@@ -325,27 +372,26 @@ contract KODAV3UpgradableGatedMarketplace is BaseUpgradableMarketplace {
 
     function updateFundsReceiver(uint256 _saleId, address _newFundsReceiver) public onlyAdmin {
         require(_newFundsReceiver != address(0), "Unable to send funds to invalid address");
-        emit AdminUpdateFundReceiver(_saleId, _newFundsReceiver);
         sales[_saleId].fundsReceiver = _newFundsReceiver;
+        emit AdminUpdateFundReceiver(_saleId, _newFundsReceiver);
     }
 
     function updateMaxEditionId(uint256 _saleId, uint256 _newMaxEditionId) public onlyAdmin {
         require(_newMaxEditionId >= 1, "Unable to set max edition");
-        emit AdminUpdateMaxEditionId(_saleId, _newMaxEditionId);
         sales[_saleId].maxEditionId = _newMaxEditionId;
+        emit AdminUpdateMaxEditionId(_saleId, _newMaxEditionId);
     }
 
     function updateCreator(uint256 _saleId, address _newCreator) public onlyAdmin {
         require(_newCreator != address(0), "Unable to make invalid address creator");
-        emit AdminUpdateCreator(_saleId, _newCreator);
         sales[_saleId].creator = _newCreator;
+        emit AdminUpdateCreator(_saleId, _newCreator);
     }
 
     function setKoCommissionOverrideForSale(uint256 _saleId, bool _active, uint256 _koCommission) public onlyAdmin {
         KOCommissionOverride storage koCommissionOverride = koCommissionOverrideForSale[_saleId];
         koCommissionOverride.active = _active;
         koCommissionOverride.koCommission = _koCommission;
-
         emit AdminSetKoCommissionOverrideForSale(_saleId, _koCommission);
     }
 }

@@ -127,3 +127,43 @@ interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffe
 
     function convertReserveAuctionToOffers(uint256 _tokenId) external;
 }
+
+interface IKODAV3GatedMarketplace {
+
+    function createSale(uint256 _editionId) external;
+
+    function createPhase(
+        uint256 _editionId,
+        uint128 _startTime,
+        uint128 _endTime,
+        uint128 _priceInWei,
+        uint16 _mintCap,
+        uint16 _walletMintLimit,
+        bytes32 _merkleRoot,
+        string calldata _merkleIPFSHash
+    ) external;
+
+    function createSaleWithPhases(
+        uint256 _editionId,
+        uint128[] memory _startTimes,
+        uint128[] memory _endTimes,
+        uint128[] memory _pricesInWei,
+        uint16[] memory _mintCaps,
+        uint16[] memory _walletMintLimits,
+        bytes32[] memory _merkleRoots,
+        string[] memory _merkleIPFSHashes
+    ) external;
+
+    function createPhases(
+        uint256 _editionId,
+        uint128[] memory _startTimes,
+        uint128[] memory _endTimes,
+        uint128[] memory _pricesInWei,
+        uint16[] memory _mintCaps,
+        uint16[] memory _walletMintLimits,
+        bytes32[] memory _merkleRoots,
+        string[] memory _merkleIPFSHashes
+    ) external;
+
+    function removePhase(uint256 _editionId, uint256 _phaseId) external;
+}
