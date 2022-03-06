@@ -134,6 +134,8 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
     /// Mint & setup on gated marketplace //
     ////////////////////////////////////////
 
+    // TODO do - we need a method to mint as buy now and create a sale?
+
     function mintBatchGatedEdition(
         uint16 _editionSize,
         uint256 _merkleIndex,
@@ -152,7 +154,7 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         _recordSuccessfulMint(_msgSender());
         _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
-    
+
     function mintBatchGatedEditionAsProxy(
         address _creator,
         uint16 _editionSize,

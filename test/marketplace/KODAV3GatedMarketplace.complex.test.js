@@ -406,7 +406,7 @@ contract('BasicGatedSale complex tests...', function () {
         }), 'Primary market exhausted');
     });
 
-    it.only('can create a gated sale and still list and sell as buy now', async () => {
+    it('can create a gated sale and still list and sell as buy now', async () => {
 
       // Make the sale
       const creationReceipt = await this.basicGatedSale.connect(artist).createSaleWithPhases(
