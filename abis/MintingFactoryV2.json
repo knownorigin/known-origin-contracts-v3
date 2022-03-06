@@ -421,7 +421,78 @@
         "type": "string"
       }
     ],
+    "name": "mintBatchEditionOnly",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "_editionSize",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_merkleIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_merkleProof",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "address",
+        "name": "_deployedRoyaltiesHandler",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
+      }
+    ],
     "name": "mintBatchGatedEdition",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_creator",
+        "type": "address"
+      },
+      {
+        "internalType": "uint16",
+        "name": "_editionSize",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_merkleIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_merkleProof",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "address",
+        "name": "_deployedRoyaltiesHandler",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
+      }
+    ],
+    "name": "mintBatchGatedEditionAsProxy",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

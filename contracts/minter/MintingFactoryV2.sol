@@ -40,7 +40,7 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
     }
 
     enum SaleType {
-        BUY_NOW, OFFERS, STEPPED, RESERVE, GATED
+        BUY_NOW, OFFERS, STEPPED, RESERVE
     }
 
     // Minting allowance period
@@ -81,6 +81,14 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         emit MintingFactoryCreated();
     }
 
+    function _authorizeUpgrade(address newImplementation) internal view override {
+        require(accessControls.hasAdminRole(msg.sender), "Only admin can upgrade");
+    }
+
+    //////////////////////////////////////////
+    /// Mint & setup on primary marketplace //
+    //////////////////////////////////////////
+
     function mintBatchEdition(
         SaleType _saleType,
         uint16 _editionSize,
@@ -102,31 +110,6 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
-    function mintBatchGatedEdition(
-        uint16 _editionSize,
-        uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof,
-        address _deployedRoyaltiesHandler,
-        string calldata _uri
-    ) canMintAgain external {
-        require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
-
-        // Make tokens & edition
-        uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
-
-        // FIXME not to pass all phase details  - stack too deep :(
-
-        // Created gated sale
-        gatedMarketplace.createSale(editionId);
-
-        _recordSuccessfulMint(_msgSender());
-        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
-    }
-
-    function _authorizeUpgrade(address newImplementation) internal view override {
-        require(accessControls.hasAdminRole(msg.sender), "Only admin can upgrade");
-    }
-
     function mintBatchEditionAsProxy(
         address _creator,
         SaleType _saleType,
@@ -146,6 +129,71 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         _recordSuccessfulMint(_creator);
         _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
+
+    ////////////////////////////////////////
+    /// Mint & setup on gated marketplace //
+    ////////////////////////////////////////
+
+    function mintBatchGatedEdition(
+        uint16 _editionSize,
+        uint256 _merkleIndex,
+        bytes32[] calldata _merkleProof,
+        address _deployedRoyaltiesHandler,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
+
+        // Created gated sale
+        gatedMarketplace.createSale(editionId);
+
+        _recordSuccessfulMint(_msgSender());
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+    }
+    
+    function mintBatchGatedEditionAsProxy(
+        address _creator,
+        uint16 _editionSize,
+        uint256 _merkleIndex,
+        bytes32[] calldata _merkleProof,
+        address _deployedRoyaltiesHandler,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
+
+        // Created gated sale
+        gatedMarketplace.createSale(editionId);
+
+        _recordSuccessfulMint(_creator);
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+    }
+
+    ////////////////
+    /// Mint only //
+    ////////////////
+
+    function mintBatchEditionOnly(
+        uint16 _editionSize,
+        uint256 _merkleIndex,
+        bytes32[] calldata _merkleProof,
+        address _deployedRoyaltiesHandler,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
+
+        _recordSuccessfulMint(_msgSender());
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+    }
+
+    /// Internal helpers
 
     function _setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
         if (SaleType.BUY_NOW == _saleType) {
@@ -170,8 +218,6 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
             royaltiesRegistry.useRoyaltiesRecipient(_editionId, _deployedHandler);
         }
     }
-
-    /// Internal helpers
 
     function _canCreateNewEdition(address _account) internal view returns (bool) {
         // if frequency is overridden then assume they can mint
