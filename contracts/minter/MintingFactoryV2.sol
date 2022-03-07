@@ -7,15 +7,13 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/se
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import {IKODAV3Minter} from "../core/IKODAV3Minter.sol";
-import {
-IKODAV3PrimarySaleMarketplace,
-IKODAV3GatedMarketplace
-} from "../marketplace/IKODAV3Marketplace.sol";
+import {IKODAV3PrimarySaleMarketplace, IKODAV3GatedMarketplace} from "../marketplace/IKODAV3Marketplace.sol";
 import {ICollabRoyaltiesRegistry} from "../collab/ICollabRoyaltiesRegistry.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 
 contract MintingFactoryV2 is Context, UUPSUpgradeable {
 
+    event EditionMinted(uint256 indexed _editionId);
     event EditionMintedAndListed(uint256 indexed _editionId, SaleType _saleType);
 
     event MintingFactoryCreated();
@@ -44,10 +42,10 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
     }
 
     // Minting allowance period
-    uint256 public mintingPeriod = 30 days;
+    uint256 public mintingPeriod;
 
     // Limit of mints with in the period
-    uint256 public maxMintsInPeriod = 15;
+    uint256 public maxMintsInPeriod;
 
     // Frequency override list for users - you can temporarily add in address which disables the freeze time check
     mapping(address => bool) public frequencyOverride;
@@ -77,6 +75,9 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         marketplace = _marketplace;
         gatedMarketplace = _gatedMarketplace;
         royaltiesRegistry = _royaltiesRegistry;
+
+        mintingPeriod = 30 days;
+        maxMintsInPeriod = 15;
 
         emit MintingFactoryCreated();
     }
@@ -130,13 +131,11 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
-    ////////////////////////////////////////
-    /// Mint & setup on gated marketplace //
-    ////////////////////////////////////////
+    //////////////////////////////////////
+    /// Mint & setup on gated only drop //
+    //////////////////////////////////////
 
-    // TODO do - we need a method to mint as buy now and create a sale?
-
-    function mintBatchGatedEdition(
+    function mintBatchEditionGatedOnly(
         uint16 _editionSize,
         uint256 _merkleIndex,
         bytes32[] calldata _merkleProof,
@@ -155,18 +154,67 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
-    function mintBatchGatedEditionAsProxy(
+    function mintBatchEditionGatedOnlyAsProxy(
         address _creator,
         uint16 _editionSize,
-        uint256 _merkleIndex,
-        bytes32[] calldata _merkleProof,
         address _deployedRoyaltiesHandler,
         string calldata _uri
     ) canMintAgain external {
         require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
 
         // Make tokens & edition
+        uint256 editionId = koda.mintBatchEdition(_editionSize, _creator, _uri);
+
+        // Created gated sale
+        gatedMarketplace.createSale(editionId);
+
+        _recordSuccessfulMint(_creator);
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+    }
+
+    //////////////////////////////////////////
+    /// Mint & setup on gated & public drop //
+    //////////////////////////////////////////
+
+    function mintBatchEditionGatedAndPublic(
+        uint16 _editionSize,
+        uint128 _publicStartDate,
+        uint128 _publicBuyNowPrice,
+        uint256 _merkleIndex,
+        bytes32[] calldata _merkleProof,
+        address _deployedRoyaltiesHandler,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
+
+        // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
+
+        // Setup public sale
+        _setupSalesMechanic(editionId, SaleType.BUY_NOW, _publicStartDate, _publicBuyNowPrice, 0);
+
+        // Created gated sale
+        gatedMarketplace.createSale(editionId);
+
+        _recordSuccessfulMint(_msgSender());
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+    }
+
+    function mintBatchEditionGatedAndPublicAsProxy(
+        address _creator,
+        uint16 _editionSize,
+        uint128 _publicStartDate,
+        uint128 _publicBuyNowPrice,
+        address _deployedRoyaltiesHandler,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintBatchEdition(_editionSize, _creator, _uri);
+
+        // Setup public sale
+        _setupSalesMechanic(editionId, SaleType.BUY_NOW, _publicStartDate, _publicBuyNowPrice, 0);
 
         // Created gated sale
         gatedMarketplace.createSale(editionId);
@@ -193,9 +241,30 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
 
         _recordSuccessfulMint(_msgSender());
         _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+
+        emit EditionMinted(editionId);
     }
 
-    /// Internal helpers
+    function mintBatchEditionOnlyAsProxy(
+        address _creator,
+        uint16 _editionSize,
+        address _deployedRoyaltiesHandler,
+        string calldata _uri
+    ) canMintAgain external {
+        require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
+
+        // Make tokens & edition
+        uint256 editionId = koda.mintBatchEdition(_editionSize, _creator, _uri);
+
+        _recordSuccessfulMint(_creator);
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+
+        emit EditionMinted(editionId);
+    }
+
+    ///////////////////////
+    /// Internal helpers //
+    ///////////////////////
 
     function _setupSalesMechanic(uint256 _editionId, SaleType _saleType, uint128 _startDate, uint128 _basePrice, uint128 _stepPrice) internal {
         if (SaleType.BUY_NOW == _saleType) {

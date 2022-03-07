@@ -655,6 +655,71 @@
   {
     "inputs": [
       {
+        "internalType": "bytes32",
+        "name": "c__0x427a650a",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0x427a650a",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "c__0x9d064286",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0x9d064286",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "c__0xbf0f8cb0",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0xbf0f8cb0",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "c__0xc9c621b2",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0xc9c621b2",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "c__0xfe6d5da9",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0xfe6d5da9",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint16",
         "name": "_editionId",
         "type": "uint16"

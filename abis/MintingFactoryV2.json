@@ -102,6 +102,19 @@
         "internalType": "uint256",
         "name": "_editionId",
         "type": "uint256"
+      }
+    ],
+    "name": "EditionMinted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "_editionId",
+        "type": "uint256"
       },
       {
         "indexed": false,
@@ -143,6 +156,19 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "c__0xb78ebef4",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0xb78ebef4",
+    "outputs": [],
+    "stateMutability": "pure",
     "type": "function"
   },
   {
@@ -401,6 +427,148 @@
         "type": "uint16"
       },
       {
+        "internalType": "uint128",
+        "name": "_publicStartDate",
+        "type": "uint128"
+      },
+      {
+        "internalType": "uint128",
+        "name": "_publicBuyNowPrice",
+        "type": "uint128"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_merkleIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_merkleProof",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "address",
+        "name": "_deployedRoyaltiesHandler",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
+      }
+    ],
+    "name": "mintBatchEditionGatedAndPublic",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_creator",
+        "type": "address"
+      },
+      {
+        "internalType": "uint16",
+        "name": "_editionSize",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint128",
+        "name": "_publicStartDate",
+        "type": "uint128"
+      },
+      {
+        "internalType": "uint128",
+        "name": "_publicBuyNowPrice",
+        "type": "uint128"
+      },
+      {
+        "internalType": "address",
+        "name": "_deployedRoyaltiesHandler",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
+      }
+    ],
+    "name": "mintBatchEditionGatedAndPublicAsProxy",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "_editionSize",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_merkleIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_merkleProof",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "address",
+        "name": "_deployedRoyaltiesHandler",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
+      }
+    ],
+    "name": "mintBatchEditionGatedOnly",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_creator",
+        "type": "address"
+      },
+      {
+        "internalType": "uint16",
+        "name": "_editionSize",
+        "type": "uint16"
+      },
+      {
+        "internalType": "address",
+        "name": "_deployedRoyaltiesHandler",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
+      }
+    ],
+    "name": "mintBatchEditionGatedOnlyAsProxy",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "_editionSize",
+        "type": "uint16"
+      },
+      {
         "internalType": "uint256",
         "name": "_merkleIndex",
         "type": "uint256"
@@ -429,39 +597,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint16",
-        "name": "_editionSize",
-        "type": "uint16"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_merkleIndex",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes32[]",
-        "name": "_merkleProof",
-        "type": "bytes32[]"
-      },
-      {
-        "internalType": "address",
-        "name": "_deployedRoyaltiesHandler",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "_uri",
-        "type": "string"
-      }
-    ],
-    "name": "mintBatchGatedEdition",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "_creator",
         "type": "address"
@@ -472,16 +607,6 @@
         "type": "uint16"
       },
       {
-        "internalType": "uint256",
-        "name": "_merkleIndex",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes32[]",
-        "name": "_merkleProof",
-        "type": "bytes32[]"
-      },
-      {
         "internalType": "address",
         "name": "_deployedRoyaltiesHandler",
         "type": "address"
@@ -492,7 +617,7 @@
         "type": "string"
       }
     ],
-    "name": "mintBatchGatedEditionAsProxy",
+    "name": "mintBatchEditionOnlyAsProxy",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

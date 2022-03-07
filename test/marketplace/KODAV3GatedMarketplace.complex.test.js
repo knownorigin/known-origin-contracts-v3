@@ -1,5 +1,5 @@
 const {expect} = require('chai');
-const {BN, expectEvent, expectRevert, time, constants, ether, balance} = require('@openzeppelin/test-helpers');
+const {BN, expectEvent, expectRevert, time, constants, ether} = require('@openzeppelin/test-helpers');
 const {ZERO_ADDRESS} = constants;
 
 const {parseBalanceMap} = require('../utils/parse-balance-map');
