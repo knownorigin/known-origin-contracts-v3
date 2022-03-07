@@ -1,29 +1,27 @@
 [
   {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
     "inputs": [
       {
-        "internalType": "contract IKOAccessControlsLookup",
-        "name": "_accessControls",
+        "indexed": false,
+        "internalType": "address",
+        "name": "previousAdmin",
         "type": "address"
       },
       {
-        "internalType": "contract IKODAV3Minter",
-        "name": "_koda",
-        "type": "address"
-      },
-      {
-        "internalType": "contract IKODAV3PrimarySaleMarketplace",
-        "name": "_marketplace",
-        "type": "address"
-      },
-      {
-        "internalType": "contract ICollabRoyaltiesRegistry",
-        "name": "_royaltiesRegistry",
+        "indexed": false,
+        "internalType": "address",
+        "name": "newAdmin",
         "type": "address"
       }
     ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
+    "name": "AdminChanged",
+    "type": "event"
   },
   {
     "anonymous": false,
@@ -88,13 +86,39 @@
     "inputs": [
       {
         "indexed": true,
+        "internalType": "address",
+        "name": "beacon",
+        "type": "address"
+      }
+    ],
+    "name": "BeaconUpgraded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "_editionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "EditionMinted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "uint256",
         "name": "_editionId",
         "type": "uint256"
       },
       {
         "indexed": false,
-        "internalType": "enum MintingFactory.SaleType",
+        "internalType": "enum MintingFactoryV2.SaleType",
         "name": "_saleType",
         "type": "uint8"
       }
@@ -106,6 +130,19 @@
     "anonymous": false,
     "inputs": [],
     "name": "MintingFactoryCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "implementation",
+        "type": "address"
+      }
+    ],
+    "name": "Upgraded",
     "type": "event"
   },
   {
@@ -125,24 +162,11 @@
     "inputs": [
       {
         "internalType": "bytes32",
-        "name": "c__0xb0483e39",
+        "name": "c__0xb78ebef4",
         "type": "bytes32"
       }
     ],
-    "name": "c_0xb0483e39",
-    "outputs": [],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "c__0xefe3176d",
-        "type": "bytes32"
-      }
-    ],
-    "name": "c_0xefe3176d",
+    "name": "c_0xb78ebef4",
     "outputs": [],
     "stateMutability": "pure",
     "type": "function"
@@ -211,6 +235,52 @@
   },
   {
     "inputs": [],
+    "name": "gatedMarketplace",
+    "outputs": [
+      {
+        "internalType": "contract IKODAV3GatedMarketplace",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract IKOAccessControlsLookup",
+        "name": "_accessControls",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IKODAV3Minter",
+        "name": "_koda",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IKODAV3PrimarySaleMarketplace",
+        "name": "_marketplace",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IKODAV3GatedMarketplace",
+        "name": "_gatedMarketplace",
+        "type": "address"
+      },
+      {
+        "internalType": "contract ICollabRoyaltiesRegistry",
+        "name": "_royaltiesRegistry",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "koda",
     "outputs": [
       {
@@ -251,7 +321,7 @@
   {
     "inputs": [
       {
-        "internalType": "enum MintingFactory.SaleType",
+        "internalType": "enum MintingFactoryV2.SaleType",
         "name": "_saleType",
         "type": "uint8"
       },
@@ -304,88 +374,12 @@
   {
     "inputs": [
       {
-        "internalType": "enum MintingFactory.SaleType",
-        "name": "_saleType",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint128[]",
-        "name": "_config",
-        "type": "uint128[]"
-      },
-      {
-        "internalType": "string",
-        "name": "_uri",
-        "type": "string"
-      },
-      {
-        "internalType": "address[]",
-        "name": "_erc20s",
-        "type": "address[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "_amounts",
-        "type": "uint256[]"
-      },
-      {
-        "internalType": "bytes32[]",
-        "name": "_merkleProof",
-        "type": "bytes32[]"
-      }
-    ],
-    "name": "mintBatchEditionAndComposeERC20s",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "_creator",
         "type": "address"
       },
       {
-        "internalType": "enum MintingFactory.SaleType",
-        "name": "_saleType",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint128[]",
-        "name": "_config",
-        "type": "uint128[]"
-      },
-      {
-        "internalType": "string",
-        "name": "_uri",
-        "type": "string"
-      },
-      {
-        "internalType": "address[]",
-        "name": "_erc20s",
-        "type": "address[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "_amounts",
-        "type": "uint256[]"
-      }
-    ],
-    "name": "mintBatchEditionAndComposeERC20sAsProxy",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_creator",
-        "type": "address"
-      },
-      {
-        "internalType": "enum MintingFactory.SaleType",
+        "internalType": "enum MintingFactoryV2.SaleType",
         "name": "_saleType",
         "type": "uint8"
       },
@@ -428,34 +422,19 @@
   {
     "inputs": [
       {
-        "internalType": "enum MintingFactory.SaleType",
-        "name": "_saleType",
-        "type": "uint8"
-      },
-      {
         "internalType": "uint16",
         "name": "_editionSize",
         "type": "uint16"
       },
       {
         "internalType": "uint128",
-        "name": "_startDate",
+        "name": "_publicStartDate",
         "type": "uint128"
       },
       {
         "internalType": "uint128",
-        "name": "_basePrice",
+        "name": "_publicBuyNowPrice",
         "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_stepPrice",
-        "type": "uint128"
-      },
-      {
-        "internalType": "string",
-        "name": "_uri",
-        "type": "string"
       },
       {
         "internalType": "uint256",
@@ -471,9 +450,14 @@
         "internalType": "address",
         "name": "_deployedRoyaltiesHandler",
         "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
       }
     ],
-    "name": "mintConsecutiveBatchEdition",
+    "name": "mintBatchEditionGatedAndPublic",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -486,42 +470,32 @@
         "type": "address"
       },
       {
-        "internalType": "enum MintingFactory.SaleType",
-        "name": "_saleType",
-        "type": "uint8"
-      },
-      {
         "internalType": "uint16",
         "name": "_editionSize",
         "type": "uint16"
       },
       {
         "internalType": "uint128",
-        "name": "_startDate",
+        "name": "_publicStartDate",
         "type": "uint128"
       },
       {
         "internalType": "uint128",
-        "name": "_basePrice",
+        "name": "_publicBuyNowPrice",
         "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_stepPrice",
-        "type": "uint128"
-      },
-      {
-        "internalType": "string",
-        "name": "_uri",
-        "type": "string"
       },
       {
         "internalType": "address",
         "name": "_deployedRoyaltiesHandler",
         "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
       }
     ],
-    "name": "mintConsecutiveBatchEditionAsProxy",
+    "name": "mintBatchEditionGatedAndPublicAsProxy",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -529,29 +503,9 @@
   {
     "inputs": [
       {
-        "internalType": "enum MintingFactory.SaleType",
-        "name": "_saleType",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_startDate",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_basePrice",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_stepPrice",
-        "type": "uint128"
-      },
-      {
-        "internalType": "string",
-        "name": "_uri",
-        "type": "string"
+        "internalType": "uint16",
+        "name": "_editionSize",
+        "type": "uint16"
       },
       {
         "internalType": "uint256",
@@ -567,9 +521,14 @@
         "internalType": "address",
         "name": "_deployedRoyaltiesHandler",
         "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
       }
     ],
-    "name": "mintToken",
+    "name": "mintBatchEditionGatedOnly",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -582,37 +541,83 @@
         "type": "address"
       },
       {
-        "internalType": "enum MintingFactory.SaleType",
-        "name": "_saleType",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_startDate",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_basePrice",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_stepPrice",
-        "type": "uint128"
-      },
-      {
-        "internalType": "string",
-        "name": "_uri",
-        "type": "string"
+        "internalType": "uint16",
+        "name": "_editionSize",
+        "type": "uint16"
       },
       {
         "internalType": "address",
         "name": "_deployedRoyaltiesHandler",
         "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
       }
     ],
-    "name": "mintTokenAsProxy",
+    "name": "mintBatchEditionGatedOnlyAsProxy",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "_editionSize",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_merkleIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_merkleProof",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "address",
+        "name": "_deployedRoyaltiesHandler",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
+      }
+    ],
+    "name": "mintBatchEditionOnly",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_creator",
+        "type": "address"
+      },
+      {
+        "internalType": "uint16",
+        "name": "_editionSize",
+        "type": "uint16"
+      },
+      {
+        "internalType": "address",
+        "name": "_deployedRoyaltiesHandler",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
+      }
+    ],
+    "name": "mintBatchEditionOnlyAsProxy",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -690,19 +695,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint128",
-        "name": "_now",
-        "type": "uint128"
-      }
-    ],
-    "name": "setNow",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "contract ICollabRoyaltiesRegistry",
         "name": "_royaltiesRegistry",
         "type": "address"
@@ -711,6 +703,37 @@
     "name": "setRoyaltiesRegistry",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newImplementation",
+        "type": "address"
+      }
+    ],
+    "name": "upgradeTo",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newImplementation",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "upgradeToAndCall",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   }
 ]

@@ -407,6 +407,19 @@
         "type": "uint256"
       }
     ],
+    "name": "SaleCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "_saleId",
+        "type": "uint256"
+      }
+    ],
     "name": "SalePaused",
     "type": "event"
   },
@@ -491,6 +504,32 @@
   {
     "inputs": [
       {
+        "internalType": "bytes32",
+        "name": "c__0x4d4d7521",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0x4d4d7521",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "c__0x6c9fdbda",
+        "type": "bytes32"
+      }
+    ],
+    "name": "c_0x6c9fdbda",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "_editionId",
         "type": "uint256"
@@ -532,6 +571,67 @@
       }
     ],
     "name": "createPhase",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_editionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint128[]",
+        "name": "_startTimes",
+        "type": "uint128[]"
+      },
+      {
+        "internalType": "uint128[]",
+        "name": "_endTimes",
+        "type": "uint128[]"
+      },
+      {
+        "internalType": "uint128[]",
+        "name": "_pricesInWei",
+        "type": "uint128[]"
+      },
+      {
+        "internalType": "uint16[]",
+        "name": "_mintCaps",
+        "type": "uint16[]"
+      },
+      {
+        "internalType": "uint16[]",
+        "name": "_walletMintLimits",
+        "type": "uint16[]"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_merkleRoots",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "string[]",
+        "name": "_merkleIPFSHashes",
+        "type": "string[]"
+      }
+    ],
+    "name": "createPhases",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_editionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "createSale",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
