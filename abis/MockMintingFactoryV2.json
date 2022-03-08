@@ -156,32 +156,6 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "c__0x85b9e951",
-        "type": "bytes32"
-      }
-    ],
-    "name": "c_0x85b9e951",
-    "outputs": [],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "c__0xb78ebef4",
-        "type": "bytes32"
-      }
-    ],
-    "name": "c_0xb78ebef4",
-    "outputs": [],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "_account",
         "type": "address"
