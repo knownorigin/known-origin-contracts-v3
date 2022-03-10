@@ -63,7 +63,7 @@ contract KODAV3GatedMerkleMarketplace is BaseUpgradableMarketplace, IKODAV3Gated
     external
     override
     whenNotPaused
-    onlyCreatorOrAdmin(_editionId) {
+    onlyCreatorContractOrAdmin(_editionId) {
         uint256 editionSize = koda.getSizeOfEdition(_editionId);
         require(editionSize > 0, 'edition does not exist');
 

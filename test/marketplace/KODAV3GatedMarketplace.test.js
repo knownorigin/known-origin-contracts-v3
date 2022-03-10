@@ -516,20 +516,6 @@ contract('BasicGatedSale tests...', function () {
                 await expectRevert(txs, 'Caller not creator or admin');
             });
 
-            it('reverts if the contract is called', async () => {
-                let receipt = await this.basicGatedSale.connect(admin).pause();
-                await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'Paused', {
-                    account: admin.address
-                });
-
-                const txs = this.basicGatedSale.connect(artist3).removePhase(
-                    FIRST_MINTED_TOKEN_ID.toString(),
-                    ONE.toString()
-                );
-
-                await expectRevert(txs, 'Pausable: paused');
-            });
-
             it('reverts if given an invalid edition id', async () => {
                 const txs = this.basicGatedSale.connect(admin).removePhase(
                     FIRST_MINTED_TOKEN_ID.add(new BN('5000')).toString(),
