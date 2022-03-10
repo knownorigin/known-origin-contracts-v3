@@ -94,11 +94,17 @@ contract KODAV3UpgradableGatedMarketplace is IKODAV3GatedMarketplace, BaseUpgrad
         uint16[] memory _walletMintLimits,
         bytes32[] memory _merkleRoots,
         string[] memory _merkleIPFSHashes
-    ) external override whenNotPaused onlyCreatorContractOrAdmin(_editionId) {
+    ) external override whenNotPaused {
+        address creator = koda.getCreatorOfEdition(_editionId);
+        require(
+            creator == _msgSender() || accessControls.hasContractOrAdminRole(_msgSender()),
+            "Caller not creator or admin"
+        );
+
         // Check no existing sale in place
         require(editionToSale[_editionId] == 0, "Sale exists for this edition");
 
-        uint256 saleId = _createSale(_editionId);
+        uint256 saleId = _createSale(_editionId, creator);
 
         _addMultiplePhasesToSale(
             saleId,
@@ -115,22 +121,28 @@ contract KODAV3UpgradableGatedMarketplace is IKODAV3GatedMarketplace, BaseUpgrad
     }
 
     /// @notice Allow an artist or admin to create a sale with 0 phases
-    function createSale(uint256 _editionId) external override whenNotPaused onlyCreatorContractOrAdmin(_editionId) {
+    function createSale(uint256 _editionId) external override whenNotPaused {
+        address creator = koda.getCreatorOfEdition(_editionId);
+        require(
+            creator == _msgSender() || accessControls.hasContractOrAdminRole(_msgSender()),
+            "Caller not creator or admin"
+        );
+
         // Check no existing sale in place
         require(editionToSale[_editionId] == 0, "Sale exists for this edition");
 
-        uint256 saleId = _createSale(_editionId);
+        uint256 saleId = _createSale(_editionId, creator);
 
         emit SaleCreated(saleId);
     }
 
-    function _createSale(uint256 _editionId) internal returns (uint256) {
+    function _createSale(uint256 _editionId, address _creator) internal returns (uint256) {
         uint256 saleId = ++saleIdCounter;
 
         // Assign the sale to the sales and editionToSale mappings
         sales[saleId] = Sale({
         id : saleId,
-        creator : koda.getCreatorOfEdition(_editionId),
+        creator : _creator,
         fundsReceiver : koda.getRoyaltiesReceiver(_editionId),
         editionId : _editionId,
         maxEditionId : koda.maxTokenIdOfEdition(_editionId),
