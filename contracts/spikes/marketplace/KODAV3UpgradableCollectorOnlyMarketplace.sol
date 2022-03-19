@@ -47,7 +47,7 @@ contract KODAV3UpgradableCollectorOnlyMarketplace is BaseUpgradableMarketplace {
     function createSale(uint256 _editionId, uint128 _startTime, uint128 _endTime, uint16 _mintLimit, uint128 _priceInWei)
     public
     whenNotPaused
-    onlyCreatorOrAdmin(_editionId)
+    onlyCreatorContractOrAdmin(_editionId)
     {
         uint256 editionSize = koda.getSizeOfEdition(_editionId);
         require(editionSize > 0, 'edition does not exist');
@@ -129,7 +129,7 @@ contract KODAV3UpgradableCollectorOnlyMarketplace is BaseUpgradableMarketplace {
         return sales[_saleId].mintLimit - totalMints[_saleId][_tokenId];
     }
 
-    function toggleSalePause(uint256 _saleId, uint256 _editionId) public onlyCreatorOrAdmin(_editionId) {
+    function toggleSalePause(uint256 _saleId, uint256 _editionId) public onlyCreatorContractOrAdmin(_editionId) {
         if (sales[_saleId].paused) {
             sales[_saleId].paused = false;
             emit SaleResumed(_saleId, _editionId);

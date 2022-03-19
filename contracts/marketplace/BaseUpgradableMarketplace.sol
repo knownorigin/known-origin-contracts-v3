@@ -37,9 +37,9 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
         _;
     }
 
-    modifier onlyCreatorOrAdmin(uint256 _editionId) {
+    modifier onlyCreatorContractOrAdmin(uint256 _editionId) {
         require(
-            koda.getCreatorOfEdition(_editionId) == _msgSender() || accessControls.hasAdminRole(_msgSender()),
+            koda.getCreatorOfEdition(_editionId) == _msgSender() || accessControls.hasContractOrAdminRole(_msgSender()),
             "Caller not creator or admin"
         );
         _;

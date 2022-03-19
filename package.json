@@ -10,7 +10,7 @@
   "scripts": {
     "compile": "npx hardhat compile --show-stack-traces",
     "coverage": "NODE_OPTIONS=--max-old-space-size=4096 npx hardhat coverage",
-    "test": "npx hardhat test",
+    "test": "npx hardhat test --parallel",
     "contract-size": "npx hardhat size-contracts",
     "gas": "REPORT_GAS=true npx hardhat test"
   },
@@ -30,7 +30,7 @@
     "ethereum-waffle": "^3.2.2",
     "ethereumjs-util": "^7.0.8",
     "ethers": "5.3.1",
-    "hardhat": "2.4.1",
+    "hardhat": "2.9.1",
     "hardhat-abi-exporter": "^2.2.1",
     "hardhat-gas-reporter": "1.0.4",
     "lodash": "4.17.21",

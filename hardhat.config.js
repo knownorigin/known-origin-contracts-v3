@@ -49,7 +49,7 @@ module.exports = {
     ...nonDevelopmentNetworks,
     coverage: {
       url: 'http://localhost:8555',
-    }
+    },
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_KEY

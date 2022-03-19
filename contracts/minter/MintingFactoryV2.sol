@@ -3,7 +3,6 @@
 pragma solidity 0.8.4;
 
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import {IKODAV3Minter} from "../core/IKODAV3Minter.sol";
@@ -27,8 +26,8 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         _;
     }
 
-    modifier canMintAgain(){
-        require(_canCreateNewEdition(_msgSender()), "Caller unable to create yet");
+    modifier canMintAgain(address _sender) {
+        require(_canCreateNewEdition(_sender), "Caller unable to create yet");
         _;
     }
 
@@ -100,7 +99,7 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         uint256 _merkleIndex,
         bytes32[] calldata _merkleProof,
         address _deployedRoyaltiesHandler
-    ) canMintAgain external {
+    ) canMintAgain(_msgSender()) external {
         require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
         // Make tokens & edition
@@ -120,7 +119,7 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         uint128 _stepPrice,
         string calldata _uri,
         address _deployedRoyaltiesHandler
-    ) canMintAgain external {
+    ) canMintAgain(_creator) external {
         require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
 
         // Make tokens & edition
@@ -141,7 +140,7 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         bytes32[] calldata _merkleProof,
         address _deployedRoyaltiesHandler,
         string calldata _uri
-    ) canMintAgain external {
+    ) canMintAgain(_msgSender()) external {
         require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
         // Make tokens & edition
@@ -159,7 +158,7 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         uint16 _editionSize,
         address _deployedRoyaltiesHandler,
         string calldata _uri
-    ) canMintAgain external {
+    ) canMintAgain(_creator) external {
         require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
 
         // Make tokens & edition
@@ -184,7 +183,7 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         bytes32[] calldata _merkleProof,
         address _deployedRoyaltiesHandler,
         string calldata _uri
-    ) canMintAgain external {
+    ) canMintAgain(_msgSender()) external {
         require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
         // Make tokens & edition
@@ -207,7 +206,7 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         uint128 _publicBuyNowPrice,
         address _deployedRoyaltiesHandler,
         string calldata _uri
-    ) canMintAgain external {
+    ) canMintAgain(_creator) external {
         require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
 
         // Make tokens & edition
@@ -233,7 +232,7 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         bytes32[] calldata _merkleProof,
         address _deployedRoyaltiesHandler,
         string calldata _uri
-    ) canMintAgain external {
+    ) canMintAgain(_msgSender()) external {
         require(accessControls.isVerifiedArtist(_merkleIndex, _msgSender(), _merkleProof), "Caller must have minter role");
 
         // Make tokens & edition
@@ -250,7 +249,7 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         uint16 _editionSize,
         address _deployedRoyaltiesHandler,
         string calldata _uri
-    ) canMintAgain external {
+    ) canMintAgain(_creator) external {
         require(accessControls.isVerifiedArtistProxy(_creator, _msgSender()), "Caller is not artist proxy");
 
         // Make tokens & edition
