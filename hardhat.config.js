@@ -5,7 +5,7 @@ require('hardhat-contract-sizer')
 require('hardhat-abi-exporter');
 require('@nomiclabs/hardhat-solhint');
 require("@nomiclabs/hardhat-etherscan");
-require('@openzeppelin/hardhat-upgrades')
+require('@openzeppelin/hardhat-upgrades');
 require("@nomiclabs/hardhat-truffle5");
 
 const INFURA_PROJECT_ID = process.env.INFURA_PROJECT_ID;

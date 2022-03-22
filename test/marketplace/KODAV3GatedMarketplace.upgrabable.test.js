@@ -144,7 +144,8 @@ contract('KODAV3UpgradableGatedMarketplace tests...', function () {
         const MockKODAV3UpgradableGatedMarketplace = await ethers.getContractFactory('MockKODAV3UpgradableGatedMarketplace');
         console.log('Upgrading to MockKODAV3UpgradableGatedMarketplace...');
 
-        await upgrades.upgradeProxy(this.basicGatedSale.address, MockKODAV3UpgradableGatedMarketplace);
+        await upgrades.forceImport(this.basicGatedSale.address, await ethers.getContractFactory('KODAV3UpgradableGatedMarketplace'), {kind: "uups"})
+        await upgrades.upgradeProxy(this.basicGatedSale.address, MockKODAV3UpgradableGatedMarketplace, {kind: "uups"});
         console.log('MockKODAV3UpgradableGatedMarketplace upgraded');
 
         this.basicGatedSale = await MockKODAV3UpgradableGatedMarketplace.attach(this.basicGatedSale.address);
