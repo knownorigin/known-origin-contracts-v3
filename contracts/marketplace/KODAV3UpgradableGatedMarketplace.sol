@@ -363,14 +363,14 @@ contract KODAV3UpgradableGatedMarketplace is IKODAV3GatedMarketplace, BaseUpgrad
 
         // Add the phase to the phases mapping
         phases[_saleId].push(Phase({
-        startTime : _startTime,
-        endTime : _endTime,
-        priceInWei : _priceInWei,
-        mintCounter : 0,
-        mintCap : _mintCap,
-        walletMintLimit : _walletMintLimit,
-        merkleRoot : _merkleRoot,
-        merkleIPFSHash : _merkleIPFSHash
+            startTime : _startTime,
+            endTime : _endTime,
+            priceInWei : _priceInWei,
+            mintCounter : 0,
+            mintCap : _mintCap,
+            walletMintLimit : _walletMintLimit,
+            merkleRoot : _merkleRoot,
+            merkleIPFSHash : _merkleIPFSHash
         }));
 
         emit PhaseCreated(_saleId, phases[_saleId].length - 1);

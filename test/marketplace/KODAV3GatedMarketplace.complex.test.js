@@ -470,6 +470,58 @@ contract('BasicGatedSale complex tests...', function () {
         _recipient: buyer1.address
       });
     });
+
+    it('can sellout a gated sale fully', async () => {
+      const creationReceipt = await this.basicGatedSale.connect(artist).createSaleWithPhases(
+        FIRST_MINTED_TOKEN_ID.toString(),
+        [this.phase1Start.toString()],
+        [this.phase1End.toString()],
+        [ether('0.1').toString()],
+        ['29'],
+        ['29'],
+        [this.merkleProof1.merkleRoot],
+        [MOCK_MERKLE_HASH],
+      );
+
+      await time.increaseTo(this.phase1Start.add(time.duration.minutes(1)));
+
+      await expectEvent.inTransaction(creationReceipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
+        _saleId: ONE
+      });
+
+      for (let i = 29; i > 0; --i) {
+        const receipt = await this.basicGatedSale.connect(buyer2).mint(
+          ONE.toString(),
+          ZERO.toString(),
+          ONE.toString(),
+          this.merkleProof1.claims[buyer2.address].index,
+          this.merkleProof1.claims[buyer2.address].proof,
+          {
+            value: ether('0.1').toString()
+          });
+
+        const expectedTokenId = FIRST_MINTED_TOKEN_ID.add(new BN(i.toString())).sub(ONE);
+
+        await expectEvent.inTransaction(receipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
+          _saleId: ONE,
+          _phaseId: ZERO,
+          _tokenId: expectedTokenId,
+          _recipient: buyer2.address
+        });
+
+        expect(await this.token.ownerOf(expectedTokenId)).to.be.equal(buyer2.address);
+      }
+
+      await expectRevert(this.basicGatedSale.connect(buyer1).mint(
+        ONE.toString(),
+        ZERO.toString(),
+        ONE.toString(),
+        this.merkleProof1.claims[buyer1.address].index,
+        this.merkleProof1.claims[buyer1.address].proof,
+        {
+          value: ether('0.1').toString()
+        }), 'Phase mint cap reached');
+    });
   });
 
   describe('Gated sales with mid-sequence burns/transfer', async () => {
