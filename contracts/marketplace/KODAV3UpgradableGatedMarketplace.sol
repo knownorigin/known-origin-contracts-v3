@@ -313,7 +313,7 @@ contract KODAV3UpgradableGatedMarketplace is IKODAV3GatedMarketplace, BaseUpgrad
 
     function getNextAvailablePrimarySaleToken(uint256 _startId, uint256 _editionId, address creator) internal view returns (uint256 _tokenId) {
         for (uint256 tokenId = _startId; tokenId >= _editionId; --tokenId) {
-            if(koda.ownerOf(tokenId) == creator){
+            if (koda.ownerOf(tokenId) == creator) {
                 return tokenId;
             }
         }
