@@ -8,6 +8,8 @@ import {IKODAV3} from "../core/IKODAV3.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3GatedMarketplace} from "./IKODAV3Marketplace.sol";
 
+import "hardhat/console.sol";
+
 contract KODAV3UpgradableGatedMarketplace is IKODAV3GatedMarketplace, BaseUpgradableMarketplace {
 
     /// @notice emitted when admin updates funds receiver
@@ -145,7 +147,7 @@ contract KODAV3UpgradableGatedMarketplace is IKODAV3GatedMarketplace, BaseUpgrad
         creator : _creator,
         fundsReceiver : koda.getRoyaltiesReceiver(_editionId),
         editionId : _editionId,
-        maxEditionId : koda.maxTokenIdOfEdition(_editionId),
+        maxEditionId : koda.maxTokenIdOfEdition(_editionId) - 1,
         paused : 0,
         mintCounter : 0
         });
@@ -285,16 +287,19 @@ contract KODAV3UpgradableGatedMarketplace is IKODAV3GatedMarketplace, BaseUpgrad
         address _recipient
     ) internal {
         require(_mintCount > 0, "Nothing being minted");
-        uint256 startId = _editionId + sales[_saleId].mintCounter;
+
+        address creator = sales[_saleId].creator;
+        uint256 startId = sales[_saleId].maxEditionId - sales[_saleId].mintCounter;
+
         for (uint256 i; i < _mintCount; ++i) {
-            uint256 tokenId = getNextAvailablePrimarySaleToken(startId, sales[_saleId].maxEditionId, sales[_saleId].creator);
+            uint256 tokenId = getNextAvailablePrimarySaleToken(startId, _editionId, creator);
 
             // send token to buyer (assumes approval has been made, if not then this will fail)
-            koda.safeTransferFrom(sales[_saleId].creator, _recipient, tokenId);
+            koda.safeTransferFrom(creator, _recipient, tokenId);
 
             emit MintFromSale(_saleId, _phaseId, tokenId, _recipient);
 
-        unchecked {startId = tokenId++;}
+            unchecked {startId = tokenId--;}
         }
         _handleSaleFunds(sales[_saleId].fundsReceiver, getPlatformSaleCommissionForSale(_saleId));
     }
@@ -306,9 +311,9 @@ contract KODAV3UpgradableGatedMarketplace is IKODAV3GatedMarketplace, BaseUpgrad
         return platformPrimaryCommission;
     }
 
-    function getNextAvailablePrimarySaleToken(uint256 _startId, uint256 _maxEditionId, address creator) internal view returns (uint256 _tokenId) {
-        for (uint256 tokenId = _startId; tokenId < _maxEditionId; ++tokenId) {
-            if (koda.ownerOf(tokenId) == creator) {
+    function getNextAvailablePrimarySaleToken(uint256 _startId, uint256 _editionId, address creator) internal view returns (uint256 _tokenId) {
+        for (uint256 tokenId = _startId; tokenId >= _editionId; --tokenId) {
+            if(koda.ownerOf(tokenId) == creator){
                 return tokenId;
             }
         }
@@ -358,14 +363,14 @@ contract KODAV3UpgradableGatedMarketplace is IKODAV3GatedMarketplace, BaseUpgrad
 
         // Add the phase to the phases mapping
         phases[_saleId].push(Phase({
-            startTime : _startTime,
-            endTime : _endTime,
-            priceInWei : _priceInWei,
-            mintCounter : 0,
-            mintCap : _mintCap,
-            walletMintLimit : _walletMintLimit,
-            merkleRoot : _merkleRoot,
-            merkleIPFSHash : _merkleIPFSHash
+        startTime : _startTime,
+        endTime : _endTime,
+        priceInWei : _priceInWei,
+        mintCounter : 0,
+        mintCap : _mintCap,
+        walletMintLimit : _walletMintLimit,
+        merkleRoot : _merkleRoot,
+        merkleIPFSHash : _merkleIPFSHash
         }));
 
         emit PhaseCreated(_saleId, phases[_saleId].length - 1);

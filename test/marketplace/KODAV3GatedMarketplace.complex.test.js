@@ -25,7 +25,6 @@ contract('BasicGatedSale complex tests...', function () {
   const TEN = new BN('10');
 
   const FIRST_MINTED_TOKEN_ID = new BN('11000'); // this is implied
-  let CURRENT_TOKEN_ID = FIRST_MINTED_TOKEN_ID;
 
   let owner, admin, koCommission, contract, artist, buyer1, buyer2, buyer3, buyer4, buyer5;
 
@@ -213,19 +212,21 @@ contract('BasicGatedSale complex tests...', function () {
           value: ether('0.3').toString()
         });
 
+      const firstMintedTokenId = FIRST_MINTED_TOKEN_ID.add(new BN("28"));
+
       await expectEvent.inTransaction(b1p1MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
         _saleId: ONE,
         _phaseId: ZERO,
-        _tokenId: FIRST_MINTED_TOKEN_ID,
+        _tokenId: firstMintedTokenId,
         _recipient: buyer1.address
       });
 
-      expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(buyer1.address);
+      expect(await this.token.ownerOf(firstMintedTokenId)).to.be.equal(buyer1.address);
 
-      CURRENT_TOKEN_ID = FIRST_MINTED_TOKEN_ID.add(ONE);
+      let CURRENT_TOKEN_ID = firstMintedTokenId.sub(ONE);
       expect(await this.token.ownerOf(CURRENT_TOKEN_ID)).to.be.equal(buyer1.address);
 
-      CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.add(ONE);
+      CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.sub(ONE);
       expect(await this.token.ownerOf(CURRENT_TOKEN_ID)).to.be.equal(buyer1.address);
 
       await expectRevert(this.basicGatedSale.connect(buyer1).mint(
@@ -249,17 +250,17 @@ contract('BasicGatedSale complex tests...', function () {
           value: ether('0.2').toString()
         });
 
+      CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.sub(ONE);
       await expectEvent.inTransaction(b2p1MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
         _saleId: ONE,
         _phaseId: ZERO,
-        _tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('3')),
+        _tokenId: CURRENT_TOKEN_ID,
         _recipient: buyer2.address
       });
 
-      CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.add(ONE);
       expect(await this.token.ownerOf(CURRENT_TOKEN_ID)).to.be.equal(buyer2.address);
 
-      CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.add(ONE);
+      CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.sub(ONE);
       expect(await this.token.ownerOf(CURRENT_TOKEN_ID)).to.be.equal(buyer2.address);
 
       // Try and mint from someone not in the phase whitelist
@@ -298,10 +299,11 @@ contract('BasicGatedSale complex tests...', function () {
           value: ether('0.9').toString()
         });
 
+      CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.sub(ONE);
       await expectEvent.inTransaction(b2p2MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
         _saleId: ONE,
         _phaseId: ONE,
-        _tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('5')),
+        _tokenId: CURRENT_TOKEN_ID,
         _recipient: buyer2.address
       });
 
@@ -316,10 +318,11 @@ contract('BasicGatedSale complex tests...', function () {
           value: ether('0.3').toString()
         });
 
+      CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.sub(THREE);
       await expectEvent.inTransaction(b4p2MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
         _saleId: ONE,
         _phaseId: ONE,
-        _tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('8')),
+        _tokenId: CURRENT_TOKEN_ID,
         _recipient: buyer4.address
       });
 
@@ -369,10 +372,11 @@ contract('BasicGatedSale complex tests...', function () {
           value: ether('7').toString()
         });
 
+      CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.sub(new BN ("10"));
       await expectEvent.inTransaction(b5p3MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
         _saleId: ONE,
         _phaseId: THREE,
-        _tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('15')),
+        _tokenId: CURRENT_TOKEN_ID,
         _recipient: buyer5.address
       });
 
@@ -387,10 +391,11 @@ contract('BasicGatedSale complex tests...', function () {
           value: ether('7').toString()
         });
 
+      CURRENT_TOKEN_ID = CURRENT_TOKEN_ID.sub(new BN ("10"));
       await expectEvent.inTransaction(b2p3MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
         _saleId: ONE,
         _phaseId: THREE,
-        _tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('19')),
+        _tokenId: CURRENT_TOKEN_ID,
         _recipient: buyer2.address
       });
 
@@ -456,12 +461,69 @@ contract('BasicGatedSale complex tests...', function () {
           value: ether('0.3').toString()
         });
 
+      const firstMintedTokenId = FIRST_MINTED_TOKEN_ID.add(new BN("28"));
+
       await expectEvent.inTransaction(b1p1MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
         _saleId: ONE,
         _phaseId: ZERO,
-        _tokenId: FIRST_MINTED_TOKEN_ID.add(ONE),
+        _tokenId: firstMintedTokenId,
         _recipient: buyer1.address
       });
+    });
+  });
+
+  describe('Gated sales with mid-sequence burns/transfer', async () => {
+
+    it('creates sale with mid-sequence transfers', async () => {
+
+      // Make the sale
+      const creationReceipt = await this.basicGatedSale.connect(artist).createSaleWithPhases(
+        FIRST_MINTED_TOKEN_ID.toString(),
+        [this.phase1Start.toString()],
+        [this.phase1End.toString()],
+        [ether('0.1').toString()],
+        ['29'],
+        [THREE.toString()],
+        [this.merkleProof1.merkleRoot],
+        [MOCK_MERKLE_HASH],
+      );
+
+      await time.increaseTo(this.phase1Start.add(time.duration.minutes(1)));
+
+      await expectEvent.inTransaction(creationReceipt.hash, KODAV3UpgradableGatedMarketplace, 'SaleWithPhaseCreated', {
+        _saleId: ONE
+      });
+
+      // burn the last token in the edition sequence
+      const firstMintedTokenId = FIRST_MINTED_TOKEN_ID.add(new BN("28"));
+      await this.token.transferFrom(artist.address, "0x000000000000000000000000000000000000dEaD", firstMintedTokenId, {from: artist.address});
+      expect(await this.token.ownerOf(firstMintedTokenId)).to.be.equal("0x000000000000000000000000000000000000dEaD");
+
+      // transfer the 2nd to last token in the edition sequence
+      const secondMintedTokenId = firstMintedTokenId.sub(ONE);
+      await this.token.transferFrom(artist.address, buyer1.address, secondMintedTokenId, {from: artist.address});
+      expect(await this.token.ownerOf(secondMintedTokenId)).to.be.equal(buyer1.address);
+
+      // Buyer 2 buys the next token
+      const b1p1MintReceipt = await this.basicGatedSale.connect(buyer2).mint(
+        ONE.toString(),
+        ZERO.toString(),
+        ONE.toString(),
+        this.merkleProof1.claims[buyer2.address].index,
+        this.merkleProof1.claims[buyer2.address].proof,
+        {
+          value: ether('0.1').toString()
+        });
+
+      // check the 3rd one is still purchased
+      await expectEvent.inTransaction(b1p1MintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
+        _saleId: ONE,
+        _phaseId: ZERO,
+        _tokenId: secondMintedTokenId.sub(ONE),
+        _recipient: buyer2.address
+      });
+
+      expect(await this.token.ownerOf(secondMintedTokenId.sub(ONE))).to.be.equal(buyer2.address);
     });
   });
 });

@@ -3,6 +3,7 @@ const {ZERO_ADDRESS} = constants;
 
 const {parseBalanceMap} = require('../utils/parse-balance-map');
 const {buildArtistMerkleInput} = require('../utils/merkle-tools');
+const {expect} = require('chai');
 
 const KnownOriginDigitalAssetV3 = artifacts.require('KnownOriginDigitalAssetV3');
 const KOAccessControls = artifacts.require('KOAccessControls');
@@ -67,12 +68,19 @@ contract('BasicGatedSale tests...', function () {
 
         // create a batch of 15 tokens from the minter
         await this.token.mintBatchEdition(15, artist1.address, TOKEN_URI, {from: contract.address});
+        for (let i = 0; i < 15; i++) {
+            expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(new BN(i.toString())))).to.be.equal(artist1.address);
+        }
+
 
         // Ensure basic gated sale has approval to sell tokens
         await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist1.address});
 
         // create  a second edition and approve it minter
         await this.token.mintBatchEdition(15, artist2.address, TOKEN_URI, {from: contract.address});
+        for (let i = 0; i < 15; i++) {
+            expect(await this.token.ownerOf(SECOND_MINTED_TOKEN_ID.add(new BN(i.toString())))).to.be.equal(artist2.address);
+        }
         await this.token.setApprovalForAll(this.basicGatedSale.address, true, {from: artist2.address});
 
         // just for stuck tests
@@ -110,7 +118,7 @@ contract('BasicGatedSale tests...', function () {
                 expect(sale.editionId.toString()).to.be.equal(FIRST_MINTED_TOKEN_ID.toString());
                 expect(sale.creator.toString()).to.be.equal(artist1.address);
                 expect(sale.fundsReceiver.toString()).to.be.equal(artist1.address);
-                expect(sale.maxEditionId.toString()).to.be.equal('11015');
+                expect(sale.maxEditionId.toString()).to.be.equal('11014');
                 expect(sale.mintCounter.toString()).to.be.equal('0');
                 expect(sale.paused.toString()).to.be.equal('0');
 
@@ -344,10 +352,12 @@ contract('BasicGatedSale tests...', function () {
                     {value: ether('0.3').toString()}
                 );
 
+                const firstMintedTokenId = FIRST_MINTED_TOKEN_ID.add(new BN("14"));
+
                 await expectEvent.inTransaction(salesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                     _saleId: ONE,
                     _phaseId: ONE,
-                    _tokenId: FIRST_MINTED_TOKEN_ID,
+                    _tokenId: firstMintedTokenId,
                     _recipient: artist3.address
                 });
             });
@@ -557,14 +567,16 @@ contract('BasicGatedSale tests...', function () {
                         gasPrice: gasPrice.toString()
                     });
 
+                const firstMintedTokenId = FIRST_MINTED_TOKEN_ID.add(new BN("14"));
+
                 await expectEvent.inTransaction(salesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                     _saleId: ONE,
-                    _tokenId: FIRST_MINTED_TOKEN_ID,
+                    _tokenId: firstMintedTokenId,
                     _phaseId: ZERO,
                     _recipient: artist2.address
                 });
 
-                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2.address);
+                expect(await this.token.ownerOf(firstMintedTokenId)).to.be.equal(artist2.address);
 
                 const platformFunds = mintPrice.divn(modulo).muln(platformCommission);
                 const artistFunds = mintPrice.sub(platformFunds);
@@ -598,16 +610,18 @@ contract('BasicGatedSale tests...', function () {
                         gasPrice: gasPrice.toString()
                     });
 
+                const firstMintedTokenId = FIRST_MINTED_TOKEN_ID.add(new BN("14"));
+
                 await expectEvent.inTransaction(salesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                     _saleId: ONE,
-                    _tokenId: FIRST_MINTED_TOKEN_ID,
+                    _tokenId: firstMintedTokenId,
                     _phaseId: ZERO,
                     _recipient: artist2.address
                 });
 
-                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2.address);
-                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(ONE))).to.be.equal(artist2.address);
-                expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID.add(TWO))).to.be.equal(artist2.address);
+                expect(await this.token.ownerOf(firstMintedTokenId)).to.be.equal(artist2.address);
+                expect(await this.token.ownerOf(firstMintedTokenId.sub(ONE))).to.be.equal(artist2.address);
+                expect(await this.token.ownerOf(firstMintedTokenId.sub(TWO))).to.be.equal(artist2.address);
 
                 const platformFunds = mintPrice.divn(modulo).muln(platformCommission);
                 const artistFunds = mintPrice.sub(platformFunds);
@@ -635,9 +649,11 @@ contract('BasicGatedSale tests...', function () {
                         value: ether('1').toString()
                     });
 
+                const firstMintedTokenId = FIRST_MINTED_TOKEN_ID.add(new BN("14"));
+
                 await expectEvent.inTransaction(a1SalesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                     _saleId: ONE,
-                    _tokenId: FIRST_MINTED_TOKEN_ID,
+                    _tokenId: firstMintedTokenId,
                     _phaseId: ZERO,
                     _recipient: artist1.address
                 });
@@ -654,7 +670,7 @@ contract('BasicGatedSale tests...', function () {
 
                 await expectEvent.inTransaction(a2SalesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                     _saleId: ONE,
-                    _tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('10')),
+                    _tokenId: FIRST_MINTED_TOKEN_ID.add(new BN('4')),
                     _phaseId: ZERO,
                     _recipient: artist2.address
                 });
@@ -694,9 +710,11 @@ contract('BasicGatedSale tests...', function () {
                         value: ether('2.5').toString()
                     });
 
+                const firstMintedTokenId = FIRST_MINTED_TOKEN_ID.add(new BN("14"));
+
                 await expectEvent.inTransaction(firstMintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                     _saleId: ONE,
-                    _tokenId: FIRST_MINTED_TOKEN_ID,
+                    _tokenId: firstMintedTokenId,
                     _phaseId: ONE,
                     _recipient: artist3.address
                 });
@@ -811,9 +829,11 @@ contract('BasicGatedSale tests...', function () {
                     {value: ether('0.9').toString()}
                 );
 
+                const firstMintedTokenId = FIRST_MINTED_TOKEN_ID.add(new BN("14"));
+
                 await expectEvent.inTransaction(salesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                     _saleId: ONE,
-                    _tokenId: FIRST_MINTED_TOKEN_ID,
+                    _tokenId: firstMintedTokenId,
                     _phaseId: ZERO,
                     _recipient: artist2.address
                 });
@@ -969,9 +989,11 @@ contract('BasicGatedSale tests...', function () {
                     {value: ether('0.5').toString()}
                 );
 
+                const firstMintedTokenId = FIRST_MINTED_TOKEN_ID.add(new BN("14"));
+
                 await expectEvent.inTransaction(mintReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                     _saleId: ONE,
-                    _tokenId: FIRST_MINTED_TOKEN_ID,
+                    _tokenId: firstMintedTokenId,
                     _phaseId: ZERO,
                     _recipient: artist1.address
                 });
@@ -1238,14 +1260,16 @@ contract('BasicGatedSale tests...', function () {
                             value: ether('0.1').toString()
                         });
 
+                    const firstMintedTokenId = FIRST_MINTED_TOKEN_ID.add(new BN("14"));
+
                     await expectEvent.inTransaction(salesReceipt.hash, KODAV3UpgradableGatedMarketplace, 'MintFromSale', {
                         _saleId: ONE,
-                        _tokenId: FIRST_MINTED_TOKEN_ID,
+                        _tokenId: firstMintedTokenId,
                         _phaseId: ZERO,
                         _recipient: artist2.address
                     });
 
-                    expect(await this.token.ownerOf(FIRST_MINTED_TOKEN_ID)).to.be.equal(artist2.address);
+                    expect(await this.token.ownerOf(firstMintedTokenId)).to.be.equal(artist2.address);
                 });
             });
         });
