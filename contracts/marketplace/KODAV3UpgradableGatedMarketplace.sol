@@ -8,8 +8,6 @@ import {IKODAV3} from "../core/IKODAV3.sol";
 import {IKOAccessControlsLookup} from "../access/IKOAccessControlsLookup.sol";
 import {IKODAV3GatedMarketplace} from "./IKODAV3Marketplace.sol";
 
-import "hardhat/console.sol";
-
 contract KODAV3UpgradableGatedMarketplace is IKODAV3GatedMarketplace, BaseUpgradableMarketplace {
 
     /// @notice emitted when admin updates funds receiver
