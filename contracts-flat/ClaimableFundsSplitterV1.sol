@@ -1,4 +1,6 @@
-// File: @openzeppelin/contracts/token/ERC20/IERC20.sol
+// Sources flattened with hardhat v2.9.1 https://hardhat.org
+
+// File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.2.0
 
 // SPDX-License-Identifier: MIT
 
@@ -82,9 +84,10 @@ interface IERC20 {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
-// File: @openzeppelin/contracts/utils/Address.sol
 
+// File @openzeppelin/contracts/utils/Address.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -295,9 +298,10 @@ library Address {
     }
 }
 
-// File: @openzeppelin/contracts/security/ReentrancyGuard.sol
 
+// File @openzeppelin/contracts/security/ReentrancyGuard.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -360,9 +364,10 @@ abstract contract ReentrancyGuard {
     }
 }
 
-// File: contracts/collab/handlers/ICollabFundsHandler.sol
 
+// File contracts/collab/handlers/ICollabFundsHandler.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -375,12 +380,12 @@ interface ICollabFundsHandler {
     function shareAtIndex(uint256 index) external view returns (address _recipient, uint256 _split);
 }
 
-// File: contracts/collab/handlers/CollabFundsHandlerBase.sol
 
+// File contracts/collab/handlers/CollabFundsHandlerBase.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
 
 abstract contract CollabFundsHandlerBase is ICollabFundsHandler {
 
@@ -423,12 +428,12 @@ abstract contract CollabFundsHandlerBase is ICollabFundsHandler {
     }
 }
 
-// File: contracts/collab/handlers/ICollabFundsDrainable.sol
 
+// File contracts/collab/handlers/ICollabFundsDrainable.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
 
 // Drain all funds for all parties
 interface ICollabFundsDrainable {
@@ -447,9 +452,10 @@ interface ICollabFundsShareDrainable is ICollabFundsDrainable {
     function drainShareERC20(IERC20 token) external;
 }
 
-// File: contracts/collab/handlers/ClaimableFundsReceiverV1.sol
 
+// File contracts/collab/handlers/ClaimableFundsReceiverV1.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -457,10 +463,9 @@ pragma solidity 0.8.4;
 
 
 
-
 /// @title Allows funds to be received and then split later on using a pull pattern, holding a balance until drained.
 /// @notice Supports claiming/draining all balances at one
-/// @notice Doe not an individual shares
+/// @notice Does not an individual shares
 ///
 /// @author KnownOrigin Labs - https://knownorigin.io/
 contract ClaimableFundsReceiverV1 is ReentrancyGuard, CollabFundsHandlerBase, ICollabFundsDrainable {
@@ -534,12 +539,12 @@ contract ClaimableFundsReceiverV1 is ReentrancyGuard, CollabFundsHandlerBase, IC
 
 }
 
-// File: contracts/collab/handlers/ClaimableFundsSplitterV1.sol
 
+// File contracts/collab/handlers/ClaimableFundsSplitterV1.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
 
 
 
