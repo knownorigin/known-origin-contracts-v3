@@ -11,6 +11,9 @@
     "compile": "npx hardhat compile --show-stack-traces",
     "coverage": "NODE_OPTIONS=--max-old-space-size=4096 npx hardhat coverage",
     "test": "npx hardhat test --parallel",
+    "clean": "rm -rf artifacts/ && rm -rf cache/",
+    "clean-node-modules": "rm -rf node_modules/",
+    "clean-test": "npm run clean && npm run compile && npm run test",
     "contract-size": "npx hardhat size-contracts",
     "gas": "REPORT_GAS=true npx hardhat test"
   },
@@ -20,10 +23,10 @@
     "@nomiclabs/hardhat-solhint": "2.0.0",
     "@nomiclabs/hardhat-truffle5": "2.0.4",
     "@nomiclabs/hardhat-web3": "^2.0.0",
-    "@openzeppelin/hardhat-upgrades": "1.14.0",
+    "@openzeppelin/hardhat-upgrades": "^1.16.1",
     "@openzeppelin/test-helpers": "0.5.15",
     "@pinata/sdk": "^1.1.23",
-    "axios": "^0.21.1",
+    "axios": "^0.21.4",
     "chai": "^4.3.0",
     "commander": "^7.0.0",
     "dotenv": "^8.2.0",
@@ -42,6 +45,7 @@
     "@openzeppelin/contracts": "4.2.0",
     "@openzeppelin/contracts-upgradeable": "^4.4.2",
     "hardhat-contract-sizer": "^2.0.3",
+    "moment": "^2.29.1",
     "prompt-sync": "^4.2.0"
   }
 }
