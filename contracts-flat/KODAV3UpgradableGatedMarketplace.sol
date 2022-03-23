@@ -49,7 +49,7 @@ library MerkleProof {
 
 // File @openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol@v4.5.2
 
-// SPDX-License-Identifier: MIT
+//
 // OpenZeppelin Contracts (last updated v4.5.0) (utils/Address.sol)
 
 pragma solidity ^0.8.1;
@@ -248,7 +248,7 @@ library AddressUpgradeable {
 
 // File @openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol@v4.5.2
 
-// SPDX-License-Identifier: MIT
+//
 // OpenZeppelin Contracts (last updated v4.5.0) (proxy/utils/Initializable.sol)
 
 pragma solidity ^0.8.0;
@@ -330,7 +330,7 @@ abstract contract Initializable {
 
 // File @openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol@v4.5.2
 
-// SPDX-License-Identifier: MIT
+//
 // OpenZeppelin Contracts v4.4.1 (security/ReentrancyGuard.sol)
 
 pragma solidity ^0.8.0;
@@ -408,7 +408,7 @@ abstract contract ReentrancyGuardUpgradeable is Initializable {
 
 // File @openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol@v4.5.2
 
-// SPDX-License-Identifier: MIT
+//
 // OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
 
 pragma solidity ^0.8.0;
@@ -448,7 +448,7 @@ abstract contract ContextUpgradeable is Initializable {
 
 // File @openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol@v4.5.2
 
-// SPDX-License-Identifier: MIT
+//
 // OpenZeppelin Contracts v4.4.1 (security/Pausable.sol)
 
 pragma solidity ^0.8.0;
@@ -553,7 +553,7 @@ abstract contract PausableUpgradeable is Initializable, ContextUpgradeable {
 
 // File @openzeppelin/contracts-upgradeable/interfaces/draft-IERC1822Upgradeable.sol@v4.5.2
 
-// SPDX-License-Identifier: MIT
+//
 // OpenZeppelin Contracts (last updated v4.5.0) (interfaces/draft-IERC1822.sol)
 
 pragma solidity ^0.8.0;
@@ -577,7 +577,7 @@ interface IERC1822ProxiableUpgradeable {
 
 // File @openzeppelin/contracts-upgradeable/proxy/beacon/IBeaconUpgradeable.sol@v4.5.2
 
-// SPDX-License-Identifier: MIT
+//
 // OpenZeppelin Contracts v4.4.1 (proxy/beacon/IBeacon.sol)
 
 pragma solidity ^0.8.0;
@@ -597,7 +597,7 @@ interface IBeaconUpgradeable {
 
 // File @openzeppelin/contracts-upgradeable/utils/StorageSlotUpgradeable.sol@v4.5.2
 
-// SPDX-License-Identifier: MIT
+//
 // OpenZeppelin Contracts v4.4.1 (utils/StorageSlot.sol)
 
 pragma solidity ^0.8.0;
@@ -685,7 +685,7 @@ library StorageSlotUpgradeable {
 
 // File @openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol@v4.5.2
 
-// SPDX-License-Identifier: MIT
+//
 // OpenZeppelin Contracts (last updated v4.5.0) (proxy/ERC1967/ERC1967Upgrade.sol)
 
 pragma solidity ^0.8.2;
@@ -899,7 +899,7 @@ abstract contract ERC1967UpgradeUpgradeable is Initializable {
 
 // File @openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol@v4.5.2
 
-// SPDX-License-Identifier: MIT
+//
 // OpenZeppelin Contracts (last updated v4.5.0) (proxy/utils/UUPSUpgradeable.sol)
 
 pragma solidity ^0.8.0;
@@ -1009,7 +1009,7 @@ abstract contract UUPSUpgradeable is Initializable, IERC1822ProxiableUpgradeable
 
 // File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
+//
 
 pragma solidity ^0.8.0;
 
@@ -1094,7 +1094,7 @@ interface IERC20 {
 
 // File contracts/access/IKOAccessControlsLookup.sol
 
-// SPDX-License-Identifier: MIT
+//
 
 pragma solidity 0.8.4;
 
@@ -1115,7 +1115,7 @@ interface IKOAccessControlsLookup {
 
 // File @openzeppelin/contracts/utils/introspection/IERC165.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
+//
 
 pragma solidity ^0.8.0;
 
@@ -1143,7 +1143,7 @@ interface IERC165 {
 
 // File @openzeppelin/contracts/token/ERC721/IERC721.sol@v4.2.0
 
-// SPDX-License-Identifier: MIT
+//
 
 pragma solidity ^0.8.0;
 
@@ -1287,7 +1287,7 @@ interface IERC721 is IERC165 {
 
 // File contracts/core/IERC2309.sol
 
-// SPDX-License-Identifier: MIT
+//
 
 pragma solidity 0.8.4;
 
@@ -1317,7 +1317,7 @@ interface IERC2309 {
 
 // File contracts/core/IERC2981.sol
 
-// SPDX-License-Identifier: MIT
+//
 
 pragma solidity 0.8.4;
 
@@ -1362,7 +1362,7 @@ interface IERC2981 is IERC165, IERC2981EditionExtension {
 
 // File contracts/core/IHasSecondarySaleFees.sol
 
-// SPDX-License-Identifier: MIT
+//
 
 pragma solidity 0.8.4;
 
@@ -1380,7 +1380,7 @@ interface IHasSecondarySaleFees is IERC165 {
 
 // File contracts/core/IKODAV3.sol
 
-// SPDX-License-Identifier: MIT
+//
 
 pragma solidity 0.8.4;
 
@@ -1459,7 +1459,7 @@ IHasSecondarySaleFees // Rariable / Foundation royalties
 
 // File contracts/marketplace/BaseUpgradableMarketplace.sol
 
-// SPDX-License-Identifier: MIT
+//
 
 pragma solidity 0.8.4;
 
@@ -1624,7 +1624,7 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
 
 // File contracts/marketplace/IKODAV3Marketplace.sol
 
-// SPDX-License-Identifier: MIT
+//
 pragma solidity 0.8.4;
 
 interface IBuyNowMarketplace {
@@ -1797,7 +1797,7 @@ interface IKODAV3GatedMarketplace {
 
 // File hardhat/console.sol@v2.9.1
 
-// SPDX-License-Identifier: MIT
+//
 pragma solidity >= 0.4.22 <0.9.0;
 
 library console {
@@ -3333,7 +3333,7 @@ library console {
 
 // File contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol
 
-// SPDX-License-Identifier: MIT
+//
 pragma solidity 0.8.4;
 
 
