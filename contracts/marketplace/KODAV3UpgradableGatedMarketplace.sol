@@ -297,6 +297,7 @@ contract KODAV3UpgradableGatedMarketplace is IKODAV3GatedMarketplace, BaseUpgrad
 
             emit MintFromSale(_saleId, _phaseId, tokenId, _recipient);
 
+            // reduce start ID to allow to optimised token ID determination
             unchecked {startId = tokenId--;}
         }
         _handleSaleFunds(sales[_saleId].fundsReceiver, getPlatformSaleCommissionForSale(_saleId));
