@@ -1,4 +1,6 @@
-// File: @openzeppelin/contracts/utils/Context.sol
+
+
+// File @openzeppelin/contracts/utils/Context.sol@v4.2.0
 
 // SPDX-License-Identifier: MIT
 
@@ -24,9 +26,10 @@ abstract contract Context {
     }
 }
 
-// File: contracts/core/IKODAV3Minter.sol
 
+// File contracts/core/IKODAV3Minter.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -39,9 +42,10 @@ interface IKODAV3Minter {
     function mintConsecutiveBatchEdition(uint16 _editionSize, address _to, string calldata _uri) external returns (uint256 _editionId);
 }
 
-// File: contracts/access/IKOAccessControlsLookup.sol
 
+// File contracts/access/IKOAccessControlsLookup.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -59,9 +63,10 @@ interface IKOAccessControlsLookup {
     function hasContractOrAdminRole(address _address) external view returns (bool);
 }
 
-// File: @openzeppelin/contracts/utils/introspection/IERC165.sol
 
+// File @openzeppelin/contracts/utils/introspection/IERC165.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -86,12 +91,12 @@ interface IERC165 {
     function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }
 
-// File: @openzeppelin/contracts/token/ERC721/IERC721.sol
 
+// File @openzeppelin/contracts/token/ERC721/IERC721.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-
 
 /**
  * @dev Required interface of an ERC721 compliant contract.
@@ -230,9 +235,10 @@ interface IERC721 is IERC165 {
     ) external;
 }
 
-// File: contracts/core/IERC2309.sol
 
+// File contracts/core/IERC2309.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -259,12 +265,12 @@ interface IERC2309 {
     event ConsecutiveTransfer(uint256 indexed fromTokenId, uint256 toTokenId, address indexed fromAddress, address indexed toAddress);
 }
 
-// File: contracts/core/IERC2981.sol
 
+// File contracts/core/IERC2981.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
 
 /// @notice This is purely an extension for the KO platform
 /// @notice Royalties on KO are defined at an edition level for all tokens from the same edition
@@ -304,12 +310,12 @@ interface IERC2981 is IERC165, IERC2981EditionExtension {
 
 }
 
-// File: contracts/core/IHasSecondarySaleFees.sol
 
+// File contracts/core/IHasSecondarySaleFees.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
 
 /// @title Royalties formats required for use on the Rarible platform
 /// @dev https://docs.rarible.com/asset/royalties-schema
@@ -322,12 +328,12 @@ interface IHasSecondarySaleFees is IERC165 {
     function getFeeBps(uint256 id) external returns (uint[] memory);
 }
 
-// File: contracts/core/IKODAV3.sol
 
+// File contracts/core/IKODAV3.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
 
 
 
@@ -401,9 +407,10 @@ IHasSecondarySaleFees // Rariable / Foundation royalties
 
 }
 
-// File: contracts/marketplace/IKODAV3Marketplace.sol
 
+// File contracts/marketplace/IKODAV3Marketplace.sol
 
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 interface IBuyNowMarketplace {
@@ -533,9 +540,50 @@ interface IKODAV3SecondarySaleMarketplace is ITokenBuyNowMarketplace, ITokenOffe
     function convertReserveAuctionToOffers(uint256 _tokenId) external;
 }
 
-// File: @openzeppelin/contracts/security/ReentrancyGuard.sol
+interface IKODAV3GatedMarketplace {
+
+    function createSale(uint256 _editionId) external;
+
+    function createPhase(
+        uint256 _editionId,
+        uint128 _startTime,
+        uint128 _endTime,
+        uint128 _priceInWei,
+        uint16 _mintCap,
+        uint16 _walletMintLimit,
+        bytes32 _merkleRoot,
+        string calldata _merkleIPFSHash
+    ) external;
+
+    function createSaleWithPhases(
+        uint256 _editionId,
+        uint128[] memory _startTimes,
+        uint128[] memory _endTimes,
+        uint128[] memory _pricesInWei,
+        uint16[] memory _mintCaps,
+        uint16[] memory _walletMintLimits,
+        bytes32[] memory _merkleRoots,
+        string[] memory _merkleIPFSHashes
+    ) external;
+
+    function createPhases(
+        uint256 _editionId,
+        uint128[] memory _startTimes,
+        uint128[] memory _endTimes,
+        uint128[] memory _pricesInWei,
+        uint16[] memory _mintCaps,
+        uint16[] memory _walletMintLimits,
+        bytes32[] memory _merkleRoots,
+        string[] memory _merkleIPFSHashes
+    ) external;
+
+    function removePhase(uint256 _editionId, uint256 _phaseId) external;
+}
 
 
+// File @openzeppelin/contracts/security/ReentrancyGuard.sol@v4.2.0
+
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -598,12 +646,12 @@ abstract contract ReentrancyGuard {
     }
 }
 
-// File: @openzeppelin/contracts/security/Pausable.sol
 
+// File @openzeppelin/contracts/security/Pausable.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-
 
 /**
  * @dev Contract module which allows children to implement an emergency stop
@@ -690,9 +738,10 @@ abstract contract Pausable is Context {
     }
 }
 
-// File: @openzeppelin/contracts/token/ERC20/IERC20.sol
 
+// File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -774,13 +823,12 @@ interface IERC20 {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
-// File: contracts/marketplace/BaseMarketplace.sol
 
+// File contracts/marketplace/BaseMarketplace.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
-
 
 
 
@@ -915,12 +963,12 @@ abstract contract BaseMarketplace is ReentrancyGuard, Pausable {
     function _isListingPermitted(uint256 _id) internal virtual returns (bool);
 }
 
-// File: contracts/marketplace/BuyNowMarketplace.sol
 
+// File contracts/marketplace/BuyNowMarketplace.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
 
 
 // "buy now" sale flow
@@ -1002,13 +1050,12 @@ abstract contract BuyNowMarketplace is IBuyNowMarketplace, BaseMarketplace {
     function _isBuyNowListingPermitted(uint256 _id) internal virtual returns (bool);
 }
 
-// File: contracts/marketplace/ReserveAuctionMarketplace.sol
 
+// File contracts/marketplace/ReserveAuctionMarketplace.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
-
 
 
 
@@ -1245,13 +1292,12 @@ abstract contract ReserveAuctionMarketplace is IReserveAuctionMarketplace, BaseM
     }
 }
 
-// File: contracts/marketplace/KODAV3PrimaryMarketplace.sol
 
+// File contracts/marketplace/KODAV3PrimaryMarketplace.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
-
 
 
 
@@ -1794,9 +1840,10 @@ BuyNowMarketplace {
     }
 }
 
-// File: contracts/collab/ICollabRoyaltiesRegistry.sol
 
+// File contracts/collab/ICollabRoyaltiesRegistry.sol
 
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 /// @notice Common interface to the edition royalties registry
@@ -1838,13 +1885,12 @@ interface ICollabRoyaltiesRegistry {
 
 }
 
-// File: contracts/minter/MintingFactory.sol
 
+// File contracts/minter/MintingFactory.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
-
 
 
 

@@ -1,4 +1,6 @@
-// File: @openzeppelin/contracts/utils/Context.sol
+
+
+// File @openzeppelin/contracts/utils/Context.sol@v4.2.0
 
 // SPDX-License-Identifier: MIT
 
@@ -24,9 +26,10 @@ abstract contract Context {
     }
 }
 
-// File: @openzeppelin/contracts/utils/Strings.sol
 
+// File @openzeppelin/contracts/utils/Strings.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -93,9 +96,10 @@ library Strings {
     }
 }
 
-// File: @openzeppelin/contracts/utils/introspection/IERC165.sol
 
+// File @openzeppelin/contracts/utils/introspection/IERC165.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -120,12 +124,12 @@ interface IERC165 {
     function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }
 
-// File: @openzeppelin/contracts/utils/introspection/ERC165.sol
 
+// File @openzeppelin/contracts/utils/introspection/ERC165.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-
 
 /**
  * @dev Implementation of the {IERC165} interface.
@@ -150,12 +154,12 @@ abstract contract ERC165 is IERC165 {
     }
 }
 
-// File: @openzeppelin/contracts/access/AccessControl.sol
 
+// File @openzeppelin/contracts/access/AccessControl.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-
 
 
 
@@ -402,9 +406,10 @@ abstract contract AccessControl is Context, IAccessControl, ERC165 {
     }
 }
 
-// File: @openzeppelin/contracts/utils/cryptography/MerkleProof.sol
 
+// File @openzeppelin/contracts/utils/cryptography/MerkleProof.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -448,9 +453,10 @@ library MerkleProof {
     }
 }
 
-// File: contracts/access/IKOAccessControlsLookup.sol
 
+// File contracts/access/IKOAccessControlsLookup.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -468,9 +474,10 @@ interface IKOAccessControlsLookup {
     function hasContractOrAdminRole(address _address) external view returns (bool);
 }
 
-// File: contracts/access/legacy/ISelfServiceAccessControls.sol
 
+// File contracts/access/legacy/ISelfServiceAccessControls.sol
 
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 interface ISelfServiceAccessControls {
@@ -479,13 +486,12 @@ interface ISelfServiceAccessControls {
 
 }
 
-// File: contracts/access/KOAccessControls.sol
 
+// File contracts/access/KOAccessControls.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
-
 
 
 

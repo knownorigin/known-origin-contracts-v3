@@ -2,7 +2,7 @@ const prompt = require('prompt-sync')();
 const hre = require('hardhat');
 const {ethers, upgrades} = hre;
 
-const KODAV3UpgradableGatedMarketplace = require('../../artifacts/contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol/KODAV3UpgradableGatedMarketplace.json');
+const KODAV3UpgradableGatedMarketplace = require('../../../artifacts/contracts/marketplace/KODAV3UpgradableGatedMarketplace.sol/KODAV3UpgradableGatedMarketplace.json');
 
 async function main() {
   const [deployer] = await ethers.getSigners();

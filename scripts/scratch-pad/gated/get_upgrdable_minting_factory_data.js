@@ -2,7 +2,7 @@ const prompt = require('prompt-sync')();
 const hre = require('hardhat');
 const {ethers} = hre;
 
-const MintingFactoryV2 = require('../../artifacts/contracts/minter/MintingFactoryV2.sol/MintingFactoryV2.json');
+const MintingFactoryV2 = require('../../../artifacts/contracts/minter/MintingFactoryV2.sol/MintingFactoryV2.json');
 
 async function main() {
   const [deployer] = await ethers.getSigners();

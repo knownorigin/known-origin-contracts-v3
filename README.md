@@ -83,14 +83,14 @@ V1 funds receiver          - 0xb4bb0960b5095e5a0abd07d18803f45c4c4eadf6 = (verif
 
 #### Gated marketplace (upgradable)
 ```
-KODAV3GatedMarketplace Proxy - 0xB3563C45E45714d9B1a61171c0774a6deb07123D
-  - v1 - git commit e0e67033dd9e31a9ba4f27cf3e2d4e9faa8ea1ef
+KODAV3GatedMarketplace Proxy - 0x048b36a7cc30127cE2C2C8E1C6AF9c3d0D8787eC
+  - v1 - git commit 5c8b8e05b96b2439b65abea52a0d30112dc97ed9
 ```
 
 #### Minting Factory (upgradable)
 ```
-MintingFactoryV2 Proxy - 0x32f43177CB70EB482cFD5DD1f3D48A760241A36F
-  - v1 - git commit e0e67033dd9e31a9ba4f27cf3e2d4e9faa8ea1ef
+MintingFactoryV2 Proxy - 0x2346b3949F8742f4e2a8B6F26D72ef358683820d
+  - v1 - git commit 5c8b8e05b96b2439b65abea52a0d30112dc97ed9
 ```
 
 ### Mainnet

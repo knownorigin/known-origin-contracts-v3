@@ -26,6 +26,6 @@ jobs:
       - name: Install and test
         run: |
           npm install
-          npm run test
+          npm run test-fast
         env:
           CI: true

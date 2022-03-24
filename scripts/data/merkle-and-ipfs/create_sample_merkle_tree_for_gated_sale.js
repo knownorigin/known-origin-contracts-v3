@@ -11,9 +11,9 @@ const {parseBalanceMap} = require('../../../test/utils/parse-balance-map');
 (async function () {
 
   const PHASE = 1;
-  const IN = `./scripts/refik/merkle-and-ipfs/in/prelist-phase-${PHASE}.json`;
-  const OUT = `./scripts/refik/merkle-and-ipfs/out/phase-${PHASE}.json`;
-  const IPFS = `./scripts/refik/merkle-and-ipfs/out/phase-${PHASE}-ipfs.json`;
+  const IN = `./scripts/data/merkle-and-ipfs/in/prelist-phase-${PHASE}.json`;
+  const OUT = `./scripts/data/merkle-and-ipfs/out/phase-${PHASE}.json`;
+  const IPFS = `./scripts/data/merkle-and-ipfs/out/phase-${PHASE}-ipfs.json`;
 
   const merkleConfig = JSON.parse(fs.readFileSync(IN));
   const merkleTree = parseBalanceMap(merkleConfig);
@@ -36,9 +36,7 @@ Total: ${totalAddresses}
     results
   }, null, 2));
 
-  console.log(`
-Results written to ./scripts/refik/merkle-and-ipfs/out/
-  `);
+  console.log(`Results written to ./scripts/data/merkle-and-ipfs/out/`);
 
 })();
 

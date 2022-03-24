@@ -1,4 +1,6 @@
-// File: @openzeppelin/contracts/utils/Context.sol
+
+
+// File @openzeppelin/contracts/utils/Context.sol@v4.2.0
 
 // SPDX-License-Identifier: MIT
 
@@ -24,9 +26,10 @@ abstract contract Context {
     }
 }
 
-// File: @openzeppelin/contracts/utils/introspection/IERC165.sol
 
+// File @openzeppelin/contracts/utils/introspection/IERC165.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -51,12 +54,12 @@ interface IERC165 {
     function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }
 
-// File: @openzeppelin/contracts/utils/introspection/ERC165.sol
 
+// File @openzeppelin/contracts/utils/introspection/ERC165.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-
 
 /**
  * @dev Implementation of the {IERC165} interface.
@@ -81,12 +84,12 @@ abstract contract ERC165 is IERC165 {
     }
 }
 
-// File: @openzeppelin/contracts/utils/introspection/ERC165Storage.sol
 
+// File @openzeppelin/contracts/utils/introspection/ERC165Storage.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-
 
 /**
  * @dev Storage based implementation of the {IERC165} interface.
@@ -124,9 +127,10 @@ abstract contract ERC165Storage is ERC165 {
     }
 }
 
-// File: @openzeppelin/contracts/proxy/Clones.sol
 
+// File @openzeppelin/contracts/proxy/Clones.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -210,9 +214,10 @@ library Clones {
     }
 }
 
-// File: @openzeppelin/contracts/utils/Address.sol
 
+// File @openzeppelin/contracts/utils/Address.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
@@ -423,12 +428,12 @@ library Address {
     }
 }
 
-// File: @openzeppelin/contracts/security/Pausable.sol
 
+// File @openzeppelin/contracts/security/Pausable.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-
 
 /**
  * @dev Contract module which allows children to implement an emergency stop
@@ -515,12 +520,12 @@ abstract contract Pausable is Context {
     }
 }
 
-// File: @openzeppelin/contracts/token/ERC721/IERC721.sol
 
+// File @openzeppelin/contracts/token/ERC721/IERC721.sol@v4.2.0
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-
 
 /**
  * @dev Required interface of an ERC721 compliant contract.
@@ -659,9 +664,10 @@ interface IERC721 is IERC165 {
     ) external;
 }
 
-// File: contracts/core/IERC2309.sol
 
+// File contracts/core/IERC2309.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -688,12 +694,12 @@ interface IERC2309 {
     event ConsecutiveTransfer(uint256 indexed fromTokenId, uint256 toTokenId, address indexed fromAddress, address indexed toAddress);
 }
 
-// File: contracts/core/IERC2981.sol
 
+// File contracts/core/IERC2981.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
 
 /// @notice This is purely an extension for the KO platform
 /// @notice Royalties on KO are defined at an edition level for all tokens from the same edition
@@ -733,12 +739,12 @@ interface IERC2981 is IERC165, IERC2981EditionExtension {
 
 }
 
-// File: contracts/core/IHasSecondarySaleFees.sol
 
+// File contracts/core/IHasSecondarySaleFees.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
 
 /// @title Royalties formats required for use on the Rarible platform
 /// @dev https://docs.rarible.com/asset/royalties-schema
@@ -751,12 +757,12 @@ interface IHasSecondarySaleFees is IERC165 {
     function getFeeBps(uint256 id) external returns (uint[] memory);
 }
 
-// File: contracts/core/IKODAV3.sol
 
+// File contracts/core/IKODAV3.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
-
 
 
 
@@ -830,9 +836,10 @@ IHasSecondarySaleFees // Rariable / Foundation royalties
 
 }
 
-// File: contracts/core/Konstants.sol
 
+// File contracts/core/Konstants.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -847,9 +854,10 @@ contract Konstants {
     }
 }
 
-// File: contracts/access/IKOAccessControlsLookup.sol
 
+// File contracts/access/IKOAccessControlsLookup.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -867,9 +875,10 @@ interface IKOAccessControlsLookup {
     function hasContractOrAdminRole(address _address) external view returns (bool);
 }
 
-// File: contracts/collab/ICollabRoyaltiesRegistry.sol
 
+// File contracts/collab/ICollabRoyaltiesRegistry.sol
 
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 /// @notice Common interface to the edition royalties registry
@@ -911,9 +920,10 @@ interface ICollabRoyaltiesRegistry {
 
 }
 
-// File: contracts/collab/handlers/ICollabFundsHandler.sol
 
+// File contracts/collab/handlers/ICollabFundsHandler.sol
 
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -926,11 +936,11 @@ interface ICollabFundsHandler {
     function shareAtIndex(uint256 index) external view returns (address _recipient, uint256 _split);
 }
 
-// File: contracts/collab/CollabRoyaltiesRegistry.sol
 
+// File contracts/collab/CollabRoyaltiesRegistry.sol
 
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
-
 
 
 
