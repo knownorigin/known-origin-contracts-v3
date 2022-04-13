@@ -394,6 +394,7 @@ contract KODAV3UpgradableGatedMarketplace is IKODAV3GatedMarketplace, BaseUpgrad
     }
 
     function setKoCommissionOverrideForSale(uint256 _saleId, bool _active, uint256 _koCommission) public onlyAdmin {
+        require(_koCommission <= (10**40), "KO Commission too high - danger of over overflow");
         KOCommissionOverride storage koCommissionOverride = koCommissionOverrideForSale[_saleId];
         koCommissionOverride.active = _active;
         koCommissionOverride.koCommission = _koCommission;

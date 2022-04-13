@@ -108,6 +108,7 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
     }
 
     function updatePlatformPrimaryCommission(uint256 _newAmount) external onlyAdmin {
+        require(_newAmount <= 10**40, "Platform commission too high - danger of over overflow");
         platformPrimaryCommission = _newAmount;
         emit AdminUpdatePlatformPrimaryCommission(_newAmount);
     }
