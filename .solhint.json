@@ -4,9 +4,17 @@
   "rules": {
     "max-line-length": "ignore",
     "indent": "ignore",
+    "quotes": "ignore",
+    "reason-string": "ignore",
+    "avoid-low-level-calls": "ignore",
+    "not-rely-on-time": "ignore",
+    "no-unused-vars": "ignore",
+    "no-empty-blocks": "ignore",
+    "state-visibility": "ignore",
+    "visibility-modifier-order": "ignore",
     "compiler-version": [
       "error",
-      "0.7.6"
+      "0.8.4"
     ]
   }
 }

@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.4;
 
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -73,6 +74,10 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
         __ReentrancyGuard_init();
         __Pausable_init();
 
+        require(address(_accessControls) != address(0), "Unable to sent invalid accessControls address");
+        require(address(_koda) != address(0), "Unable to sent invalid koda address");
+        require(_platformAccount != address(0), "Unable to sent invalid _platformAccount address");
+
         accessControls = _accessControls;
         koda = _koda;
         platformAccount = _platformAccount;
@@ -89,7 +94,8 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
     }
 
     function recoverERC20(IERC20 _token, address _recipient, uint256 _amount) public onlyAdmin {
-        _token.transfer(_recipient, _amount);
+        require(_recipient != address(0), "Unable to sent funds to invalid _recipient address");
+        SafeERC20.safeTransfer(_token, _recipient, _amount);
         emit AdminRecoverERC20(_token, _recipient, _amount);
     }
 
@@ -127,6 +133,7 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
     }
 
     function updatePlatformAccount(address _newPlatformAccount) public onlyAdmin {
+        require(_newPlatformAccount != address(0), "Unable to sent invalid _newPlatformAccount address");
         emit AdminUpdatePlatformAccount(platformAccount, _newPlatformAccount);
         platformAccount = _newPlatformAccount;
     }
@@ -144,7 +151,7 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
     }
 
     function _handleSaleFunds(address _fundsReceiver, uint256 _platformCommission) internal {
-        uint256 koCommission = (msg.value / modulo) * _platformCommission;
+        uint256 koCommission = msg.value * _platformCommission / modulo;
         if (koCommission > 0) {
             (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
             require(koCommissionSuccess, "commission payment failed");
