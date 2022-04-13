@@ -75,9 +75,9 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
         __ReentrancyGuard_init();
         __Pausable_init();
 
-        require(address(_accessControls) != address(0), "Unable to sent invalid accessControls address");
-        require(address(_koda) != address(0), "Unable to sent invalid koda address");
-        require(_platformAccount != address(0), "Unable to sent invalid _platformAccount address");
+        require(address(_accessControls) != address(0), "Unable to set invalid accessControls address");
+        require(address(_koda) != address(0), "Unable to set invalid koda address");
+        require(_platformAccount != address(0), "Unable to set invalid _platformAccount address");
 
         accessControls = _accessControls;
         koda = _koda;
@@ -95,12 +95,13 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
     }
 
     function recoverERC20(address _token, address _recipient, uint256 _amount) public onlyAdmin {
-        require(_recipient != address(0), "Unable to sent funds to invalid _recipient address");
+        require(_recipient != address(0), "Unable to send funds to invalid _recipient address");
         SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(_token), _recipient, _amount);
         emit AdminRecoverERC20(_token, _recipient, _amount);
     }
 
     function recoverStuckETH(address payable _recipient, uint256 _amount) public onlyAdmin {
+        require(_recipient != address(0), "Unable to send funds to invalid _recipient address");
         (bool success,) = _recipient.call{value : _amount}("");
         require(success, "Unable to send recipient ETH");
         emit AdminRecoverETH(_recipient, _amount);
@@ -134,7 +135,7 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
     }
 
     function updatePlatformAccount(address _newPlatformAccount) public onlyAdmin {
-        require(_newPlatformAccount != address(0), "Unable to sent invalid _newPlatformAccount address");
+        require(_newPlatformAccount != address(0), "Unable to set invalid _newPlatformAccount address");
         emit AdminUpdatePlatformAccount(platformAccount, _newPlatformAccount);
         platformAccount = _newPlatformAccount;
     }
