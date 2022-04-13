@@ -2,7 +2,8 @@
 
 pragma solidity 0.8.4;
 
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -20,7 +21,7 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
     event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
     event AdminUpdateBidLockupPeriod(uint256 _bidLockupPeriod);
     event AdminUpdatePlatformAccount(address indexed _oldAddress, address indexed _newAddress);
-    event AdminRecoverERC20(IERC20 indexed _token, address indexed _recipient, uint256 _amount);
+    event AdminRecoverERC20(address indexed _token, address indexed _recipient, uint256 _amount);
     event AdminRecoverETH(address payable indexed _recipient, uint256 _amount);
 
     event BidderRefunded(uint256 indexed _id, address _bidder, uint256 _bid, address _newBidder, uint256 _newOffer);
@@ -93,9 +94,9 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
         require(accessControls.hasAdminRole(msg.sender), "Only admin can upgrade");
     }
 
-    function recoverERC20(IERC20 _token, address _recipient, uint256 _amount) public onlyAdmin {
+    function recoverERC20(address _token, address _recipient, uint256 _amount) public onlyAdmin {
         require(_recipient != address(0), "Unable to sent funds to invalid _recipient address");
-        SafeERC20.safeTransfer(_token, _recipient, _amount);
+        SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(_token), _recipient, _amount);
         emit AdminRecoverERC20(_token, _recipient, _amount);
     }
 
