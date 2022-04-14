@@ -24,6 +24,7 @@
     * Ability to mint single 1 of 1 NFTs
     * Ability to mint batches of NFT (multi-editions)
     * Collaboration support for `1..n` collaborators with royalties - predetermined addresses
+    * Generalise feature set to work with all KO artists and collectors in a modula fashion
 * Immutable by design with onchain purchase and bidding histories
     * Creative works deserve traceable onchain histories, think of the future!
 * Replace whitelisting with merkle proofs for minting access to reduce operational overheads
@@ -43,6 +44,7 @@
       * `Open Offers` - includes bidder lockout period and start date 
       * `Stepped sales` - linear price increases per purchase from an edition
       * `24hr reserve auctions` - includes start date, reserve price with 24hr countdown + 15min extension window
+      * `Early access sales` - gated sales behind lists of collectors, customisable drop phases 
   * `secondary` market
       * `Buy now` - includes start date
       * `Open Token Offers` - offers made on a specific token 
@@ -57,7 +59,9 @@
 
 ### Audits
 
-* Public audits can be seen in `audits` - more info from CoinFabrik cna be seen [here](https://blog.coinfabrik.com/known-origin-digital-asset-audit/) 
+* Public audits can be seen in `audits` 
+  * Core NFT and marketplaces - CoinFabrik audit can be seen [here](https://blog.coinfabrik.com/known-origin-digital-asset-audit/) 
+  * Early access / gated sales - CoinFabrik audit can be seen **Awaiting published results**
 
 ### Subgraph
 
