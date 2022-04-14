@@ -95,7 +95,7 @@ KODAV3GatedMarketplace Proxy - 0x8fC72C856EB661F072F0f7322449f3fcCF088f42 (verif
 
 #### Minting Factory (upgradable)
 ```
-MintingFactoryV2 Proxy - 0xcEcF098DC0F513C68a0003b540CBDAE130dD0014
+MintingFactoryV2 Proxy - 0xcEcF098DC0F513C68a0003b540CBDAE130dD0014 (verified) 
   - v1 - git commit 3bcd94f66e5d0f6b38881fd52971c13dd08b6974
 ```
 
