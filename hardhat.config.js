@@ -18,7 +18,9 @@ if (KO_DEPLOYER_PRIVATE_KEY) {
   nonDevelopmentNetworks = {
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`0x${KO_DEPLOYER_PRIVATE_KEY}`]
+      accounts: [`0x${KO_DEPLOYER_PRIVATE_KEY}`],
+      timeout: 10000000,
+      timeoutBlocks: 30000,
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,

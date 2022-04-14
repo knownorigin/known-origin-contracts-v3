@@ -1,5 +1,3 @@
-
-
 // File @openzeppelin/contracts/utils/Context.sol@v4.2.0
 
 // SPDX-License-Identifier: MIT
@@ -29,10 +27,10 @@ abstract contract Context {
 
 // File @openzeppelin/contracts-upgradeable/interfaces/draft-IERC1822Upgradeable.sol@v4.5.2
 
-//
+
 // OpenZeppelin Contracts (last updated v4.5.0) (interfaces/draft-IERC1822.sol)
 
-pragma solidity ^0.8.0;
+
 
 /**
  * @dev ERC1822: Universal Upgradeable Proxy Standard (UUPS) documents a method for upgradeability through a simplified
@@ -53,10 +51,10 @@ interface IERC1822ProxiableUpgradeable {
 
 // File @openzeppelin/contracts-upgradeable/proxy/beacon/IBeaconUpgradeable.sol@v4.5.2
 
-//
+
 // OpenZeppelin Contracts v4.4.1 (proxy/beacon/IBeacon.sol)
 
-pragma solidity ^0.8.0;
+
 
 /**
  * @dev This is the interface that {BeaconProxy} expects of its beacon.
@@ -73,7 +71,7 @@ interface IBeaconUpgradeable {
 
 // File @openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol@v4.5.2
 
-//
+
 // OpenZeppelin Contracts (last updated v4.5.0) (utils/Address.sol)
 
 pragma solidity ^0.8.1;
@@ -272,10 +270,10 @@ library AddressUpgradeable {
 
 // File @openzeppelin/contracts-upgradeable/utils/StorageSlotUpgradeable.sol@v4.5.2
 
-//
+
 // OpenZeppelin Contracts v4.4.1 (utils/StorageSlot.sol)
 
-pragma solidity ^0.8.0;
+
 
 /**
  * @dev Library for reading and writing primitive types to specific storage slots.
@@ -360,10 +358,10 @@ library StorageSlotUpgradeable {
 
 // File @openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol@v4.5.2
 
-//
+
 // OpenZeppelin Contracts (last updated v4.5.0) (proxy/utils/Initializable.sol)
 
-pragma solidity ^0.8.0;
+
 
 /**
  * @dev This is a base contract to aid in writing upgradeable contracts, or any kind of contract that will be deployed
@@ -442,7 +440,7 @@ abstract contract Initializable {
 
 // File @openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol@v4.5.2
 
-//
+
 // OpenZeppelin Contracts (last updated v4.5.0) (proxy/ERC1967/ERC1967Upgrade.sol)
 
 pragma solidity ^0.8.2;
@@ -656,10 +654,10 @@ abstract contract ERC1967UpgradeUpgradeable is Initializable {
 
 // File @openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol@v4.5.2
 
-//
+
 // OpenZeppelin Contracts (last updated v4.5.0) (proxy/utils/UUPSUpgradeable.sol)
 
-pragma solidity ^0.8.0;
+
 
 
 
@@ -766,7 +764,7 @@ abstract contract UUPSUpgradeable is Initializable, IERC1822ProxiableUpgradeable
 
 // File contracts/core/IKODAV3Minter.sol
 
-//
+
 
 pragma solidity 0.8.4;
 
@@ -782,7 +780,7 @@ interface IKODAV3Minter {
 
 // File contracts/marketplace/IKODAV3Marketplace.sol
 
-//
+
 pragma solidity 0.8.4;
 
 interface IBuyNowMarketplace {
@@ -955,7 +953,7 @@ interface IKODAV3GatedMarketplace {
 
 // File contracts/collab/ICollabRoyaltiesRegistry.sol
 
-//
+
 pragma solidity 0.8.4;
 
 /// @notice Common interface to the edition royalties registry
@@ -1000,7 +998,7 @@ interface ICollabRoyaltiesRegistry {
 
 // File contracts/access/IKOAccessControlsLookup.sol
 
-//
+
 
 pragma solidity 0.8.4;
 
@@ -1021,7 +1019,7 @@ interface IKOAccessControlsLookup {
 
 // File contracts/minter/MintingFactoryV2.sol
 
-//
+
 
 pragma solidity 0.8.4;
 

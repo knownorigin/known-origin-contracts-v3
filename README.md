@@ -71,7 +71,37 @@
 
 ## Deployments
 
-### Rinkeby
+-----
+
+## Mainnet
+
+```
+Core NFT                   - 0xABB3738f04Dc2Ec20f4AE4462c3d069d02AE045B = (verified)  
+AccessControls             - 0x9028b16494a9363F3EAaf381a6Fde67296abc68C = (verified) 
+Minting Factory            - 0x36CF31019816E9490959F75Ba9164eDd304De01D = (verified) 
+Primary marketplace        - 0xf11ED77fD65840b64602526DDC38311E9923c81B = (verified) 
+Secondary marketplace      - 0x0Eb65B4c3d3dE340e1b15384f8F211784247a37A = (verified) 
+Collab royalties registry  - 0xe28e054d596576841682e8c993E415B3ccB2EBeB = (verified)  
+Omni deployer              - 0x0FE06547a21AdfbA812E7d986de4369b2cB3dde2 = 
+V1 funds splitter          - 0xbc20c6582259f440ae628819be80062a576f06ed = (verified) 
+V1 funds receiver          - 0x643ea212F5B9E5BE9f3A000430DCc80E01C78C2C = (verified) 
+```
+
+#### Gated marketplace (upgradable)
+```
+KODAV3GatedMarketplace Proxy - 0x8fC72C856EB661F072F0f7322449f3fcCF088f42 (verified) 
+  - v1 - git commit 3bcd94f66e5d0f6b38881fd52971c13dd08b6974
+```
+
+#### Minting Factory (upgradable)
+```
+MintingFactoryV2 Proxy - 0xcEcF098DC0F513C68a0003b540CBDAE130dD0014 (verified) 
+  - v1 - git commit 3bcd94f66e5d0f6b38881fd52971c13dd08b6974
+```
+
+-----
+
+## Rinkeby
 
 ```
 Core NFT                   - 0x3abC8C65A9516D5B487A9F7423aE2C4c6a3Adf51 = (verified)  
@@ -97,19 +127,7 @@ MintingFactoryV2 Proxy - 0x2346b3949F8742f4e2a8B6F26D72ef358683820d
   - v1 - git commit 5c8b8e05b96b2439b65abea52a0d30112dc97ed9
 ```
 
-### Mainnet
-
-```
-Core NFT                   - 0xABB3738f04Dc2Ec20f4AE4462c3d069d02AE045B = (verified)  
-AccessControls             - 0x9028b16494a9363F3EAaf381a6Fde67296abc68C = (verified) 
-Minting Factory            - 0x36CF31019816E9490959F75Ba9164eDd304De01D = (verified) 
-Primary marketplace        - 0xf11ED77fD65840b64602526DDC38311E9923c81B = (verified) 
-Secondary marketplace      - 0x0Eb65B4c3d3dE340e1b15384f8F211784247a37A = (verified) 
-Collab royalties registry  - 0xe28e054d596576841682e8c993E415B3ccB2EBeB = (verified)  
-Omni deployer              - 0x0FE06547a21AdfbA812E7d986de4369b2cB3dde2 = 
-V1 funds splitter          - 0xbc20c6582259f440ae628819be80062a576f06ed = (verified) 
-V1 funds receiver          - 0x643ea212F5B9E5BE9f3A000430DCc80E01C78C2C = (verified) 
-```
+-----
 
 ### How to?
 
