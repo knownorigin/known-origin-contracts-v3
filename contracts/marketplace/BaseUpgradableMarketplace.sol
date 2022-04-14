@@ -2,6 +2,8 @@
 
 pragma solidity 0.8.4;
 
+import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -19,7 +21,7 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
     event AdminUpdateAccessControls(IKOAccessControlsLookup indexed _oldAddress, IKOAccessControlsLookup indexed _newAddress);
     event AdminUpdateBidLockupPeriod(uint256 _bidLockupPeriod);
     event AdminUpdatePlatformAccount(address indexed _oldAddress, address indexed _newAddress);
-    event AdminRecoverERC20(IERC20 indexed _token, address indexed _recipient, uint256 _amount);
+    event AdminRecoverERC20(address indexed _token, address indexed _recipient, uint256 _amount);
     event AdminRecoverETH(address payable indexed _recipient, uint256 _amount);
 
     event BidderRefunded(uint256 indexed _id, address _bidder, uint256 _bid, address _newBidder, uint256 _newOffer);
@@ -73,6 +75,10 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
         __ReentrancyGuard_init();
         __Pausable_init();
 
+        require(address(_accessControls) != address(0), "Unable to set invalid accessControls address");
+        require(address(_koda) != address(0), "Unable to set invalid koda address");
+        require(_platformAccount != address(0), "Unable to set invalid _platformAccount address");
+
         accessControls = _accessControls;
         koda = _koda;
         platformAccount = _platformAccount;
@@ -88,18 +94,21 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
         require(accessControls.hasAdminRole(msg.sender), "Only admin can upgrade");
     }
 
-    function recoverERC20(IERC20 _token, address _recipient, uint256 _amount) public onlyAdmin {
-        _token.transfer(_recipient, _amount);
+    function recoverERC20(address _token, address _recipient, uint256 _amount) public onlyAdmin {
+        require(_recipient != address(0), "Unable to send funds to invalid _recipient address");
+        SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(_token), _recipient, _amount);
         emit AdminRecoverERC20(_token, _recipient, _amount);
     }
 
     function recoverStuckETH(address payable _recipient, uint256 _amount) public onlyAdmin {
+        require(_recipient != address(0), "Unable to send funds to invalid _recipient address");
         (bool success,) = _recipient.call{value : _amount}("");
         require(success, "Unable to send recipient ETH");
         emit AdminRecoverETH(_recipient, _amount);
     }
 
     function updatePlatformPrimaryCommission(uint256 _newAmount) external onlyAdmin {
+        require(_newAmount <= 10**40, "Platform commission too high - danger of over overflow");
         platformPrimaryCommission = _newAmount;
         emit AdminUpdatePlatformPrimaryCommission(_newAmount);
     }
@@ -127,6 +136,7 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
     }
 
     function updatePlatformAccount(address _newPlatformAccount) public onlyAdmin {
+        require(_newPlatformAccount != address(0), "Unable to set invalid _newPlatformAccount address");
         emit AdminUpdatePlatformAccount(platformAccount, _newPlatformAccount);
         platformAccount = _newPlatformAccount;
     }
@@ -144,7 +154,7 @@ abstract contract BaseUpgradableMarketplace is ReentrancyGuardUpgradeable, Pausa
     }
 
     function _handleSaleFunds(address _fundsReceiver, uint256 _platformCommission) internal {
-        uint256 koCommission = (msg.value / modulo) * _platformCommission;
+        uint256 koCommission = msg.value * _platformCommission / modulo;
         if (koCommission > 0) {
             (bool koCommissionSuccess,) = platformAccount.call{value : koCommission}("");
             require(koCommissionSuccess, "commission payment failed");
