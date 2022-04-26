@@ -15,12 +15,12 @@ async function main() {
 
   // Update the proxy to the new impl
   const MintingFactory = await ethers.getContractFactory('MintingFactoryV2');
-  await upgrades.upgradeProxy(mintingFactoryV2ProxyAddress, MintingFactory, {
+  const result = await upgrades.upgradeProxy(mintingFactoryV2ProxyAddress, MintingFactory, {
     kind: 'uups',
     timeout: 0 // 0 = indefinate
   });
 
-  console.log('Finished!');
+  console.log('Finished!', result);
 }
 
 main()
