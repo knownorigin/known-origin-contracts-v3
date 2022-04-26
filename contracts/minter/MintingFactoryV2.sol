@@ -105,9 +105,9 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
 
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_msgSender());
-        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintBatchEditionAsProxy(
@@ -125,9 +125,9 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _creator, _uri);
 
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_creator);
-        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     //////////////////////////////////////
@@ -146,11 +146,13 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
 
+        // Setup royalties registry
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+
         // Created gated sale
         gatedMarketplace.createSale(editionId);
 
         _recordSuccessfulMint(_msgSender());
-        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintBatchEditionGatedOnlyAsProxy(
@@ -164,11 +166,13 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _creator, _uri);
 
+        // Setup royalties registry
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+
         // Created gated sale
         gatedMarketplace.createSale(editionId);
 
         _recordSuccessfulMint(_creator);
-        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     //////////////////////////////////////////
@@ -189,6 +193,9 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
 
+        // Setup royalties registry
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+
         // Setup public sale
         _setupSalesMechanic(editionId, SaleType.BUY_NOW, _publicStartDate, _publicBuyNowPrice, 0);
 
@@ -196,7 +203,6 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         gatedMarketplace.createSale(editionId);
 
         _recordSuccessfulMint(_msgSender());
-        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintBatchEditionGatedAndPublicAsProxy(
@@ -212,6 +218,9 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _creator, _uri);
 
+        // Setup royalties registry
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+
         // Setup public sale
         _setupSalesMechanic(editionId, SaleType.BUY_NOW, _publicStartDate, _publicBuyNowPrice, 0);
 
@@ -219,7 +228,6 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         gatedMarketplace.createSale(editionId);
 
         _recordSuccessfulMint(_creator);
-        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     ////////////////
@@ -238,8 +246,8 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
 
-        _recordSuccessfulMint(_msgSender());
         _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+        _recordSuccessfulMint(_msgSender());
 
         emit EditionMinted(editionId);
     }
@@ -255,8 +263,8 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _creator, _uri);
 
-        _recordSuccessfulMint(_creator);
         _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+        _recordSuccessfulMint(_creator);
 
         emit EditionMinted(editionId);
     }

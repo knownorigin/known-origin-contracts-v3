@@ -30,7 +30,7 @@ abstract contract Context {
 
 // OpenZeppelin Contracts (last updated v4.5.0) (interfaces/draft-IERC1822.sol)
 
-
+pragma solidity ^0.8.0;
 
 /**
  * @dev ERC1822: Universal Upgradeable Proxy Standard (UUPS) documents a method for upgradeability through a simplified
@@ -54,7 +54,7 @@ interface IERC1822ProxiableUpgradeable {
 
 // OpenZeppelin Contracts v4.4.1 (proxy/beacon/IBeacon.sol)
 
-
+pragma solidity ^0.8.0;
 
 /**
  * @dev This is the interface that {BeaconProxy} expects of its beacon.
@@ -273,7 +273,7 @@ library AddressUpgradeable {
 
 // OpenZeppelin Contracts v4.4.1 (utils/StorageSlot.sol)
 
-
+pragma solidity ^0.8.0;
 
 /**
  * @dev Library for reading and writing primitive types to specific storage slots.
@@ -361,7 +361,7 @@ library StorageSlotUpgradeable {
 
 // OpenZeppelin Contracts (last updated v4.5.0) (proxy/utils/Initializable.sol)
 
-
+pragma solidity ^0.8.0;
 
 /**
  * @dev This is a base contract to aid in writing upgradeable contracts, or any kind of contract that will be deployed
@@ -657,7 +657,7 @@ abstract contract ERC1967UpgradeUpgradeable is Initializable {
 
 // OpenZeppelin Contracts (last updated v4.5.0) (proxy/utils/UUPSUpgradeable.sol)
 
-
+pragma solidity ^0.8.0;
 
 
 
@@ -1122,9 +1122,9 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
 
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_msgSender());
-        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintBatchEditionAsProxy(
@@ -1142,9 +1142,9 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _creator, _uri);
 
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
         _setupSalesMechanic(editionId, _saleType, _startDate, _basePrice, _stepPrice);
         _recordSuccessfulMint(_creator);
-        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     //////////////////////////////////////
@@ -1163,11 +1163,13 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
 
+        // Setup royalties registry
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+
         // Created gated sale
         gatedMarketplace.createSale(editionId);
 
         _recordSuccessfulMint(_msgSender());
-        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintBatchEditionGatedOnlyAsProxy(
@@ -1181,11 +1183,13 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _creator, _uri);
 
+        // Setup royalties registry
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+
         // Created gated sale
         gatedMarketplace.createSale(editionId);
 
         _recordSuccessfulMint(_creator);
-        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     //////////////////////////////////////////
@@ -1206,6 +1210,9 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
 
+        // Setup royalties registry
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+
         // Setup public sale
         _setupSalesMechanic(editionId, SaleType.BUY_NOW, _publicStartDate, _publicBuyNowPrice, 0);
 
@@ -1213,7 +1220,6 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         gatedMarketplace.createSale(editionId);
 
         _recordSuccessfulMint(_msgSender());
-        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     function mintBatchEditionGatedAndPublicAsProxy(
@@ -1229,6 +1235,9 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _creator, _uri);
 
+        // Setup royalties registry
+        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+
         // Setup public sale
         _setupSalesMechanic(editionId, SaleType.BUY_NOW, _publicStartDate, _publicBuyNowPrice, 0);
 
@@ -1236,7 +1245,6 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         gatedMarketplace.createSale(editionId);
 
         _recordSuccessfulMint(_creator);
-        _setupRoyalties(editionId, _deployedRoyaltiesHandler);
     }
 
     ////////////////
@@ -1255,8 +1263,8 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _msgSender(), _uri);
 
-        _recordSuccessfulMint(_msgSender());
         _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+        _recordSuccessfulMint(_msgSender());
 
         emit EditionMinted(editionId);
     }
@@ -1272,8 +1280,8 @@ contract MintingFactoryV2 is Context, UUPSUpgradeable {
         // Make tokens & edition
         uint256 editionId = koda.mintBatchEdition(_editionSize, _creator, _uri);
 
-        _recordSuccessfulMint(_creator);
         _setupRoyalties(editionId, _deployedRoyaltiesHandler);
+        _recordSuccessfulMint(_creator);
 
         emit EditionMinted(editionId);
     }

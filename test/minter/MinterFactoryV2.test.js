@@ -24,6 +24,9 @@ contract('MinterFactory V2', function () {
   const ONE = new BN('1');
   const _30_DAYS_IN_SECONDS = 60 * 60 * 24 * 30;
 
+  const HALF = new BN(5000000);
+  const QUARTER = new BN(2500000);
+
   const ETH_ONE = ether('1');
 
   const SaleType = {
@@ -509,9 +512,6 @@ contract('MinterFactory V2', function () {
 
     let royaltiesRegistry, claimableFundsReceiverV1, predetermineAddress;
 
-    const HALF = new BN(5000000);
-    const QUARTER = new BN(2500000);
-
     let RECIPIENTS;
     const SPLITS = [HALF, QUARTER, QUARTER];
 
@@ -612,12 +612,51 @@ contract('MinterFactory V2', function () {
   });
 
   describe('mintBatchEditionGatedOnly()', async () => {
+
+    let royaltiesRegistry, claimableFundsReceiverV1, predetermineAddress;
+
+    let RECIPIENTS;
+    const SPLITS = [HALF, QUARTER, QUARTER];
+
     beforeEach(async () => {
-      const receipt = await this.factory.connect(artist).mintBatchEditionGatedOnly(
+      RECIPIENTS = [artist.address, anotherArtist.address, oneMoreArtist.address];
+
+      // Create royalty registry
+      royaltiesRegistry = await CollabRoyaltiesRegistry.new(this.accessControls.address);
+      royaltiesRegistry.setKoda(this.token.address, {from: admin.address});
+
+      // Fund handler base
+      claimableFundsReceiverV1 = await ClaimableFundsReceiverV1.new({from: admin.address});
+      await royaltiesRegistry.addHandler(claimableFundsReceiverV1.address, {from: admin.address});
+
+      // Predetermine address - but do not deploy it yet
+      predetermineAddress = await royaltiesRegistry.predictedRoyaltiesHandler(claimableFundsReceiverV1.address, RECIPIENTS, SPLITS);
+
+      // Deploy a funds splitter
+      let receipt = await royaltiesRegistry.createRoyaltiesRecipient(
+        claimableFundsReceiverV1.address,
+        RECIPIENTS,
+        SPLITS,
+        {from: artist.address}
+      );
+
+      // Expect event
+      expectEvent(receipt, 'RoyaltyRecipientCreated', {
+        creator: artist.address,
+        handler: claimableFundsReceiverV1.address,
+        deployedHandler: predetermineAddress,
+        recipients: RECIPIENTS,
+        //splits: SPLITS // disable due to inability to perform equality check on arrays within events (tested below)
+      });
+
+      await this.token.setRoyaltiesRegistryProxy(royaltiesRegistry.address, {from: admin.address});
+      await this.factory.connect(admin).setRoyaltiesRegistry(royaltiesRegistry.address);
+
+      receipt = await this.factory.connect(artist).mintBatchEditionGatedOnly(
         '10',
         this.artistProofIndex,
         this.artistProof,
-        ZERO_ADDRESS,
+        predetermineAddress,
         TOKEN_URI
       );
 
@@ -641,14 +680,70 @@ contract('MinterFactory V2', function () {
       expect(editionDetails._uri).to.equal(TOKEN_URI, 'Failed edition details uri validation');
     });
 
+    it('royalties recipient is registered with the tokens', async () => {
+      const info = await this.token.royaltyInfo(firstEditionTokenId, 0);
+      expect(info._receiver).to.equal(predetermineAddress);
+    });
+
     it('sale created', async () => {
       const saleId = await this.gatedSale.editionToSale(firstEditionTokenId.toString());
       expect(saleId.toString()).to.equal('1');
     });
+
+    it('royalties recipient is registered with the gated sale', async () => {
+      const saleId = await this.gatedSale.editionToSale(firstEditionTokenId.toString());
+      const sale = await this.gatedSale.sales(saleId);
+      expect(sale.id.toString()).to.be.equal(saleId.toString());
+      expect(sale.editionId.toString()).to.be.equal(firstEditionTokenId.toString());
+      expect(sale.creator.toString()).to.be.equal(artist.address);
+      expect(sale.fundsReceiver.toString()).to.be.equal(predetermineAddress);
+      expect(sale.maxEditionId.toString()).to.be.equal('11009');
+      expect(sale.mintCounter.toString()).to.be.equal('0');
+      expect(sale.paused.toString()).to.be.equal('0');
+    });
+
   });
 
   describe('mintBatchEditionGatedOnlyAsProxy()', async () => {
+
+    let royaltiesRegistry, claimableFundsReceiverV1, predetermineAddress;
+
+    let RECIPIENTS;
+    const SPLITS = [HALF, QUARTER, QUARTER];
+
     beforeEach(async () => {
+      RECIPIENTS = [artist.address, anotherArtist.address, oneMoreArtist.address];
+
+      // Create royalty registry
+      royaltiesRegistry = await CollabRoyaltiesRegistry.new(this.accessControls.address);
+      royaltiesRegistry.setKoda(this.token.address, {from: admin.address});
+
+      // Fund handler base
+      claimableFundsReceiverV1 = await ClaimableFundsReceiverV1.new({from: admin.address});
+      await royaltiesRegistry.addHandler(claimableFundsReceiverV1.address, {from: admin.address});
+
+      // Predetermine address - but do not deploy it yet
+      predetermineAddress = await royaltiesRegistry.predictedRoyaltiesHandler(claimableFundsReceiverV1.address, RECIPIENTS, SPLITS);
+
+      // Deploy a funds splitter
+      let receipt = await royaltiesRegistry.createRoyaltiesRecipient(
+        claimableFundsReceiverV1.address,
+        RECIPIENTS,
+        SPLITS,
+        {from: artist.address}
+      );
+
+      // Expect event
+      expectEvent(receipt, 'RoyaltyRecipientCreated', {
+        creator: artist.address,
+        handler: claimableFundsReceiverV1.address,
+        deployedHandler: predetermineAddress,
+        recipients: RECIPIENTS,
+        //splits: SPLITS // disable due to inability to perform equality check on arrays within events (tested below)
+      });
+
+      await this.token.setRoyaltiesRegistryProxy(royaltiesRegistry.address, {from: admin.address});
+      await this.factory.connect(admin).setRoyaltiesRegistry(royaltiesRegistry.address);
 
       await this.accessControls.setVerifiedArtistProxy(
         proxy.address,
@@ -657,10 +752,10 @@ contract('MinterFactory V2', function () {
         {from: artist.address}
       );
 
-      const receipt = await this.factory.connect(proxy).mintBatchEditionGatedOnlyAsProxy(
+      receipt = await this.factory.connect(proxy).mintBatchEditionGatedOnlyAsProxy(
         artist.address,
         '10',
-        ZERO_ADDRESS,
+        predetermineAddress,
         TOKEN_URI
       );
 
@@ -684,9 +779,26 @@ contract('MinterFactory V2', function () {
       expect(editionDetails._uri).to.equal(TOKEN_URI, 'Failed edition details uri validation');
     });
 
+    it('royalties recipient is registered with the tokens', async () => {
+      const info = await this.token.royaltyInfo(firstEditionTokenId, 0);
+      expect(info._receiver).to.equal(predetermineAddress);
+    });
+
     it('sale created', async () => {
       const saleId = await this.gatedSale.editionToSale(firstEditionTokenId.toString());
       expect(saleId.toString()).to.equal('1');
+    });
+
+    it('royalties recipient is registered with the gated sale', async () => {
+      const saleId = await this.gatedSale.editionToSale(firstEditionTokenId.toString());
+      const sale = await this.gatedSale.sales(saleId);
+      expect(sale.id.toString()).to.be.equal(saleId.toString());
+      expect(sale.editionId.toString()).to.be.equal(firstEditionTokenId.toString());
+      expect(sale.creator.toString()).to.be.equal(artist.address);
+      expect(sale.fundsReceiver.toString()).to.be.equal(predetermineAddress);
+      expect(sale.maxEditionId.toString()).to.be.equal('11009');
+      expect(sale.mintCounter.toString()).to.be.equal('0');
+      expect(sale.paused.toString()).to.be.equal('0');
     });
   });
 

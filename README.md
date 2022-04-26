@@ -90,13 +90,14 @@ V1 funds receiver          - 0x643ea212F5B9E5BE9f3A000430DCc80E01C78C2C = (verif
 #### Gated marketplace (upgradable)
 ```
 KODAV3GatedMarketplace Proxy - 0x8fC72C856EB661F072F0f7322449f3fcCF088f42 (verified) 
-  - v1 - git commit 3bcd94f66e5d0f6b38881fd52971c13dd08b6974
+  - v1 - git commit 3bcd94f66e5d0f6b38881fd52971c13dd08b6974 (verified)
 ```
 
 #### Minting Factory (upgradable)
 ```
-MintingFactoryV2 Proxy - 0xcEcF098DC0F513C68a0003b540CBDAE130dD0014 (verified) 
-  - v1 - git commit 3bcd94f66e5d0f6b38881fd52971c13dd08b6974
+MintingFactoryV2 Proxy - 0xcEcF098DC0F513C68a0003b540CBDAE130dD0014 (verified)
+  - v1 - git commit 3bcd94f66e5d0f6b38881fd52971c13dd08b6974 (verified)
+  - v2 - git commit 30eb2a3874ac64bc9c7e38e645f42691c7d11f13 () (update = https://etherscan.io/tx/0x028943a591370069addcca490a4c1df3977f0dbed8d9a61a3460ad37c9d49e57)
 ```
 
 -----
@@ -117,14 +118,15 @@ V1 funds receiver          - 0xb4bb0960b5095e5a0abd07d18803f45c4c4eadf6 = (verif
 
 #### Gated marketplace (upgradable)
 ```
-KODAV3GatedMarketplace Proxy - 0x048b36a7cc30127cE2C2C8E1C6AF9c3d0D8787eC
-  - v1 - git commit 5c8b8e05b96b2439b65abea52a0d30112dc97ed9
+KODAV3GatedMarketplace Proxy - 0x048b36a7cc30127cE2C2C8E1C6AF9c3d0D8787eC (verified)
+  - v1 - git commit 5c8b8e05b96b2439b65abea52a0d30112dc97ed9 (verified)
 ```
 
 #### Minting Factory (upgradable)
 ```
-MintingFactoryV2 Proxy - 0x2346b3949F8742f4e2a8B6F26D72ef358683820d
-  - v1 - git commit 5c8b8e05b96b2439b65abea52a0d30112dc97ed9
+MintingFactoryV2 Proxy - 0x2346b3949F8742f4e2a8B6F26D72ef358683820d (verified)
+  - v1 - git commit 5c8b8e05b96b2439b65abea52a0d30112dc97ed9 (verified)
+  - v2 - git commit 30eb2a3874ac64bc9c7e38e645f42691c7d11f13 (verified) (upgrade = https://rinkeby.etherscan.io/tx/0xc9786af3e38d65317ba01504a70ec60a3ac93019cc6658a8944a8f3416fe80cd)
 ```
 
 -----
