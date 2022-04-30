@@ -97,7 +97,7 @@ KODAV3GatedMarketplace Proxy - 0x8fC72C856EB661F072F0f7322449f3fcCF088f42 (verif
 ```
 MintingFactoryV2 Proxy - 0xcEcF098DC0F513C68a0003b540CBDAE130dD0014 (verified)
   - v1 - git commit 3bcd94f66e5d0f6b38881fd52971c13dd08b6974 (verified)
-  - v2 - git commit 30eb2a3874ac64bc9c7e38e645f42691c7d11f13 () (update = https://etherscan.io/tx/0x028943a591370069addcca490a4c1df3977f0dbed8d9a61a3460ad37c9d49e57)
+  - v2 - git commit 30eb2a3874ac64bc9c7e38e645f42691c7d11f13 (verified) (update = https://etherscan.io/tx/0x028943a591370069addcca490a4c1df3977f0dbed8d9a61a3460ad37c9d49e57)
 ```
 
 -----
