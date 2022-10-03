@@ -102,6 +102,31 @@ MintingFactoryV2 Proxy - 0xcEcF098DC0F513C68a0003b540CBDAE130dD0014 (verified)
 
 -----
 
+## Goerli
+
+```
+Core NFT                   - 0x05f5eC654fD95646609964C6c8a0e5b3156CDa08 = (verified)  
+AccessControls             - 0x891afBaE7613103d6408817FF73d1DF97b575fd2 = (verified) 
+Primary marketplace        - 0x6234802e9f3A550A61ee3a736fA452B19A577645 = (verified) 
+Secondary marketplace      - 0x61151462B02C237E9D2a7Ca849Af6633683b9CEd = (verified) 
+Collab royalties registry  - 0xed7f97eDDD34b33bB49b420Af939cD4375cA0fB0 = (verified)  
+Omni deployer              - 0x9c094e9619d4B6bDe719C4FaE279A4F8c683c3F8 = (verified)
+V1 funds splitter          - 0xEeB2Bc6f52dedA185181Fc2c310222837440Cacd = (verified) 
+V1 funds receiver          - 0x0226DaE23Bc0A8b3e71E09aC4036eC26450a006F = (verified) 
+```
+
+#### Gated marketplace (upgradable)
+```
+KODAV3GatedMarketplace Proxy - 0x04994ebf4bfc6366c1624366d8f25e2d382fe3d0 (verified)
+  - v1 - git commit 5c8b8e05b96b2439b65abea52a0d30112dc97ed9
+```
+
+#### Minting Factory (upgradable)
+```
+MintingFactoryV2 Proxy - 0x65c7593dE25f2d56bD6088Fc1865E3b2fC85167c (verified)
+  - v2 - git commit 30eb2a3874ac64bc9c7e38e645f42691c7d11f13
+```
+
 ## Rinkeby
 
 ```
