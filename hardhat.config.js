@@ -9,7 +9,7 @@ require('@openzeppelin/hardhat-upgrades');
 require("@nomiclabs/hardhat-truffle5");
 
 const INFURA_PROJECT_ID = process.env.INFURA_PROJECT_ID;
-const KO_DEPLOYER_PRIVATE_KEY = process.env.KO_DEPLOYER_PRIVATE_KEY;
+const KO_DEPLOYER_PRIVATE_KEY = process.env.KO_TESTNET_DEPLOYER_PRIVATE_KEY || process.env.KO_DEPLOYER_PRIVATE_KEY;
 
 let nonDevelopmentNetworks = {}
 
@@ -24,6 +24,10 @@ if (KO_DEPLOYER_PRIVATE_KEY) {
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
+      accounts: [`0x${KO_DEPLOYER_PRIVATE_KEY}`]
+    },
+    goerli: {
+      url: `https://goerli.infura.io/v3/${INFURA_PROJECT_ID}`,
       accounts: [`0x${KO_DEPLOYER_PRIVATE_KEY}`]
     },
   }
