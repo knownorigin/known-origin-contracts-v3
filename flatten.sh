@@ -10,3 +10,4 @@ npx hardhat flatten ./contracts/minter/MintingFactoryV2.sol > ./contracts-flat/M
 npx hardhat flatten ./contracts/collab/CollabRoyaltiesRegistry.sol > ./contracts-flat/CollabRoyaltiesRegistry.sol
 npx hardhat flatten ./contracts/collab/handlers/ClaimableFundsReceiverV1.sol > ./contracts-flat/ClaimableFundsReceiverV1.sol
 npx hardhat flatten ./contracts/collab/handlers/ClaimableFundsSplitterV1.sol > ./contracts-flat/ClaimableFundsSplitterV1.sol
+npx hardhat flatten ./contracts/royalties-registry-proxy/KODAV2Override.sol > ./contracts-flat/KODAV2Override.sol
