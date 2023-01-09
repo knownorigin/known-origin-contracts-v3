@@ -3,27 +3,29 @@
 pragma solidity 0.8.4;
 
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {ITokenUriResolver} from "../ITokenUriResolver.sol";
-import {IKODAV3} from "../../core/IKODAV3.sol";
+import {BaseTokenUriResolver} from "./BaseTokenUriResolver.sol";
+import {UrlTools} from "./UrlTools.sol";
 
-contract SingleEditionRevealableTokenIdResolver is ITokenUriResolver {
-    using Strings for uint256;
+contract SingleEditionRevealableTokenIdResolver is BaseTokenUriResolver {
 
-    bool revealed;
-    string defaultHash;
-    string baseStorageHash;
+    /*
+    1. mint token with base uri
+    2. setup resolver with signature to prove no post sale abuse
+    3. registry against edition
+    4. >>> run the sale/drop
+    5. reveal by setting the base uri
+    */
+
+    // TODO - include signature of base storage but NOT the update - this proves there was no malicious behaviour as they can be set before the sale
     string joiner;
-    string extension;
+    string defaultTokenUri;
+    string public baseStorageHash;
 
-    function tokenURI(uint256, uint256 _tokenId) external override view returns (string memory) {
-        if (!revealed) {
-            return defaultHash;
+    function tokenURI(uint256 _editionId, uint256 _tokenId) external override view returns (string memory) {
+        if (bytes(baseStorageHash).length > 0) {
+            return defaultTokenUri;
         }
-        // {baseStorageHash}{joiner}{tokenId} e.g. ipfs://ipfs/Qmd9xQFBfqMZLG7RA2rXor7SA7qyJ1Pk2F2mSYzRQ2siMv/1234
-        return string(abi.encodePacked(baseStorageHash, joiner, _tokenId.toString()));
+        return UrlTools.staticTokenUri(_tokenId, baseStorageHash, joiner);
     }
 
-    function isDefined(uint256, uint256) external override view returns (bool) {
-        return true;
-    }
 }
