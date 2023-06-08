@@ -44,7 +44,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "4.2.0",
-    "@openzeppelin/contracts-upgradeable": "^4.4.2",
+    "@openzeppelin/contracts-upgradeable": "^4.9.1",
     "hardhat-contract-sizer": "^2.0.3",
     "moment": "^2.29.1",
     "prompt-sync": "^4.2.0"
